@@ -66,6 +66,12 @@ export interface IStorage {
   getDealsSummary(): Promise<any[]>;
   getDealCategories(): Promise<string[]>;
   createDeal(deal: InsertStoreDeal): Promise<StoreDeal>;
+  
+  // Weekly Circular methods
+  getWeeklyCirculars(retailerId?: number): Promise<WeeklyCircular[]>;
+  getWeeklyCircular(id: number): Promise<WeeklyCircular | undefined>;
+  createWeeklyCircular(circular: InsertWeeklyCircular): Promise<WeeklyCircular>;
+  getDealsFromCircular(circularId: number): Promise<StoreDeal[]>;
 
   // Recommendation methods
   getRecommendations(): Promise<Recommendation[]>;
