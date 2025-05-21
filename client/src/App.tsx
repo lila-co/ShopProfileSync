@@ -10,6 +10,7 @@ import Deals from "@/pages/deals";
 import Circulars from "@/pages/circulars";
 import Profile from "@/pages/profile";
 import Scan from "@/pages/scan";
+import Shop from "@/pages/shop";
 import InternalAnalytics from "@/pages/internal-analytics";
 
 function Router() {
@@ -18,6 +19,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/lists" component={ShoppingList} />
       <Route path="/scan" component={Scan} />
+      <Route path="/shop" component={Shop} />
       <Route path="/deals" component={Deals} />
       <Route path="/circulars" component={Circulars} />
       <Route path="/profile" component={Profile} />

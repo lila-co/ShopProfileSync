@@ -110,14 +110,30 @@ const ShoppingListComponent: React.FC = () => {
       });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       setNewItemName('');
       setNewItemQuantity(1);
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-      toast({
-        title: "Item Added",
-        description: "Item has been added to your shopping list."
-      });
+      
+      // Show appropriate message based on whether item was merged or corrected
+      if (data.merged) {
+        toast({
+          title: "Items Combined",
+          description: data.message || `Added quantity to existing "${data.productName}" item.`,
+          variant: "default"
+        });
+      } else if (data.corrected) {
+        toast({
+          title: "Item Added",
+          description: `Added as "${data.productName}" (corrected from "${data.originalName}")`,
+          variant: "default"
+        });
+      } else {
+        toast({
+          title: "Item Added",
+          description: "Item has been added to your shopping list."
+        });
+      }
     },
     onError: (error) => {
       toast({
