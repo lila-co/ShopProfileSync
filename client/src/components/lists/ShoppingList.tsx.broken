@@ -8,7 +8,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Plus, ShoppingBag, FileText, Clock, Check, Trash2, AlertTriangle, DollarSign, MapPin, Car, BarChart2, Wand2, Pencil } from 'lucide-react';
+import { Plus, ShoppingBag, FileText, Clock, Check, Trash2, AlertTriangle, DollarSign, MapPin, Car, BarChart2, Wand2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -21,35 +21,26 @@ import { detectUnitFromItemName } from '@/lib/utils';
 const ShoppingListComponent: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
-  // Form state
   const [newItemName, setNewItemName] = useState('');
   const [newItemQuantity, setNewItemQuantity] = useState(1);
   const [newItemUnit, setNewItemUnit] = useState('COUNT');
   const [autoDetectUnit, setAutoDetectUnit] = useState(true);
-  
-  // Edit dialog state
+  const [recipeUrl, setRecipeUrl] = useState('');
+  const [servings, setServings] = useState('4');
+  const [recipeDialogOpen, setRecipeDialogOpen] = useState(false);
+  const [optimizationPreference, setOptimizationPreference] = useState('cost');
+  const [selectedRetailers, setSelectedRetailers] = useState<number[]>([]);
+  const [showRouteMap, setShowRouteMap] = useState(false);
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
+  const [generatedItems, setGeneratedItems] = useState<any[]>([]);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editItemName, setEditItemName] = useState('');
   const [editItemQuantity, setEditItemQuantity] = useState(1);
   const [editItemUnit, setEditItemUnit] = useState('COUNT');
   const [editItemId, setEditItemId] = useState<number | null>(null);
-  
-  // Recipe dialog state
-  const [recipeUrl, setRecipeUrl] = useState('');
-  const [servings, setServings] = useState('4');
-  const [recipeDialogOpen, setRecipeDialogOpen] = useState(false);
-  
-  // List generation state
-  const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
-  const [generatedItems, setGeneratedItems] = useState<any[]>([]);
-  
-  // Optimization state
-  const [optimizationPreference, setOptimizationPreference] = useState('cost');
-  const [selectedRetailers, setSelectedRetailers] = useState<number[]>([]);
-  const [showRouteMap, setShowRouteMap] = useState(false);
-  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
-  
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<{id: number, productName: string, quantity: number, unit: string} | null>(null);
   const [expiringDeals, setExpiringDeals] = useState([
     { id: 1, retailer: 'Walmart', product: 'Organic Milk', expires: 'Tomorrow', discount: '20%' },
     { id: 2, retailer: 'Target', product: 'Free-Range Eggs', expires: 'In 2 days', discount: '15%' }
@@ -89,13 +80,15 @@ const ShoppingListComponent: React.FC = () => {
     }
   }, [recentPurchases, refetchShoppingLists]);
   
+
+  
   // Fetch shopping list cost comparison data
   const { data: costData, isLoading: isLoadingCosts } = useQuery({
     queryKey: ['/api/shopping-lists/costs', shoppingLists?.[0]?.id],
     enabled: !!shoppingLists?.[0]?.id,
     queryFn: async () => {
       const response = await apiRequest('POST', '/api/shopping-lists/costs', {
-        shoppingListId: shoppingLists?.[0]?.id
+        shoppingListId: shoppingLists[0].id
       });
       return response.json();
     }
@@ -301,18 +294,17 @@ const ShoppingListComponent: React.FC = () => {
   
   // Edit shopping list item
   const editItemMutation = useMutation({
-    mutationFn: async () => {
-      if (!editItemId) throw new Error("No item selected for editing");
-      
-      const response = await apiRequest('PATCH', `/api/shopping-list/items/${editItemId}`, {
-        productName: editItemName,
-        quantity: editItemQuantity,
-        unit: editItemUnit
+    mutationFn: async (item: { id: number, productName: string, quantity: number, unit: string }) => {
+      const response = await apiRequest('PATCH', `/api/shopping-list/items/${item.id}`, {
+        productName: item.productName,
+        quantity: item.quantity,
+        unit: item.unit
       });
       return response.json();
     },
     onSuccess: () => {
       setEditDialogOpen(false);
+      setEditingItem(null);
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
       toast({
         title: "Item Updated",
@@ -355,17 +347,24 @@ const ShoppingListComponent: React.FC = () => {
   };
   
   const handleEditItem = (item: ShoppingListItem) => {
-    setEditItemId(item.id);
-    setEditItemName(item.productName);
-    setEditItemQuantity(item.quantity);
-    setEditItemUnit(item.unit || 'COUNT');
+    setEditingItem({
+      id: item.id,
+      productName: item.productName,
+      quantity: item.quantity,
+      unit: item.unit
+    });
     setEditDialogOpen(true);
   };
   
   const handleSaveEdit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (editItemName.trim()) {
-      editItemMutation.mutate();
+    if (editingItem && editingItem.productName.trim()) {
+      editItemMutation.mutate({
+        id: editingItem.id,
+        productName: editingItem.productName.trim(),
+        quantity: editingItem.quantity,
+        unit: editingItem.unit
+      });
     }
   };
   
@@ -611,9 +610,7 @@ const ShoppingListComponent: React.FC = () => {
                               {item.productName}
                             </span>
                             <span className="ml-2 text-sm bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
-                              Qty: {item.quantity} {item.unit && item.unit !== "COUNT" && (
-                                <span className="text-xs text-gray-500">{item.unit.toLowerCase()}</span>
-                              )}
+                              Qty: {item.quantity}
                             </span>
                           </div>
                           {item.suggestedRetailerId && item.suggestedPrice && (
@@ -636,7 +633,10 @@ const ShoppingListComponent: React.FC = () => {
                           aria-label="Edit item"
                           title="Edit item"
                         >
-                          <Pencil className="h-5 w-5" />
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-pencil">
+                            <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                            <path d="m15 5 4 4"/>
+                          </svg>
                         </button>
                         <button
                           onClick={() => handleDeleteItem(item.id)}
@@ -656,400 +656,310 @@ const ShoppingListComponent: React.FC = () => {
         </TabsContent>
         
         <TabsContent value="price" className="space-y-4">
-          <h3 className="text-lg font-semibold mb-2">Price Comparison</h3>
-          <p className="text-sm text-gray-500 mb-4">
-            We've compared your shopping list prices across different retailers to help you save money.
-          </p>
+          <h3 className="text-lg font-semibold mb-4">Price Comparison by Store</h3>
           
           {isLoadingCosts ? (
             <div className="p-8 text-center">
-              <div className="h-8 w-8 border-4 border-t-primary border-gray-200 rounded-full animate-spin mx-auto"></div>
-              <p className="mt-2 text-sm text-gray-500">Calculating costs...</p>
+              <p>Loading price information...</p>
             </div>
-          ) : costData ? (
+          ) : costData?.singleStore?.length ? (
             <div className="space-y-4">
-              <Card>
-                <CardContent className="p-4">
-                  <h4 className="font-semibold text-lg mb-4">Best Option: Shop at Multiple Stores</h4>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span>Total Cost</span>
-                      <span className="font-semibold">${(costData.multiStore.totalCost / 100).toFixed(2)}</span>
-                    </div>
-                    
-                    <div className="flex justify-between items-center">
-                      <span>Savings vs. Single Store</span>
-                      <span className="text-green-600 font-semibold">${(costData.multiStore.savings / 100).toFixed(2)}</span>
-                    </div>
-                    
-                    <Separator className="my-2" />
-                    
-                    <div className="space-y-3">
-                      <h5 className="font-medium">Shopping Plan:</h5>
-                      {costData.multiStore.retailers.map((store: any, index: number) => (
-                        <div key={store.retailerId} className="border rounded-lg p-3">
-                          <div className="flex justify-between mb-2">
-                            <div>
-                              <span className="font-semibold">{store.retailerName}</span>
-                              <span className="ml-2 text-sm text-gray-500">{store.items.length} items</span>
-                            </div>
-                            <span className="font-semibold">${(store.subtotal / 100).toFixed(2)}</span>
-                          </div>
-                          
-                          <div className="mb-2 text-sm text-gray-500">
-                            {store.items.slice(0, 3).map((item: any, idx: number) => (
-                              <div key={idx} className="flex justify-between">
-                                <span>{item.productName} (x{item.quantity})</span>
-                                <span>${(item.price / 100).toFixed(2)}</span>
-                              </div>
-                            ))}
-                            {store.items.length > 3 && (
-                              <div className="text-sm text-right text-primary cursor-pointer">
-                                +{store.items.length - 3} more items
-                              </div>
-                            )}
-                          </div>
-                          
-                          <Button 
-                            className="w-full mt-1 text-sm h-8"
-                            variant="outline"
-                            onClick={() => {
-                              window.location.href = `/shop?retailerId=${store.retailerId}&listId=${defaultList?.id}`;
-                            }}
-                          >
-                            <ShoppingBag className="mr-2 h-3.5 w-3.5" />
-                            Shop at {store.retailerName}
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <h4 className="font-semibold text-md mt-6 mb-2">Single Store Options</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {costData.singleStore.map((store: any, index: number) => (
-                  <Card key={store.retailerId} className={index === 0 ? "border-primary" : ""}>
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h5 className="font-semibold">{store.retailerName}</h5>
-                          <div className="flex space-x-4 text-sm text-gray-500 mt-1">
-                            <span>Total: ${(store.totalCost / 100).toFixed(2)}</span>
-                            {index !== 0 && (
-                              <span className="text-red-500">
-                                +${((store.totalCost - costData.singleStore[0].totalCost) / 100).toFixed(2)}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        {index === 0 && (
-                          <Badge className="bg-primary text-white">Best Value</Badge>
-                        )}
+              {costData.singleStore.map((store: any, index: number) => (
+                <Card key={index} className={index === 0 ? 'border-green-500 border-2' : ''}>
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="flex items-center">
+                        <div className={`w-3 h-3 rounded-full mr-2 ${index === 0 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                        <h4 className="font-bold text-lg">{store.retailerName}</h4>
                       </div>
+                      <Badge variant={index === 0 ? "default" : "outline"} className={index === 0 ? "bg-green-500" : ""}>
+                        {index === 0 ? "Best Value" : `+$${((store.totalCost - costData.singleStore[0].totalCost)/100).toFixed(2)}`}
+                      </Badge>
+                    </div>
                     
+                    <div className="grid grid-cols-2 gap-4 mb-4">
                       <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Items with deals</span>
-                          <span>{store.items.filter((i: any) => i.hasDeal).length} of {store.items.length}</span>
-                        </div>
-                        <Progress value={(store.items.filter((i: any) => i.hasDeal).length / store.items.length) * 100} className="h-2" />
+                        <p className="text-sm text-gray-500">Total Cost</p>
+                        <p className="text-xl font-bold">${(store.totalCost/100).toFixed(2)}</p>
                       </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Potential Savings</p>
+                        <p className="text-xl font-bold text-green-600">${(store.savings/100).toFixed(2)}</p>
+                      </div>
+                    </div>
                     
-                      <Button 
-                        className="w-full mt-4"
-                        onClick={() => {
-                          window.location.href = `/shop?retailerId=${store.retailerId}&listId=${defaultList?.id}`;
-                        }}
-                        variant={index === 0 ? "default" : "outline"}
-                      >
-                        <ShoppingBag className="mr-2 h-4 w-4" />
-                        Shop at {store.retailerName}
-                      </Button>
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>Items with deals</span>
+                        <span>{store.items.filter((i: any) => i.hasDeal).length} of {store.items.length}</span>
+                      </div>
+                      <Progress value={(store.items.filter((i: any) => i.hasDeal).length / store.items.length) * 100} className="h-2" />
+                    </div>
+                    
+                    <Button 
+                      className="w-full mt-4"
+                      onClick={() => {
+                        window.location.href = `/shop?retailerId=${store.retailerId}&listId=${defaultList?.id}`;
+                      }}
+                      variant={index === 0 ? "default" : "outline"}
+                    >
+                      <ShoppingBag className="mr-2 h-4 w-4" />
+                      Shop at {store.retailerName}
+                    </Button>
 
-                      {/* Bulk Deals */}
-                      {store.bulkDeals && store.bulkDeals.length > 0 && (
-                        <div className="mt-4">
-                          <h6 className="text-sm font-medium mb-2 flex items-center">
-                            <AlertTriangle className="h-3.5 w-3.5 mr-1.5 text-amber-500" />
-                            Bulk Deals Available
-                          </h6>
-                          <div className="text-xs text-gray-600 space-y-1.5">
-                            {store.bulkDeals.map((deal: any, idx: number) => (
-                              <div key={idx} className="border border-amber-100 bg-amber-50 p-2 rounded">
-                                Buy {deal.quantity} {deal.productName} and save ${(deal.savings / 100).toFixed(2)}
+                    {/* Bulk Deals */}
+                    {store.items.some((item: any) => item.bulkDeal) && (
+                      <div className="mt-4">
+                        <h5 className="font-medium text-sm mb-2">Bulk Deal Opportunities</h5>
+                        <div className="space-y-2">
+                          {store.items
+                            .filter((item: any) => item.bulkDeal)
+                            .map((item: any, idx: number) => (
+                              <div key={idx} className="p-2 bg-blue-50 rounded-md text-sm">
+                                <div className="flex items-center">
+                                  <div className="w-1 h-4 bg-blue-500 mr-2 rounded-full"></div>
+                                  <p className="font-medium">{item.productName}</p>
+                                </div>
+                                <p className="text-blue-700 mt-1 ml-3 text-xs">{item.bulkDeal.recommendation}</p>
                               </div>
                             ))}
-                          </div>
                         </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      </div>
+                    )}
+                    
+                    {/* Spending Incentives */}
+                    {store.incentives && store.incentives.length > 0 && (
+                      <div className="mt-4">
+                        <h5 className="font-medium text-sm mb-2">Spending Incentives</h5>
+                        <div className="space-y-2">
+                          {store.incentives.map((incentive: any, idx: number) => (
+                            <div key={idx} className="p-2 bg-amber-50 rounded-md text-sm">
+                              <div className="flex items-center">
+                                <div className="w-1 h-4 bg-amber-500 mr-2 rounded-full"></div>
+                                <p className="font-medium">{incentive.category} Offer</p>
+                              </div>
+                              <p className="text-amber-700 mt-1 ml-3 text-xs">{incentive.message}</p>
+                              <div className="mt-2 ml-3 bg-gray-100 h-2 rounded">
+                                <div 
+                                  className="bg-amber-400 h-2 rounded" 
+                                  style={{ width: `${(incentive.spent / incentive.threshold) * 100}%` }}
+                                ></div>
+                              </div>
+                              <div className="flex justify-between text-xs mt-1 ml-3 text-gray-500">
+                                <span>${(incentive.spent/100).toFixed(2)}</span>
+                                <span>${(incentive.threshold/100).toFixed(2)}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           ) : (
-            <div className="p-8 text-center border rounded-lg">
-              <AlertTriangle className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-              <p className="text-gray-500">Could not calculate price comparison</p>
-              <p className="text-sm text-gray-400 mt-1">Try adding more items to your shopping list</p>
+            <div className="p-8 text-center border border-dashed rounded-lg">
+              <DollarSign className="h-12 w-12 mx-auto text-gray-300 mb-2" />
+              <p className="text-gray-500">No price comparison available</p>
+              <p className="text-sm text-gray-400 mt-1">Add items to your shopping list first</p>
             </div>
           )}
         </TabsContent>
         
         <TabsContent value="optimize" className="space-y-4">
-          <h3 className="text-lg font-semibold mb-2">Shopping List Optimization</h3>
-          <p className="text-sm text-gray-500 mb-4">
-            Set your preferences to optimize your shopping experience across multiple retailers.
-          </p>
+          <h3 className="text-lg font-semibold mb-4">Shopping Optimization</h3>
           
-          <div className="space-y-6">
-            <Card>
-              <CardContent className="p-4 space-y-4">
-                <div>
-                  <h4 className="font-semibold mb-3">What matters most to you?</h4>
-                  <RadioGroup 
-                    className="space-y-2" 
-                    value={optimizationPreference}
-                    onValueChange={setOptimizationPreference}
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="cost" id="cost" />
-                      <Label htmlFor="cost" className="flex items-center">
-                        <DollarSign className="h-4 w-4 mr-2 text-green-600" />
-                        <div>
-                          <span className="font-medium">Cost Savings</span>
-                          <p className="text-xs text-gray-500">Prioritize getting the best prices, even if it means shopping at multiple stores</p>
-                        </div>
-                      </Label>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="convenience" id="convenience" />
-                      <Label htmlFor="convenience" className="flex items-center">
-                        <Clock className="h-4 w-4 mr-2 text-blue-600" />
-                        <div>
-                          <span className="font-medium">Convenience</span>
-                          <p className="text-xs text-gray-500">Shop at a single store even if some items cost more</p>
-                        </div>
-                      </Label>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="quality" id="quality" />
-                      <Label htmlFor="quality" className="flex items-center">
-                        <Check className="h-4 w-4 mr-2 text-purple-600" />
-                        <div>
-                          <span className="font-medium">Quality</span>
-                          <p className="text-xs text-gray-500">Prioritize preferred brands and specialty stores</p>
-                        </div>
-                      </Label>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="sustainability" id="sustainability" />
-                      <Label htmlFor="sustainability" className="flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M18 8a5 5 0 0 0-5-5c-1.956 0-3.693.94-4.794 2.393A5 5 0 0 0 13 18a4.966 4.966 0 0 0 3.584-1.553A4.978 4.978 0 0 0 18 13h-6"></path>
-                        </svg>
-                        <div>
-                          <span className="font-medium">Sustainability</span>
-                          <p className="text-xs text-gray-500">Prioritize eco-friendly products and locally sourced items</p>
-                        </div>
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-                
-                <Separator />
-                
-                <div>
-                  <h4 className="font-semibold mb-3">Select your preferred retailers</h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    {retailers && retailers.map((retailer: any) => (
-                      <div key={retailer.id} className="flex items-center space-x-2">
-                        <input 
-                          type="checkbox" 
-                          id={`retailer-${retailer.id}`}
-                          checked={selectedRetailers.includes(retailer.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedRetailers([...selectedRetailers, retailer.id]);
-                            } else {
-                              setSelectedRetailers(selectedRetailers.filter(id => id !== retailer.id));
-                            }
-                          }}
-                          className="h-4 w-4 text-primary rounded"
-                        />
-                        <Label htmlFor={`retailer-${retailer.id}`} className="text-sm">{retailer.name}</Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <Button 
-                  className="w-full mt-2"
-                  disabled={selectedRetailers.length === 0}
-                  onClick={() => {
-                    toast({
-                      title: "Shopping List Optimized",
-                      description: `Optimized for ${optimizationPreference} across ${selectedRetailers.length} retailers`
-                    });
-                  }}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14 13.341C14 14.793 10.848 15.643 9.5 15.643C8.152 15.643 5 14.793 5 13.341C5 11.89 8.152 11.04 9.5 11.04C10.848 11.04 14 11.89 14 13.341Z"/>
-                    <path d="M14 13.341V17.693C14 18.982 11.183 19.996 9.5 19.996C7.817 19.996 5 18.982 5 17.693V13.341"/>
-                    <path d="M18.71 7.314C18.71 8.936 15.143 9.914 13.5 9.914C11.857 9.914 8.29 8.936 8.29 7.314C8.29 5.692 11.857 4.714 13.5 4.714C15.143 4.714 18.71 5.692 18.71 7.314Z"/>
-                    <path d="M18.71 7.314V11.9C18.71 12.913 17.5 13.8 15.807 14.267"/>
-                    <path d="M13.5 9.914C11.857 9.914 8.29 8.936 8.29 7.314"/>
-                  </svg>
-                  Optimize Shopping List
-                </Button>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <h4 className="font-semibold mb-3">Expiring Deals Alert</h4>
-                <div className="space-y-3">
-                  {expiringDeals.map(deal => (
-                    <div key={deal.id} className="flex justify-between items-center border-b pb-2">
-                      <div>
-                        <p className="font-medium">{deal.product}</p>
-                        <div className="flex text-xs text-gray-500 space-x-3 mt-1">
-                          <span>{deal.retailer}</span>
-                          <span className="text-red-500">Expires: {deal.expires}</span>
-                        </div>
-                      </div>
-                      <Badge>{deal.discount} off</Badge>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+          <div className="mb-6">
+            <h4 className="text-md font-medium mb-2">Optimization Preference</h4>
+            <RadioGroup 
+              value={optimizationPreference} 
+              onValueChange={setOptimizationPreference}
+              className="flex flex-col space-y-2"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="cost" id="cost" />
+                <Label htmlFor="cost">Optimize for lowest total cost</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="time" id="time" />
+                <Label htmlFor="time">Optimize for quickest trip</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="balance" id="balance" />
+                <Label htmlFor="balance">Balance time and cost</Label>
+              </div>
+            </RadioGroup>
           </div>
+          
+          {isLoadingCosts ? (
+            <div className="p-8 text-center">
+              <p>Calculating optimal shopping plan...</p>
+            </div>
+          ) : costData?.multiStore ? (
+            <div className="space-y-4">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="mb-4">
+                    <h4 className="font-bold text-lg mb-2">Multi-Store Optimization</h4>
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <p className="text-sm text-gray-500">Total Cost</p>
+                        <p className="text-xl font-bold">${(costData.multiStore.totalCost/100).toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Total Savings</p>
+                        <p className="text-xl font-bold text-green-600">${(costData.multiStore.totalSavings/100).toFixed(2)}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Separator className="my-4" />
+                  
+                  <div>
+                    <h4 className="font-medium mb-3">Shopping Plan</h4>
+                    {Object.keys(costData.multiStore.itemsByRetailer).map((retailerId: string) => {
+                      const store = costData.multiStore.itemsByRetailer[retailerId];
+                      return (
+                        <div key={retailerId} className="mb-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <h5 className="font-medium">{store.retailerName}</h5>
+                            <p className="text-sm">${(store.subtotal/100).toFixed(2)}</p>
+                          </div>
+                          <ul className="text-sm ml-4 space-y-1">
+                            {store.items.map((item: any, idx: number) => (
+                              <li key={idx} className="list-disc list-outside">
+                                {item.productName} ({item.quantity}x) - ${(item.price/100).toFixed(2)} each
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  <div className="flex justify-end mt-4">
+                    <Button 
+                      variant="outline" 
+                      className="flex items-center space-x-1"
+                      onClick={() => {
+                        setSelectedRetailers(costData.multiStore.retailers);
+                        setShowRouteMap(true);
+                      }}
+                    >
+                      <MapPin className="h-4 w-4" />
+                      <span>Show Route</span>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <div className="p-8 text-center border border-dashed rounded-lg">
+              <BarChart2 className="h-12 w-12 mx-auto text-gray-300 mb-2" />
+              <p className="text-gray-500">No optimization available</p>
+              <p className="text-sm text-gray-400 mt-1">Add items to your shopping list first</p>
+            </div>
+          )}
         </TabsContent>
         
         <TabsContent value="route" className="space-y-4">
-          <h3 className="text-lg font-semibold mb-2">Shopping Route</h3>
-          <p className="text-sm text-gray-500 mb-4">
-            Plan the optimal route for your shopping trip across multiple stores.
-          </p>
+          <h3 className="text-lg font-semibold mb-4">Shopping Route</h3>
           
-          <Card>
-            <CardContent className="p-4 space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="font-semibold">Map Route</h4>
-                <Switch 
-                  checked={showRouteMap} 
-                  onCheckedChange={setShowRouteMap}
-                />
-              </div>
-              
-              <div>
-                <h5 className="text-sm font-medium mb-2">Selected Retailers</h5>
-                <div className="grid grid-cols-2 gap-2">
-                  {retailers && retailers.map((retailer: any) => (
-                    <div key={retailer.id} className="flex items-center space-x-2">
-                      <input 
-                        type="checkbox" 
-                        id={`route-retailer-${retailer.id}`}
-                        checked={selectedRetailers.includes(retailer.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedRetailers([...selectedRetailers, retailer.id]);
-                          } else {
-                            setSelectedRetailers(selectedRetailers.filter(id => id !== retailer.id));
-                          }
-                        }}
-                        className="h-4 w-4 text-primary rounded"
-                      />
-                      <Label htmlFor={`route-retailer-${retailer.id}`} className="text-sm">{retailer.name}</Label>
+          {!showRouteMap ? (
+            <div className="p-8 text-center border border-dashed rounded-lg">
+              <Car className="h-12 w-12 mx-auto text-gray-300 mb-2" />
+              <p className="text-gray-500">No route planned yet</p>
+              <p className="text-sm text-gray-400 mt-1">Select stores in the Optimize tab first</p>
+            </div>
+          ) : isLoadingRoute ? (
+            <div className="p-8 text-center">
+              <p>Calculating optimal route...</p>
+            </div>
+          ) : routeData ? (
+            <div className="space-y-4">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="mb-4">
+                    <h4 className="font-bold text-lg mb-2">Shopping Trip Details</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-500">Total Distance</p>
+                        <p className="text-xl font-bold">{routeData.route.totalDistance.toFixed(1)} km</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Estimated Time</p>
+                        <p className="text-xl font-bold">{routeData.route.totalTime} min</p>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-              
-              {showRouteMap && (
-                <div className="mt-4 border rounded-lg overflow-hidden relative h-64 bg-gray-200">
-                  {isLoadingRoute ? (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="h-8 w-8 border-4 border-t-primary border-gray-300 rounded-full animate-spin"></div>
-                    </div>
-                  ) : routeData ? (
-                    <div className="absolute inset-0">
-                      <div className="p-3 bg-white/80 backdrop-blur-sm z-10 absolute bottom-0 left-0 right-0">
-                        <div className="flex justify-between items-center mb-2">
-                          <h6 className="font-medium">Optimized Route</h6>
-                          <span className="text-sm text-gray-600">{routeData.totalDistance.toFixed(1)} miles</span>
-                        </div>
-                        <div className="flex space-x-2">
-                          {routeData.retailers.map((retailer: any, index: number) => (
-                            <div key={retailer.id} className="text-xs text-center">
-                              <div className="bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center mx-auto">
-                                {index + 1}
-                              </div>
-                              <span className="block mt-1">{retailer.name}</span>
+                  </div>
+                  
+                  <Separator className="my-4" />
+                  
+                  <div>
+                    <h4 className="font-medium mb-3">Route</h4>
+                    <div className="space-y-3">
+                      {routeData.route.waypoints.map((point: any, index: number) => (
+                        <div key={index} className="flex items-start">
+                          <div className="w-6 flex-shrink-0 flex flex-col items-center">
+                            <div className={`w-4 h-4 rounded-full flex items-center justify-center ${index === 0 ? 'bg-blue-500 text-white' : 'bg-green-500 text-white'}`}>
+                              {index === 0 ? '' : index}
                             </div>
-                          ))}
+                            {index < routeData.route.waypoints.length - 1 && (
+                              <div className="w-0.5 h-12 bg-gray-300"></div>
+                            )}
+                          </div>
+                          <div className="ml-2">
+                            <p className="font-medium">{point.name}</p>
+                            <p className="text-sm text-gray-500">{point.address}</p>
+                            {index > 0 && index < routeData.route.waypoints.length && (
+                              <p className="text-xs text-gray-400 mt-1">
+                                {routeData.retailers[index-1].distance} • {routeData.retailers[index-1].estimatedTime} drive
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      <div className="h-full w-full bg-gray-100 flex items-center justify-center">
-                        <div className="text-center text-gray-400">
-                          <MapPin className="h-8 w-8 mx-auto mb-2" />
-                          <p className="text-sm">Map visualization would go here</p>
-                        </div>
-                      </div>
+                      ))}
                     </div>
-                  ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
-                      <Car className="h-8 w-8 mb-2" />
-                      <p>Select retailers to view route</p>
+                  </div>
+                  
+                  <div className="mt-6 p-4 bg-gray-100 rounded-lg">
+                    <p className="text-center text-sm text-gray-500 mb-4">Google Maps Preview</p>
+                    <div className="bg-white p-4 border border-gray-300 rounded-lg h-48 flex items-center justify-center">
+                      <p className="text-gray-500">Interactive map would be displayed here using Google Maps API</p>
                     </div>
-                  )}
-                </div>
-              )}
-              
-              <Button 
-                className="w-full mt-2"
-                disabled={selectedRetailers.length < 2}
-                onClick={() => {
-                  toast({
-                    title: "Shopping Route Created",
-                    description: `Optimized route for ${selectedRetailers.length} stores`
-                  });
-                }}
-              >
-                <Car className="h-4 w-4 mr-2" />
-                Generate Shopping Route
-              </Button>
-            </CardContent>
-          </Card>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <div className="p-8 text-center border border-dashed rounded-lg">
+              <Car className="h-12 w-12 mx-auto text-gray-300 mb-2" />
+              <p className="text-gray-500">Could not generate route</p>
+              <p className="text-sm text-gray-400 mt-1">Please try again later</p>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
       
-      {/* Recipe Dialog */}
+      {/* Recipe Import Dialog */}
       <Dialog open={recipeDialogOpen} onOpenChange={setRecipeDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Import Recipe</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-gray-500">
-              Enter a recipe URL to automatically add all ingredients to your shopping list.
-            </p>
-            <div className="grid gap-3">
-              <Label htmlFor="recipe-url">Recipe URL</Label>
-              <Input 
-                id="recipe-url" 
-                placeholder="https://example.com/recipe" 
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="recipeUrl">Recipe URL</Label>
+              <Input
+                id="recipeUrl"
                 value={recipeUrl}
                 onChange={(e) => setRecipeUrl(e.target.value)}
+                placeholder="https://www.example.com/recipe"
               />
-              
-              <Label htmlFor="servings">Servings</Label>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="servings">Number of Servings</Label>
               <Select value={servings} onValueChange={setServings}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select servings" />
@@ -1065,16 +975,11 @@ const ShoppingListComponent: React.FC = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button 
-              type="button" 
-              variant="secondary" 
-              onClick={() => setRecipeDialogOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setRecipeDialogOpen(false)}>
               Cancel
             </Button>
             <Button 
-              type="button" 
-              onClick={() => importRecipeMutation.mutate()}
+              onClick={() => importRecipeMutation.mutate()} 
               disabled={!recipeUrl || importRecipeMutation.isPending}
             >
               Import
@@ -1084,19 +989,20 @@ const ShoppingListComponent: React.FC = () => {
       </Dialog>
       
       {/* Edit Item Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Shopping List Item</DialogTitle>
-          </DialogHeader>
+    <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit Shopping List Item</DialogTitle>
+        </DialogHeader>
+        {editingItem && (
           <form onSubmit={handleSaveEdit} className="space-y-4">
             <div className="grid gap-3">
               <Label htmlFor="edit-item-name">Item Name</Label>
               <Input 
                 id="edit-item-name" 
                 placeholder="Item name" 
-                value={editItemName}
-                onChange={(e) => setEditItemName(e.target.value)}
+                value={editingItem.productName}
+                onChange={(e) => setEditingItem({...editingItem, productName: e.target.value})}
                 className="w-full"
               />
               
@@ -1107,8 +1013,8 @@ const ShoppingListComponent: React.FC = () => {
                     id="edit-item-quantity"
                     type="number"
                     min="1"
-                    value={editItemQuantity}
-                    onChange={(e) => setEditItemQuantity(parseInt(e.target.value) || 1)}
+                    value={editingItem.quantity}
+                    onChange={(e) => setEditingItem({...editingItem, quantity: parseInt(e.target.value) || 1})}
                     className="w-full"
                   />
                 </div>
@@ -1116,8 +1022,8 @@ const ShoppingListComponent: React.FC = () => {
                 <div className="w-2/3">
                   <Label htmlFor="edit-item-unit">Unit</Label>
                   <Select 
-                    value={editItemUnit} 
-                    onValueChange={setEditItemUnit}
+                    value={editingItem.unit} 
+                    onValueChange={(value) => setEditingItem({...editingItem, unit: value})}
                     disabled={autoDetectUnit}
                   >
                     <SelectTrigger id="edit-item-unit" className={`w-full ${autoDetectUnit ? 'opacity-60' : ''}`}>
@@ -1144,8 +1050,11 @@ const ShoppingListComponent: React.FC = () => {
                   checked={autoDetectUnit} 
                   onCheckedChange={(checked) => {
                     setAutoDetectUnit(checked);
-                    if (checked) {
-                      setEditItemUnit(detectUnitFromItemName(editItemName));
+                    if (checked && editingItem) {
+                      setEditingItem({
+                        ...editingItem, 
+                        unit: detectUnitFromItemName(editingItem.productName)
+                      });
                     }
                   }}
                   id="edit-auto-detect"
@@ -1167,16 +1076,16 @@ const ShoppingListComponent: React.FC = () => {
               </Button>
               <Button 
                 type="submit"
-                disabled={!editItemName.trim() || editItemMutation.isPending}
+                disabled={!editingItem.productName.trim() || editItemMutation.isPending}
               >
                 Save Changes
               </Button>
             </DialogFooter>
           </form>
-        </DialogContent>
-      </Dialog>
-    </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 };
 
-export { ShoppingListComponent as default };
+export default ShoppingListComponent;
