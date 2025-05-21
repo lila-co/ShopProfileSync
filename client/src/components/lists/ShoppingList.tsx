@@ -30,6 +30,13 @@ const ShoppingListComponent: React.FC = () => {
     queryKey: ['/api/shopping-lists'],
   });
   
+  // Get personalized suggestions based on user profile
+  const { data: suggestions, isLoading: suggestionsLoading } = useQuery({
+    queryKey: ['/api/shopping-lists/suggestions'],
+    enabled: !!shoppingLists,
+  });
+  
+  // Add item to shopping list
   const addItemMutation = useMutation({
     mutationFn: async (productName: string) => {
       // Add to default shopping list (using the first list as default for simplicity)
@@ -55,6 +62,59 @@ const ShoppingListComponent: React.FC = () => {
       toast({
         title: "Failed to Add Item",
         description: error.message || "Could not add item to shopping list.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Generate shopping list from typical purchases
+  const generateListMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/shopping-lists/generate', {});
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      toast({
+        title: "Shopping List Generated",
+        description: "Created a new list based on your typical purchases"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to generate shopping list",
+        variant: "destructive" 
+      });
+    }
+  });
+
+  // Import recipe ingredients
+  const importRecipeMutation = useMutation({
+    mutationFn: async () => {
+      const defaultList = shoppingLists?.[0];
+      if (!defaultList) throw new Error("No shopping list found");
+      
+      const response = await apiRequest('POST', '/api/shopping-lists/recipe', {
+        recipeUrl,
+        shoppingListId: defaultList.id,
+        servings: parseInt(servings)
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      setRecipeDialogOpen(false);
+      setRecipeUrl('');
+      toast({
+        title: "Recipe Imported",
+        description: "Ingredients have been added to your shopping list"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to import recipe ingredients",
         variant: "destructive"
       });
     }
