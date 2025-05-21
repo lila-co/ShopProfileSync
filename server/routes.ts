@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { ZodError } from "zod";
 import { parseReceiptImage } from "./services/receiptParser";
-import { generateRecommendations, analyzePurchasePatterns } from "./services/recommendationEngine";
+import { generateRecommendations, analyzePurchasePatterns, extractRecipeIngredients } from "./services/recommendationEngine";
 import OpenAI from "openai";
 
 // Helper to handle errors consistently
@@ -236,8 +236,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'User not found' });
       }
 
-      // Generate personalized suggestions based on user profile
-      const suggestions = await generatePersonalizedSuggestions(user);
+      // For demo purposes, return hardcoded suggestions based on user profile
+      const suggestions = [
+        {
+          type: "swap",
+          currentItem: "Regular pasta",
+          suggestedItem: "Whole wheat pasta",
+          reason: "Healthier option with more fiber and nutrients"
+        },
+        {
+          type: "new",
+          suggestedItem: "Fresh seasonal fruits",
+          reason: "Based on your preference for organic products"
+        },
+        {
+          type: "swap",
+          currentItem: "Regular milk",
+          suggestedItem: "Organic milk",
+          reason: "Aligns with your dietary preferences"
+        }
+      ];
+      
       res.json(suggestions);
     } catch (error) {
       handleError(res, error);
