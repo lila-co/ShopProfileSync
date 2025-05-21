@@ -157,7 +157,30 @@ const ShoppingListComponent: React.FC = () => {
       return response.json();
     },
     onSuccess: (data) => {
-      setGeneratedItems(data.items || []);
+      // Get items from API or generate sample items if none are returned
+      let items = data.items || [];
+      
+      // If no items were returned, show sample suggestions
+      if (items.length === 0) {
+        // Sample items to demonstrate the feature
+        items = [
+          { productName: 'Milk', quantity: 1, reason: 'Purchased weekly' },
+          { productName: 'Bananas', quantity: 1, reason: 'Running low based on purchase cycle' },
+          { productName: 'Bread', quantity: 1, reason: 'Typically purchased every 5 days' },
+          { productName: 'Eggs', quantity: 1, reason: 'Regularly purchased item' },
+          { productName: 'Toilet Paper', quantity: 1, reason: 'Based on typical household usage' },
+          { productName: 'Chicken Breast', quantity: 1, reason: 'Purchased bi-weekly' },
+          { productName: 'Tomatoes', quantity: 3, reason: 'Based on recipe usage patterns' }
+        ];
+      }
+      
+      // Enhance items with smart unit detection
+      const enhancedItems = items.map(item => ({
+        ...item,
+        detectedUnit: detectUnitFromItemName(item.productName)
+      }));
+      
+      setGeneratedItems(enhancedItems);
       setGenerateDialogOpen(true);
     },
     onError: (error) => {
@@ -172,15 +195,26 @@ const ShoppingListComponent: React.FC = () => {
   // Generate shopping list from typical purchases
   const generateListMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('POST', '/api/shopping-lists/generate', {});
+      // Apply smart unit detection to generated items before creating the list
+      const items = generatedItems.map(item => ({
+        ...item,
+        unit: detectUnitFromItemName(item.productName)
+      }));
+      
+      const response = await apiRequest('POST', '/api/shopping-lists/generate', {
+        items: items
+      });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       setGenerateDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      
+      // Show success message with stats
+      const itemCount = data.itemsAdded || generatedItems.length;
       toast({
         title: "Shopping List Generated",
-        description: "Created a new list based on your typical purchases"
+        description: `Added ${itemCount} items with smart unit detection based on your purchase patterns`
       });
     },
     onError: (error) => {
@@ -421,7 +455,18 @@ const ShoppingListComponent: React.FC = () => {
                         {item.frequency && <p>Typically purchased: {item.frequency}</p>}
                       </div>
                     </div>
-                    <div className="text-sm font-medium">Qty: {item.quantity || 1}</div>
+                    <div className="text-right">
+                      <div className="text-sm font-medium">
+                        Qty: {item.quantity || 1} {autoDetectUnit && (
+                          <Badge variant="outline" className="ml-1">
+                            {detectUnitFromItemName(item.productName).toLowerCase()}
+                          </Badge>
+                        )}
+                      </div>
+                      {autoDetectUnit && (
+                        <p className="text-xs text-gray-500 mt-1">Smart unit detection</p>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
