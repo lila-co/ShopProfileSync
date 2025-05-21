@@ -32,6 +32,12 @@ const ShoppingListComponent: React.FC = () => {
     { id: 2, retailer: 'Target', product: 'Free-Range Eggs', expires: 'In 2 days', discount: '15%' }
   ]);
   
+  // Get user location on component mount
+  useEffect(() => {
+    // For demo purposes, use San Francisco as default location
+    setUserLocation({ lat: 37.7749, lng: -122.4194 });
+  }, []);
+  
   const { data: shoppingLists, isLoading, refetch: refetchShoppingLists } = useQuery<ShoppingListType[]>({
     queryKey: ['/api/shopping-lists'],
   });
@@ -47,6 +53,11 @@ const ShoppingListComponent: React.FC = () => {
     queryKey: ['/api/purchases/recent']
   });
   
+  // Get retailers data
+  const { data: retailers } = useQuery({
+    queryKey: ['/api/retailers'],
+  });
+  
   // Update shopping list when recent purchases change
   useEffect(() => {
     if (recentPurchases && Array.isArray(recentPurchases) && recentPurchases.length > 0) {
@@ -55,16 +66,7 @@ const ShoppingListComponent: React.FC = () => {
     }
   }, [recentPurchases, refetchShoppingLists]);
   
-  // Get retailers data
-  const { data: retailers } = useQuery({
-    queryKey: ['/api/retailers'],
-  });
-  
-  // Get user location on component mount (in a real app, would use Geolocation API)
-  useEffect(() => {
-    // For demo purposes, use San Francisco as default location
-    setUserLocation({ lat: 37.7749, lng: -122.4194 });
-  }, []);
+
   
   // Fetch shopping list cost comparison data
   const { data: costData, isLoading: isLoadingCosts } = useQuery({
@@ -241,15 +243,6 @@ const ShoppingListComponent: React.FC = () => {
   
   // Get the default shopping list and its items
   const defaultList = shoppingLists?.[0];
-  
-  // Use effect to ensure shopping list is refreshed when purchases data changes
-  useEffect(() => {
-    if (recentPurchases && recentPurchases.length > 0) {
-      // Trigger a refresh of the shopping list data
-      refetchShoppingLists();
-    }
-  }, [recentPurchases, refetchShoppingLists]);
-  
   const items = defaultList?.items || [];
   
   return (
