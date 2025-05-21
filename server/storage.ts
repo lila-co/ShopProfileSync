@@ -3,7 +3,7 @@ import { db } from "./db";
 import { 
   users, retailers, retailerAccounts, products, purchases, purchaseItems,
   shoppingLists, shoppingListItems, storeDeals, recommendations, purchaseAnomalies,
-  weeklyCirculars,
+  weeklyCirculars, affiliatePartners, affiliateProducts, affiliateClicks, affiliateConversions,
   User, InsertUser, 
   Retailer, InsertRetailer, 
   RetailerAccount, InsertRetailerAccount,
@@ -15,7 +15,11 @@ import {
   StoreDeal, InsertStoreDeal,
   WeeklyCircular, InsertWeeklyCircular,
   Recommendation, InsertRecommendation,
-  PurchaseAnomaly, InsertPurchaseAnomaly
+  PurchaseAnomaly, InsertPurchaseAnomaly,
+  AffiliatePartner, InsertAffiliatePartner,
+  AffiliateProduct, InsertAffiliateProduct,
+  AffiliateClick, InsertAffiliateClick,
+  AffiliateConversion, InsertAffiliateConversion
 } from "@shared/schema";
 
 // Interface for all storage operations
@@ -128,6 +132,10 @@ export class MemStorage implements IStorage {
   private storeDeals: Map<number, StoreDeal>;
   private weeklyCirculars: Map<number, WeeklyCircular>;
   private recommendations: Map<number, Recommendation>;
+  private affiliatePartners: Map<number, AffiliatePartner>;
+  private affiliateProducts: Map<number, AffiliateProduct>;
+  private affiliateClicks: Map<number, AffiliateClick>;
+  private affiliateConversions: Map<number, AffiliateConversion>;
   private purchaseAnomalies: Map<number, PurchaseAnomaly>;
 
   private userIdCounter: number = 1;
@@ -142,6 +150,10 @@ export class MemStorage implements IStorage {
   private weeklyCircularIdCounter: number = 1;
   private recommendationIdCounter: number = 1;
   private purchaseAnomalyIdCounter: number = 1;
+  private affiliatePartnerIdCounter: number = 1;
+  private affiliateProductIdCounter: number = 1;
+  private affiliateClickIdCounter: number = 1;
+  private affiliateConversionIdCounter: number = 1;
 
   constructor() {
     this.users = new Map();
@@ -156,6 +168,10 @@ export class MemStorage implements IStorage {
     this.weeklyCirculars = new Map();
     this.recommendations = new Map();
     this.purchaseAnomalies = new Map();
+    this.affiliatePartners = new Map();
+    this.affiliateProducts = new Map();
+    this.affiliateClicks = new Map();
+    this.affiliateConversions = new Map();
 
     // Initialize with sample data
     this.initializeData();
