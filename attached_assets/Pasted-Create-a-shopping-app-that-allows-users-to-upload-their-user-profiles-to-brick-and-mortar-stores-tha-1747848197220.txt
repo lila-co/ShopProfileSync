@@ -1,0 +1,29 @@
+Create a shopping app that allows users to upload their user profiles to brick and mortar stores that have historical orders and transaction; as well as upload receipt photos to read what has been purchased. The purpose of this app is to understand a users shopping behavior based on historical purchases to forecast future needs of basic house and grocery needs like toilet paper, laundry detergent, weekly vegetable purchases and cereal purchases and suggesting when to make the purchase, whether in-store, online, or for pickup and having the ability to place the order via API call to the retailer.
+
+
+
+The value of this software is that are aggregating the weekly circulars and ads for the stores that service the users area (for both rural and urban households) and recommends the best deals based on when they may need to repurchase those items (quarterly bulk toilet paper; weekly milk gallon; bi-weekly kids snacks; etc). The platform should then use machine learning and AI to understand what type of purchases each user makes (bulk vs single item; name brand vs generic) as well as break down best value (cost per sheet for toilet paper and paper towels; cost per oz for food with discounts).
+
+
+
+From a user perspective, they would just need to add access to the retailer online accounts for historical transactions or upload photos of receipts. Then they can make adjustments to initial findings from their user profile (name-brand preferred vs generic; family-home vs single-home; income size; living at home vs first time living along vs older couple; and any other demographic of profile information that can be determined from their purchase behavior).
+
+The user experience should be very simple and easy to user for tech savvy users, or elderly boomers who do not like to click a lot.
+
+
+
+From the backend - we would need to an API to call to each of the retailers purchase history from the user and also a database to aggregate all of the weekly circulars from online retailers as well as local stores that may print as pdfs with the ability to scan and identify each item. We would need optical recognition for receipts that could decipher basic POS naming conventions for receipts. we will need to find a way to aggregate all of the user purchase behavior and demographics that would be easily dissected to allow for creating insights on how user behavior can be influenced and make a story about different purchase behaviors between different types of user demographics and seasonality.
+
+For purchasing - we need to allow users to place an online order or for pickup if they chose to purchase from a retailer that supports this.
+
+
+
+Where the real value comes is that we can, based on the historical purchases and local pricing, suggest the best time to purchase their typical items and a cost difference if they were to buy at a single retailer. If the user wants to break the purchases into multiple retailers, we can show that as well for the best prices and optimized route to maximize savings.
+
+
+
+For monetization, I want to get access to larger retailer partner programs to get a portion of sales for referring users to the retail stores.
+
+
+
+Please review this and make additional recommendations based on what might be the best user experience, monetization plan and database/api needs to accomplish this. Any name recommendations would be appreciated that are no company names of registered companies or LLCs.
