@@ -268,22 +268,22 @@ const ShoppingListComponent: React.FC = () => {
       
       <div className="mb-4 flex gap-2">
         <Button
+          variant="default"
+          onClick={() => generateListMutation.mutate()}
+          disabled={generateListMutation.isPending}
+          className="flex items-center gap-1 bg-primary"
+        >
+          <ShoppingBag className="h-4 w-4" />
+          <span>Generate List</span>
+        </Button>
+        
+        <Button
           variant="outline"
           onClick={() => setRecipeDialogOpen(true)}
           className="flex items-center gap-1"
         >
           <FileText className="h-4 w-4" />
           <span>Import Recipe</span>
-        </Button>
-        
-        <Button
-          variant="outline"
-          onClick={() => generateListMutation.mutate()}
-          disabled={generateListMutation.isPending}
-          className="flex items-center gap-1"
-        >
-          <ShoppingBag className="h-4 w-4" />
-          <span>Generate List</span>
         </Button>
       </div>
       
@@ -297,56 +297,31 @@ const ShoppingListComponent: React.FC = () => {
         
         <TabsContent value="list" className="space-y-4">
           {suggestions && suggestions.length > 0 && (
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold mb-2">Suggested Items</h3>
-              <div className="space-y-2">
+            <details className="mb-4 border border-gray-200 rounded-md">
+              <summary className="cursor-pointer p-3 font-medium text-sm">
+                Suggestions based on your shopping history (click to expand)
+              </summary>
+              <div className="p-3 space-y-2 border-t border-gray-200">
                 {suggestions.map((suggestion: any, index: number) => (
-                  <Card key={index} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          {suggestion.type === 'swap' ? (
-                            <div>
-                              <p className="font-medium">
-                                <span>
-                                  <Trash2 className="h-4 w-4 inline-block text-gray-400 mr-1" />
-                                  {suggestion.currentItem}
-                                </span>
-                                <span className="mx-2">→</span>
-                                <span className="text-green-600">
-                                  {suggestion.suggestedItem}
-                                  <Check className="h-4 w-4 inline-block ml-1 text-green-600" />
-                                </span>
-                              </p>
-                              <p className="text-sm text-gray-500 mt-1">{suggestion.reason}</p>
-                            </div>
-                          ) : (
-                            <div>
-                              <p className="font-medium text-blue-600">
-                                <Plus className="h-4 w-4 inline-block mr-1" />
-                                {suggestion.suggestedItem}
-                              </p>
-                              <p className="text-sm text-gray-500 mt-1">{suggestion.reason}</p>
-                            </div>
-                          )}
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => addItemMutation.mutate(
-                            suggestion.type === 'swap' ? 
-                              suggestion.suggestedItem : 
-                              suggestion.suggestedItem
-                          )}
-                        >
-                          Add
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <div key={index} className="flex justify-between items-center py-2">
+                    <span className="text-sm">
+                      {suggestion.type === 'swap' ? suggestion.suggestedItem : suggestion.suggestedItem}
+                    </span>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => addItemMutation.mutate(
+                        suggestion.type === 'swap' ? 
+                          suggestion.suggestedItem : 
+                          suggestion.suggestedItem
+                      )}
+                    >
+                      Add
+                    </Button>
+                  </div>
                 ))}
               </div>
-            </div>
+            </details>
           )}
           
           <div className="space-y-3">
