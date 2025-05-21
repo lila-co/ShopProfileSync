@@ -35,13 +35,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Add the ID to the request body
       const userData = {
-        id: defaultUser.id,
-        ...req.body
+        ...req.body,
+        id: defaultUser.id
       };
       
+      // Simple update via defaultUser to avoid ID issues
       const updatedUser = await storage.updateUser(userData);
       res.json(updatedUser);
     } catch (error) {
+      console.error('Profile update error:', error);
       handleError(res, error);
     }
   });

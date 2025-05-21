@@ -92,20 +92,9 @@ const ProfileSetup: React.FC = () => {
   };
   
   return (
-    <div className="fixed inset-0 bg-white p-4 z-20">
-      <div className="flex justify-between items-center mb-4">
-        <button 
-          className="text-gray-600" 
-          onClick={() => navigate('/')}
-          aria-label="Go back"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="m12 19-7-7 7-7"/>
-            <path d="M5 12h14"/>
-          </svg>
-        </button>
-        <h2 className="text-lg font-bold">Complete Your Profile</h2>
-        <div className="w-8"></div>
+    <div className="bg-white rounded-lg">
+      <div className="mb-4">
+        <h2 className="text-lg font-bold text-center">Complete Your Profile</h2>
       </div>
       
       <p className="text-gray-600 mb-6">
