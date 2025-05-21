@@ -610,6 +610,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Purchase Anomalies routes
+  // Get all purchase anomalies
+  app.get('/api/anomalies', async (req: Request, res: Response) => {
+    try {
+      const anomalies = await storage.getPurchaseAnomalies();
+      res.json(anomalies);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Get a specific anomaly by ID
+  app.get('/api/anomalies/:id', async (req: Request, res: Response) => {
+    try {
+      const anomalyId = parseInt(req.params.id);
+      const anomaly = await storage.getPurchaseAnomaly(anomalyId);
+      if (!anomaly) {
+        return res.status(404).json({ message: 'Purchase anomaly not found' });
+      }
+      res.json(anomaly);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Create a new anomaly
+  app.post('/api/anomalies', async (req: Request, res: Response) => {
+    try {
+      // For demo, hardcode userId to 1 (default user)
+      const userId = 1;
+      const anomalyData = { ...req.body, userId };
+      const anomaly = await storage.createPurchaseAnomaly(anomalyData);
+      res.status(201).json(anomaly);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Update an anomaly
+  app.patch('/api/anomalies/:id', async (req: Request, res: Response) => {
+    try {
+      const anomalyId = parseInt(req.params.id);
+      const updates = req.body;
+      const updatedAnomaly = await storage.updatePurchaseAnomaly(anomalyId, updates);
+      res.json(updatedAnomaly);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Delete an anomaly
+  app.delete('/api/anomalies/:id', async (req: Request, res: Response) => {
+    try {
+      const anomalyId = parseInt(req.params.id);
+      await storage.deletePurchaseAnomaly(anomalyId);
+      res.status(204).send();
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
