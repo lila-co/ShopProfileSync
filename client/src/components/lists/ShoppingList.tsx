@@ -524,6 +524,17 @@ const ShoppingListComponent: React.FC = () => {
                       </div>
                       <Progress value={(store.items.filter((i: any) => i.hasDeal).length / store.items.length) * 100} className="h-2" />
                     </div>
+                    
+                    <Button 
+                      className="w-full mt-4"
+                      onClick={() => {
+                        window.location.href = `/shop?retailerId=${store.retailerId}&listId=${defaultList?.id}`;
+                      }}
+                      variant={index === 0 ? "default" : "outline"}
+                    >
+                      <ShoppingBag className="mr-2 h-4 w-4" />
+                      Shop at {store.retailerName}
+                    </Button>
 
                     {/* Bulk Deals */}
                     {store.items.some((item: any) => item.bulkDeal) && (
