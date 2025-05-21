@@ -392,7 +392,7 @@ const ShoppingListComponent: React.FC = () => {
   
   // Get the default shopping list and its items
   const defaultList = shoppingLists?.[0];
-  const items = defaultList?.items || [];
+  const items = defaultList?.items ?? [];
   
   return (
     <div className="p-4 pb-20">
