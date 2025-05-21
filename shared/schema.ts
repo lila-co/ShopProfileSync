@@ -11,6 +11,10 @@ export const frequencyEnum = pgEnum('frequency', [
   'DAILY', 'WEEKLY', 'BI_WEEKLY', 'MONTHLY', 'QUARTERLY'
 ]);
 
+export const anomalyTypeEnum = pgEnum('anomaly_type', [
+  'VACATION', 'SEASONAL', 'HOLIDAY', 'SICKNESS', 'GUESTS', 'OTHER'
+]);
+
 // User Schema
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
