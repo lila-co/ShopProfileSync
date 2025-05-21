@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { ZodError } from "zod";
 import { parseReceiptImage } from "./services/receiptParser";
 import { generateRecommendations, analyzePurchasePatterns, extractRecipeIngredients } from "./services/recommendationEngine";
+import { getRetailerAPI } from "./services/retailerIntegration";
 import OpenAI from "openai";
 
 // Helper to handle errors consistently
