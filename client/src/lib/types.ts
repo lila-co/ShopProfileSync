@@ -81,11 +81,14 @@ export interface ShoppingListItem {
   product?: Product;
   productName: string;
   quantity: number;
+  unit?: string;
   isCompleted: boolean;
   suggestedRetailerId?: number;
   suggestedRetailer?: Retailer;
   suggestedPrice?: number;
   dueDate?: string;
+  category?: string;
+  notes?: string;
 }
 
 export interface StoreDeal {
