@@ -116,6 +116,24 @@ export const storeDeals = pgTable("store_deals", {
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date").notNull(),
   category: text("category"),
+  dealSource: text("deal_source").default("manual"),
+  circularId: integer("circular_id"),
+  imageUrl: text("image_url"),
+  featured: boolean("featured").default(false),
+});
+
+// Weekly Circulars Schema
+export const weeklyCirculars = pgTable("weekly_circulars", {
+  id: serial("id").primaryKey(),
+  retailerId: integer("retailer_id").notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  imageUrl: text("image_url"),
+  pdfUrl: text("pdf_url"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // User Recommendations Schema
@@ -182,6 +200,11 @@ export const insertStoreDealSchema = createInsertSchema(storeDeals).omit({
   id: true,
 });
 
+export const insertWeeklyCircularSchema = createInsertSchema(weeklyCirculars).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertRecommendationSchema = createInsertSchema(recommendations).omit({
   id: true,
 });
@@ -217,6 +240,9 @@ export type ShoppingListItem = typeof shoppingListItems.$inferSelect;
 
 export type InsertStoreDeal = z.infer<typeof insertStoreDealSchema>;
 export type StoreDeal = typeof storeDeals.$inferSelect;
+
+export type InsertWeeklyCircular = z.infer<typeof insertWeeklyCircularSchema>;
+export type WeeklyCircular = typeof weeklyCirculars.$inferSelect;
 
 export type InsertRecommendation = z.infer<typeof insertRecommendationSchema>;
 export type Recommendation = typeof recommendations.$inferSelect;
