@@ -99,7 +99,7 @@ const ShoppingListComponent: React.FC = () => {
   
   // Add item to shopping list
   const addItemMutation = useMutation({
-    mutationFn: async ({ productName, quantity }: { productName: string, quantity: number }) => {
+    mutationFn: async ({ productName, quantity, unit }: { productName: string, quantity: number, unit: string }) => {
       // Add to default shopping list (using the first list as default for simplicity)
       const defaultList = shoppingLists?.[0];
       if (!defaultList) throw new Error("No shopping list found");
@@ -107,7 +107,8 @@ const ShoppingListComponent: React.FC = () => {
       const response = await apiRequest('POST', '/api/shopping-list/items', {
         shoppingListId: defaultList.id,
         productName,
-        quantity
+        quantity,
+        unit
       });
       return response.json();
     },
@@ -252,7 +253,8 @@ const ShoppingListComponent: React.FC = () => {
     if (newItemName.trim()) {
       addItemMutation.mutate({
         productName: newItemName.trim(),
-        quantity: newItemQuantity
+        quantity: newItemQuantity,
+        unit: newItemUnit
       });
     }
   };
@@ -294,8 +296,8 @@ const ShoppingListComponent: React.FC = () => {
     <div className="p-4 pb-20">
       <h2 className="text-xl font-bold mb-4">Shopping List</h2>
       
-      <form onSubmit={handleAddItem} className="flex space-x-2 mb-6">
-        <div className="flex-1 flex space-x-2">
+      <form onSubmit={handleAddItem} className="mb-6">
+        <div className="flex space-x-2 mb-2">
           <Input
             type="text"
             placeholder="Add an item..."
@@ -303,22 +305,48 @@ const ShoppingListComponent: React.FC = () => {
             onChange={(e) => setNewItemName(e.target.value)}
             className="flex-1"
           />
-          <Input
-            type="number"
-            placeholder="Qty"
-            min="1"
-            defaultValue="1"
-            onChange={(e) => setNewItemQuantity(parseInt(e.target.value) || 1)}
-            className="w-20"
-          />
+          <Button 
+            type="submit" 
+            className="bg-primary text-white"
+            disabled={addItemMutation.isPending}
+          >
+            Add
+          </Button>
         </div>
-        <Button 
-          type="submit" 
-          className="bg-primary text-white"
-          disabled={addItemMutation.isPending}
-        >
-          Add
-        </Button>
+        
+        <div className="flex space-x-2">
+          <div className="w-20">
+            <Input
+              type="number"
+              placeholder="Qty"
+              min="1"
+              defaultValue="1"
+              onChange={(e) => setNewItemQuantity(parseInt(e.target.value) || 1)}
+              className="w-full"
+            />
+          </div>
+          
+          <Select 
+            value={newItemUnit} 
+            onValueChange={setNewItemUnit}
+          >
+            <SelectTrigger className="flex-1">
+              <SelectValue placeholder="Unit" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="COUNT">Count</SelectItem>
+              <SelectItem value="LB">lb (Pounds)</SelectItem>
+              <SelectItem value="OZ">oz (Ounces)</SelectItem>
+              <SelectItem value="PKG">Package</SelectItem>
+              <SelectItem value="ROLL">Rolls</SelectItem>
+              <SelectItem value="BOX">Box</SelectItem>
+              <SelectItem value="CAN">Can</SelectItem>
+              <SelectItem value="BOTTLE">Bottle</SelectItem>
+              <SelectItem value="JAR">Jar</SelectItem>
+              <SelectItem value="BUNCH">Bunch</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </form>
       
       <div className="mb-4 flex gap-2">
