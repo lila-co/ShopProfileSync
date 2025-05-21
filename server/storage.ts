@@ -1,8 +1,9 @@
-import { eq } from "drizzle-orm";
+import { eq, and, gte } from "drizzle-orm";
 import { db } from "./db";
 import { 
   users, retailers, retailerAccounts, products, purchases, purchaseItems,
   shoppingLists, shoppingListItems, storeDeals, recommendations, purchaseAnomalies,
+  weeklyCirculars,
   User, InsertUser, 
   Retailer, InsertRetailer, 
   RetailerAccount, InsertRetailerAccount,
@@ -12,6 +13,7 @@ import {
   ShoppingList, InsertShoppingList,
   ShoppingListItem, InsertShoppingListItem,
   StoreDeal, InsertStoreDeal,
+  WeeklyCircular, InsertWeeklyCircular,
   Recommendation, InsertRecommendation,
   PurchaseAnomaly, InsertPurchaseAnomaly
 } from "@shared/schema";
@@ -1149,6 +1151,38 @@ export class DatabaseStorage implements IStorage {
   async createDeal(dealData: InsertStoreDeal): Promise<StoreDeal> {
     const [deal] = await db.insert(storeDeals).values(dealData).returning();
     return deal;
+  }
+  
+  async getWeeklyCirculars(retailerId?: number): Promise<WeeklyCircular[]> {
+    let query = db.select().from(weeklyCirculars);
+    
+    if (retailerId) {
+      query = query.where(eq(weeklyCirculars.retailerId, retailerId));
+    }
+    
+    // Get active circulars by default (where end date is in the future)
+    query = query.where(
+      and(
+        eq(weeklyCirculars.isActive, true),
+        gte(weeklyCirculars.endDate, new Date())
+      )
+    );
+    
+    return query;
+  }
+  
+  async getWeeklyCircular(id: number): Promise<WeeklyCircular | undefined> {
+    const [circular] = await db.select().from(weeklyCirculars).where(eq(weeklyCirculars.id, id));
+    return circular;
+  }
+  
+  async createWeeklyCircular(circularData: InsertWeeklyCircular): Promise<WeeklyCircular> {
+    const [circular] = await db.insert(weeklyCirculars).values(circularData).returning();
+    return circular;
+  }
+  
+  async getDealsFromCircular(circularId: number): Promise<StoreDeal[]> {
+    return db.select().from(storeDeals).where(eq(storeDeals.circularId, circularId));
   }
 
   // Recommendation methods
