@@ -161,6 +161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Fetch items for each shopping list
       const listsWithItems = await Promise.all(lists.map(async (list) => {
         const items = await storage.getShoppingListItems(list.id);
+        console.log(`List ${list.id} has ${items.length} items:`, items);
         return { ...list, items };
       }));
       
