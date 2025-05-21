@@ -90,6 +90,30 @@ export interface IStorage {
   createPurchaseAnomaly(anomaly: InsertPurchaseAnomaly): Promise<PurchaseAnomaly>;
   updatePurchaseAnomaly(id: number, updates: Partial<PurchaseAnomaly>): Promise<PurchaseAnomaly>;
   deletePurchaseAnomaly(id: number): Promise<void>;
+  
+  // Affiliate Partner methods
+  getAffiliatePartners(): Promise<AffiliatePartner[]>;
+  getAffiliatePartner(id: number): Promise<AffiliatePartner | undefined>;
+  createAffiliatePartner(partner: InsertAffiliatePartner): Promise<AffiliatePartner>;
+  updateAffiliatePartner(id: number, updates: Partial<AffiliatePartner>): Promise<AffiliatePartner>;
+  deleteAffiliatePartner(id: number): Promise<void>;
+  
+  // Affiliate Product methods
+  getAffiliateProducts(partnerId?: number, category?: string): Promise<AffiliateProduct[]>;
+  getAffiliateProduct(id: number): Promise<AffiliateProduct | undefined>;
+  getFeaturedAffiliateProducts(): Promise<AffiliateProduct[]>;
+  createAffiliateProduct(product: InsertAffiliateProduct): Promise<AffiliateProduct>;
+  updateAffiliateProduct(id: number, updates: Partial<AffiliateProduct>): Promise<AffiliateProduct>;
+  deleteAffiliateProduct(id: number): Promise<void>;
+  
+  // Affiliate Click methods
+  recordAffiliateClick(click: InsertAffiliateClick): Promise<AffiliateClick>;
+  getAffiliateClicks(userId?: number, productId?: number): Promise<AffiliateClick[]>;
+  
+  // Affiliate Conversion methods
+  recordAffiliateConversion(conversion: InsertAffiliateConversion): Promise<AffiliateConversion>;
+  getAffiliateConversions(userId?: number, status?: string): Promise<AffiliateConversion[]>;
+  updateAffiliateConversionStatus(id: number, status: string): Promise<AffiliateConversion>;
 }
 
 export class MemStorage implements IStorage {
