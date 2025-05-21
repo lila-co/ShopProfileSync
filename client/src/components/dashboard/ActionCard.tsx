@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 export interface ActionCardProps {
   icon: React.ReactNode;
   title: string;
+  subtitle?: string;
   onClick: () => void;
   bgColor?: string;
   iconBgColor?: string;
@@ -12,6 +13,7 @@ export interface ActionCardProps {
 const ActionCard: React.FC<ActionCardProps> = ({
   icon,
   title,
+  subtitle,
   onClick,
   bgColor = 'bg-gray-50',
   iconBgColor = 'bg-primary/10'
@@ -25,6 +27,7 @@ const ActionCard: React.FC<ActionCardProps> = ({
         {icon}
       </div>
       <span className="text-sm font-medium">{title}</span>
+      {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
     </div>
   );
 };
