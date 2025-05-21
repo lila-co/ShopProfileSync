@@ -66,7 +66,7 @@ const ShoppingListComponent: React.FC = () => {
   });
   
   // Get personalized suggestions based on user profile and recent purchases
-  const { data: suggestions, isLoading: suggestionsLoading } = useQuery({
+  const { data: suggestions, isLoading: suggestionsLoading } = useQuery<any[]>({
     queryKey: ['/api/shopping-lists/suggestions'],
     enabled: !!shoppingLists,
   });
@@ -556,7 +556,7 @@ const ShoppingListComponent: React.FC = () => {
         </TabsList>
         
         <TabsContent value="list" className="space-y-4">
-          {suggestions && suggestions.length > 0 && (
+          {suggestions && Array.isArray(suggestions) && suggestions.length > 0 && (
             <details className="mb-4 border border-gray-200 rounded-md">
               <summary className="cursor-pointer p-3 font-medium text-sm">
                 Suggestions based on your shopping history (click to expand)
@@ -570,11 +570,11 @@ const ShoppingListComponent: React.FC = () => {
                     <Button 
                       variant="ghost" 
                       size="sm"
-                      onClick={() => addItemMutation.mutate(
-                        suggestion.type === 'swap' ? 
-                          suggestion.suggestedItem : 
-                          suggestion.suggestedItem
-                      )}
+                      onClick={() => addItemMutation.mutate({
+                        productName: suggestion.suggestedItem,
+                        quantity: 1,
+                        unit: detectUnitFromItemName(suggestion.suggestedItem)
+                      })}
                     >
                       Add
                     </Button>
