@@ -202,22 +202,75 @@ export class MemStorage implements IStorage {
     };
     this.shoppingLists.set(defaultList.id, defaultList);
 
+    // Add weekly circulars
+    const circulars = [
+      { 
+        retailerId: 1, 
+        title: "Walmart Weekly Savings", 
+        description: "Save big on groceries and household essentials this week!", 
+        startDate: new Date(), 
+        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        imageUrl: "https://cdn.corporate.walmart.com/dims4/default/a5afa36/2147483647/strip/true/crop/1650x958+0+0/resize/750x435!/quality/90/?url=https%3A%2F%2Fcdn.corporate.walmart.com%2F84%2F08%2F1d10a82448e7b0b5b6102d3eb9e0%2Fbusiness-associates-on-grocery-floor.jpg",
+        isActive: true,
+        createdAt: new Date()
+      },
+      { 
+        retailerId: 2, 
+        title: "Target Weekly Ad", 
+        description: "Check out the latest deals from Target", 
+        startDate: new Date(), 
+        endDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000),
+        imageUrl: "https://corporate.target.com/_media/TargetCorp/news/2019/grocery/July%202020/Retail%20Updates_Store%20Experience_Good%20and%20Gather_Store%20Design_2019_2.jpg",
+        isActive: true,
+        createdAt: new Date()
+      },
+      { 
+        retailerId: 3, 
+        title: "Whole Foods Market Deals", 
+        description: "This week's fresh deals and organic savings", 
+        startDate: new Date(), 
+        endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+        imageUrl: "https://media1.popsugar-assets.com/files/thumbor/3RKvU_OxIBSMxGGhsB9kY-tI534=/fit-in/768x0/filters:format_auto():upscale()/2017/10/30/734/n/24155406/fcbbf68459f73997af2319.40139935_edit_img_cover_file_44213587_1509374304.jpg",
+        isActive: true,
+        createdAt: new Date()
+      },
+      { 
+        retailerId: 4, 
+        title: "Kroger Weekly Savings", 
+        description: "Save on fresh produce and more", 
+        startDate: new Date(), 
+        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        imageUrl: "https://www.chsretailpartners.com/hs-fs/hubfs/Blog_assets/Kroger.jpg",
+        isActive: true,
+        createdAt: new Date()
+      },
+    ];
+
+    circulars.forEach(circular => {
+      const newCircular: WeeklyCircular = {
+        id: this.weeklyCircularIdCounter++,
+        ...circular
+      };
+      this.weeklyCirculars.set(newCircular.id, newCircular);
+    });
+
     // Add store deals
     const deals = [
-      { retailerId: 1, productName: "Milk (Gallon)", regularPrice: 389, salePrice: 349, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Dairy" },
-      { retailerId: 1, productName: "Cereal", regularPrice: 499, salePrice: 399, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Breakfast" },
-      { retailerId: 2, productName: "Toilet Paper (24 pack)", regularPrice: 1999, salePrice: 1649, startDate: new Date(), endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), category: "Household" },
-      { retailerId: 2, productName: "Paper Towels", regularPrice: 1299, salePrice: 1099, startDate: new Date(), endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), category: "Household" },
-      { retailerId: 3, productName: "Organic Bananas", regularPrice: 129, salePrice: 99, startDate: new Date(), endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), category: "Produce" },
-      { retailerId: 3, productName: "Organic Apples", regularPrice: 399, salePrice: 349, startDate: new Date(), endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), category: "Produce" },
-      { retailerId: 4, productName: "Eggs (dozen)", regularPrice: 359, salePrice: 299, startDate: new Date(), endDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000), category: "Dairy" },
-      { retailerId: 4, productName: "Bread", regularPrice: 329, salePrice: 299, startDate: new Date(), endDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000), category: "Bakery" },
+      { retailerId: 1, productName: "Milk (Gallon)", regularPrice: 389, salePrice: 349, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Dairy", circularId: 1, dealSource: "circular", imageUrl: "https://scene7.samsclub.com/is/image/samsclub/0007874201054_A" },
+      { retailerId: 1, productName: "Cereal", regularPrice: 499, salePrice: 399, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Breakfast", circularId: 1, dealSource: "circular", imageUrl: "https://target.scene7.com/is/image/Target/GUEST_c5af0fc7-5371-4940-a02a-e3b04d389e99" },
+      { retailerId: 2, productName: "Toilet Paper (24 pack)", regularPrice: 1999, salePrice: 1649, startDate: new Date(), endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), category: "Household", circularId: 2, dealSource: "circular", imageUrl: "https://scene7.samsclub.com/is/image/samsclub/0073852052602_A" },
+      { retailerId: 2, productName: "Paper Towels", regularPrice: 1299, salePrice: 1099, startDate: new Date(), endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), category: "Household", circularId: 2, dealSource: "circular", imageUrl: "https://scene7.samsclub.com/is/image/samsclub/0003700006812_A" },
+      { retailerId: 3, productName: "Organic Bananas", regularPrice: 129, salePrice: 99, startDate: new Date(), endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), category: "Produce", circularId: 3, dealSource: "circular", imageUrl: "https://m.media-amazon.com/images/I/61fCPyJqYML.jpg" },
+      { retailerId: 3, productName: "Organic Apples", regularPrice: 399, salePrice: 349, startDate: new Date(), endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), category: "Produce", circularId: 3, dealSource: "circular", imageUrl: "https://i5.walmartimages.com/asr/cd75f189-77e3-40c4-835f-e3d503240812.7d1b3aa48083b60b2290364e6a0d050d.jpeg" },
+      { retailerId: 4, productName: "Eggs (dozen)", regularPrice: 359, salePrice: 299, startDate: new Date(), endDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000), category: "Dairy", circularId: 4, dealSource: "circular", imageUrl: "https://i5.walmartimages.com/asr/20fe5306-1652-449c-a7a3-12fc36b8b7c9.4ccc9f0e21cd39e47dbc30fe29951cd1.jpeg" },
+      { retailerId: 4, productName: "Bread", regularPrice: 329, salePrice: 299, startDate: new Date(), endDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000), category: "Bakery", circularId: 4, dealSource: "circular", imageUrl: "https://scene7.samsclub.com/is/image/samsclub/0001111008737_A" },
     ];
 
     deals.forEach(deal => {
       const newDeal: StoreDeal = {
         id: this.storeDealIdCounter++,
-        ...deal
+        ...deal,
+        featured: true
       };
       this.storeDeals.set(newDeal.id, newDeal);
     });
