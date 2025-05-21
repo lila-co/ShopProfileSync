@@ -1,4 +1,8 @@
+import { eq } from "drizzle-orm";
+import { db } from "./db";
 import { 
+  users, retailers, retailerAccounts, products, purchases, purchaseItems,
+  shoppingLists, shoppingListItems, storeDeals, recommendations,
   User, InsertUser, 
   Retailer, InsertRetailer, 
   RetailerAccount, InsertRetailerAccount,
@@ -747,4 +751,498 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Database implementation of the storage interface
+export class DatabaseStorage implements IStorage {
+  // User methods
+  async getDefaultUser(): Promise<User> {
+    const [user] = await db.select().from(users).where(eq(users.id, 1));
+    if (user) return user;
+    
+    // Create default user if it doesn't exist
+    return this.createUser({
+      username: "johndoe",
+      password: "hashed_password",
+      firstName: "John",
+      lastName: "Doe",
+      email: "john@example.com",
+      householdType: "family",
+      householdSize: 4,
+      preferNameBrand: false,
+      preferOrganic: true,
+      buyInBulk: true,
+      prioritizeCostSavings: true,
+      shoppingRadius: 15
+    });
+  }
+
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async createUser(userData: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(userData).returning();
+    return user;
+  }
+
+  async updateUser(userData: Partial<User>): Promise<User> {
+    if (!userData.id) throw new Error("User ID is required for update");
+    
+    const [updatedUser] = await db
+      .update(users)
+      .set(userData)
+      .where(eq(users.id, userData.id))
+      .returning();
+    
+    if (!updatedUser) throw new Error("User not found");
+    return updatedUser;
+  }
+
+  // Retailer methods
+  async getRetailers(): Promise<Retailer[]> {
+    const allRetailers = await db.select().from(retailers);
+    
+    if (allRetailers.length === 0) {
+      // Add default retailers if none exist
+      await this.createRetailer({
+        name: "Walmart",
+        logoColor: "blue",
+        apiEndpoint: null,
+        apiKey: null
+      });
+      
+      await this.createRetailer({
+        name: "Target",
+        logoColor: "red",
+        apiEndpoint: null,
+        apiKey: null
+      });
+      
+      await this.createRetailer({
+        name: "Kroger",
+        logoColor: "blue",
+        apiEndpoint: null,
+        apiKey: null
+      });
+      
+      await this.createRetailer({
+        name: "Costco",
+        logoColor: "red",
+        apiEndpoint: null,
+        apiKey: null
+      });
+      
+      return this.getRetailers();
+    }
+    
+    return allRetailers;
+  }
+
+  async getRetailer(id: number): Promise<Retailer | undefined> {
+    const [retailer] = await db.select().from(retailers).where(eq(retailers.id, id));
+    return retailer || undefined;
+  }
+
+  async createRetailer(retailerData: InsertRetailer): Promise<Retailer> {
+    const [retailer] = await db.insert(retailers).values(retailerData).returning();
+    return retailer;
+  }
+
+  // Retailer Account methods
+  async getRetailerAccounts(): Promise<RetailerAccount[]> {
+    return db.select().from(retailerAccounts);
+  }
+
+  async getRetailerAccount(id: number): Promise<RetailerAccount | undefined> {
+    const [account] = await db.select().from(retailerAccounts).where(eq(retailerAccounts.id, id));
+    return account || undefined;
+  }
+
+  async createRetailerAccount(accountData: InsertRetailerAccount): Promise<RetailerAccount> {
+    const [account] = await db.insert(retailerAccounts).values(accountData).returning();
+    return account;
+  }
+
+  // Product methods
+  async getProducts(): Promise<Product[]> {
+    const allProducts = await db.select().from(products);
+    
+    if (allProducts.length === 0) {
+      // Add some default products if none exist
+      await this.createProduct({
+        name: "Milk (Gallon)",
+        category: "Dairy",
+        subcategory: null,
+        defaultUnit: "gallon",
+        restockFrequency: "weekly",
+        isNameBrand: false,
+        isOrganic: false
+      });
+      
+      await this.createProduct({
+        name: "Eggs (Dozen)",
+        category: "Dairy",
+        subcategory: null,
+        defaultUnit: "dozen",
+        restockFrequency: "weekly",
+        isNameBrand: false,
+        isOrganic: false
+      });
+      
+      await this.createProduct({
+        name: "Bananas",
+        category: "Produce",
+        subcategory: "Fruits",
+        defaultUnit: "bunch",
+        restockFrequency: "weekly",
+        isNameBrand: false,
+        isOrganic: false
+      });
+      
+      return this.getProducts();
+    }
+    
+    return allProducts;
+  }
+
+  async getProduct(id: number): Promise<Product | undefined> {
+    const [product] = await db.select().from(products).where(eq(products.id, id));
+    return product || undefined;
+  }
+
+  async createProduct(productData: InsertProduct): Promise<Product> {
+    const [product] = await db.insert(products).values(productData).returning();
+    return product;
+  }
+
+  // Purchase methods
+  async getPurchases(): Promise<Purchase[]> {
+    return db.select().from(purchases);
+  }
+
+  async getPurchase(id: number): Promise<Purchase | undefined> {
+    const [purchase] = await db.select().from(purchases).where(eq(purchases.id, id));
+    return purchase || undefined;
+  }
+
+  async createPurchase(purchaseData: InsertPurchase): Promise<Purchase> {
+    const [purchase] = await db.insert(purchases).values(purchaseData).returning();
+    return purchase;
+  }
+
+  async createPurchaseFromReceipt(receiptData: any): Promise<Purchase> {
+    // In a real implementation, this would parse receipt data and create a purchase
+    // For now, use demo data
+    const purchase = await this.createPurchase({
+      userId: 1,
+      retailerId: 1,
+      purchaseDate: new Date(),
+      totalAmount: 2500,
+      receiptData: receiptData,
+      receiptImageUrl: null
+    });
+    
+    return purchase;
+  }
+
+  // Purchase Item methods
+  async getPurchaseItems(purchaseId: number): Promise<PurchaseItem[]> {
+    return db.select().from(purchaseItems).where(eq(purchaseItems.purchaseId, purchaseId));
+  }
+
+  async createPurchaseItem(itemData: InsertPurchaseItem): Promise<PurchaseItem> {
+    const [item] = await db.insert(purchaseItems).values(itemData).returning();
+    return item;
+  }
+
+  // Shopping List methods
+  async getShoppingLists(): Promise<ShoppingList[]> {
+    const lists = await db.select().from(shoppingLists);
+    
+    if (lists.length === 0) {
+      // Create a default shopping list if none exists
+      const newList = await this.createShoppingList({
+        name: "My Shopping List",
+        userId: 1,
+        isDefault: true
+      });
+      
+      return [newList];
+    }
+    
+    return lists;
+  }
+
+  async getShoppingList(id: number): Promise<ShoppingList | undefined> {
+    const [list] = await db.select().from(shoppingLists).where(eq(shoppingLists.id, id));
+    
+    if (list) {
+      // Fetch items for the list
+      const items = await this.getShoppingListItems(id);
+      return { ...list, items };
+    }
+    
+    return undefined;
+  }
+
+  async createShoppingList(listData: InsertShoppingList): Promise<ShoppingList> {
+    const [list] = await db.insert(shoppingLists).values(listData).returning();
+    
+    // Initialize with empty items array
+    return { ...list, items: [] };
+  }
+
+  // Shopping List Item methods
+  async getShoppingListItems(listId: number): Promise<ShoppingListItem[]> {
+    return db.select().from(shoppingListItems).where(eq(shoppingListItems.shoppingListId, listId));
+  }
+
+  async addShoppingListItem(itemData: Partial<ShoppingListItem>): Promise<ShoppingListItem> {
+    // Ensure quantity defaults to 1 if not provided
+    const quantity = itemData.quantity || 1;
+    
+    const [item] = await db.insert(shoppingListItems).values({
+      ...itemData,
+      quantity,
+      isCompleted: false,
+      dueDate: null,
+      productId: null,
+      suggestedRetailerId: null,
+      suggestedPrice: null
+    } as any).returning();
+    
+    return item;
+  }
+
+  async updateShoppingListItem(id: number, updates: Partial<ShoppingListItem>): Promise<ShoppingListItem> {
+    const [updatedItem] = await db
+      .update(shoppingListItems)
+      .set(updates)
+      .where(eq(shoppingListItems.id, id))
+      .returning();
+    
+    if (!updatedItem) throw new Error("Shopping list item not found");
+    return updatedItem;
+  }
+
+  async deleteShoppingListItem(id: number): Promise<void> {
+    await db.delete(shoppingListItems).where(eq(shoppingListItems.id, id));
+  }
+
+  // Deal methods
+  async getDeals(retailerId?: number, category?: string): Promise<StoreDeal[]> {
+    let query = db.select().from(storeDeals);
+    
+    if (retailerId) {
+      query = query.where(eq(storeDeals.retailerId, retailerId));
+    }
+    
+    if (category) {
+      query = query.where(eq(storeDeals.category, category));
+    }
+    
+    const deals = await query;
+    
+    if (deals.length === 0) {
+      // Add some default deals if none exist
+      const retailers = await this.getRetailers();
+      
+      if (retailers.length > 0) {
+        await this.createDeal({
+          retailerId: retailers[0].id,
+          productName: "Milk (Gallon)",
+          category: "Dairy",
+          regularPrice: 389,
+          salePrice: 349,
+          startDate: new Date(),
+          endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
+        });
+        
+        await this.createDeal({
+          retailerId: retailers[0].id,
+          productName: "Eggs (Dozen)",
+          category: "Dairy",
+          regularPrice: 299,
+          salePrice: 249,
+          startDate: new Date(),
+          endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) // 3 days from now
+        });
+        
+        await this.createDeal({
+          retailerId: retailers[1].id,
+          productName: "Paper Towels",
+          category: "Household",
+          regularPrice: 799,
+          salePrice: 649,
+          startDate: new Date(),
+          endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000) // 5 days from now
+        });
+      }
+      
+      return this.getDeals(retailerId, category);
+    }
+    
+    return deals;
+  }
+
+  async getDealsSummary(): Promise<any[]> {
+    const deals = await this.getDeals();
+    const retailers = await this.getRetailers();
+    
+    // Group deals by retailer
+    const dealsByRetailer = {};
+    
+    retailers.forEach(retailer => {
+      dealsByRetailer[retailer.id] = {
+        retailerId: retailer.id,
+        retailerName: retailer.name,
+        dealCount: 0,
+        totalSavings: 0
+      };
+    });
+    
+    deals.forEach(deal => {
+      if (dealsByRetailer[deal.retailerId]) {
+        dealsByRetailer[deal.retailerId].dealCount += 1;
+        dealsByRetailer[deal.retailerId].totalSavings += deal.regularPrice - deal.salePrice;
+      }
+    });
+    
+    return Object.values(dealsByRetailer);
+  }
+
+  async getDealCategories(): Promise<string[]> {
+    const deals = await this.getDeals();
+    const categories = new Set<string>();
+    
+    deals.forEach(deal => {
+      if (deal.category) {
+        categories.add(deal.category);
+      }
+    });
+    
+    return Array.from(categories);
+  }
+
+  async createDeal(dealData: InsertStoreDeal): Promise<StoreDeal> {
+    const [deal] = await db.insert(storeDeals).values(dealData).returning();
+    return deal;
+  }
+
+  // Recommendation methods
+  async getRecommendations(): Promise<Recommendation[]> {
+    // Get default user
+    const user = await this.getDefaultUser();
+    
+    const result = await db
+      .select()
+      .from(recommendations)
+      .where(eq(recommendations.userId, user.id));
+    
+    if (result.length === 0) {
+      console.log("Generating recommendations for user:", user.id);
+      
+      // Create demo recommendations
+      await this.createRecommendation({
+        userId: user.id,
+        productName: "Bananas",
+        productId: null,
+        recommendedDate: new Date(),
+        daysUntilPurchase: 2,
+        suggestedRetailerId: 1,
+        suggestedPrice: 349,
+        savings: 50,
+        reason: "Based on your weekly purchase pattern"
+      });
+      
+      await this.createRecommendation({
+        userId: user.id,
+        productName: "Paper Towels",
+        productId: null,
+        recommendedDate: new Date(),
+        daysUntilPurchase: 3,
+        suggestedRetailerId: 2,
+        suggestedPrice: 649,
+        savings: 150,
+        reason: "You typically buy this every 2 weeks"
+      });
+      
+      await this.createRecommendation({
+        userId: user.id,
+        productName: "Milk (Gallon)",
+        productId: null,
+        recommendedDate: new Date(),
+        daysUntilPurchase: 1,
+        suggestedRetailerId: 1,
+        suggestedPrice: 349,
+        savings: 40,
+        reason: "You're almost out based on purchase history"
+      });
+      
+      return db
+        .select()
+        .from(recommendations)
+        .where(eq(recommendations.userId, user.id));
+    }
+    
+    return result;
+  }
+
+  async createRecommendation(recommendationData: InsertRecommendation): Promise<Recommendation> {
+    const [recommendation] = await db
+      .insert(recommendations)
+      .values(recommendationData)
+      .returning();
+    
+    return recommendation;
+  }
+
+  // Insights methods
+  async getTopPurchasedItems(): Promise<any[]> {
+    // In a real implementation, this would query the database
+    // For demo, return mock data
+    return [
+      { productName: "Bananas", frequency: 12, totalSpent: 2388 },
+      { productName: "Milk (Gallon)", frequency: 8, totalSpent: 3192 },
+      { productName: "Eggs (Dozen)", frequency: 6, totalSpent: 1794 },
+      { productName: "Paper Towels", frequency: 4, totalSpent: 3196 },
+      { productName: "Bread", frequency: 8, totalSpent: 2392 }
+    ];
+  }
+
+  async getMonthlySpending(): Promise<any[]> {
+    // In a real implementation, this would query the database
+    // For demo, return mock data
+    const currentYear = new Date().getFullYear();
+    const previousYear = currentYear - 1;
+    
+    return [
+      { month: "Jan", currentYear: 35000, previousYear: 32000 },
+      { month: "Feb", currentYear: 28000, previousYear: 30000 },
+      { month: "Mar", currentYear: 32000, previousYear: 29000 },
+      { month: "Apr", currentYear: 30000, previousYear: 27000 },
+      { month: "May", currentYear: 29000, previousYear: 28000 },
+      { month: "Jun", currentYear: 31000, previousYear: 30000 },
+      { month: "Jul", currentYear: 33000, previousYear: 31000 },
+      { month: "Aug", currentYear: 34000, previousYear: 32000 },
+      { month: "Sep", currentYear: 32000, previousYear: 33000 },
+      { month: "Oct", currentYear: 31000, previousYear: 32000 },
+      { month: "Nov", currentYear: 33000, previousYear: 34000 },
+      { month: "Dec", currentYear: 38000, previousYear: 39000 }
+    ];
+  }
+
+  async getMonthlySavings(): Promise<number> {
+    // In a real implementation, this would query the database
+    // For demo, return random number between 10-50
+    return Math.floor(Math.random() * 40) + 10;
+  }
+}
+
+// Use database storage for persistence
+export const storage = new DatabaseStorage();

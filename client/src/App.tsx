@@ -9,6 +9,7 @@ import ShoppingList from "@/pages/shopping-list";
 import Deals from "@/pages/deals";
 import Profile from "@/pages/profile";
 import Scan from "@/pages/scan";
+import InternalAnalytics from "@/pages/internal-analytics";
 
 function Router() {
   return (
@@ -18,6 +19,7 @@ function Router() {
       <Route path="/scan" component={Scan} />
       <Route path="/deals" component={Deals} />
       <Route path="/profile" component={Profile} />
+      <Route path="/internal/analytics" component={InternalAnalytics} />
       <Route component={NotFound} />
     </Switch>
   );

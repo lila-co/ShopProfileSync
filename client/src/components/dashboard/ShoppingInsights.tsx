@@ -48,9 +48,9 @@ const ShoppingInsights: React.FC = () => {
                 <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/>
                 <path d="M3 9V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4"/>
               </svg>
-              <span className="text-xs text-gray-500">Typically from {item.typicalRetailer}</span>
+              <span className="text-xs text-gray-500">Purchased {item.frequency}x</span>
             </div>
-            <span className="text-xs text-gray-500">~${item.typicalPrice.toFixed(2)}</span>
+            <span className="text-xs text-gray-500">${(item.totalSpent / 100).toFixed(2)}</span>
           </div>
         </div>
       </div>
