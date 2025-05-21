@@ -132,6 +132,19 @@ export const recommendations = pgTable("recommendations", {
   reason: text("reason"),
 });
 
+// Purchase Anomalies Schema - for tracking special circumstances that affect shopping patterns
+export const purchaseAnomalies = pgTable("purchase_anomalies", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  name: text("name").notNull(),
+  anomalyType: anomalyTypeEnum("anomaly_type").notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  description: text("description"),
+  affectedCategories: text("affected_categories").array(),
+  excludeFromRecommendations: boolean("exclude_from_recommendations").default(true),
+});
+
 // Insert Schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -173,6 +186,10 @@ export const insertRecommendationSchema = createInsertSchema(recommendations).om
   id: true,
 });
 
+export const insertPurchaseAnomalySchema = createInsertSchema(purchaseAnomalies).omit({
+  id: true,
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -203,3 +220,6 @@ export type StoreDeal = typeof storeDeals.$inferSelect;
 
 export type InsertRecommendation = z.infer<typeof insertRecommendationSchema>;
 export type Recommendation = typeof recommendations.$inferSelect;
+
+export type InsertPurchaseAnomaly = z.infer<typeof insertPurchaseAnomalySchema>;
+export type PurchaseAnomaly = typeof purchaseAnomalies.$inferSelect;

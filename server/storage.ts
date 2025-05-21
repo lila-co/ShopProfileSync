@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "./db";
 import { 
   users, retailers, retailerAccounts, products, purchases, purchaseItems,
-  shoppingLists, shoppingListItems, storeDeals, recommendations,
+  shoppingLists, shoppingListItems, storeDeals, recommendations, purchaseAnomalies,
   User, InsertUser, 
   Retailer, InsertRetailer, 
   RetailerAccount, InsertRetailerAccount,
@@ -12,7 +12,8 @@ import {
   ShoppingList, InsertShoppingList,
   ShoppingListItem, InsertShoppingListItem,
   StoreDeal, InsertStoreDeal,
-  Recommendation, InsertRecommendation
+  Recommendation, InsertRecommendation,
+  PurchaseAnomaly, InsertPurchaseAnomaly
 } from "@shared/schema";
 
 // Interface for all storage operations
@@ -74,6 +75,13 @@ export interface IStorage {
   getTopPurchasedItems(): Promise<any[]>;
   getMonthlySpending(): Promise<any[]>;
   getMonthlySavings(): Promise<number>;
+  
+  // Purchase Anomaly methods
+  getPurchaseAnomalies(): Promise<PurchaseAnomaly[]>;
+  getPurchaseAnomaly(id: number): Promise<PurchaseAnomaly | undefined>;
+  createPurchaseAnomaly(anomaly: InsertPurchaseAnomaly): Promise<PurchaseAnomaly>;
+  updatePurchaseAnomaly(id: number, updates: Partial<PurchaseAnomaly>): Promise<PurchaseAnomaly>;
+  deletePurchaseAnomaly(id: number): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -87,6 +95,7 @@ export class MemStorage implements IStorage {
   private shoppingListItems: Map<number, ShoppingListItem>;
   private storeDeals: Map<number, StoreDeal>;
   private recommendations: Map<number, Recommendation>;
+  private purchaseAnomalies: Map<number, PurchaseAnomaly>;
 
   private userIdCounter: number = 1;
   private retailerIdCounter: number = 1;
