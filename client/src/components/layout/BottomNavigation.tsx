@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation } from 'wouter';
 
-type Tab = 'home' | 'lists' | 'scan' | 'deals' | 'circulars' | 'profile';
+type Tab = 'home' | 'lists' | 'shop' | 'deals' | 'circulars' | 'profile';
 
 interface BottomNavigationProps {
   activeTab: Tab;
@@ -18,8 +18,8 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab }) => {
       case 'lists':
         navigate('/lists');
         break;
-      case 'scan':
-        navigate('/scan');
+      case 'shop':
+        navigate('/shop');
         break;
       case 'deals':
         navigate('/deals');
@@ -65,19 +65,17 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab }) => {
           
           <button 
             className={`py-2 flex flex-col items-center w-1/5`}
-            onClick={() => handleTabClick('scan')}
-            aria-label="Scan"
+            onClick={() => handleTabClick('shop')}
+            aria-label="Shop Now"
           >
             <div className="bg-primary text-white rounded-full h-12 w-12 flex items-center justify-center -mt-6">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 7V5a2 2 0 0 1 2-2h2"/>
-                <path d="M17 3h2a2 2 0 0 1 2 2v2"/>
-                <path d="M21 17v2a2 2 0 0 1-2 2h-2"/>
-                <path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
-                <line x1="8" x2="16" y1="12" y2="12"/>
+                <circle cx="9" cy="21" r="1"></circle>
+                <circle cx="20" cy="21" r="1"></circle>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
               </svg>
             </div>
-            <span className={`text-xs font-medium mt-1 ${activeTab === 'scan' ? 'text-primary' : 'text-gray-400'}`}>Scan</span>
+            <span className={`text-xs font-medium mt-1 ${activeTab === 'shop' ? 'text-primary' : 'text-gray-400'}`}>Shop Now</span>
           </button>
           
           <button 
