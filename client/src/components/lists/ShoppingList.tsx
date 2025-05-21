@@ -20,6 +20,7 @@ const ShoppingListComponent: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [newItemName, setNewItemName] = useState('');
+  const [newItemQuantity, setNewItemQuantity] = useState(1);
   const [recipeUrl, setRecipeUrl] = useState('');
   const [servings, setServings] = useState('4');
   const [recipeDialogOpen, setRecipeDialogOpen] = useState(false);
@@ -27,6 +28,8 @@ const ShoppingListComponent: React.FC = () => {
   const [selectedRetailers, setSelectedRetailers] = useState<number[]>([]);
   const [showRouteMap, setShowRouteMap] = useState(false);
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
+  const [generatedItems, setGeneratedItems] = useState<any[]>([]);
   const [expiringDeals, setExpiringDeals] = useState([
     { id: 1, retailer: 'Walmart', product: 'Organic Milk', expires: 'Tomorrow', discount: '20%' },
     { id: 2, retailer: 'Target', product: 'Free-Range Eggs', expires: 'In 2 days', discount: '15%' }
@@ -95,7 +98,7 @@ const ShoppingListComponent: React.FC = () => {
   
   // Add item to shopping list
   const addItemMutation = useMutation({
-    mutationFn: async (productName: string) => {
+    mutationFn: async ({ productName, quantity }: { productName: string, quantity: number }) => {
       // Add to default shopping list (using the first list as default for simplicity)
       const defaultList = shoppingLists?.[0];
       if (!defaultList) throw new Error("No shopping list found");
@@ -103,12 +106,13 @@ const ShoppingListComponent: React.FC = () => {
       const response = await apiRequest('POST', '/api/shopping-list/items', {
         shoppingListId: defaultList.id,
         productName,
-        quantity: 1
+        quantity
       });
       return response.json();
     },
     onSuccess: () => {
       setNewItemName('');
+      setNewItemQuantity(1);
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
       toast({
         title: "Item Added",
@@ -124,6 +128,26 @@ const ShoppingListComponent: React.FC = () => {
     }
   });
 
+  // Generate shopping list preview
+  const previewGenerateMutation = useMutation({
+    mutationFn: async () => {
+      // First get a preview of items before actually creating the list
+      const response = await apiRequest('POST', '/api/shopping-lists/preview', {});
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setGeneratedItems(data.items || []);
+      setGenerateDialogOpen(true);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to generate list preview",
+        variant: "destructive" 
+      });
+    }
+  });
+
   // Generate shopping list from typical purchases
   const generateListMutation = useMutation({
     mutationFn: async () => {
@@ -131,6 +155,7 @@ const ShoppingListComponent: React.FC = () => {
       return response.json();
     },
     onSuccess: () => {
+      setGenerateDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
       toast({
         title: "Shopping List Generated",
@@ -208,7 +233,10 @@ const ShoppingListComponent: React.FC = () => {
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
     if (newItemName.trim()) {
-      addItemMutation.mutate(newItemName.trim());
+      addItemMutation.mutate({
+        productName: newItemName.trim(),
+        quantity: newItemQuantity
+      });
     }
   };
   
@@ -250,13 +278,23 @@ const ShoppingListComponent: React.FC = () => {
       <h2 className="text-xl font-bold mb-4">Shopping List</h2>
       
       <form onSubmit={handleAddItem} className="flex space-x-2 mb-6">
-        <Input
-          type="text"
-          placeholder="Add an item..."
-          value={newItemName}
-          onChange={(e) => setNewItemName(e.target.value)}
-          className="flex-1"
-        />
+        <div className="flex-1 flex space-x-2">
+          <Input
+            type="text"
+            placeholder="Add an item..."
+            value={newItemName}
+            onChange={(e) => setNewItemName(e.target.value)}
+            className="flex-1"
+          />
+          <Input
+            type="number"
+            placeholder="Qty"
+            min="1"
+            defaultValue="1"
+            onChange={(e) => setNewItemQuantity(parseInt(e.target.value) || 1)}
+            className="w-20"
+          />
+        </div>
         <Button 
           type="submit" 
           className="bg-primary text-white"
@@ -269,8 +307,8 @@ const ShoppingListComponent: React.FC = () => {
       <div className="mb-4 flex gap-2">
         <Button
           variant="default"
-          onClick={() => generateListMutation.mutate()}
-          disabled={generateListMutation.isPending}
+          onClick={() => previewGenerateMutation.mutate()}
+          disabled={previewGenerateMutation.isPending || generateListMutation.isPending}
           className="flex items-center gap-1 bg-primary"
         >
           <ShoppingBag className="h-4 w-4" />
@@ -286,6 +324,55 @@ const ShoppingListComponent: React.FC = () => {
           <span>Import Recipe</span>
         </Button>
       </div>
+      
+      {/* Generate List Preview Dialog */}
+      <Dialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Generate Shopping List Preview</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 max-h-80 overflow-y-auto">
+            <p className="text-sm text-gray-500">
+              Based on your typical purchases, we've prepared the following list. 
+              You can modify this list after generating it.
+            </p>
+            
+            {generatedItems.length === 0 ? (
+              <div className="p-4 text-center text-gray-500">
+                <ShoppingBag className="h-10 w-10 mx-auto mb-2 text-gray-300" />
+                <p>No items to generate</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {generatedItems.map((item, index) => (
+                  <div key={index} className="flex justify-between items-center p-2 border-b">
+                    <div>
+                      <p className="font-medium">{item.productName}</p>
+                      <div className="text-xs text-gray-500">
+                        {item.reason && <p>Reason: {item.reason}</p>}
+                        {item.frequency && <p>Typically purchased: {item.frequency}</p>}
+                      </div>
+                    </div>
+                    <div className="text-sm font-medium">Qty: {item.quantity || 1}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter className="flex justify-between sm:justify-between">
+            <Button 
+              variant="outline" 
+              onClick={() => setGenerateDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              disabled={generateListMutation.isPending} 
+              onClick={() => generateListMutation.mutate()}>
+              Generate List
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       
       <Tabs defaultValue="list" className="mt-6">
         <TabsList className="grid grid-cols-4 mb-4">
