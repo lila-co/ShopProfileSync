@@ -28,6 +28,10 @@ const Shop: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [shoppingRoute, setShoppingRoute] = useState<any>(null);
   const [orderCompleted, setOrderCompleted] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [selectedRetailerInfo, setSelectedRetailerInfo] = useState<any>(null);
   
   // Check URL parameters for pre-selected retailer and list
   useEffect(() => {
@@ -37,12 +41,52 @@ const Shop: React.FC = () => {
     
     if (retailerId) {
       setSelectedRetailer(parseInt(retailerId));
+      fetchRetailerInfo(parseInt(retailerId));
     }
     
     if (listId) {
       setSelectedList(parseInt(listId));
     }
   }, []);
+  
+  // Fetch retailer integration information
+  const fetchRetailerInfo = async (retailerId: number) => {
+    try {
+      const response = await fetch(`/api/retailers/${retailerId}/integration-status`);
+      if (response.ok) {
+        const data = await response.json();
+        setSelectedRetailerInfo(data);
+      }
+    } catch (error) {
+      console.error('Error fetching retailer information:', error);
+    }
+  };
+  
+  // Search for products at the selected retailer
+  const searchProducts = async () => {
+    if (!selectedRetailer || !searchQuery.trim()) {
+      return;
+    }
+    
+    setIsSearching(true);
+    
+    try {
+      const response = await fetch(`/api/retailers/${selectedRetailer}/products/search?query=${encodeURIComponent(searchQuery)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSearchResults(data);
+      }
+    } catch (error) {
+      console.error('Error searching products:', error);
+      toast({
+        title: 'Search Error',
+        description: 'Failed to search for products. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSearching(false);
+    }
+  };
   
   // Fetch shopping lists
   const { data: shoppingLists, isLoading: isLoadingLists } = useQuery({
