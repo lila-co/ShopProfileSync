@@ -384,6 +384,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             d.productName.toLowerCase() === item.productName.toLowerCase()
           );
           
+          // Check for bulk deals
+          const bulkDeal = {
+            hasBulkDeal: Math.random() > 0.7, // 30% chance of having a bulk deal for demo
+            quantity: Math.floor(Math.random() * 3) + 2, // Random bulk quantity between 2-4
+            bulkPrice: Math.floor(Math.random() * 500) + 200, // Random bulk price
+            regularUnitPrice: Math.floor(Math.random() * 200) + 100, // Regular price per unit
+          };
+          
+          // Calculate potential savings from the bulk deal
+          const bulkSavings = bulkDeal.hasBulkDeal ? 
+            (bulkDeal.regularUnitPrice * bulkDeal.quantity) - bulkDeal.bulkPrice : 0;
+          
           // Use deal price if available, otherwise use a baseline price (random for demo)
           const itemPrice = deal ? deal.salePrice : Math.floor(Math.random() * 800) + 200; // Random price between $2-$10
           
@@ -393,12 +405,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
             quantity: item.quantity,
             price: itemPrice,
             totalPrice: itemPrice * item.quantity,
-            hasDeal: !!deal
+            hasDeal: !!deal,
+            bulkDeal: bulkDeal.hasBulkDeal ? {
+              quantity: bulkDeal.quantity,
+              bulkPrice: bulkDeal.bulkPrice,
+              regularUnitPrice: bulkDeal.regularUnitPrice,
+              savings: bulkSavings,
+              recommendation: item.quantity < bulkDeal.quantity ? 
+                `Add ${bulkDeal.quantity - item.quantity} more for savings of $${(bulkSavings/100).toFixed(2)}` : 
+                `Bulk deal: ${bulkDeal.quantity} for $${(bulkDeal.bulkPrice/100).toFixed(2)}`
+            } : null
           };
         });
         
         // Calculate total cost at this retailer
         const totalCost = itemsAtRetailer.reduce((sum, item) => sum + item.totalPrice, 0);
+        
+        // Generate minimum purchase incentives (for demo purposes)
+        // Categories with spending thresholds for special offers
+        const categories = [
+          { name: "Produce", threshold: 2000, reward: 500 },
+          { name: "Dairy", threshold: 1500, reward: 300 },
+          { name: "Household", threshold: 5000, reward: 1000 },
+          { name: "Cleaning", threshold: 3000, reward: 700 }
+        ];
+        
+        // Randomly assign categories to items
+        const categorySpending = {};
+        itemsAtRetailer.forEach(item => {
+          const randomIndex = Math.floor(Math.random() * categories.length);
+          const category = categories[randomIndex].name;
+          if (!categorySpending[category]) {
+            categorySpending[category] = 0;
+          }
+          categorySpending[category] += item.totalPrice;
+        });
+        
+        // Find categories that are close to minimum spending thresholds
+        const incentives = categories.map(category => {
+          const spent = categorySpending[category.name] || 0;
+          const remaining = category.threshold - spent;
+          
+          if (remaining > 0 && remaining < category.threshold * 0.25) { // Within 25% of threshold
+            return {
+              category: category.name,
+              spent,
+              threshold: category.threshold,
+              remaining,
+              reward: category.reward,
+              message: `Add $${(remaining/100).toFixed(2)} more in ${category.name} to get $${(category.reward/100).toFixed(2)} off`
+            };
+          }
+          return null;
+        }).filter(incentive => incentive !== null);
         
         return {
           retailerId: retailer.id,
@@ -406,7 +465,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalCost,
           savings: Math.floor(Math.random() * 1500), // Demo savings amount
           items: itemsAtRetailer,
-          missingItems: [] // In a real implementation, this would show items not available at this retailer
+          missingItems: [], // In a real implementation, this would show items not available at this retailer
+          incentives: incentives
         };
       });
       

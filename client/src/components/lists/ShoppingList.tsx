@@ -425,6 +425,54 @@ const ShoppingListComponent: React.FC = () => {
                       </div>
                       <Progress value={(store.items.filter((i: any) => i.hasDeal).length / store.items.length) * 100} className="h-2" />
                     </div>
+
+                    {/* Bulk Deals */}
+                    {store.items.some((item: any) => item.bulkDeal) && (
+                      <div className="mt-4">
+                        <h5 className="font-medium text-sm mb-2">Bulk Deal Opportunities</h5>
+                        <div className="space-y-2">
+                          {store.items
+                            .filter((item: any) => item.bulkDeal)
+                            .map((item: any, idx: number) => (
+                              <div key={idx} className="p-2 bg-blue-50 rounded-md text-sm">
+                                <div className="flex items-center">
+                                  <div className="w-1 h-4 bg-blue-500 mr-2 rounded-full"></div>
+                                  <p className="font-medium">{item.productName}</p>
+                                </div>
+                                <p className="text-blue-700 mt-1 ml-3 text-xs">{item.bulkDeal.recommendation}</p>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Spending Incentives */}
+                    {store.incentives && store.incentives.length > 0 && (
+                      <div className="mt-4">
+                        <h5 className="font-medium text-sm mb-2">Spending Incentives</h5>
+                        <div className="space-y-2">
+                          {store.incentives.map((incentive: any, idx: number) => (
+                            <div key={idx} className="p-2 bg-amber-50 rounded-md text-sm">
+                              <div className="flex items-center">
+                                <div className="w-1 h-4 bg-amber-500 mr-2 rounded-full"></div>
+                                <p className="font-medium">{incentive.category} Offer</p>
+                              </div>
+                              <p className="text-amber-700 mt-1 ml-3 text-xs">{incentive.message}</p>
+                              <div className="mt-2 ml-3 bg-gray-100 h-2 rounded">
+                                <div 
+                                  className="bg-amber-400 h-2 rounded" 
+                                  style={{ width: `${(incentive.spent / incentive.threshold) * 100}%` }}
+                                ></div>
+                              </div>
+                              <div className="flex justify-between text-xs mt-1 ml-3 text-gray-500">
+                                <span>${(incentive.spent/100).toFixed(2)}</span>
+                                <span>${(incentive.threshold/100).toFixed(2)}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
