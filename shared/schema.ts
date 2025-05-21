@@ -39,6 +39,13 @@ export const retailers = pgTable("retailers", {
   logoColor: text("logo_color"),
   apiEndpoint: text("api_endpoint"),
   apiKey: text("api_key"),
+  apiSecret: text("api_secret"),
+  authType: text("auth_type").default("api_key"), // api_key, oauth, basic
+  requiresAuthentication: boolean("requires_authentication").default(false),
+  supportsOnlineOrdering: boolean("supports_online_ordering").default(false),
+  supportsPickup: boolean("supports_pickup").default(false),
+  supportsDelivery: boolean("supports_delivery").default(false),
+  apiDocumentation: text("api_documentation"),
 });
 
 // Retailer Account Schema
