@@ -227,9 +227,10 @@ const ShoppingListPage: React.FC = () => {
               <Input
                 type="number"
                 placeholder="Qty"
-                min="1"
+                min="0.01"
+                step="0.01"
                 defaultValue="1"
-                onChange={(e) => setNewItemQuantity(parseInt(e.target.value) || 1)}
+                onChange={(e) => setNewItemQuantity(parseFloat(e.target.value) || 1)}
                 className="w-full"
               />
             </div>
@@ -358,9 +359,10 @@ const ShoppingListPage: React.FC = () => {
                     <Input
                       id="edit-item-quantity"
                       type="number"
-                      min="1"
+                      min="0.01"
+                      step="0.01"
                       value={editItemQuantity}
-                      onChange={(e) => setEditItemQuantity(parseInt(e.target.value) || 1)}
+                      onChange={(e) => setEditItemQuantity(parseFloat(e.target.value) || 1)}
                       className="w-full"
                     />
                   </div>
