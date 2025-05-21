@@ -42,6 +42,42 @@ const ShoppingListComponent: React.FC = () => {
     enabled: !!shoppingLists,
   });
   
+  // Get retailers data
+  const { data: retailers } = useQuery({
+    queryKey: ['/api/retailers'],
+  });
+  
+  // Get user location on component mount (in a real app, would use Geolocation API)
+  useEffect(() => {
+    // For demo purposes, use San Francisco as default location
+    setUserLocation({ lat: 37.7749, lng: -122.4194 });
+  }, []);
+  
+  // Fetch shopping list cost comparison data
+  const { data: costData, isLoading: isLoadingCosts } = useQuery({
+    queryKey: ['/api/shopping-lists/costs', shoppingLists?.[0]?.id],
+    enabled: !!shoppingLists?.[0]?.id,
+    queryFn: async () => {
+      const response = await apiRequest('POST', '/api/shopping-lists/costs', {
+        shoppingListId: shoppingLists[0].id
+      });
+      return response.json();
+    }
+  });
+  
+  // Fetch shopping route when retailers are selected
+  const { data: routeData, isLoading: isLoadingRoute } = useQuery({
+    queryKey: ['/api/shopping-route', selectedRetailers, userLocation],
+    enabled: selectedRetailers.length > 0 && !!userLocation && showRouteMap,
+    queryFn: async () => {
+      const response = await apiRequest('POST', '/api/shopping-route', {
+        retailerIds: selectedRetailers,
+        userLocation
+      });
+      return response.json();
+    }
+  });
+  
   // Add item to shopping list
   const addItemMutation = useMutation({
     mutationFn: async (productName: string) => {
