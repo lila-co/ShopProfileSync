@@ -119,8 +119,10 @@ const Shop: React.FC = () => {
         
         if (retailerId) {
           setSelectedRetailer(parseInt(retailerId));
+          fetchRetailerInfo(parseInt(retailerId));
         } else {
           setSelectedRetailer(data[0].id);
+          fetchRetailerInfo(data[0].id);
         }
       }
     }
@@ -146,31 +148,80 @@ const Shop: React.FC = () => {
         throw new Error("Please select a shopping list and retailer");
       }
       
-      const response = await apiRequest('POST', '/api/shopping-route', {
-        listId: selectedList,
-        retailerId: selectedRetailer,
-        mode: shoppingMode
-      });
+      // First check the retailer integration status
+      const statusResponse = await fetch(`/api/retailers/${selectedRetailer}/integration-status`);
+      if (!statusResponse.ok) {
+        throw new Error("Failed to check retailer integration status");
+      }
+      const retailerStatus = await statusResponse.json();
       
-      const result = await response.json();
-      setShoppingRoute(result.route);
-      return result;
+      // For in-store shopping or when online ordering is not supported
+      if (shoppingMode === 'instore' || !retailerStatus.integration.supportsOnlineOrdering) {
+        const response = await apiRequest('POST', '/api/shopping-route', {
+          listId: selectedList,
+          retailerId: selectedRetailer
+        });
+        
+        const result = await response.json();
+        setShoppingRoute(result.route);
+        return { mode: 'instore', route: result.route };
+      } 
+      // For online ordering (pickup or delivery)
+      else {
+        if (shoppingMode === 'pickup' && !retailerStatus.integration.supportsPickup) {
+          throw new Error(`${retailerStatus.retailerName} does not support pickup orders through our app yet.`);
+        }
+        
+        if (shoppingMode === 'delivery' && !retailerStatus.integration.supportsDelivery) {
+          throw new Error(`${retailerStatus.retailerName} does not support delivery orders through our app yet.`);
+        }
+        
+        // Get the list items
+        const listItemsResponse = await fetch(`/api/shopping-lists/${selectedList}`);
+        if (!listItemsResponse.ok) {
+          throw new Error("Failed to get shopping list items");
+        }
+        const items = await listItemsResponse.json();
+        
+        // Customer info - in a real app, this would come from user profile
+        const customerInfo = {
+          name: "John Doe",
+          email: "johndoe@example.com",
+          address: "123 Main St, Anytown, USA",
+          phone: "555-123-4567"
+        };
+        
+        // Submit the order to the retailer API
+        const orderResponse = await apiRequest('POST', `/api/retailers/${selectedRetailer}/orders`, {
+          items,
+          mode: shoppingMode,
+          customerInfo,
+          shoppingListId: selectedList
+        });
+        
+        const orderResult = await orderResponse.json();
+        
+        return { mode: shoppingMode, order: orderResult };
+      }
     },
     onSuccess: (data) => {
       setIsSubmitting(false);
       setOrderCompleted(true);
       
-      const modeText = {
-        'instore': 'in-store shopping route',
-        'pickup': 'pickup order',
-        'delivery': 'delivery order'
-      };
-      
-      toast({
-        title: "Success!",
-        description: `Your ${modeText[shoppingMode]} has been created.`,
-        duration: 5000
-      });
+      if (data.mode === 'instore') {
+        toast({
+          title: "Shopping Route Ready!",
+          description: `Your in-store shopping route has been created.`,
+          duration: 5000
+        });
+      } else {
+        const modeText = data.mode === 'pickup' ? 'pickup' : 'delivery';
+        toast({
+          title: "Order Placed!",
+          description: `Your ${modeText} order has been placed. ${data.order?.orderId ? `Order ID: ${data.order.orderId}` : ''}`,
+          duration: 5000
+        });
+      }
     },
     onError: (error: Error) => {
       setIsSubmitting(false);
