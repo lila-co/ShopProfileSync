@@ -1,528 +1,480 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  ArrowUpRight,
-  Check,
-  ChevronsUpDown,
-  MapPin,
-  ShoppingBag,
-  ShoppingCart,
-  Store,
-  Truck
-} from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-const ShopPage = () => {
+import { Check, ShoppingBag, ShoppingCart, TruckIcon, HomeIcon, Store, MapPin, Clock, Percent } from 'lucide-react';
+import BottomNavigation from '@/components/layout/BottomNavigation';
+
+const Shop: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedRetailer, setSelectedRetailer] = useState<string>('');
-  const [selectedList, setSelectedList] = useState<string>('');
-  const [shoppingMode, setShoppingMode] = useState<'pickup' | 'delivery' | 'instore'>('instore');
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-  const [successDialogOpen, setSuccessDialogOpen] = useState(false);
+  const [selectedList, setSelectedList] = useState<number | null>(null);
+  const [selectedRetailer, setSelectedRetailer] = useState<number | null>(null);
+  const [shoppingMode, setShoppingMode] = useState<'instore' | 'pickup' | 'delivery'>('instore');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [shoppingRoute, setShoppingRoute] = useState<any>(null);
+  const [orderCompleted, setOrderCompleted] = useState(false);
   
   // Fetch shopping lists
-  const { data: shoppingLists, isLoading: listsLoading } = useQuery({
+  const { data: shoppingLists, isLoading: isLoadingLists } = useQuery({
     queryKey: ['/api/shopping-lists'],
-    select: (data) => data.lists
+    onSuccess: (data) => {
+      // Default to the first list if none selected
+      if (data && data.length > 0 && !selectedList) {
+        setSelectedList(data[0].id);
+      }
+    }
   });
   
   // Fetch retailers
-  const { data: retailers, isLoading: retailersLoading } = useQuery({
+  const { data: retailers, isLoading: isLoadingRetailers } = useQuery({
     queryKey: ['/api/retailers'],
-    select: (data) => data.retailers
+    onSuccess: (data) => {
+      // Default to the first retailer if none selected
+      if (data && data.length > 0 && !selectedRetailer) {
+        setSelectedRetailer(data[0].id);
+      }
+    }
   });
   
-  // Get active shopping list items
-  const { data: listItems, isLoading: itemsLoading } = useQuery({
-    queryKey: ['/api/shopping-list/items', selectedList],
+  // Get the items from the selected shopping list
+  const { data: listItems, isLoading: isLoadingItems } = useQuery({
+    queryKey: ['/api/shopping-lists', selectedList],
     enabled: !!selectedList,
-    select: (data) => data.items
+    queryFn: async () => {
+      if (!selectedList) return null;
+      const response = await fetch(`/api/shopping-list/items?listId=${selectedList}`);
+      return response.json();
+    }
   });
   
-  // Submit shopping list for online order
-  const submitOrderMutation = useMutation({
+  // Mutation for submitting shopping order/route
+  const submitShoppingMutation = useMutation({
     mutationFn: async () => {
+      setIsSubmitting(true);
+      
+      if (!selectedList || !selectedRetailer) {
+        throw new Error("Please select a shopping list and retailer");
+      }
+      
       const response = await apiRequest('POST', '/api/shopping-route', {
-        listId: selectedList, 
+        listId: selectedList,
         retailerId: selectedRetailer,
         mode: shoppingMode
       });
-      return response.json();
+      
+      const result = await response.json();
+      setShoppingRoute(result.route);
+      return result;
     },
-    onSuccess: () => {
-      setConfirmDialogOpen(false);
-      setSuccessDialogOpen(true);
+    onSuccess: (data) => {
+      setIsSubmitting(false);
+      setOrderCompleted(true);
+      
+      const modeText = {
+        'instore': 'in-store shopping route',
+        'pickup': 'pickup order',
+        'delivery': 'delivery order'
+      };
+      
+      toast({
+        title: "Success!",
+        description: `Your ${modeText[shoppingMode]} has been created.`,
+        duration: 5000
+      });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
+      setIsSubmitting(false);
       toast({
         title: "Error",
-        description: error.message || "Failed to submit order",
+        description: error.message || "Failed to create your shopping route/order",
         variant: "destructive"
       });
     }
   });
   
-  // Calculate estimated total
-  const estimatedTotal = listItems?.reduce((total, item) => {
-    return total + (item.suggestedPrice || 0) * item.quantity;
-  }, 0) || 0;
-  
-  // Handle shopping method selection
-  const handleShoppingMethodSelect = (value: 'pickup' | 'delivery' | 'instore') => {
-    setShoppingMode(value);
+  const handleSubmit = () => {
+    submitShoppingMutation.mutate();
   };
   
-  // Handle finalize button click
-  const handleFinalize = () => {
-    if (!selectedRetailer || !selectedList) {
-      toast({
-        title: "Selection Required",
-        description: "Please select both a retailer and a shopping list",
-        variant: "destructive"
-      });
-      return;
-    }
-    setConfirmDialogOpen(true);
+  const getTotalItemCount = () => {
+    if (!listItems) return 0;
+    return listItems.reduce((sum: number, item: any) => sum + item.quantity, 0);
   };
   
-  // Handle confirm order
-  const handleConfirmOrder = () => {
-    submitOrderMutation.mutate();
+  const getTotalPrice = () => {
+    if (!listItems) return 0;
+    return listItems.reduce((sum: number, item: any) => {
+      return sum + ((item.suggestedPrice || 0) * item.quantity);
+    }, 0);
   };
-
+  
+  const startNewShop = () => {
+    setShoppingRoute(null);
+    setOrderCompleted(false);
+    queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+  };
+  
+  if (isLoadingLists || isLoadingRetailers) {
+    return (
+      <div className="container mx-auto p-4 flex flex-col min-h-screen">
+        <h1 className="text-2xl font-bold mb-6">Shop Now</h1>
+        <div className="flex items-center justify-center flex-grow">
+          <p>Loading...</p>
+        </div>
+        <BottomNavigation activeTab="shop" />
+      </div>
+    );
+  }
+  
+  if (orderCompleted && shoppingRoute) {
+    // Show confirmation and shopping route/order details
+    return (
+      <div className="container mx-auto p-4 flex flex-col min-h-screen">
+        <h1 className="text-2xl font-bold mb-2">Shop Now</h1>
+        
+        <Card className="mb-4 border-green-500">
+          <CardHeader className="bg-green-50 dark:bg-green-900/20">
+            <div className="flex items-center gap-2">
+              <Check className="h-6 w-6 text-green-500" />
+              <CardTitle>
+                {shoppingMode === 'instore' ? 'Shopping Route Created' : 
+                  shoppingMode === 'pickup' ? 'Pickup Order Placed' : 
+                  'Delivery Order Placed'}
+              </CardTitle>
+            </div>
+            <CardDescription>
+              {shoppingMode === 'instore' ? 
+                `Ready for your in-store visit at ${shoppingRoute.retailer}` : 
+                shoppingMode === 'pickup' ? 
+                `Your order will be ready for pickup at ${shoppingRoute.retailer}` : 
+                `Your order will be delivered from ${shoppingRoute.retailer}`}
+            </CardDescription>
+          </CardHeader>
+          
+          <CardContent className="pt-4">
+            {shoppingMode === 'instore' ? (
+              // In-store shopping route
+              <>
+                <div className="flex items-center gap-2 mb-4">
+                  <Store className="h-5 w-5 text-gray-500" />
+                  <span className="font-medium">{shoppingRoute.retailer}</span>
+                </div>
+                
+                <div className="flex items-center gap-2 mb-6">
+                  <Clock className="h-5 w-5 text-gray-500" />
+                  <span>Estimated shopping time: {shoppingRoute.estimatedTime}</span>
+                </div>
+                
+                <h3 className="text-lg font-medium mb-2">Your Shopping Route:</h3>
+                
+                <ScrollArea className="h-[300px] rounded-md border p-4">
+                  {shoppingRoute.aisles?.map((aisle: any, index: number) => (
+                    <div key={index} className="mb-6">
+                      <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg mb-2">
+                        <h4 className="font-medium">{aisle.name}</h4>
+                      </div>
+                      <ul className="space-y-2 pl-2">
+                        {aisle.items.map((item: any) => (
+                          <li key={item.id} className="flex justify-between">
+                            <span>
+                              {item.productName} ({item.quantity})
+                            </span>
+                            {item.suggestedPrice && (
+                              <span className="text-gray-500">
+                                ${(item.suggestedPrice * item.quantity).toFixed(2)}
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                  
+                  {shoppingRoute.other && (
+                    <div className="mb-6">
+                      <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg mb-2">
+                        <h4 className="font-medium">{shoppingRoute.other.name}</h4>
+                      </div>
+                      <ul className="space-y-2 pl-2">
+                        {shoppingRoute.other.items.map((item: any) => (
+                          <li key={item.id} className="flex justify-between">
+                            <span>
+                              {item.productName} ({item.quantity})
+                            </span>
+                            {item.suggestedPrice && (
+                              <span className="text-gray-500">
+                                ${(item.suggestedPrice * item.quantity).toFixed(2)}
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </ScrollArea>
+              </>
+            ) : (
+              // Online order details (pickup or delivery)
+              <>
+                <div className="flex items-center gap-2 mb-4">
+                  <Store className="h-5 w-5 text-gray-500" />
+                  <span className="font-medium">{shoppingRoute.retailer}</span>
+                </div>
+                
+                <div className="flex items-center gap-2 mb-2">
+                  <ShoppingBag className="h-5 w-5 text-gray-500" />
+                  <span>Order ID: {shoppingRoute.orderId}</span>
+                </div>
+                
+                <div className="flex items-center gap-2 mb-6">
+                  <Clock className="h-5 w-5 text-gray-500" />
+                  <span>
+                    {shoppingMode === 'pickup' ? 'Ready for pickup: ' : 'Expected delivery: '}
+                    {shoppingRoute.estimatedReady}
+                  </span>
+                </div>
+                
+                <h3 className="text-lg font-medium mb-2">Your Order:</h3>
+                
+                <ScrollArea className="h-[300px] rounded-md border p-4">
+                  <ul className="space-y-2">
+                    {shoppingRoute.items?.map((item: any) => (
+                      <li key={item.id} className="flex justify-between border-b pb-2">
+                        <span>
+                          {item.productName} ({item.quantity})
+                        </span>
+                        {item.suggestedPrice && (
+                          <span className="text-gray-500">
+                            ${(item.suggestedPrice * item.quantity).toFixed(2)}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                  
+                  <div className="mt-4 pt-4 border-t flex justify-between font-medium">
+                    <span>Total ({shoppingRoute.totalItems} items):</span>
+                    <span>${shoppingRoute.totalPrice?.toFixed(2) || '0.00'}</span>
+                  </div>
+                </ScrollArea>
+              </>
+            )}
+          </CardContent>
+          
+          <CardFooter className="flex-col gap-2">
+            <Button 
+              className="w-full" 
+              onClick={startNewShop}
+            >
+              Shop Again
+            </Button>
+          </CardFooter>
+        </Card>
+        
+        <BottomNavigation activeTab="shop" />
+      </div>
+    );
+  }
+  
   return (
-    <div className="container py-6 pb-20">
+    <div className="container mx-auto p-4 flex flex-col min-h-screen">
       <h1 className="text-2xl font-bold mb-6">Shop Now</h1>
       
-      <Tabs defaultValue="online" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-6">
-          <TabsTrigger value="online">Online Shopping</TabsTrigger>
-          <TabsTrigger value="instore">In-Store Guide</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="online" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Submit Your Order</CardTitle>
-              <CardDescription>
-                Select your shopping list and preferred retailer to order groceries online
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Select Shopping List</label>
-                <Select
-                  value={selectedList}
-                  onValueChange={setSelectedList}
-                  disabled={listsLoading}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose a shopping list" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {shoppingLists?.map((list) => (
-                      <SelectItem key={list.id} value={list.id.toString()}>
-                        {list.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Select Retailer</label>
-                <Select
-                  value={selectedRetailer}
-                  onValueChange={setSelectedRetailer}
-                  disabled={retailersLoading}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose a retailer" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {retailers?.map((retailer) => (
-                      <SelectItem key={retailer.id} value={retailer.id.toString()}>
-                        {retailer.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Shopping Method</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    variant={shoppingMode === 'pickup' ? 'default' : 'outline'}
-                    className="flex items-center justify-center gap-2"
-                    onClick={() => handleShoppingMethodSelect('pickup')}
-                  >
-                    <Store className="h-4 w-4" />
-                    <span>Store Pickup</span>
-                  </Button>
-                  <Button
-                    variant={shoppingMode === 'delivery' ? 'default' : 'outline'}
-                    className="flex items-center justify-center gap-2"
-                    onClick={() => handleShoppingMethodSelect('delivery')}
-                  >
-                    <Truck className="h-4 w-4" />
-                    <span>Home Delivery</span>
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button 
-                className="w-full" 
-                onClick={handleFinalize}
-                disabled={!selectedList || !selectedRetailer || submitOrderMutation.isPending}
-              >
-                Submit Order
-              </Button>
-            </CardFooter>
-          </Card>
-          
-          {selectedList && !itemsLoading && listItems && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Your Shopping List</CardTitle>
-                <CardDescription>
-                  {listItems.length} {listItems.length === 1 ? 'item' : 'items'} in your list
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="divide-y">
-                  {listItems.map((item) => (
-                    <li key={item.id} className="py-2 flex justify-between items-center">
-                      <div>
-                        <span className="font-medium">{item.productName}</span>
-                        <div className="text-sm text-gray-500">
-                          Qty: {item.quantity}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">
-                          ${((item.suggestedPrice || 0) * item.quantity).toFixed(2)}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          ${(item.suggestedPrice || 0).toFixed(2)} each
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <div className="font-semibold">Estimated Total:</div>
-                <div className="font-bold text-lg">${estimatedTotal.toFixed(2)}</div>
-              </CardFooter>
-            </Card>
-          )}
-        </TabsContent>
-        
-        <TabsContent value="instore" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>In-Store Shopping Guide</CardTitle>
-              <CardDescription>
-                Optimize your in-store shopping experience
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Select Shopping List</label>
-                <Select
-                  value={selectedList}
-                  onValueChange={setSelectedList}
-                  disabled={listsLoading}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose a shopping list" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {shoppingLists?.map((list) => (
-                      <SelectItem key={list.id} value={list.id.toString()}>
-                        {list.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Select Retailer</label>
-                <Select
-                  value={selectedRetailer}
-                  onValueChange={setSelectedRetailer}
-                  disabled={retailersLoading}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose a retailer" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {retailers?.map((retailer) => (
-                      <SelectItem key={retailer.id} value={retailer.id.toString()}>
-                        {retailer.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button 
-                className="w-full" 
-                onClick={handleFinalize}
-                disabled={!selectedList || !selectedRetailer}
-              >
-                <MapPin className="h-4 w-4 mr-2" />
-                Generate Store Map
-              </Button>
-            </CardFooter>
-          </Card>
-          
-          {selectedList && selectedRetailer && !itemsLoading && listItems && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Optimized Shopping Route</CardTitle>
-                <CardDescription>
-                  Shop in this order to save time
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <div className="text-sm font-medium text-gray-500 mb-2">Aisle 1: Produce</div>
-                    <ul className="space-y-2">
-                      {listItems
-                        .filter(item => ['Apples', 'Bananas', 'Lettuce', 'Tomatoes', 'Avocados'].some(
-                          term => item.productName.toLowerCase().includes(term.toLowerCase())
-                        ))
-                        .map((item) => (
-                          <li key={item.id} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Check className="h-4 w-4 text-green-500" />
-                              <span>{item.productName}</span>
-                            </div>
-                            <span className="text-sm">Qty: {item.quantity}</span>
-                          </li>
-                        ))}
-                    </ul>
-                  </div>
-                  
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <div className="text-sm font-medium text-gray-500 mb-2">Aisle 3: Dairy</div>
-                    <ul className="space-y-2">
-                      {listItems
-                        .filter(item => ['Milk', 'Cheese', 'Yogurt', 'Butter', 'Eggs'].some(
-                          term => item.productName.toLowerCase().includes(term.toLowerCase())
-                        ))
-                        .map((item) => (
-                          <li key={item.id} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Check className="h-4 w-4 text-green-500" />
-                              <span>{item.productName}</span>
-                            </div>
-                            <span className="text-sm">Qty: {item.quantity}</span>
-                          </li>
-                        ))}
-                    </ul>
-                  </div>
-                  
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <div className="text-sm font-medium text-gray-500 mb-2">Aisle 5: Pantry</div>
-                    <ul className="space-y-2">
-                      {listItems
-                        .filter(item => ['Pasta', 'Rice', 'Cereal', 'Soup', 'Beans'].some(
-                          term => item.productName.toLowerCase().includes(term.toLowerCase())
-                        ))
-                        .map((item) => (
-                          <li key={item.id} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Check className="h-4 w-4 text-green-500" />
-                              <span>{item.productName}</span>
-                            </div>
-                            <span className="text-sm">Qty: {item.quantity}</span>
-                          </li>
-                        ))}
-                    </ul>
-                  </div>
-                  
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <div className="text-sm font-medium text-gray-500 mb-2">Other Items</div>
-                    <ul className="space-y-2">
-                      {listItems
-                        .filter(item => 
-                          !['Apples', 'Bananas', 'Lettuce', 'Tomatoes', 'Avocados', 
-                            'Milk', 'Cheese', 'Yogurt', 'Butter', 'Eggs',
-                            'Pasta', 'Rice', 'Cereal', 'Soup', 'Beans'].some(
-                            term => item.productName.toLowerCase().includes(term.toLowerCase())
-                          )
-                        )
-                        .map((item) => (
-                          <li key={item.id} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Check className="h-4 w-4 text-green-500" />
-                              <span>{item.productName}</span>
-                            </div>
-                            <span className="text-sm">Qty: {item.quantity}</span>
-                          </li>
-                        ))}
-                    </ul>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <div className="w-full">
-                  <Button variant="outline" className="w-full">
-                    <ShoppingBag className="h-4 w-4 mr-2" />
-                    Mark as Complete
-                  </Button>
-                </div>
-              </CardFooter>
-            </Card>
-          )}
-        </TabsContent>
-      </Tabs>
-      
-      {/* Confirmation Dialog */}
-      <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Your Order</DialogTitle>
-            <DialogDescription>
-              {shoppingMode === 'instore' 
-                ? "Are you ready to start shopping in-store? We'll optimize your route through the store."
-                : "You're about to submit your order. The retailer will process it for " + 
-                  (shoppingMode === 'pickup' ? "pickup" : "delivery") + "."}
-            </DialogDescription>
-          </DialogHeader>
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle>Select Shopping List</CardTitle>
+          <CardDescription>Choose the shopping list you want to use</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Select
+            value={selectedList?.toString()}
+            onValueChange={(value) => setSelectedList(parseInt(value))}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select a shopping list" />
+            </SelectTrigger>
+            <SelectContent>
+              {shoppingLists?.map((list: any) => (
+                <SelectItem key={list.id} value={list.id.toString()}>
+                  {list.name} {list.isDefault && <span className="ml-2 text-sm">(Default)</span>}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           
           {selectedList && listItems && (
-            <div className="space-y-2 my-4">
-              <div className="flex justify-between font-medium">
-                <span>Total Items:</span>
-                <span>{listItems.length}</span>
+            <div className="mt-4">
+              <h3 className="text-sm font-medium mb-2">List Contents:</h3>
+              <div className="rounded-md border p-2 max-h-[150px] overflow-y-auto">
+                {listItems.length === 0 ? (
+                  <p className="text-sm text-gray-500">This list is empty.</p>
+                ) : (
+                  <ul className="space-y-1">
+                    {listItems.map((item: any) => (
+                      <li key={item.id} className="text-sm">
+                        {item.productName} ({item.quantity})
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
-              <div className="flex justify-between font-medium">
-                <span>Estimated Total:</span>
-                <span>${estimatedTotal.toFixed(2)}</span>
-              </div>
-              {shoppingMode === 'delivery' && (
-                <div className="flex justify-between font-medium">
-                  <span>Delivery Fee:</span>
-                  <span>$5.99</span>
-                </div>
-              )}
-              <Separator className="my-2" />
-              <div className="flex justify-between font-bold">
-                <span>Final Total:</span>
-                <span>${(estimatedTotal + (shoppingMode === 'delivery' ? 5.99 : 0)).toFixed(2)}</span>
+              <div className="mt-2 text-right text-sm">
+                <span className="font-medium">Total: {getTotalItemCount()} items</span>
+                {getTotalPrice() > 0 && (
+                  <span className="ml-4 font-medium">
+                    Est. Price: ${getTotalPrice().toFixed(2)}
+                  </span>
+                )}
               </div>
             </div>
           )}
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleConfirmOrder} disabled={submitOrderMutation.isPending}>
-              {submitOrderMutation.isPending 
-                ? "Processing..." 
-                : shoppingMode === 'instore' 
-                  ? "Start Shopping" 
-                  : "Confirm Order"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </CardContent>
+      </Card>
       
-      {/* Success Dialog */}
-      <Dialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Check className="h-5 w-5 text-green-500" />
-              {shoppingMode === 'instore' 
-                ? "Your Shopping Guide is Ready" 
-                : "Order Successfully Submitted"}
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="py-4">
-            {shoppingMode === 'instore' ? (
-              <p>
-                Your in-store shopping guide is ready. Follow the optimized route to save time while shopping!
-              </p>
-            ) : shoppingMode === 'pickup' ? (
-              <div className="space-y-4">
-                <p>
-                  Your order has been submitted for pickup. The store will notify you when it's ready.
-                </p>
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <div className="font-medium">Pickup Information</div>
-                  <div className="mt-2 text-sm text-gray-600">
-                    <p>Pickup at: {retailers?.find(r => r.id.toString() === selectedRetailer)?.name || "Selected Retailer"}</p>
-                    <p>Estimated ready: Today, between 4-6 PM</p>
-                    <p>Order #: ORD-{Math.floor(Math.random() * 1000000)}</p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <p>
-                  Your order has been submitted for delivery. You'll receive updates as it's processed.
-                </p>
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <div className="font-medium">Delivery Information</div>
-                  <div className="mt-2 text-sm text-gray-600">
-                    <p>Estimated delivery: Tomorrow, between 10 AM-12 PM</p>
-                    <p>Order #: ORD-{Math.floor(Math.random() * 1000000)}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          <DialogFooter>
-            <Button onClick={() => setSuccessDialogOpen(false)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle>Select Retailer</CardTitle>
+          <CardDescription>Choose where you want to shop</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Select
+            value={selectedRetailer?.toString()}
+            onValueChange={(value) => setSelectedRetailer(parseInt(value))}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select a retailer" />
+            </SelectTrigger>
+            <SelectContent>
+              {retailers?.map((retailer: any) => (
+                <SelectItem key={retailer.id} value={retailer.id.toString()}>
+                  {retailer.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
+      
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle>Shopping Method</CardTitle>
+          <CardDescription>How would you like to shop?</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <RadioGroup 
+            value={shoppingMode} 
+            onValueChange={(value: 'instore' | 'pickup' | 'delivery') => setShoppingMode(value)}
+            className="grid grid-cols-1 gap-4 md:grid-cols-3"
+          >
+            <div>
+              <RadioGroupItem value="instore" id="instore" className="peer sr-only" />
+              <Label
+                htmlFor="instore"
+                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-white p-4 hover:bg-gray-50 hover:border-gray-200 peer-checked:border-primary [&:has([data-state=checked])]:border-primary"
+              >
+                <Store className="mb-3 h-6 w-6" />
+                <span className="text-sm font-medium">In-Store Shopping</span>
+                <span className="text-xs text-muted-foreground mt-1">
+                  Get an organized route through the store
+                </span>
+              </Label>
+            </div>
+            
+            <div>
+              <RadioGroupItem value="pickup" id="pickup" className="peer sr-only" />
+              <Label
+                htmlFor="pickup"
+                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-white p-4 hover:bg-gray-50 hover:border-gray-200 peer-checked:border-primary [&:has([data-state=checked])]:border-primary"
+              >
+                <TruckIcon className="mb-3 h-6 w-6" />
+                <span className="text-sm font-medium">Store Pickup</span>
+                <span className="text-xs text-muted-foreground mt-1">
+                  Order online and pickup in-store
+                </span>
+              </Label>
+            </div>
+            
+            <div>
+              <RadioGroupItem value="delivery" id="delivery" className="peer sr-only" />
+              <Label
+                htmlFor="delivery"
+                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-white p-4 hover:bg-gray-50 hover:border-gray-200 peer-checked:border-primary [&:has([data-state=checked])]:border-primary"
+              >
+                <HomeIcon className="mb-3 h-6 w-6" />
+                <span className="text-sm font-medium">Home Delivery</span>
+                <span className="text-xs text-muted-foreground mt-1">
+                  Get groceries delivered to your door
+                </span>
+              </Label>
+            </div>
+          </RadioGroup>
+        </CardContent>
+      </Card>
+      
+      {/* Conditional alerts based on shopping mode */}
+      {shoppingMode === 'instore' && (
+        <Alert className="mb-4">
+          <Store className="h-4 w-4" />
+          <AlertTitle>In-Store Shopping</AlertTitle>
+          <AlertDescription>
+            We'll organize your shopping list into an efficient route through the store.
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {shoppingMode === 'pickup' && (
+        <Alert className="mb-4">
+          <TruckIcon className="h-4 w-4" />
+          <AlertTitle>Store Pickup</AlertTitle>
+          <AlertDescription>
+            Your order will be prepared for pickup. Typical preparation time is 2-4 hours.
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {shoppingMode === 'delivery' && (
+        <Alert className="mb-4">
+          <HomeIcon className="h-4 w-4" />
+          <AlertTitle>Home Delivery</AlertTitle>
+          <AlertDescription>
+            Your groceries will be delivered to your home address. Delivery times vary by location.
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      <div className="mt-auto mb-20">
+        <Button 
+          className="w-full"
+          size="lg"
+          onClick={handleSubmit}
+          disabled={isSubmitting || !selectedList || !selectedRetailer || listItems?.length === 0}
+        >
+          {isSubmitting ? 'Processing...' : (
+            shoppingMode === 'instore' ? 'Create Shopping Route' : 
+            shoppingMode === 'pickup' ? 'Place Pickup Order' : 
+            'Place Delivery Order'
+          )}
+        </Button>
+      </div>
+      
+      <BottomNavigation activeTab="shop" />
     </div>
   );
 };
 
-export default ShopPage;
+export default Shop;
