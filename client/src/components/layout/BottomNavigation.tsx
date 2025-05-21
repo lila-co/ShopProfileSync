@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation } from 'wouter';
 
-type Tab = 'home' | 'lists' | 'scan' | 'deals' | 'profile';
+type Tab = 'home' | 'lists' | 'scan' | 'deals' | 'circulars' | 'profile';
 
 interface BottomNavigationProps {
   activeTab: Tab;
@@ -23,6 +23,9 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab }) => {
         break;
       case 'deals':
         navigate('/deals');
+        break;
+      case 'circulars':
+        navigate('/circulars');
         break;
       case 'profile':
         navigate('/profile');
@@ -78,7 +81,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab }) => {
           </button>
           
           <button 
-            className={`py-2 flex flex-col items-center w-1/5 ${activeTab === 'deals' ? 'text-primary' : 'text-gray-400'}`}
+            className={`py-2 flex flex-col items-center w-1/6 ${activeTab === 'deals' ? 'text-primary' : 'text-gray-400'}`}
             onClick={() => handleTabClick('deals')}
             aria-label="Deals"
           >
@@ -90,7 +93,20 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab }) => {
           </button>
           
           <button 
-            className={`py-2 flex flex-col items-center w-1/5 ${activeTab === 'profile' ? 'text-primary' : 'text-gray-400'}`}
+            className={`py-2 flex flex-col items-center w-1/6 ${activeTab === 'circulars' ? 'text-primary' : 'text-gray-400'}`}
+            onClick={() => handleTabClick('circulars')}
+            aria-label="Circulars"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="3" y1="9" x2="21" y2="9"></line>
+              <line x1="9" y1="21" x2="9" y2="9"></line>
+            </svg>
+            <span className="text-xs font-medium mt-1">Circulars</span>
+          </button>
+          
+          <button 
+            className={`py-2 flex flex-col items-center w-1/6 ${activeTab === 'profile' ? 'text-primary' : 'text-gray-400'}`}
             onClick={() => handleTabClick('profile')}
             aria-label="Profile"
           >
