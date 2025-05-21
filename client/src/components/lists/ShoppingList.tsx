@@ -32,14 +32,25 @@ const ShoppingListComponent: React.FC = () => {
     { id: 2, retailer: 'Target', product: 'Free-Range Eggs', expires: 'In 2 days', discount: '15%' }
   ]);
   
-  const { data: shoppingLists, isLoading } = useQuery<ShoppingListType[]>({
+  const { data: shoppingLists, isLoading, refetch: refetchShoppingLists } = useQuery<ShoppingListType[]>({
     queryKey: ['/api/shopping-lists'],
   });
   
-  // Get personalized suggestions based on user profile
+  // Get personalized suggestions based on user profile and recent purchases
   const { data: suggestions, isLoading: suggestionsLoading } = useQuery({
     queryKey: ['/api/shopping-lists/suggestions'],
     enabled: !!shoppingLists,
+  });
+  
+  // Get recent purchases to help refresh shopping list
+  const { data: recentPurchases } = useQuery({
+    queryKey: ['/api/purchases/recent'],
+    onSuccess: (data) => {
+      if (data && data.length > 0) {
+        // This query's success will trigger a refresh of the shopping list
+        refetchShoppingLists();
+      }
+    }
   });
   
   // Get retailers data
