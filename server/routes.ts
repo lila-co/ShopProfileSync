@@ -30,7 +30,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/user/profile', async (req: Request, res: Response) => {
     try {
-      const updatedUser = await storage.updateUser(req.body);
+      // Get the default user ID for demo purposes
+      const defaultUser = await storage.getDefaultUser();
+      
+      // Add the ID to the request body
+      const userData = {
+        id: defaultUser.id,
+        ...req.body
+      };
+      
+      const updatedUser = await storage.updateUser(userData);
       res.json(updatedUser);
     } catch (error) {
       handleError(res, error);
