@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import ShoppingList from "@/pages/shopping-list";
 import Deals from "@/pages/deals";
+import Circulars from "@/pages/circulars";
 import Profile from "@/pages/profile";
 import Scan from "@/pages/scan";
 import InternalAnalytics from "@/pages/internal-analytics";
@@ -18,6 +19,7 @@ function Router() {
       <Route path="/lists" component={ShoppingList} />
       <Route path="/scan" component={Scan} />
       <Route path="/deals" component={Deals} />
+      <Route path="/circulars" component={Circulars} />
       <Route path="/profile" component={Profile} />
       <Route path="/internal/analytics" component={InternalAnalytics} />
       <Route component={NotFound} />

@@ -98,6 +98,24 @@ export interface StoreDeal {
   startDate: string;
   endDate: string;
   category?: string;
+  dealSource?: string;
+  circularId?: number;
+  imageUrl?: string;
+  featured?: boolean;
+}
+
+export interface WeeklyCircular {
+  id: number;
+  retailerId: number;
+  retailer?: Retailer;
+  title: string;
+  startDate: string;
+  endDate: string;
+  imageUrl?: string;
+  description?: string;
+  pdfUrl?: string;
+  isActive: boolean;
+  createdAt: string;
 }
 
 export interface Recommendation {
