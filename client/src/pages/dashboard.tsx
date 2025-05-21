@@ -51,34 +51,22 @@ const Dashboard: React.FC = () => {
           
           {/* Quick Actions */}
           <section className="mb-6">
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <ActionCard 
                 icon={
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 7V5a2 2 0 0 1 2-2h2"/>
-                    <path d="M17 3h2a2 2 0 0 1 2 2v2"/>
-                    <path d="M21 17v2a2 2 0 0 1-2 2h-2"/>
-                    <path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
-                    <line x1="8" x2="16" y1="12" y2="12"/>
-                    <line x1="12" x2="12" y1="8" y2="16"/>
+                    <path d="M9.5 9.5 14.5 14.5"/>
+                    <path d="M14.5 9.5 9.5 14.5"/>
+                    <rect width="16" height="16" x="4" y="4" rx="2"/>
+                    <path d="M4 15h16"/>
+                    <path d="M15 4v6"/>
+                    <path d="M9 4v2"/>
                   </svg>
                 }
-                title="Scan Receipt"
+                title="Add Receipt"
+                subtitle="Scan or upload"
                 onClick={() => setShowReceiptScanner(true)}
                 iconBgColor="bg-primary/10"
-              />
-              
-              <ActionCard 
-                icon={
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-secondary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="17 8 12 3 7 8"/>
-                    <line x1="12" x2="12" y1="3" y2="15"/>
-                  </svg>
-                }
-                title="Upload Receipt"
-                onClick={() => setShowReceiptScanner(true)}
-                iconBgColor="bg-secondary/10"
               />
               
               <ActionCard 
@@ -89,6 +77,7 @@ const Dashboard: React.FC = () => {
                   </svg>
                 }
                 title="Link Store"
+                subtitle="Connect accounts"
                 onClick={() => setShowStoreLinking(true)}
                 iconBgColor="bg-accent/10"
               />

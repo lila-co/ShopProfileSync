@@ -100,6 +100,11 @@ export const shoppingLists = pgTable("shopping_lists", {
   isDefault: boolean("is_default").default(false),
 });
 
+// Product Unit Enum
+export const unitEnum = pgEnum('unit_type', [
+  'COUNT', 'LB', 'OZ', 'G', 'KG', 'PKG', 'ROLL', 'BOX', 'CAN', 'BOTTLE', 'JAR', 'BUNCH'
+]);
+
 // Shopping List Item Schema
 export const shoppingListItems = pgTable("shopping_list_items", {
   id: serial("id").primaryKey(),
@@ -107,10 +112,13 @@ export const shoppingListItems = pgTable("shopping_list_items", {
   productId: integer("product_id"),
   productName: text("product_name").notNull(),
   quantity: integer("quantity").notNull().default(1),
+  unit: unitEnum("unit").default("COUNT"),
   isCompleted: boolean("is_completed").default(false),
   suggestedRetailerId: integer("suggested_retailer_id"),
   suggestedPrice: integer("suggested_price"),
   dueDate: timestamp("due_date"),
+  category: text("category"),
+  notes: text("notes"),
 });
 
 // Store Deals Schema
