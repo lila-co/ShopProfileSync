@@ -157,7 +157,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/shopping-lists', async (req: Request, res: Response) => {
     try {
       const lists = await storage.getShoppingLists();
-      res.json(lists);
+      
+      // Fetch items for each shopping list
+      const listsWithItems = await Promise.all(lists.map(async (list) => {
+        const items = await storage.getShoppingListItems(list.id);
+        return { ...list, items };
+      }));
+      
+      res.json(listsWithItems);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+  
+  // Get recent purchases to refresh shopping lists
+  app.get('/api/purchases/recent', async (req: Request, res: Response) => {
+    try {
+      const userId = 1; // For demo purposes, use default user
+      const purchases = await storage.getPurchases();
+      
+      // Get the 5 most recent purchases
+      const recentPurchases = purchases
+        .sort((a, b) => new Date(b.purchaseDate).getTime() - new Date(a.purchaseDate).getTime())
+        .slice(0, 5);
+        
+      res.json(recentPurchases);
     } catch (error) {
       handleError(res, error);
     }

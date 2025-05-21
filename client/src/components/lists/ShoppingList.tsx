@@ -44,14 +44,16 @@ const ShoppingListComponent: React.FC = () => {
   
   // Get recent purchases to help refresh shopping list
   const { data: recentPurchases } = useQuery({
-    queryKey: ['/api/purchases/recent'],
-    onSuccess: (data) => {
-      if (data && data.length > 0) {
-        // This query's success will trigger a refresh of the shopping list
-        refetchShoppingLists();
-      }
-    }
+    queryKey: ['/api/purchases/recent']
   });
+  
+  // Update shopping list when recent purchases change
+  useEffect(() => {
+    if (recentPurchases && Array.isArray(recentPurchases) && recentPurchases.length > 0) {
+      // This will trigger a refresh of the shopping list
+      refetchShoppingLists();
+    }
+  }, [recentPurchases, refetchShoppingLists]);
   
   // Get retailers data
   const { data: retailers } = useQuery({
@@ -237,7 +239,17 @@ const ShoppingListComponent: React.FC = () => {
     );
   }
   
+  // Get the default shopping list and its items
   const defaultList = shoppingLists?.[0];
+  
+  // Use effect to ensure shopping list is refreshed when purchases data changes
+  useEffect(() => {
+    if (recentPurchases && recentPurchases.length > 0) {
+      // Trigger a refresh of the shopping list data
+      refetchShoppingLists();
+    }
+  }, [recentPurchases, refetchShoppingLists]);
+  
   const items = defaultList?.items || [];
   
   return (
