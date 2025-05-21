@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, json, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, json, pgEnum, doublePrecision } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -163,6 +163,61 @@ export const purchaseAnomalies = pgTable("purchase_anomalies", {
   excludeFromRecommendations: boolean("exclude_from_recommendations").default(true),
 });
 
+// Affiliate Partners Schema
+export const affiliatePartners = pgTable("affiliate_partners", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  websiteUrl: text("website_url").notNull(),
+  logoUrl: text("logo_url"),
+  apiEndpoint: text("api_endpoint"),
+  apiKey: text("api_key"),
+  commissionRate: doublePrecision("commission_rate").notNull(),
+  active: boolean("active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Affiliate Products Schema
+export const affiliateProducts = pgTable("affiliate_products", {
+  id: serial("id").primaryKey(),
+  partnerId: integer("partner_id").references(() => affiliatePartners.id).notNull(),
+  productName: text("product_name").notNull(),
+  description: text("description"),
+  productUrl: text("product_url").notNull(),
+  imageUrl: text("image_url"),
+  price: integer("price").notNull(),
+  category: text("category").notNull(),
+  commission: doublePrecision("commission").notNull(),
+  trackingCode: text("tracking_code").notNull(),
+  active: boolean("active").default(true),
+  featured: boolean("featured").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Affiliate Clicks Schema
+export const affiliateClicks = pgTable("affiliate_clicks", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  productId: integer("product_id").references(() => affiliateProducts.id).notNull(),
+  clickDate: timestamp("click_date").defaultNow(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  referrer: text("referrer"),
+});
+
+// Affiliate Conversions Schema
+export const affiliateConversions = pgTable("affiliate_conversions", {
+  id: serial("id").primaryKey(),
+  clickId: integer("click_id").references(() => affiliateClicks.id),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  productId: integer("product_id").references(() => affiliateProducts.id).notNull(),
+  conversionDate: timestamp("conversion_date").defaultNow(),
+  orderValue: integer("order_value").notNull(),
+  commission: doublePrecision("commission").notNull(),
+  status: text("status").default("pending"), // pending, approved, rejected
+  trackingReference: text("tracking_reference"),
+});
+
 // Insert Schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -249,3 +304,31 @@ export type Recommendation = typeof recommendations.$inferSelect;
 
 export type InsertPurchaseAnomaly = z.infer<typeof insertPurchaseAnomalySchema>;
 export type PurchaseAnomaly = typeof purchaseAnomalies.$inferSelect;
+
+export const insertAffiliatePartnerSchema = createInsertSchema(affiliatePartners).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAffiliatePartner = z.infer<typeof insertAffiliatePartnerSchema>;
+export type AffiliatePartner = typeof affiliatePartners.$inferSelect;
+
+export const insertAffiliateProductSchema = createInsertSchema(affiliateProducts).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAffiliateProduct = z.infer<typeof insertAffiliateProductSchema>;
+export type AffiliateProduct = typeof affiliateProducts.$inferSelect;
+
+export const insertAffiliateClickSchema = createInsertSchema(affiliateClicks).omit({
+  id: true,
+  clickDate: true,
+});
+export type InsertAffiliateClick = z.infer<typeof insertAffiliateClickSchema>;
+export type AffiliateClick = typeof affiliateClicks.$inferSelect;
+
+export const insertAffiliateConversionSchema = createInsertSchema(affiliateConversions).omit({
+  id: true,
+  conversionDate: true,
+});
+export type InsertAffiliateConversion = z.infer<typeof insertAffiliateConversionSchema>;
+export type AffiliateConversion = typeof affiliateConversions.$inferSelect;
