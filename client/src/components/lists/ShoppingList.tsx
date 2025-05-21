@@ -8,13 +8,15 @@ import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Plus, ShoppingBag, FileText, Clock, Check, Trash2, AlertTriangle, DollarSign, MapPin, Car, BarChart2 } from 'lucide-react';
+import { Plus, ShoppingBag, FileText, Clock, Check, Trash2, AlertTriangle, DollarSign, MapPin, Car, BarChart2, Wand2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Progress } from '@/components/ui/progress';
+import { Switch } from '@/components/ui/switch';
+import { detectUnitFromItemName } from '@/lib/utils';
 
 const ShoppingListComponent: React.FC = () => {
   const { toast } = useToast();
@@ -22,6 +24,7 @@ const ShoppingListComponent: React.FC = () => {
   const [newItemName, setNewItemName] = useState('');
   const [newItemQuantity, setNewItemQuantity] = useState(1);
   const [newItemUnit, setNewItemUnit] = useState('COUNT');
+  const [autoDetectUnit, setAutoDetectUnit] = useState(true);
   const [recipeUrl, setRecipeUrl] = useState('');
   const [servings, setServings] = useState('4');
   const [recipeDialogOpen, setRecipeDialogOpen] = useState(false);
@@ -251,10 +254,17 @@ const ShoppingListComponent: React.FC = () => {
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
     if (newItemName.trim()) {
+      const productName = newItemName.trim();
+      
+      // If auto-detect is enabled, determine the unit type based on item name
+      const unit = autoDetectUnit 
+        ? detectUnitFromItemName(productName) 
+        : newItemUnit;
+      
       addItemMutation.mutate({
-        productName: newItemName.trim(),
+        productName,
         quantity: newItemQuantity,
-        unit: newItemUnit
+        unit
       });
     }
   };
@@ -329,8 +339,9 @@ const ShoppingListComponent: React.FC = () => {
           <Select 
             value={newItemUnit} 
             onValueChange={setNewItemUnit}
+            disabled={autoDetectUnit}
           >
-            <SelectTrigger className="flex-1">
+            <SelectTrigger className={`flex-1 ${autoDetectUnit ? 'opacity-60' : ''}`}>
               <SelectValue placeholder="Unit" />
             </SelectTrigger>
             <SelectContent>
@@ -346,6 +357,18 @@ const ShoppingListComponent: React.FC = () => {
               <SelectItem value="BUNCH">Bunch</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="flex items-center space-x-2 mt-2 text-sm text-gray-600">
+          <Switch 
+            checked={autoDetectUnit} 
+            onCheckedChange={setAutoDetectUnit}
+            id="auto-detect"
+          />
+          <Label htmlFor="auto-detect" className="cursor-pointer flex items-center">
+            <Wand2 className="h-3.5 w-3.5 mr-1.5" /> 
+            Auto-detect best unit based on item name
+          </Label>
         </div>
       </form>
       
