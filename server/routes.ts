@@ -333,6 +333,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       handleError(res, error);
     }
   });
+  
+  // Weekly circulars routes
+  app.get('/api/circulars', async (req: Request, res: Response) => {
+    try {
+      const retailerId = req.query.retailerId ? parseInt(req.query.retailerId as string) : undefined;
+      const circulars = await storage.getWeeklyCirculars(retailerId);
+      res.json(circulars);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+  
+  app.get('/api/circulars/:id', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const circular = await storage.getWeeklyCircular(id);
+      
+      if (!circular) {
+        return res.status(404).json({ message: 'Circular not found' });
+      }
+      
+      res.json(circular);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+  
+  app.get('/api/circulars/:id/deals', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deals = await storage.getDealsFromCircular(id);
+      res.json(deals);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
 
   // Analysis routes
   app.post('/api/analyze/patterns', async (req: Request, res: Response) => {

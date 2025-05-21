@@ -102,6 +102,7 @@ export class MemStorage implements IStorage {
   private shoppingLists: Map<number, ShoppingList>;
   private shoppingListItems: Map<number, ShoppingListItem>;
   private storeDeals: Map<number, StoreDeal>;
+  private weeklyCirculars: Map<number, WeeklyCircular>;
   private recommendations: Map<number, Recommendation>;
   private purchaseAnomalies: Map<number, PurchaseAnomaly>;
 
@@ -114,6 +115,7 @@ export class MemStorage implements IStorage {
   private shoppingListIdCounter: number = 1;
   private shoppingListItemIdCounter: number = 1;
   private storeDealIdCounter: number = 1;
+  private weeklyCircularIdCounter: number = 1;
   private recommendationIdCounter: number = 1;
   private purchaseAnomalyIdCounter: number = 1;
 
@@ -127,6 +129,7 @@ export class MemStorage implements IStorage {
     this.shoppingLists = new Map();
     this.shoppingListItems = new Map();
     this.storeDeals = new Map();
+    this.weeklyCirculars = new Map();
     this.recommendations = new Map();
     this.purchaseAnomalies = new Map();
 
@@ -624,9 +627,53 @@ export class MemStorage implements IStorage {
 
   async createDeal(deal: InsertStoreDeal): Promise<StoreDeal> {
     const id = this.storeDealIdCounter++;
-    const newDeal: StoreDeal = { ...deal, id };
+    const newDeal: StoreDeal = { 
+      ...deal, 
+      id,
+      dealSource: deal.dealSource || "manual",
+      circularId: deal.circularId || null,
+      imageUrl: deal.imageUrl || null,
+      featured: deal.featured || false
+    };
     this.storeDeals.set(id, newDeal);
     return newDeal;
+  }
+  
+  // Weekly Circular methods
+  async getWeeklyCirculars(retailerId?: number): Promise<WeeklyCircular[]> {
+    const circulars = Array.from(this.weeklyCirculars.values());
+    
+    // Filter by retailer if specified
+    if (retailerId) {
+      return circulars.filter(circular => circular.retailerId === retailerId);
+    }
+    
+    // Only return active circulars that haven't ended
+    const now = new Date();
+    return circulars.filter(circular => 
+      circular.isActive && new Date(circular.endDate) >= now
+    );
+  }
+  
+  async getWeeklyCircular(id: number): Promise<WeeklyCircular | undefined> {
+    return this.weeklyCirculars.get(id);
+  }
+  
+  async createWeeklyCircular(circular: InsertWeeklyCircular): Promise<WeeklyCircular> {
+    const id = this.weeklyCircularIdCounter++;
+    const newCircular: WeeklyCircular = { 
+      ...circular, 
+      id,
+      isActive: circular.isActive !== undefined ? circular.isActive : true,
+      createdAt: new Date()
+    };
+    this.weeklyCirculars.set(id, newCircular);
+    return newCircular;
+  }
+  
+  async getDealsFromCircular(circularId: number): Promise<StoreDeal[]> {
+    return Array.from(this.storeDeals.values())
+      .filter(deal => deal.circularId === circularId);
   }
 
   // Recommendation methods
