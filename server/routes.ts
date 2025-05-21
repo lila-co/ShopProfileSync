@@ -301,8 +301,131 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/shopping-list/items', async (req: Request, res: Response) => {
     try {
-      const newItem = await storage.addShoppingListItem(req.body);
-      res.json(newItem);
+      const { productName, quantity, shoppingListId } = req.body;
+      
+      if (!shoppingListId) {
+        return res.status(400).json({ message: 'Shopping list ID is required' });
+      }
+      
+      // Get existing items to check for duplicates
+      const existingItems = await storage.getShoppingListItems(shoppingListId);
+      
+      // Common item names and alternate spellings/misspellings
+      const commonItemCorrections: Record<string, string[]> = {
+        'banana': ['banan', 'bananna', 'bananas', 'bannana', 'banannas'],
+        'apple': ['appl', 'apples', 'aple'],
+        'milk': ['millk', 'milks', 'mlik'],
+        'bread': ['bred', 'breads', 'loaf'],
+        'egg': ['eggs', 'egss'],
+        'potato': ['potatos', 'potatoe', 'potatoes'],
+        'tomato': ['tomatos', 'tomatoe', 'tomatoes'],
+        'cheese': ['chese', 'cheez', 'chees'],
+        'chicken': ['chickn', 'checken', 'chiken'],
+        'cereal': ['ceereal', 'cereals', 'cerel']
+      };
+      
+      // Normalize the product name to lowercase for matching
+      const normalizedName = productName.toLowerCase().trim();
+      
+      // Check if this is likely a duplicate with a slightly different spelling
+      let correctedName = normalizedName;
+      let isDuplicate = false;
+      let existingItem = null;
+      
+      // First check for exact matches or plurals
+      existingItem = existingItems.find(item => 
+        item.productName.toLowerCase() === normalizedName ||
+        item.productName.toLowerCase() + 's' === normalizedName ||
+        item.productName.toLowerCase() === normalizedName + 's'
+      );
+      
+      if (existingItem) {
+        isDuplicate = true;
+      } else {
+        // Look for corrections in common items dictionary
+        for (const [correct, variations] of Object.entries(commonItemCorrections)) {
+          if (normalizedName === correct || variations.includes(normalizedName)) {
+            correctedName = correct;
+            
+            // Check if the corrected name exists in the list
+            existingItem = existingItems.find(item => 
+              item.productName.toLowerCase() === correctedName ||
+              item.productName.toLowerCase().includes(correctedName)
+            );
+            
+            if (existingItem) {
+              isDuplicate = true;
+            }
+            break;
+          }
+        }
+        
+        // If no match in dictionary, use fuzzy matching for other items
+        if (!isDuplicate) {
+          for (const item of existingItems) {
+            const itemName = item.productName.toLowerCase();
+            
+            // Check for contained substrings (e.g., "tomato" and "roma tomato")
+            if (itemName.includes(normalizedName) || normalizedName.includes(itemName)) {
+              existingItem = item;
+              isDuplicate = true;
+              break;
+            }
+            
+            // Simple Levenshtein-like check for similar spellings
+            // If names are very close to each other
+            if (itemName.length > 3 && normalizedName.length > 3) {
+              // Check if first 3 chars match and length is similar
+              if (itemName.substring(0, 3) === normalizedName.substring(0, 3) && 
+                  Math.abs(itemName.length - normalizedName.length) <= 2) {
+                existingItem = item;
+                isDuplicate = true;
+                break;
+              }
+            }
+          }
+        }
+      }
+      
+      let result;
+      
+      if (isDuplicate && existingItem) {
+        // Update the quantity of the existing item instead of adding a new one
+        const updatedItem = await storage.updateShoppingListItem(existingItem.id, {
+          quantity: existingItem.quantity + quantity
+        });
+        
+        // Add information about the merge for the client
+        result = {
+          ...updatedItem,
+          merged: true,
+          originalName: productName,
+          message: `Combined with existing "${existingItem.productName}" item`
+        };
+      } else {
+        // If it's a corrected common item, use the corrected name
+        let nameToUse = productName;
+        if (correctedName !== normalizedName && Object.keys(commonItemCorrections).includes(correctedName)) {
+          // Capitalize first letter of corrected name
+          nameToUse = correctedName.charAt(0).toUpperCase() + correctedName.slice(1);
+        }
+        
+        // Add as new item
+        const newItem = await storage.addShoppingListItem({
+          shoppingListId,
+          productName: nameToUse,
+          quantity
+        });
+        
+        result = {
+          ...newItem,
+          merged: false,
+          corrected: nameToUse !== productName,
+          originalName: productName
+        };
+      }
+      
+      res.json(result);
     } catch (error) {
       handleError(res, error);
     }
