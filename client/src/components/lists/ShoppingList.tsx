@@ -448,10 +448,15 @@ const ShoppingListComponent: React.FC = () => {
                           onChange={() => handleToggleItem(item.id, item.isCompleted)}
                           className="h-5 w-5 text-primary rounded mr-3"
                         />
-                        <div>
-                          <span className={`font-medium ${item.isCompleted ? "line-through text-gray-500" : "text-gray-800"}`}>
-                            {item.productName}
-                          </span>
+                        <div className="flex-1">
+                          <div className="flex items-center">
+                            <span className={`font-medium ${item.isCompleted ? "line-through text-gray-500" : "text-gray-800"}`}>
+                              {item.productName}
+                            </span>
+                            <span className="ml-2 text-sm bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
+                              Qty: {item.quantity}
+                            </span>
+                          </div>
                           {item.suggestedRetailerId && item.suggestedPrice && (
                             <div className="flex items-center text-xs text-gray-500 mt-1">
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
