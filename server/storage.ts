@@ -107,6 +107,7 @@ export class MemStorage implements IStorage {
   private shoppingListItemIdCounter: number = 1;
   private storeDealIdCounter: number = 1;
   private recommendationIdCounter: number = 1;
+  private purchaseAnomalyIdCounter: number = 1;
 
   constructor() {
     this.users = new Map();
@@ -119,6 +120,7 @@ export class MemStorage implements IStorage {
     this.shoppingListItems = new Map();
     this.storeDeals = new Map();
     this.recommendations = new Map();
+    this.purchaseAnomalies = new Map();
 
     // Initialize with sample data
     this.initializeData();
@@ -1250,6 +1252,48 @@ export class DatabaseStorage implements IStorage {
     // In a real implementation, this would query the database
     // For demo, return random number between 10-50
     return Math.floor(Math.random() * 40) + 10;
+  }
+
+  // Purchase Anomaly methods
+  async getPurchaseAnomalies(): Promise<PurchaseAnomaly[]> {
+    const anomalies = await db.select().from(purchaseAnomalies);
+    return anomalies;
+  }
+
+  async getPurchaseAnomaly(id: number): Promise<PurchaseAnomaly | undefined> {
+    const [anomaly] = await db
+      .select()
+      .from(purchaseAnomalies)
+      .where(eq(purchaseAnomalies.id, id));
+    return anomaly;
+  }
+
+  async createPurchaseAnomaly(anomalyData: InsertPurchaseAnomaly): Promise<PurchaseAnomaly> {
+    const [anomaly] = await db
+      .insert(purchaseAnomalies)
+      .values(anomalyData)
+      .returning();
+    return anomaly;
+  }
+
+  async updatePurchaseAnomaly(id: number, updates: Partial<PurchaseAnomaly>): Promise<PurchaseAnomaly> {
+    const [updatedAnomaly] = await db
+      .update(purchaseAnomalies)
+      .set(updates)
+      .where(eq(purchaseAnomalies.id, id))
+      .returning();
+    
+    if (!updatedAnomaly) {
+      throw new Error(`Purchase anomaly with id ${id} not found`);
+    }
+    
+    return updatedAnomaly;
+  }
+
+  async deletePurchaseAnomaly(id: number): Promise<void> {
+    await db
+      .delete(purchaseAnomalies)
+      .where(eq(purchaseAnomalies.id, id));
   }
 }
 
