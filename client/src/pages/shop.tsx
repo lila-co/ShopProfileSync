@@ -480,7 +480,12 @@ const Shop: React.FC = () => {
         <CardContent>
           <Select
             value={selectedRetailer?.toString()}
-            onValueChange={(value) => setSelectedRetailer(parseInt(value))}
+            onValueChange={(value) => {
+              const retailerId = parseInt(value);
+              setSelectedRetailer(retailerId);
+              fetchRetailerInfo(retailerId);
+              setSearchResults([]);
+            }}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select a retailer" />
@@ -493,6 +498,98 @@ const Shop: React.FC = () => {
               ))}
             </SelectContent>
           </Select>
+          
+          {selectedRetailerInfo && (
+            <div className="mt-4 text-sm">
+              <div className="flex items-center">
+                <Badge variant={selectedRetailerInfo.integration.status === 'ready' ? "success" : "secondary"} className="mr-2">
+                  {selectedRetailerInfo.integration.status === 'ready' ? 'Connected' : 'No API'}
+                </Badge>
+                <span>
+                  {selectedRetailerInfo.integration.supportsOnlineOrdering 
+                    ? 'Supports online ordering' 
+                    : 'In-store shopping only'}
+                </span>
+              </div>
+            </div>
+          )}
+          
+          {selectedRetailer && (
+            <div className="mt-4">
+              <form onSubmit={handleProductSearch} className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder="Search for products..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-1"
+                />
+                <Button type="submit" disabled={isSearching || !searchQuery.trim()}>
+                  {isSearching ? 'Searching...' : 'Search'}
+                </Button>
+              </form>
+              
+              {searchResults.length > 0 && (
+                <div className="mt-4">
+                  <h3 className="text-sm font-medium mb-2">Search Results:</h3>
+                  <ScrollArea className="h-[200px] rounded-md border p-2">
+                    <ul className="divide-y">
+                      {searchResults.map((product, index) => (
+                        <li key={index} className="py-2">
+                          <div className="flex justify-between">
+                            <div>
+                              <p className="font-medium">{product.name}</p>
+                              <p className="text-sm text-gray-500">
+                                {product.category && `${product.category} • `}
+                                {product.inStock ? 'In Stock' : 'Out of Stock'}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-medium">
+                                ${product.salePrice ? (
+                                  <>
+                                    <span className="text-green-600">{product.salePrice.toFixed(2)}</span> 
+                                    <span className="text-sm line-through ml-1">${product.price.toFixed(2)}</span>
+                                  </>
+                                ) : (
+                                  product.price.toFixed(2)
+                                )}
+                              </p>
+                              {product.inStock && (
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="mt-1"
+                                  onClick={() => {
+                                    if (!selectedList) {
+                                      toast({
+                                        title: "No list selected",
+                                        description: "Please select a shopping list first",
+                                        variant: "destructive"
+                                      });
+                                      return;
+                                    }
+                                    
+                                    addItemToListMutation.mutate({
+                                      shoppingListId: selectedList,
+                                      productName: product.name,
+                                      quantity: 1
+                                    });
+                                  }}
+                                >
+                                  Add to List
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </ScrollArea>
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
       
