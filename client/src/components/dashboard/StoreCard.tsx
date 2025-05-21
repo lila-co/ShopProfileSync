@@ -1,0 +1,55 @@
+import React from 'react';
+import { DealsSummary } from '@/lib/types';
+import { useLocation } from 'wouter';
+import { Card } from '@/components/ui/card';
+
+interface StoreCardProps {
+  storeDeal: DealsSummary;
+}
+
+const StoreCard: React.FC<StoreCardProps> = ({ storeDeal }) => {
+  const [, navigate] = useLocation();
+  
+  const getColorClasses = () => {
+    const colorMap: Record<string, { bg: string, icon: string }> = {
+      blue: { bg: 'bg-blue-100', icon: 'text-blue-600' },
+      red: { bg: 'bg-red-100', icon: 'text-red-600' },
+      green: { bg: 'bg-green-100', icon: 'text-green-600' },
+      yellow: { bg: 'bg-yellow-100', icon: 'text-yellow-600' },
+      purple: { bg: 'bg-purple-100', icon: 'text-purple-600' },
+      pink: { bg: 'bg-pink-100', icon: 'text-pink-600' },
+      indigo: { bg: 'bg-indigo-100', icon: 'text-indigo-600' },
+      gray: { bg: 'bg-gray-100', icon: 'text-gray-600' },
+    };
+    
+    return colorMap[storeDeal.logoColor] || colorMap.blue;
+  };
+  
+  const colorClasses = getColorClasses();
+  
+  return (
+    <Card 
+      className="flex-shrink-0 w-40 overflow-hidden border border-gray-100 cursor-pointer"
+      onClick={() => navigate(`/deals/${storeDeal.retailerId}`)}
+    >
+      <div className={`h-20 ${colorClasses.bg} flex items-center justify-center p-4`}>
+        <div className="bg-white rounded-full p-2 shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${colorClasses.icon}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/>
+            <path d="M3 9V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4"/>
+            <path d="M21 9V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v4"/>
+            <path d="M9 21v-6"/>
+            <path d="M15 21v-6"/>
+          </svg>
+        </div>
+      </div>
+      <div className="p-3">
+        <h4 className="font-medium text-sm">{storeDeal.retailerName}</h4>
+        <p className="text-xs text-green-600">{storeDeal.dealsCount} deals available</p>
+        <p className="text-xs text-gray-500 mt-1">Valid until {new Date(storeDeal.validUntil).toLocaleDateString()}</p>
+      </div>
+    </Card>
+  );
+};
+
+export default StoreCard;
