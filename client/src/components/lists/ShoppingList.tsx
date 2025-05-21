@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -8,11 +8,13 @@ import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Plus, ShoppingBag, FileText, Clock, Check, Trash2, AlertTriangle } from 'lucide-react';
+import { Plus, ShoppingBag, FileText, Clock, Check, Trash2, AlertTriangle, DollarSign, MapPin, Car, BarChart2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Progress } from '@/components/ui/progress';
 
 const ShoppingListComponent: React.FC = () => {
   const { toast } = useToast();
@@ -21,6 +23,10 @@ const ShoppingListComponent: React.FC = () => {
   const [recipeUrl, setRecipeUrl] = useState('');
   const [servings, setServings] = useState('4');
   const [recipeDialogOpen, setRecipeDialogOpen] = useState(false);
+  const [optimizationPreference, setOptimizationPreference] = useState('cost');
+  const [selectedRetailers, setSelectedRetailers] = useState<number[]>([]);
+  const [showRouteMap, setShowRouteMap] = useState(false);
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   const [expiringDeals, setExpiringDeals] = useState([
     { id: 1, retailer: 'Walmart', product: 'Organic Milk', expires: 'Tomorrow', discount: '20%' },
     { id: 2, retailer: 'Target', product: 'Free-Range Eggs', expires: 'In 2 days', discount: '15%' }

@@ -350,6 +350,205 @@ export async function registerRoutes(app: Express): Promise<Server> {
       handleError(res, error);
     }
   });
+  
+  // Calculate shopping list costs by retailer
+  app.post('/api/shopping-lists/costs', async (req: Request, res: Response) => {
+    try {
+      const { shoppingListId } = req.body;
+      const listId = shoppingListId || 1; // Default to first list if not specified
+      
+      // Get shopping list
+      const list = await storage.getShoppingList(listId);
+      if (!list) {
+        return res.status(404).json({ message: 'Shopping list not found' });
+      }
+      
+      // Get items in the list
+      const items = await storage.getShoppingListItems(listId);
+      if (!items.length) {
+        return res.json({ retailers: [], itemsByRetailer: {} });
+      }
+      
+      // Get all retailers
+      const retailers = await storage.getRetailers();
+      
+      // Get all deals to check prices at different retailers
+      const allDeals = await storage.getDeals();
+      
+      // Calculate cost at each retailer
+      const retailerCosts = retailers.map(retailer => {
+        const itemsAtRetailer = items.map(item => {
+          // Find best price for this item at this retailer
+          const deal = allDeals.find(d => 
+            d.retailerId === retailer.id && 
+            d.productName.toLowerCase() === item.productName.toLowerCase()
+          );
+          
+          // Use deal price if available, otherwise use a baseline price (random for demo)
+          const itemPrice = deal ? deal.salePrice : Math.floor(Math.random() * 800) + 200; // Random price between $2-$10
+          
+          return {
+            id: item.id,
+            productName: item.productName,
+            quantity: item.quantity,
+            price: itemPrice,
+            totalPrice: itemPrice * item.quantity,
+            hasDeal: !!deal
+          };
+        });
+        
+        // Calculate total cost at this retailer
+        const totalCost = itemsAtRetailer.reduce((sum, item) => sum + item.totalPrice, 0);
+        
+        return {
+          retailerId: retailer.id,
+          retailerName: retailer.name,
+          totalCost,
+          savings: Math.floor(Math.random() * 1500), // Demo savings amount
+          items: itemsAtRetailer,
+          missingItems: [] // In a real implementation, this would show items not available at this retailer
+        };
+      });
+      
+      // Sort retailers by total cost
+      retailerCosts.sort((a, b) => a.totalCost - b.totalCost);
+      
+      // Calculate multi-store optimization (for demo purposes)
+      const multiStoreOptimization = {
+        totalCost: 0,
+        totalSavings: 0,
+        retailers: [],
+        itemsByRetailer: {}
+      };
+      
+      // Find best price for each item across all retailers
+      items.forEach(item => {
+        let bestPrice = Number.MAX_VALUE;
+        let bestRetailer = null;
+        
+        retailers.forEach(retailer => {
+          // Find deal for this item at this retailer
+          const deal = allDeals.find(d => 
+            d.retailerId === retailer.id && 
+            d.productName.toLowerCase() === item.productName.toLowerCase()
+          );
+          
+          // Calculate price
+          const price = deal ? deal.salePrice : Math.floor(Math.random() * 800) + 200;
+          
+          if (price < bestPrice) {
+            bestPrice = price;
+            bestRetailer = retailer;
+          }
+        });
+        
+        if (bestRetailer) {
+          // Add retailer to list if not already added
+          if (!multiStoreOptimization.retailers.includes(bestRetailer.id)) {
+            multiStoreOptimization.retailers.push(bestRetailer.id);
+            multiStoreOptimization.itemsByRetailer[bestRetailer.id] = {
+              retailerName: bestRetailer.name,
+              items: [],
+              subtotal: 0
+            };
+          }
+          
+          // Add item to this retailer's list
+          const totalPrice = bestPrice * item.quantity;
+          multiStoreOptimization.itemsByRetailer[bestRetailer.id].items.push({
+            id: item.id,
+            productName: item.productName,
+            quantity: item.quantity,
+            price: bestPrice,
+            totalPrice
+          });
+          
+          // Update retailer subtotal
+          multiStoreOptimization.itemsByRetailer[bestRetailer.id].subtotal += totalPrice;
+          
+          // Update total cost
+          multiStoreOptimization.totalCost += totalPrice;
+        }
+      });
+      
+      // Calculate savings compared to most expensive retailer
+      const mostExpensiveRetailer = retailerCosts[retailerCosts.length - 1];
+      multiStoreOptimization.totalSavings = mostExpensiveRetailer.totalCost - multiStoreOptimization.totalCost;
+      
+      res.json({
+        singleStore: retailerCosts,
+        multiStore: multiStoreOptimization
+      });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+  
+  // Get optimized shopping route
+  app.post('/api/shopping-route', async (req: Request, res: Response) => {
+    try {
+      const { retailerIds, userLocation } = req.body;
+      
+      if (!retailerIds || !retailerIds.length) {
+        return res.status(400).json({ message: 'At least one retailer ID is required' });
+      }
+      
+      // Get retailers
+      const retailers = await storage.getRetailers();
+      const selectedRetailers = retailers.filter(r => retailerIds.includes(r.id));
+      
+      if (selectedRetailers.length === 0) {
+        return res.status(404).json({ message: 'No matching retailers found' });
+      }
+      
+      // For demo purposes, generate mock coordinates near the user location
+      const userCoords = userLocation || { lat: 37.7749, lng: -122.4194 }; // Default to San Francisco
+      
+      // Generate retailer locations (in a real app, these would come from the database)
+      const retailersWithLocations = selectedRetailers.map((retailer, index) => {
+        // Generate locations in a radius around user's location
+        const angle = (index / selectedRetailers.length) * 2 * Math.PI;
+        const radius = 0.01 + (Math.random() * 0.02); // 1-3km roughly
+        
+        return {
+          id: retailer.id,
+          name: retailer.name,
+          location: {
+            lat: userCoords.lat + (radius * Math.cos(angle)),
+            lng: userCoords.lng + (radius * Math.sin(angle))
+          },
+          address: `${100 + index} Main St, San Francisco, CA 94105`,
+          distance: (radius * 111).toFixed(1) + 'km', // Convert to approximate kilometers
+          estimatedTime: Math.round(radius * 111 * 2) + ' min' // Very rough estimate
+        };
+      });
+      
+      // Calculate a simple route (for a real app, use a routing API)
+      const route = {
+        totalDistance: retailersWithLocations.reduce((sum, r) => sum + parseFloat(r.distance), 0),
+        totalTime: retailersWithLocations.reduce((sum, r) => sum + parseInt(r.estimatedTime), 0),
+        waypoints: [
+          {
+            name: 'Your Location',
+            location: userCoords,
+            address: 'Current Location'
+          },
+          ...retailersWithLocations.map(r => ({
+            name: r.name,
+            location: r.location,
+            address: r.address
+          }))
+        ]
+      };
+      
+      res.json({
+        retailers: retailersWithLocations,
+        route: route
+      });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
