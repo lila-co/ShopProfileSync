@@ -333,31 +333,6 @@ class KrogerAPI extends RetailerAPI {
   }
 }
 
-// Default Retailer API implementation for retailers without specific API integrations
-class DefaultRetailerAPI extends RetailerAPI {
-  private retailerName: string;
-
-  constructor(retailerName: string) {
-    super("", "");
-    this.retailerName = retailerName;
-  }
-
-  async searchProducts(query: string): Promise<RetailerProductResponse[]> {
-    console.log(`Simulating product search for ${this.retailerName}`);
-    return simulateProductSearch(query, this.retailerName);
-  }
-
-  async getProductPrice(productName: string): Promise<number | null> {
-    console.log(`Simulating product price lookup for ${this.retailerName}`);
-    return simulateProductPrice(productName);
-  }
-
-  async submitOrder(items: ShoppingListItem[], mode: 'pickup' | 'delivery', customerInfo: any): Promise<RetailerOrderResponse> {
-    console.log(`Simulating order submission for ${this.retailerName}`);
-    return simulateOrderSubmission(items, this.retailerName, mode);
-  }
-}
-
 // Factory to create the appropriate retailer API client
 export async function getRetailerAPI(retailerId: number): Promise<RetailerAPI> {
   try {
