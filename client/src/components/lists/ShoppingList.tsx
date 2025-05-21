@@ -34,6 +34,8 @@ const ShoppingListComponent: React.FC = () => {
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
   const [generatedItems, setGeneratedItems] = useState<any[]>([]);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<{id: number, productName: string, quantity: number, unit: string} | null>(null);
   const [expiringDeals, setExpiringDeals] = useState([
     { id: 1, retailer: 'Walmart', product: 'Organic Milk', expires: 'Tomorrow', discount: '20%' },
     { id: 2, retailer: 'Target', product: 'Free-Range Eggs', expires: 'In 2 days', discount: '15%' }
@@ -284,6 +286,34 @@ const ShoppingListComponent: React.FC = () => {
       });
     }
   });
+  
+  // Edit shopping list item
+  const editItemMutation = useMutation({
+    mutationFn: async (item: { id: number, productName: string, quantity: number, unit: string }) => {
+      const response = await apiRequest('PATCH', `/api/shopping-list/items/${item.id}`, {
+        productName: item.productName,
+        quantity: item.quantity,
+        unit: item.unit
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      setEditDialogOpen(false);
+      setEditingItem(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      toast({
+        title: "Item Updated",
+        description: "Item has been updated in your shopping list"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update item",
+        variant: "destructive"
+      });
+    }
+  });
 
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
@@ -309,6 +339,28 @@ const ShoppingListComponent: React.FC = () => {
   
   const handleDeleteItem = (itemId: number) => {
     deleteItemMutation.mutate(itemId);
+  };
+  
+  const handleEditItem = (item: ShoppingListItem) => {
+    setEditingItem({
+      id: item.id,
+      productName: item.productName,
+      quantity: item.quantity,
+      unit: item.unit
+    });
+    setEditDialogOpen(true);
+  };
+  
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingItem && editingItem.productName.trim()) {
+      editItemMutation.mutate({
+        id: editingItem.id,
+        productName: editingItem.productName.trim(),
+        quantity: editingItem.quantity,
+        unit: editingItem.unit
+      });
+    }
   };
   
   // Show loading state
@@ -459,12 +511,14 @@ const ShoppingListComponent: React.FC = () => {
                       <div className="text-sm font-medium">
                         Qty: {item.quantity || 1} {autoDetectUnit && (
                           <Badge variant="outline" className="ml-1">
-                            {detectUnitFromItemName(item.productName).toLowerCase()}
+                            {(item.detectedUnit || detectUnitFromItemName(item.productName)).toLowerCase()}
                           </Badge>
                         )}
                       </div>
                       {autoDetectUnit && (
-                        <p className="text-xs text-gray-500 mt-1">Smart unit detection</p>
+                        <p className="text-xs text-gray-500 mt-1 flex items-center justify-end">
+                          <Wand2 className="h-3 w-3 mr-1.5" /> Smart unit detection
+                        </p>
                       )}
                     </div>
                   </div>
