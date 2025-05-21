@@ -29,13 +29,36 @@ const Shop: React.FC = () => {
   const [shoppingRoute, setShoppingRoute] = useState<any>(null);
   const [orderCompleted, setOrderCompleted] = useState(false);
   
+  // Check URL parameters for pre-selected retailer and list
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const retailerId = params.get('retailerId');
+    const listId = params.get('listId');
+    
+    if (retailerId) {
+      setSelectedRetailer(parseInt(retailerId));
+    }
+    
+    if (listId) {
+      setSelectedList(parseInt(listId));
+    }
+  }, []);
+  
   // Fetch shopping lists
   const { data: shoppingLists, isLoading: isLoadingLists } = useQuery({
     queryKey: ['/api/shopping-lists'],
     onSuccess: (data) => {
-      // Default to the first list if none selected
+      // Default to the first list if none selected and no URL param
       if (data && data.length > 0 && !selectedList) {
-        setSelectedList(data[0].id);
+        // Check URL parameters again to ensure we don't override them
+        const params = new URLSearchParams(window.location.search);
+        const listId = params.get('listId');
+        
+        if (listId) {
+          setSelectedList(parseInt(listId));
+        } else {
+          setSelectedList(data[0].id);
+        }
       }
     }
   });
@@ -44,9 +67,17 @@ const Shop: React.FC = () => {
   const { data: retailers, isLoading: isLoadingRetailers } = useQuery({
     queryKey: ['/api/retailers'],
     onSuccess: (data) => {
-      // Default to the first retailer if none selected
+      // Default to the first retailer if none selected and no URL param
       if (data && data.length > 0 && !selectedRetailer) {
-        setSelectedRetailer(data[0].id);
+        // Check URL parameters again to ensure we don't override them
+        const params = new URLSearchParams(window.location.search);
+        const retailerId = params.get('retailerId');
+        
+        if (retailerId) {
+          setSelectedRetailer(parseInt(retailerId));
+        } else {
+          setSelectedRetailer(data[0].id);
+        }
       }
     }
   });
