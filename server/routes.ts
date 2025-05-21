@@ -867,6 +867,137 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Retailer API Integration Routes
+  
+  // Search for products at a specific retailer
+  app.get('/api/retailers/:retailerId/products/search', async (req: Request, res: Response) => {
+    try {
+      const retailerId = parseInt(req.params.retailerId);
+      const query = req.query.query as string;
+      
+      if (!query) {
+        return res.status(400).json({ message: "Search query is required" });
+      }
+      
+      // Get the retailer API client
+      const retailerAPI = await getRetailerAPI(retailerId);
+      
+      // Search for products
+      const products = await retailerAPI.searchProducts(query);
+      
+      res.json(products);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+  
+  // Get product price from a specific retailer
+  app.get('/api/retailers/:retailerId/products/price', async (req: Request, res: Response) => {
+    try {
+      const retailerId = parseInt(req.params.retailerId);
+      const productName = req.query.productName as string;
+      
+      if (!productName) {
+        return res.status(400).json({ message: "Product name is required" });
+      }
+      
+      // Get the retailer API client
+      const retailerAPI = await getRetailerAPI(retailerId);
+      
+      // Get product price
+      const price = await retailerAPI.getProductPrice(productName);
+      
+      if (price === null) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      
+      res.json({ price });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+  
+  // Submit an order to a retailer
+  app.post('/api/retailers/:retailerId/orders', async (req: Request, res: Response) => {
+    try {
+      const retailerId = parseInt(req.params.retailerId);
+      const { items, mode, customerInfo, shoppingListId } = req.body;
+      
+      if (!items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ message: "Order items are required" });
+      }
+      
+      if (!mode || (mode !== 'pickup' && mode !== 'delivery')) {
+        return res.status(400).json({ message: "Valid fulfillment mode (pickup or delivery) is required" });
+      }
+      
+      if (!customerInfo) {
+        return res.status(400).json({ message: "Customer information is required" });
+      }
+      
+      // Get the retailer API client
+      const retailerAPI = await getRetailerAPI(retailerId);
+      
+      // Submit the order
+      const orderResponse = await retailerAPI.submitOrder(items, mode, customerInfo);
+      
+      // If the order was successful and a shopping list ID was provided, mark items as completed
+      if (shoppingListId && orderResponse.orderId) {
+        const listItems = await storage.getShoppingListItems(shoppingListId);
+        const itemIds = listItems
+          .filter(item => items.some((orderItem: any) => 
+            orderItem.productName.toLowerCase() === item.productName.toLowerCase()
+          ))
+          .map(item => item.id);
+        
+        // Mark items as completed
+        for (const itemId of itemIds) {
+          await storage.updateShoppingListItem(itemId, { isCompleted: true });
+        }
+      }
+      
+      res.json(orderResponse);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+  
+  // Get retailer integration status (API, auth, etc.)
+  app.get('/api/retailers/:retailerId/integration-status', async (req: Request, res: Response) => {
+    try {
+      const retailerId = parseInt(req.params.retailerId);
+      
+      // Get the retailer from the database
+      const retailer = await storage.getRetailer(retailerId);
+      
+      if (!retailer) {
+        return res.status(404).json({ message: "Retailer not found" });
+      }
+      
+      // Check if the retailer has the necessary API configuration
+      const hasApiEndpoint = !!retailer.apiEndpoint;
+      const hasApiKey = !!retailer.apiKey;
+      const supportsOnlineOrdering = !!retailer.supportsOnlineOrdering;
+      
+      res.json({
+        retailerId: retailer.id,
+        retailerName: retailer.name,
+        integration: {
+          hasApiEndpoint,
+          hasApiKey,
+          supportsOnlineOrdering,
+          supportsPickup: retailer.supportsPickup,
+          supportsDelivery: retailer.supportsDelivery,
+          requiresAuthentication: retailer.requiresAuthentication,
+          authType: retailer.authType,
+          status: hasApiEndpoint && hasApiKey ? 'ready' : 'not_configured'
+        }
+      });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
