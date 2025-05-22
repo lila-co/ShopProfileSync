@@ -483,6 +483,240 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Internal Analytics API endpoints
+  app.get('/api/internal/analytics/retailers', async (req: Request, res: Response) => {
+    try {
+      // Sample retailer analytics data
+      const retailerAnalytics = [
+        {
+          id: 1,
+          name: "Walmart",
+          totalSales: 845000,
+          orderCount: 12450,
+          averageOrderValue: 67.87,
+          topSellingCategories: [
+            { name: "Dairy", salesValue: 125000, percentage: 14.8 },
+            { name: "Produce", salesValue: 115000, percentage: 13.6 },
+            { name: "Meat", salesValue: 98000, percentage: 11.6 },
+            { name: "Beverages", salesValue: 92000, percentage: 10.9 },
+            { name: "Snacks", salesValue: 76000, percentage: 9.0 }
+          ]
+        },
+        {
+          id: 2,
+          name: "Target",
+          totalSales: 623000,
+          orderCount: 8750,
+          averageOrderValue: 71.20,
+          topSellingCategories: [
+            { name: "Household", salesValue: 112000, percentage: 18.0 },
+            { name: "Beauty", salesValue: 92000, percentage: 14.8 },
+            { name: "Apparel", salesValue: 87000, percentage: 14.0 },
+            { name: "Electronics", salesValue: 78000, percentage: 12.5 },
+            { name: "Grocery", salesValue: 68000, percentage: 10.9 }
+          ]
+        },
+        {
+          id: 3,
+          name: "Kroger",
+          totalSales: 512000,
+          orderCount: 9250,
+          averageOrderValue: 55.35,
+          topSellingCategories: [
+            { name: "Produce", salesValue: 98000, percentage: 19.1 },
+            { name: "Dairy", salesValue: 85000, percentage: 16.6 },
+            { name: "Meat", salesValue: 76000, percentage: 14.8 },
+            { name: "Bakery", salesValue: 63000, percentage: 12.3 },
+            { name: "Frozen Foods", salesValue: 58000, percentage: 11.3 }
+          ]
+        }
+      ];
+      
+      res.json(retailerAnalytics);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+  
+  app.get('/api/internal/analytics/products', async (req: Request, res: Response) => {
+    try {
+      // Sample product analytics data
+      const productAnalytics = [
+        { 
+          id: 101, 
+          name: "Organic Milk (1 gal)", 
+          category: "Dairy", 
+          totalSales: 87500, 
+          unitsSold: 17500, 
+          averagePrice: 5.00, 
+          percentageOfTotalSales: 4.2 
+        },
+        { 
+          id: 102, 
+          name: "Bananas", 
+          category: "Produce", 
+          totalSales: 65000, 
+          unitsSold: 43333, 
+          averagePrice: 1.50, 
+          percentageOfTotalSales: 3.1 
+        },
+        { 
+          id: 103, 
+          name: "Whole Grain Bread", 
+          category: "Bakery", 
+          totalSales: 54000, 
+          unitsSold: 13500, 
+          averagePrice: 4.00, 
+          percentageOfTotalSales: 2.6 
+        },
+        { 
+          id: 104, 
+          name: "Ground Beef (1lb)", 
+          category: "Meat", 
+          totalSales: 98000, 
+          unitsSold: 12250, 
+          averagePrice: 8.00, 
+          percentageOfTotalSales: 4.7 
+        },
+        { 
+          id: 105, 
+          name: "Eggs (1 dozen)", 
+          category: "Dairy", 
+          totalSales: 78000, 
+          unitsSold: 19500, 
+          averagePrice: 4.00, 
+          percentageOfTotalSales: 3.7 
+        },
+        { 
+          id: 106, 
+          name: "Chicken Breast (1lb)", 
+          category: "Meat", 
+          totalSales: 112000, 
+          unitsSold: 16000, 
+          averagePrice: 7.00, 
+          percentageOfTotalSales: 5.4 
+        },
+        { 
+          id: 107, 
+          name: "Coffee (Ground, 12oz)", 
+          category: "Beverages", 
+          totalSales: 98000, 
+          unitsSold: 8909, 
+          averagePrice: 11.00, 
+          percentageOfTotalSales: 4.7 
+        }
+      ];
+      
+      res.json(productAnalytics);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+  
+  app.get('/api/internal/analytics/customer-segments', async (req: Request, res: Response) => {
+    try {
+      // Sample customer segment data
+      const customerSegments = [
+        {
+          id: "family-households",
+          name: "Family Households",
+          percentage: 35,
+          averageSpend: 128.50,
+          count: 4250,
+          topCategories: ["Groceries", "Household", "Snacks", "Beverages", "Baby"]
+        },
+        {
+          id: "single-professionals",
+          name: "Single Professionals",
+          percentage: 25,
+          averageSpend: 82.75,
+          count: 3050,
+          topCategories: ["Ready Meals", "Produce", "Beverages", "Snacks", "Health"]
+        },
+        {
+          id: "empty-nesters",
+          name: "Empty Nesters",
+          percentage: 15,
+          averageSpend: 95.20,
+          count: 1830,
+          topCategories: ["Produce", "Meat", "Bakery", "Health", "Dairy"]
+        },
+        {
+          id: "students",
+          name: "Students",
+          percentage: 12,
+          averageSpend: 56.80,
+          count: 1465,
+          topCategories: ["Snacks", "Frozen", "Beverages", "Pasta", "Canned Goods"]
+        },
+        {
+          id: "retirees",
+          name: "Retirees",
+          percentage: 13,
+          averageSpend: 68.35,
+          count: 1585,
+          topCategories: ["Health", "Produce", "Dairy", "Bakery", "Meat"]
+        }
+      ];
+      
+      res.json(customerSegments);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+  
+  app.get('/api/internal/analytics/purchase-patterns', async (req: Request, res: Response) => {
+    try {
+      // Sample purchase pattern data
+      const purchasePatterns = [
+        {
+          id: "pattern-1",
+          name: "Weekend Stock-up",
+          description: "Large grocery orders placed Friday-Sunday",
+          affectedProducts: ["Meat", "Produce", "Dairy", "Beverages"],
+          customerSegments: ["Family Households", "Empty Nesters"],
+          statisticalSignificance: 0.92
+        },
+        {
+          id: "pattern-2",
+          name: "Meal Prep Monday",
+          description: "Bulk ingredient purchases on Mondays",
+          affectedProducts: ["Proteins", "Vegetables", "Grains", "Storage Containers"],
+          customerSegments: ["Single Professionals", "Students"],
+          statisticalSignificance: 0.85
+        },
+        {
+          id: "pattern-3",
+          name: "Payday Splurge",
+          description: "Premium purchases on 1st and 15th of month",
+          affectedProducts: ["Specialty Foods", "Organic Items", "Premium Meats", "Wine & Spirits"],
+          customerSegments: ["Single Professionals", "Empty Nesters"],
+          statisticalSignificance: 0.78
+        },
+        {
+          id: "pattern-4",
+          name: "Monthly Pantry Restock",
+          description: "Bulk non-perishable purchases once monthly",
+          affectedProducts: ["Canned Goods", "Pasta", "Rice", "Baking Supplies", "Cleaning Products"],
+          customerSegments: ["Family Households", "Students"],
+          statisticalSignificance: 0.89
+        },
+        {
+          id: "pattern-5",
+          name: "Seasonal Produce Shift",
+          description: "Changing fruit/vegetable preferences by season",
+          affectedProducts: ["Berries", "Stone Fruits", "Root Vegetables", "Leafy Greens"],
+          customerSegments: ["All Segments"],
+          statisticalSignificance: 0.95
+        }
+      ];
+      
+      res.json(purchasePatterns);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+  
   // Weekly circulars routes
   app.get('/api/circulars', async (req: Request, res: Response) => {
     try {
