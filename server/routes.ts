@@ -302,7 +302,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/shopping-list/items', async (req: Request, res: Response) => {
     try {
-      const { productName, quantity, shoppingListId } = req.body;
+      const { productName, quantity, unit, shoppingListId } = req.body;
       
       if (!shoppingListId) {
         return res.status(400).json({ message: 'Shopping list ID is required' });
