@@ -236,7 +236,7 @@ const InternalAnalytics: React.FC = () => {
                   <SelectValue placeholder="Select Retailer" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Retailers</SelectItem>
+                  <SelectItem value="all">All Retailers</SelectItem>
                   <SelectItem value="1">Walmart</SelectItem>
                   <SelectItem value="2">Target</SelectItem>
                   <SelectItem value="3">Kroger</SelectItem>
@@ -252,7 +252,7 @@ const InternalAnalytics: React.FC = () => {
                   <SelectValue placeholder="Select Category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Categories</SelectItem>
+                  <SelectItem value="all">All Categories</SelectItem>
                   <SelectItem value="dairy">Dairy</SelectItem>
                   <SelectItem value="meat">Meat & Seafood</SelectItem>
                   <SelectItem value="produce">Produce</SelectItem>
