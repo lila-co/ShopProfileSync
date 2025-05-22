@@ -489,6 +489,47 @@ const ShoppingListPage: React.FC = () => {
           </TabsContent>
           
           <TabsContent value="comparison" className="pt-4">
+            <Card className="mb-4">
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Shopping Optimization</h3>
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-600">Optimization Preference</p>
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex items-center">
+                        <input 
+                          type="radio" 
+                          id="opt-cost" 
+                          name="optimization" 
+                          className="mr-2 h-4 w-4 text-primary" 
+                          defaultChecked
+                        />
+                        <label htmlFor="opt-cost" className="text-sm">Optimize for lowest total cost</label>
+                      </div>
+                      <div className="flex items-center">
+                        <input 
+                          type="radio" 
+                          id="opt-time" 
+                          name="optimization" 
+                          className="mr-2 h-4 w-4 text-primary"
+                        />
+                        <label htmlFor="opt-time" className="text-sm">Optimize for quickest trip</label>
+                      </div>
+                      <div className="flex items-center">
+                        <input 
+                          type="radio" 
+                          id="opt-balance" 
+                          name="optimization" 
+                          className="mr-2 h-4 w-4 text-primary"
+                        />
+                        <label htmlFor="opt-balance" className="text-sm">Balance time and cost</label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
             <Card>
               <CardContent className="p-6">
                 <div className="space-y-4">
