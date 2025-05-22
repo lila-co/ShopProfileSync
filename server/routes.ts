@@ -393,7 +393,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isDuplicate && existingItem) {
         // Update the quantity of the existing item instead of adding a new one
         const updatedItem = await storage.updateShoppingListItem(existingItem.id, {
-          quantity: existingItem.quantity + quantity
+          quantity: existingItem.quantity + quantity,
+          // Keep the existing unit or update to the new one if specified
+          unit: unit || existingItem.unit || 'COUNT'
         });
         
         // Add information about the merge for the client
@@ -411,11 +413,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           nameToUse = correctedName.charAt(0).toUpperCase() + correctedName.slice(1);
         }
         
-        // Add as new item
+        // Add as new item with the specified unit (or default to COUNT)
         const newItem = await storage.addShoppingListItem({
           shoppingListId,
           productName: nameToUse,
-          quantity
+          quantity,
+          unit: unit || 'COUNT'
         });
         
         result = {
