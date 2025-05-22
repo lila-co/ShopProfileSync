@@ -550,10 +550,22 @@ const ShoppingListComponent: React.FC = () => {
       
       <Tabs defaultValue="list" className="mt-6">
         <TabsList className="grid grid-cols-4 mb-4">
-          <TabsTrigger value="list">List</TabsTrigger>
-          <TabsTrigger value="price">Price Compare</TabsTrigger>
-          <TabsTrigger value="optimize">Optimize</TabsTrigger>
-          <TabsTrigger value="route">Route</TabsTrigger>
+          <TabsTrigger value="list" className="flex items-center justify-center">
+            <ShoppingBag className="h-4 w-4 mr-2 hidden sm:inline-block" />
+            List
+          </TabsTrigger>
+          <TabsTrigger value="price" className="flex items-center justify-center">
+            <DollarSign className="h-4 w-4 mr-2 hidden sm:inline-block" />
+            Price Compare
+          </TabsTrigger>
+          <TabsTrigger value="optimize" className="flex items-center justify-center">
+            <BarChart2 className="h-4 w-4 mr-2 hidden sm:inline-block" />
+            Optimize
+          </TabsTrigger>
+          <TabsTrigger value="route" className="flex items-center justify-center">
+            <Car className="h-4 w-4 mr-2 hidden sm:inline-block" />
+            Route
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="list" className="space-y-4">
