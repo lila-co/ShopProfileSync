@@ -290,7 +290,7 @@ const InternalAnalytics: React.FC = () => {
                   <SelectValue placeholder="Select Type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Types</SelectItem>
+                  <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="single">Single</SelectItem>
                   <SelectItem value="family">Family</SelectItem>
                   <SelectItem value="couple">Couple</SelectItem>
