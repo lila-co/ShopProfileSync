@@ -765,7 +765,7 @@ const ShoppingListComponent: React.FC = () => {
                           <div className="flex justify-between mb-2">
                             <div>
                               <span className="font-semibold">{store.retailerName}</span>
-                              <span className="ml-2 text-sm text-gray-500">{store.items.length} items</span>
+                              <span className="ml-2 text-sm text-gray-500">{store.items?.length || 0} items</span>
                             </div>
                             <span className="font-semibold">${(store.subtotal / 100).toFixed(2)}</span>
                           </div>
@@ -826,9 +826,9 @@ const ShoppingListComponent: React.FC = () => {
                       <div>
                         <div className="flex justify-between text-sm mb-1">
                           <span>Items with deals</span>
-                          <span>{store.items.filter((i: any) => i.hasDeal).length} of {store.items.length}</span>
+                          <span>{store.items?.filter((i: any) => i.hasDeal)?.length || 0} of {store.items?.length || 0}</span>
                         </div>
-                        <Progress value={(store.items.filter((i: any) => i.hasDeal).length / store.items.length) * 100} className="h-2" />
+                        <Progress value={store.items?.length ? ((store.items?.filter((i: any) => i.hasDeal)?.length || 0) / store.items.length) * 100 : 0} className="h-2" />
                       </div>
                     
                       <Button 
