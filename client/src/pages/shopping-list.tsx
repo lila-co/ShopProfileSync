@@ -514,57 +514,54 @@ const ShoppingListPage: React.FC = () => {
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">Shopping Optimization</h3>
                   
-                  <div className="grid grid-cols-1 gap-3 sm:gap-4 mt-3 sm:mt-4">
-                    <div className={`border rounded-lg p-3 sm:p-4 cursor-pointer transition-all hover:border-primary hover:shadow-md ${selectedOptimization === 'cost' ? 'bg-primary/10 border-primary' : 'bg-gray-50 dark:bg-gray-800/50'}`} 
-                         onClick={() => setSelectedOptimization('cost')}>
-                      <div className="flex items-center mb-1 sm:mb-2">
-                        <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full mr-2 sm:mr-3 flex items-center justify-center ${selectedOptimization === 'cost' ? 'bg-primary' : 'border border-gray-300'}`}>
-                          {selectedOptimization === 'cost' && <Check className="h-2 w-2 sm:h-3 sm:w-3 text-white" />}
-                        </div>
-                        <h4 className="font-medium text-sm sm:text-base">Lowest Total Cost</h4>
-                      </div>
-                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 ml-6 sm:ml-8">
-                        Get the absolute best prices across all stores
-                      </p>
-                    </div>
+                  <div className="mt-3">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      We'll analyze your shopping list across stores to find the best deals based on your preferences. You'll see options for:
+                    </p>
                     
-                    <div className={`border rounded-lg p-3 sm:p-4 cursor-pointer transition-all hover:border-primary hover:shadow-md ${selectedOptimization === 'time' ? 'bg-primary/10 border-primary' : 'bg-gray-50 dark:bg-gray-800/50'}`}
-                         onClick={() => setSelectedOptimization('time')}>
-                      <div className="flex items-center mb-1 sm:mb-2">
-                        <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full mr-2 sm:mr-3 flex items-center justify-center ${selectedOptimization === 'time' ? 'bg-primary' : 'border border-gray-300'}`}>
-                          {selectedOptimization === 'time' && <Check className="h-2 w-2 sm:h-3 sm:w-3 text-white" />}
+                    <div className="space-y-3 mb-5">
+                      <div className="flex items-start">
+                        <div className="bg-blue-100 dark:bg-blue-900/20 p-2 rounded-full mr-3">
+                          <StoreIcon className="h-4 w-4 text-blue-600" />
                         </div>
-                        <h4 className="font-medium text-sm sm:text-base">Quickest Trip</h4>
-                      </div>
-                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 ml-6 sm:ml-8">
-                        Focus on a single store with good availability
-                      </p>
-                    </div>
-                    
-                    <div className={`border rounded-lg p-3 sm:p-4 cursor-pointer transition-all hover:border-primary hover:shadow-md ${selectedOptimization === 'balance' ? 'bg-primary/10 border-primary' : 'bg-gray-50 dark:bg-gray-800/50'}`}
-                         onClick={() => setSelectedOptimization('balance')}>
-                      <div className="flex items-center mb-1 sm:mb-2">
-                        <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full mr-2 sm:mr-3 flex items-center justify-center ${selectedOptimization === 'balance' ? 'bg-primary' : 'border border-gray-300'}`}>
-                          {selectedOptimization === 'balance' && <Check className="h-2 w-2 sm:h-3 sm:w-3 text-white" />}
+                        <div>
+                          <h4 className="font-medium text-sm text-blue-700 dark:text-blue-300">Single Store Option</h4>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">Best store with at least 80% of your items</p>
                         </div>
-                        <h4 className="font-medium text-sm sm:text-base">Balanced Approach</h4>
                       </div>
-                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 ml-6 sm:ml-8">
-                        Balance cost savings with time efficiency
-                      </p>
+                      
+                      <div className="flex items-start">
+                        <div className="bg-green-100 dark:bg-green-900/20 p-2 rounded-full mr-3">
+                          <ShoppingCart className="h-4 w-4 text-green-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-sm text-green-700 dark:text-green-300">Best Value Option</h4>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">Lowest total cost using multiple stores</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start">
+                        <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-full mr-3">
+                          <Clock className="h-4 w-4 text-gray-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-sm">Balanced Option</h4>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">Balances convenience, time and cost</p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
                   
-                  <div className="mt-4 flex justify-center sm:justify-end">
-                    <Button
-                      onClick={() => defaultList?.id && priceComparisonMutation.mutate(defaultList.id)}
-                      disabled={priceComparisonMutation.isPending || !items.length}
-                      className="w-full sm:w-auto"
-                    >
-                      {priceComparisonMutation.isPending ? 
-                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Optimizing...</> : 
-                        <><Sparkles className="mr-2 h-4 w-4" /> Find Best Shopping Options</>}
-                    </Button>
+                    <div className="flex justify-center">
+                      <Button
+                        onClick={() => defaultList?.id && priceComparisonMutation.mutate(defaultList.id)}
+                        disabled={priceComparisonMutation.isPending || !items.length}
+                        className="w-full sm:w-auto"
+                      >
+                        {priceComparisonMutation.isPending ? 
+                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Optimizing...</> : 
+                          <><Sparkles className="mr-2 h-4 w-4" /> Calculate Shopping Options</>}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardContent>
