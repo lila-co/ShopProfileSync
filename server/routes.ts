@@ -1199,6 +1199,166 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Add route to compare shopping list costs across retailers
+  app.post('/api/shopping-lists/costs', async (req: Request, res: Response) => {
+    try {
+      const { shoppingListId } = req.body;
+      
+      if (!shoppingListId) {
+        return res.status(400).json({ message: 'Shopping list ID is required' });
+      }
+      
+      // Get shopping list items
+      const items = await storage.getShoppingListItems(shoppingListId);
+      
+      if (!items || items.length === 0) {
+        return res.status(404).json({ message: 'Shopping list has no items' });
+      }
+      
+      // Get retailers to compare prices
+      const retailers = await storage.getRetailers();
+      
+      // In a real app, we would fetch actual prices from retailer APIs
+      // For demo purposes, we'll generate slightly varying prices for each retailer
+      
+      // Generate multi-store optimization (best price for each item)
+      const multiStoreRetailers: any[] = [];
+      let multiStoreTotalCost = 0;
+      
+      // Assign each item to the best retailer
+      retailers.forEach(retailer => {
+        const retailerItems: any[] = [];
+        let subtotal = 0;
+        
+        items.forEach(item => {
+          // Generate a price for this item at this retailer (in cents)
+          // Base price varies by retailer with some randomness
+          const basePrice = 
+            retailer.id === 1 ? 350 + Math.floor(Math.random() * 100) : // Walmart
+            retailer.id === 2 ? 380 + Math.floor(Math.random() * 100) : // Target
+            retailer.id === 3 ? 330 + Math.floor(Math.random() * 150) : // Kroger
+            400 + Math.floor(Math.random() * 100); // Other retailers
+            
+          const quantity = item.quantity || 1;
+          const price = basePrice * quantity;
+          
+          // Add this item to the retailer's list only if it's the best price
+          // (we'll compare later)
+          retailerItems.push({
+            id: item.id,
+            productName: item.productName,
+            quantity,
+            price,
+            unit: item.unit || 'COUNT'
+          });
+          
+          subtotal += price;
+        });
+        
+        // Add this retailer to our multi-store comparison
+        multiStoreRetailers.push({
+          retailerId: retailer.id,
+          retailerName: retailer.name,
+          items: retailerItems,
+          subtotal
+        });
+      });
+      
+      // Now optimize to find best price for each item
+      const optimizedRetailers: any[] = [];
+      const itemAssignments: Record<number, { retailerId: number, retailerName: string, price: number }> = {};
+      
+      // Find best price for each item
+      items.forEach(item => {
+        let bestPrice = Number.MAX_SAFE_INTEGER;
+        let bestRetailer = null;
+        
+        multiStoreRetailers.forEach(retailer => {
+          const retailerItem = retailer.items.find((ri: any) => ri.id === item.id);
+          if (retailerItem && retailerItem.price < bestPrice) {
+            bestPrice = retailerItem.price;
+            bestRetailer = {
+              retailerId: retailer.retailerId,
+              retailerName: retailer.retailerName
+            };
+          }
+        });
+        
+        if (bestRetailer) {
+          itemAssignments[item.id] = {
+            retailerId: bestRetailer.retailerId,
+            retailerName: bestRetailer.retailerName,
+            price: bestPrice
+          };
+          multiStoreTotalCost += bestPrice;
+        }
+      });
+      
+      // Group items by retailer
+      const retailerGroups: Record<number, { retailerId: number, retailerName: string, items: any[], subtotal: number }> = {};
+      
+      Object.entries(itemAssignments).forEach(([itemId, assignment]) => {
+        const item = items.find(i => i.id === parseInt(itemId));
+        if (!item) return;
+        
+        if (!retailerGroups[assignment.retailerId]) {
+          retailerGroups[assignment.retailerId] = {
+            retailerId: assignment.retailerId,
+            retailerName: assignment.retailerName,
+            items: [],
+            subtotal: 0
+          };
+        }
+        
+        retailerGroups[assignment.retailerId].items.push({
+          id: item.id,
+          productName: item.productName,
+          quantity: item.quantity || 1,
+          price: assignment.price,
+          unit: item.unit || 'COUNT'
+        });
+        
+        retailerGroups[assignment.retailerId].subtotal += assignment.price;
+      });
+      
+      // Convert to array and sort by total price
+      const optimizedRetailersArray = Object.values(retailerGroups)
+        .sort((a, b) => a.subtotal - b.subtotal);
+      
+      // Calculate single-store totals for comparison
+      const singleStoreOptions = multiStoreRetailers
+        .map(retailer => ({
+          retailerId: retailer.retailerId,
+          retailerName: retailer.retailerName,
+          totalCost: retailer.subtotal,
+          items: retailer.items,
+          bulkDeals: Math.random() > 0.7 ? [
+            {
+              productName: retailer.items[0].productName,
+              quantity: 3,
+              savings: Math.floor(retailer.items[0].price * 0.15)
+            }
+          ] : []
+        }))
+        .sort((a, b) => a.totalCost - b.totalCost);
+      
+      // Calculate savings by using multiple stores versus the best single store
+      const bestSingleStore = singleStoreOptions[0];
+      const multiStoreSavings = bestSingleStore.totalCost - multiStoreTotalCost;
+      
+      res.json({
+        multiStore: {
+          totalCost: multiStoreTotalCost,
+          savings: multiStoreSavings,
+          retailers: optimizedRetailersArray
+        },
+        singleStore: singleStoreOptions
+      });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+  
   // Get retailer integration status (API, auth, etc.)
   app.get('/api/retailers/:retailerId/integration-status', async (req: Request, res: Response) => {
     try {
