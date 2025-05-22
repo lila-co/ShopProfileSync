@@ -156,12 +156,21 @@ const DealsView: React.FC = () => {
                       <div className={`h-4 w-4 rounded-full ${getColorClass(deal.retailerId)} mr-2`}></div>
                       <h4 className="font-medium">{deal.productName}</h4>
                     </div>
-                    {deal.category && (
-                      <p className="text-xs text-gray-500 mt-1">{deal.category}</p>
-                    )}
-                    <p className="text-xs text-gray-500 mt-1">
-                      Valid until {new Date(deal.endDate).toLocaleDateString()}
-                    </p>
+                    <div className="flex justify-between mt-1">
+                      <div>
+                        {deal.category && (
+                          <p className="text-xs text-gray-500">{deal.category}</p>
+                        )}
+                        <p className="text-xs text-gray-500">
+                          Valid until {new Date(deal.endDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                      {selectedRetailerId === null && retailers && (
+                        <p className="text-xs font-medium text-gray-700">
+                          {retailers.find(r => r.id === deal.retailerId)?.name}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   <div className="text-right">
                     <p className="line-through text-gray-500 text-sm">${(deal.regularPrice / 100).toFixed(2)}</p>

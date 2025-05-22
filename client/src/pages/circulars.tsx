@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,10 +7,11 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from '@/components/ui/calendar';
 import { Retailers } from '@/components/retailers/RetailerList';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, MapPin, AlertCircle } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // Types
 import type { User, WeeklyCircular, StoreDeal, Retailer } from '@/lib/types';
@@ -18,24 +19,68 @@ import type { User, WeeklyCircular, StoreDeal, Retailer } from '@/lib/types';
 const CircularsPage: React.FC = () => {
   const [selectedRetailerId, setSelectedRetailerId] = useState<number | null>(null);
   const [selectedCircularId, setSelectedCircularId] = useState<number | null>(null);
+  const [location, setLocation] = useState<{ lat: number, lng: number } | null>(null);
+  const [locationStatus, setLocationStatus] = useState<'loading' | 'success' | 'error' | 'idle'>('idle');
   
   // Query user profile
   const { data: user } = useQuery<User>({
     queryKey: ['/api/user/profile'],
   });
+
+  // Get user location
+  const getUserLocation = () => {
+    setLocationStatus('loading');
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+          setLocationStatus('success');
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          setLocationStatus('error');
+        }
+      );
+    } else {
+      setLocationStatus('error');
+    }
+  };
   
   // Get all retailers
   const { data: retailers } = useQuery({
     queryKey: ['/api/retailers'],
   });
   
-  // Get circulars based on retailer selection
+  // Use location when available
+  useEffect(() => {
+    // If user profile exists but no location, request it
+    if (user && locationStatus === 'idle') {
+      getUserLocation();
+    }
+  }, [user]);
+
+  // Get circulars based on retailer selection and location
   const { data: circulars, isLoading: isLoadingCirculars } = useQuery({
-    queryKey: ['/api/circulars', selectedRetailerId],
+    queryKey: ['/api/circulars', selectedRetailerId, location],
     queryFn: async () => {
-      const endpoint = selectedRetailerId 
-        ? `/api/circulars?retailerId=${selectedRetailerId}` 
-        : '/api/circulars';
+      let endpoint = '/api/circulars';
+      
+      // Add query params
+      const params = new URLSearchParams();
+      if (selectedRetailerId) params.append('retailerId', selectedRetailerId.toString());
+      if (location) {
+        params.append('lat', location.lat.toString());
+        params.append('lng', location.lng.toString());
+      }
+      
+      // Append params to endpoint if any exist
+      if (params.toString()) {
+        endpoint += `?${params.toString()}`;
+      }
+      
       const response = await fetch(endpoint);
       return response.json();
     },
@@ -69,9 +114,65 @@ const CircularsPage: React.FC = () => {
       <main className="flex-1 overflow-y-auto pb-20">
         <div className="p-4">
           <h1 className="text-3xl font-bold mb-6">Weekly Circulars</h1>
-          <p className="text-gray-600 mb-8">
+          <p className="text-gray-600 mb-4">
             Browse weekly flyers and deals from your favorite local grocery stores
           </p>
+          
+          {/* Location Alert */}
+          {locationStatus === 'idle' && (
+            <Alert variant="default" className="mb-4">
+              <MapPin className="h-4 w-4" />
+              <AlertTitle>Location Access</AlertTitle>
+              <AlertDescription>
+                Enable location access to see circulars from stores near you.
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={getUserLocation} 
+                  className="ml-2"
+                >
+                  Enable Location
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {locationStatus === 'loading' && (
+            <Alert variant="default" className="mb-4">
+              <AlertTitle>Requesting Location...</AlertTitle>
+              <AlertDescription>
+                Please allow location access in your browser.
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {locationStatus === 'success' && (
+            <Alert variant="success" className="mb-4 bg-green-50 border-green-200">
+              <MapPin className="h-4 w-4 text-green-600" />
+              <AlertTitle className="text-green-700">Location Found</AlertTitle>
+              <AlertDescription className="text-green-600">
+                Showing circulars from stores near your location.
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {locationStatus === 'error' && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Location Unavailable</AlertTitle>
+              <AlertDescription>
+                Unable to access your location. Showing all available circulars instead.
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={getUserLocation} 
+                  className="ml-2"
+                >
+                  Try Again
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
           
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Sidebar - Retailer Selection */}
