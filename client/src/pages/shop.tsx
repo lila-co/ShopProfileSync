@@ -599,53 +599,59 @@ const Shop: React.FC = () => {
           <CardDescription>How would you like to shop?</CardDescription>
         </CardHeader>
         <CardContent>
-          <RadioGroup 
-            value={shoppingMode} 
-            onValueChange={(value: 'instore' | 'pickup' | 'delivery') => setShoppingMode(value)}
-            className="grid grid-cols-1 gap-4 md:grid-cols-3"
-          >
-            <div>
-              <RadioGroupItem value="instore" id="instore" className="peer sr-only" />
-              <Label
-                htmlFor="instore"
-                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-white p-4 hover:bg-gray-50 hover:border-gray-200 peer-checked:border-primary [&:has([data-state=checked])]:border-primary"
-              >
-                <Store className="mb-3 h-6 w-6" />
-                <span className="text-sm font-medium">In-Store Shopping</span>
-                <span className="text-xs text-muted-foreground mt-1">
-                  Get an organized route through the store
-                </span>
-              </Label>
-            </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {/* In-store shopping button */}
+            <button
+              type="button"
+              onClick={() => setShoppingMode('instore')}
+              className={`flex flex-col items-center justify-center rounded-md border-2 p-4 transition-all hover:border-primary hover:bg-gray-50/80
+                ${shoppingMode === 'instore' ? 'border-primary bg-primary/5' : 'border-gray-200'}`}
+            >
+              <Store className="mb-3 h-6 w-6" />
+              <span className="text-sm font-medium">In-Store Shopping</span>
+              <span className="text-xs text-muted-foreground mt-1 text-center">
+                Get an organized route through the store
+              </span>
+            </button>
             
-            <div>
-              <RadioGroupItem value="pickup" id="pickup" className="peer sr-only" />
-              <Label
-                htmlFor="pickup"
-                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-white p-4 hover:bg-gray-50 hover:border-gray-200 peer-checked:border-primary [&:has([data-state=checked])]:border-primary"
-              >
-                <TruckIcon className="mb-3 h-6 w-6" />
-                <span className="text-sm font-medium">Store Pickup</span>
-                <span className="text-xs text-muted-foreground mt-1">
-                  Order online and pickup in-store
-                </span>
-              </Label>
-            </div>
+            {/* Pickup button */}
+            <button
+              type="button"
+              onClick={() => setShoppingMode('pickup')}
+              className={`flex flex-col items-center justify-center rounded-md border-2 p-4 transition-all hover:border-primary hover:bg-gray-50/80
+                ${shoppingMode === 'pickup' ? 'border-primary bg-primary/5' : 'border-gray-200'}
+                ${selectedRetailerInfo && !selectedRetailerInfo.integration?.supportsPickup ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={selectedRetailerInfo && !selectedRetailerInfo.integration?.supportsPickup}
+            >
+              <TruckIcon className="mb-3 h-6 w-6" />
+              <span className="text-sm font-medium">Store Pickup</span>
+              <span className="text-xs text-muted-foreground mt-1 text-center">
+                Order online and pickup in-store
+              </span>
+              {selectedRetailerInfo && !selectedRetailerInfo.integration?.supportsPickup && (
+                <Badge variant="outline" className="mt-2 text-xs bg-gray-100">Not Available</Badge>
+              )}
+            </button>
             
-            <div>
-              <RadioGroupItem value="delivery" id="delivery" className="peer sr-only" />
-              <Label
-                htmlFor="delivery"
-                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-white p-4 hover:bg-gray-50 hover:border-gray-200 peer-checked:border-primary [&:has([data-state=checked])]:border-primary"
-              >
-                <HomeIcon className="mb-3 h-6 w-6" />
-                <span className="text-sm font-medium">Home Delivery</span>
-                <span className="text-xs text-muted-foreground mt-1">
-                  Get groceries delivered to your door
-                </span>
-              </Label>
-            </div>
-          </RadioGroup>
+            {/* Delivery button */}
+            <button
+              type="button" 
+              onClick={() => setShoppingMode('delivery')}
+              className={`flex flex-col items-center justify-center rounded-md border-2 p-4 transition-all hover:border-primary hover:bg-gray-50/80
+                ${shoppingMode === 'delivery' ? 'border-primary bg-primary/5' : 'border-gray-200'}
+                ${selectedRetailerInfo && !selectedRetailerInfo.integration?.supportsDelivery ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={selectedRetailerInfo && !selectedRetailerInfo.integration?.supportsDelivery}
+            >
+              <HomeIcon className="mb-3 h-6 w-6" />
+              <span className="text-sm font-medium">Home Delivery</span>
+              <span className="text-xs text-muted-foreground mt-1 text-center">
+                Get groceries delivered to your door
+              </span>
+              {selectedRetailerInfo && !selectedRetailerInfo.integration?.supportsDelivery && (
+                <Badge variant="outline" className="mt-2 text-xs bg-gray-100">Not Available</Badge>
+              )}
+            </button>
+          </div>
         </CardContent>
       </Card>
       
