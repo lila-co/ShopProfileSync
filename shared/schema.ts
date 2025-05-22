@@ -111,7 +111,7 @@ export const shoppingListItems = pgTable("shopping_list_items", {
   shoppingListId: integer("shopping_list_id").notNull(),
   productId: integer("product_id"),
   productName: text("product_name").notNull(),
-  quantity: integer("quantity").notNull().default(1),
+  quantity: doublePrecision("quantity").notNull().default(1),
   unit: unitEnum("unit").default("COUNT"),
   isCompleted: boolean("is_completed").default(false),
   suggestedRetailerId: integer("suggested_retailer_id"),
