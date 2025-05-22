@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,10 +10,12 @@ import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Plus, ShoppingBag, FileText, Pencil, Trash2 } from 'lucide-react';
+import { Plus, ShoppingBag, FileText, Pencil, Trash2, BarChart4, ListChecks, ShoppingCart } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { detectUnitFromItemName } from '@/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
 
 const ShoppingListPage: React.FC = () => {
   const { toast } = useToast();
@@ -32,10 +34,101 @@ const ShoppingListPage: React.FC = () => {
   const [editItemUnit, setEditItemUnit] = useState('COUNT');
   const [editItemId, setEditItemId] = useState<number | null>(null);
   
+  // Generate list dialog state
+  const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
+  const [generatedItems, setGeneratedItems] = useState<any[]>([]);
+  
+  // Tab state
+  const [activeTab, setActiveTab] = useState('items');
+
   const { data: shoppingLists, isLoading } = useQuery<ShoppingList[]>({
     queryKey: ['/api/shopping-lists'],
   });
   
+  // Get retailers for price comparison
+  const { data: retailers } = useQuery({
+    queryKey: ['/api/retailers'],
+  });
+  
+  // Get recommendations for the generate list feature
+  const { data: recommendations } = useQuery({
+    queryKey: ['/api/recommendations'],
+  });
+  
+  // Generate shopping list preview
+  const previewGenerateMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/shopping-lists/generate', {});
+      return response.json();
+    },
+    onSuccess: (data) => {
+      // Add estimated savings to each item
+      const enhancedItems = data.items.map((item: any) => ({
+        ...item,
+        isSelected: true,
+      }));
+      
+      setGeneratedItems(enhancedItems);
+      setGenerateDialogOpen(true);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to generate shopping list: " + error.message,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Generate shopping list from typical purchases
+  const generateListMutation = useMutation({
+    mutationFn: async (items: any[]) => {
+      // Filter only selected items
+      const selectedItems = items.filter(item => item.isSelected);
+      
+      const response = await apiRequest('POST', '/api/shopping-list/items', {
+        shoppingListId: shoppingLists?.[0].id,
+        items: selectedItems
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      setGenerateDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      toast({
+        title: "Shopping List Generated",
+        description: "Your shopping list has been created based on your typical purchases.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to generate shopping list: " + error.message,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Calculate price comparison across retailers
+  const priceComparisonMutation = useMutation({
+    mutationFn: async (shoppingListId: number) => {
+      const response = await apiRequest('POST', '/api/shopping-lists/costs', {
+        shoppingListId
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      // Price comparison data will be available in data.retailers
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to compare prices: " + error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
   // Add item to shopping list
   const addItemMutation = useMutation({
     mutationFn: async ({ productName, quantity, unit }: { productName: string, quantity: number, unit: string }) => {
@@ -61,7 +154,7 @@ const ShoppingListPage: React.FC = () => {
         description: "Item has been added to your shopping list"
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Failed to Add Item",
         description: error.message || "Could not add item to shopping list.",
@@ -118,7 +211,7 @@ const ShoppingListPage: React.FC = () => {
         description: "Item has been updated in your shopping list"
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
         description: "Failed to update item",
@@ -168,6 +261,13 @@ const ShoppingListPage: React.FC = () => {
     }
   };
   
+  // Handle toggling item selection in generate list preview
+  const handleToggleGeneratedItem = (index: number) => {
+    const updatedItems = [...generatedItems];
+    updatedItems[index].isSelected = !updatedItems[index].isSelected;
+    setGeneratedItems(updatedItems);
+  };
+  
   // Show loading state
   if (isLoading) {
     return (
@@ -204,147 +304,359 @@ const ShoppingListPage: React.FC = () => {
       <main className="flex-1 overflow-y-auto p-4 pb-20">
         <h2 className="text-xl font-bold mb-4">Shopping List</h2>
         
-        <form onSubmit={handleAddItem} className="mb-6">
-          <div className="flex space-x-2 mb-2">
-            <Input
-              type="text"
-              placeholder="Add an item..."
-              value={newItemName}
-              onChange={(e) => setNewItemName(e.target.value)}
-              className="flex-1"
-            />
-            <Button 
-              type="submit" 
-              className="bg-primary text-white"
-              disabled={addItemMutation.isPending}
-            >
-              Add
-            </Button>
-          </div>
-          
-          <div className="flex space-x-2">
-            <div className="w-20">
-              <Input
-                type="number"
-                placeholder="Qty"
-                min="0.01"
-                step="0.01"
-                defaultValue="1"
-                onChange={(e) => setNewItemQuantity(Math.round(parseFloat(e.target.value) || 1))}
-                className="w-full"
-              />
+        {/* Generate Shopping List Card - PROMINENTLY DISPLAYED */}
+        <Card className="mb-6 border-2 border-primary bg-primary/5">
+          <CardContent className="p-6">
+            <div className="flex flex-col items-center text-center">
+              <ShoppingCart className="h-12 w-12 text-primary mb-2" />
+              <h3 className="text-xl font-bold mb-2">GENERATE SHOPPING LIST</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Let us create a shopping list for you based on your typical purchases and preferences.
+              </p>
+              <Button 
+                className="w-full bg-primary hover:bg-primary/90"
+                size="lg"
+                onClick={() => previewGenerateMutation.mutate()}
+                disabled={previewGenerateMutation.isPending}
+              >
+                {previewGenerateMutation.isPending ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Generating...
+                  </span>
+                ) : (
+                  <span className="flex items-center">
+                    <ListChecks className="mr-2 h-5 w-5" />
+                    Generate Your Shopping List
+                  </span>
+                )}
+              </Button>
             </div>
-            
-            <Select 
-              value={newItemUnit} 
-              onValueChange={setNewItemUnit}
-              disabled={autoDetectUnit}
-            >
-              <SelectTrigger className={`flex-1 ${autoDetectUnit ? 'opacity-60' : ''}`}>
-                <SelectValue placeholder="Unit" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="COUNT">Count</SelectItem>
-                <SelectItem value="LB">lb (Pounds)</SelectItem>
-                <SelectItem value="OZ">oz (Ounces)</SelectItem>
-                <SelectItem value="PKG">Package</SelectItem>
-                <SelectItem value="ROLL">Rolls</SelectItem>
-                <SelectItem value="BOX">Box</SelectItem>
-                <SelectItem value="CAN">Can</SelectItem>
-                <SelectItem value="BOTTLE">Bottle</SelectItem>
-                <SelectItem value="JAR">Jar</SelectItem>
-                <SelectItem value="BUNCH">Bunch</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center space-x-2 mt-2 text-sm text-gray-600">
-            <Switch 
-              checked={autoDetectUnit} 
-              onCheckedChange={setAutoDetectUnit}
-              id="auto-detect"
-            />
-            <Label htmlFor="auto-detect" className="cursor-pointer flex items-center">
-              Auto-detect best unit based on item name
-            </Label>
-          </div>
-        </form>
+          </CardContent>
+        </Card>
         
-        <div className="space-y-3">
-          {items.length === 0 ? (
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="items">Shopping Items</TabsTrigger>
+            <TabsTrigger value="comparison">Price Comparison</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="items" className="pt-4">
+            <form onSubmit={handleAddItem} className="mb-6">
+              <div className="flex space-x-2 mb-2">
+                <Input
+                  type="text"
+                  placeholder="Add an item..."
+                  value={newItemName}
+                  onChange={(e) => setNewItemName(e.target.value)}
+                  className="flex-1"
+                />
+                <Button 
+                  type="submit" 
+                  className="bg-primary text-white"
+                  disabled={addItemMutation.isPending}
+                >
+                  Add
+                </Button>
+              </div>
+              
+              <div className="flex space-x-2">
+                <div className="w-20">
+                  <Input
+                    type="number"
+                    placeholder="Qty"
+                    min="0.01"
+                    step="0.01"
+                    defaultValue="1"
+                    onChange={(e) => setNewItemQuantity(Math.round(parseFloat(e.target.value) || 1))}
+                    className="w-full"
+                  />
+                </div>
+                
+                <Select 
+                  value={newItemUnit} 
+                  onValueChange={setNewItemUnit}
+                  disabled={autoDetectUnit}
+                >
+                  <SelectTrigger className={`flex-1 ${autoDetectUnit ? 'opacity-60' : ''}`}>
+                    <SelectValue placeholder="Unit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="COUNT">Count</SelectItem>
+                    <SelectItem value="LB">lb (Pounds)</SelectItem>
+                    <SelectItem value="OZ">oz (Ounces)</SelectItem>
+                    <SelectItem value="PKG">Package</SelectItem>
+                    <SelectItem value="ROLL">Rolls</SelectItem>
+                    <SelectItem value="BOX">Box</SelectItem>
+                    <SelectItem value="CAN">Can</SelectItem>
+                    <SelectItem value="BOTTLE">Bottle</SelectItem>
+                    <SelectItem value="JAR">Jar</SelectItem>
+                    <SelectItem value="BUNCH">Bunch</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center space-x-2 mt-2 text-sm text-gray-600">
+                <Switch 
+                  checked={autoDetectUnit} 
+                  onCheckedChange={setAutoDetectUnit}
+                  id="auto-detect"
+                />
+                <Label htmlFor="auto-detect" className="cursor-pointer flex items-center">
+                  Auto-detect best unit based on item name
+                </Label>
+              </div>
+            </form>
+            
+            <div className="space-y-3">
+              {items.length === 0 ? (
+                <Card>
+                  <CardContent className="p-6 text-center text-gray-500">
+                    <ShoppingBag className="h-12 w-12 mx-auto text-gray-300 mb-2" />
+                    <p>Your shopping list is empty</p>
+                    <p className="text-sm mt-1">Add items to get started</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                items.map((item) => (
+                  <Card key={item.id} className={item.isCompleted ? "opacity-60" : ""}>
+                    <CardContent className="p-3">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center flex-1">
+                          <input
+                            type="checkbox"
+                            checked={item.isCompleted}
+                            onChange={() => handleToggleItem(item.id, item.isCompleted)}
+                            className="h-5 w-5 text-primary rounded mr-3"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center">
+                              <span className={`font-medium ${item.isCompleted ? "line-through text-gray-500" : "text-gray-800"}`}>
+                                {item.productName}
+                              </span>
+                              <span className="ml-2 text-sm bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
+                                Qty: {item.quantity} {item.unit && (
+                                  <span className="text-xs text-gray-500">
+                                    {item.unit === "LB" ? "lbs" : 
+                                     item.unit === "OZ" ? "oz" : 
+                                     item.unit === "PKG" ? "pkg" : 
+                                     item.unit === "BOX" ? "box" : 
+                                     item.unit === "CAN" ? "can" : 
+                                     item.unit === "BOTTLE" ? "bottle" : 
+                                     item.unit === "JAR" ? "jar" : 
+                                     item.unit === "BUNCH" ? "bunch" : 
+                                     item.unit === "ROLL" ? "roll" : ""}
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                            {item.suggestedRetailerId && item.suggestedPrice && (
+                              <div className="flex items-center text-xs text-gray-500 mt-1">
+                                <span>
+                                  Best price: ${(item.suggestedPrice / 100).toFixed(2)} at Retailer #{item.suggestedRetailerId}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleEditItem(item)}
+                            className="text-gray-400 hover:text-blue-500"
+                            aria-label="Edit item"
+                            title="Edit item"
+                          >
+                            <Pencil className="h-5 w-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteItem(item.id)}
+                            className="text-gray-400 hover:text-red-500"
+                            aria-label="Delete item"
+                            title="Delete item"
+                          >
+                            <Trash2 className="h-5 w-5" />
+                          </button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="comparison" className="pt-4">
             <Card>
-              <CardContent className="p-6 text-center text-gray-500">
-                <ShoppingBag className="h-12 w-12 mx-auto text-gray-300 mb-2" />
-                <p>Your shopping list is empty</p>
-                <p className="text-sm mt-1">Add items to get started</p>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-medium">Price Comparison</h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => defaultList?.id && priceComparisonMutation.mutate(defaultList.id)}
+                      disabled={priceComparisonMutation.isPending || !items.length}
+                    >
+                      {priceComparisonMutation.isPending ? "Calculating..." : "Refresh Prices"}
+                    </Button>
+                  </div>
+                  
+                  {priceComparisonMutation.data?.retailers?.length > 0 ? (
+                    <div className="space-y-4">
+                      {priceComparisonMutation.data.retailers.map((store: any) => (
+                        <div key={store.retailerId} className="border rounded-lg p-3">
+                          <div className="flex justify-between mb-2">
+                            <div>
+                              <span className="font-semibold">{store.retailerName}</span>
+                              <span className="ml-2 text-sm text-gray-500">{store.items?.length || 0} items</span>
+                            </div>
+                            <span className="font-semibold">${(store.subtotal / 100).toFixed(2)}</span>
+                          </div>
+                          
+                          <div className="space-y-2 mb-3">
+                            {store.items?.slice(0, 3).map((item: any) => (
+                              <div key={item.productId} className="flex justify-between text-sm">
+                                <span>{item.productName}</span>
+                                <span>${(item.price / 100).toFixed(2)}</span>
+                              </div>
+                            ))}
+                            
+                            {store.items?.length > 3 && (
+                              <div className="mt-2 flex items-center text-sm text-gray-500">
+                                <span>
+                                  +{store.items.length - 3} more items
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span>Items with deals</span>
+                              <span>{store.items?.filter((i: any) => i.hasDeal)?.length || 0} of {store.items?.length || 0}</span>
+                            </div>
+                            <Progress value={store.items?.length ? ((store.items?.filter((i: any) => i.hasDeal)?.length || 0) / store.items.length) * 100 : 0} className="h-2" />
+                          </div>
+                          
+                          <Button 
+                            className="w-full mt-4"
+                            variant="outline"
+                            size="sm"
+                          >
+                            Shop at {store.retailerName}
+                          </Button>
+                        </div>
+                      ))}
+                      
+                      <div className="text-center mt-4">
+                        <p className="text-sm text-gray-500 mb-2">
+                          Best value: <span className="font-medium">Retailer Name</span>
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Based on your shopping list and available deals
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <BarChart4 className="h-12 w-12 mx-auto text-gray-300 mb-2" />
+                      <p className="text-gray-500 mb-2">Compare prices across stores</p>
+                      <p className="text-sm text-gray-500 mb-4">
+                        See which store offers the best value for your shopping list
+                      </p>
+                      <Button
+                        onClick={() => defaultList?.id && priceComparisonMutation.mutate(defaultList.id)}
+                        disabled={priceComparisonMutation.isPending || !items.length}
+                      >
+                        {items.length === 0 ? "Add items to compare prices" : "Compare Prices"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
-          ) : (
-            items.map((item) => (
-              <Card key={item.id} className={item.isCompleted ? "opacity-60" : ""}>
-                <CardContent className="p-3">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center flex-1">
-                      <input
-                        type="checkbox"
-                        checked={item.isCompleted}
-                        onChange={() => handleToggleItem(item.id, item.isCompleted)}
-                        className="h-5 w-5 text-primary rounded mr-3"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center">
-                          <span className={`font-medium ${item.isCompleted ? "line-through text-gray-500" : "text-gray-800"}`}>
-                            {item.productName}
-                          </span>
-                          <span className="ml-2 text-sm bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
-                            Qty: {item.quantity} {item.unit && (
-                              <span className="text-xs text-gray-500">
-                                {item.unit === "LB" ? "lbs" : 
-                                 item.unit === "OZ" ? "oz" : 
-                                 item.unit === "PKG" ? "pkg" : 
-                                 item.unit === "BOX" ? "box" : 
-                                 item.unit === "CAN" ? "can" : 
-                                 item.unit === "BOTTLE" ? "bottle" : 
-                                 item.unit === "JAR" ? "jar" : 
-                                 item.unit === "BUNCH" ? "bunch" : 
-                                 item.unit === "ROLL" ? "roll" : ""}
+          </TabsContent>
+        </Tabs>
+        
+        {/* Generate List Preview Dialog */}
+        <Dialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Generate Shopping List Preview</DialogTitle>
+            </DialogHeader>
+            <div className="max-h-[60vh] overflow-y-auto py-4">
+              <p className="text-sm text-gray-500 mb-4">
+                Based on your usual purchases and current needs, we recommend adding these items to your shopping list:
+              </p>
+              
+              <div className="space-y-2">
+                {generatedItems.map((item, index) => (
+                  <div key={index} className="flex items-center p-2 border rounded-lg">
+                    <input
+                      type="checkbox"
+                      checked={item.isSelected}
+                      onChange={() => handleToggleGeneratedItem(index)}
+                      className="h-5 w-5 text-primary rounded mr-3"
+                    />
+                    <div className="flex-1">
+                      <div className="flex flex-col sm:flex-row sm:justify-between">
+                        <div>
+                          <p className="font-medium">{item.productName}</p>
+                          <div className="flex items-center text-sm">
+                            <span className="text-gray-500">
+                              {item.quantity} {item.unit === "LB" ? "lbs" : 
+                                item.unit === "OZ" ? "oz" : 
+                                item.unit === "PKG" ? "pkg" : 
+                                item.unit === "BOX" ? "box" : 
+                                item.unit === "CAN" ? "can" : 
+                                item.unit === "BOTTLE" ? "bottle" : 
+                                item.unit === "JAR" ? "jar" : 
+                                item.unit === "BUNCH" ? "bunch" : 
+                                item.unit === "ROLL" ? "roll" : ""}
+                            </span>
+                            
+                            {item.suggestedRetailerId && (
+                              <span className="ml-2 text-green-600 text-xs">
+                                On sale at Retailer #{item.suggestedRetailerId}
                               </span>
                             )}
-                          </span>
+                          </div>
                         </div>
-                        {item.suggestedRetailerId && item.suggestedPrice && (
-                          <div className="flex items-center text-xs text-gray-500 mt-1">
-                            <span>
-                              Best price: ${(item.suggestedPrice / 100).toFixed(2)} at Retailer #{item.suggestedRetailerId}
-                            </span>
+                        {item.savings > 0 && (
+                          <div className="mt-1 sm:mt-0 text-green-600 text-sm font-medium">
+                            Save ${(item.savings / 100).toFixed(2)}
                           </div>
                         )}
                       </div>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleEditItem(item)}
-                        className="text-gray-400 hover:text-blue-500"
-                        aria-label="Edit item"
-                        title="Edit item"
-                      >
-                        <Pencil className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteItem(item.id)}
-                        className="text-gray-400 hover:text-red-500"
-                        aria-label="Delete item"
-                        title="Delete item"
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </button>
+                      
+                      {item.reason && (
+                        <div className="mt-1 text-xs text-gray-500">
+                          {item.reason}
+                        </div>
+                      )}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
+                ))}
+              </div>
+            </div>
+            <DialogFooter className="flex justify-between">
+              <Button 
+                variant="outline" 
+                onClick={() => setGenerateDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => generateListMutation.mutate(generatedItems)}
+                disabled={generateListMutation.isPending}
+                className="bg-primary">
+                Generate List
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         
         {/* Edit Item Dialog */}
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
@@ -382,9 +694,8 @@ const ShoppingListPage: React.FC = () => {
                     <Select 
                       value={editItemUnit} 
                       onValueChange={setEditItemUnit}
-                      disabled={autoDetectUnit}
                     >
-                      <SelectTrigger id="edit-item-unit" className={`w-full ${autoDetectUnit ? 'opacity-60' : ''}`}>
+                      <SelectTrigger id="edit-item-unit" className="w-full">
                         <SelectValue placeholder="Select unit" />
                       </SelectTrigger>
                       <SelectContent>
@@ -402,36 +713,13 @@ const ShoppingListPage: React.FC = () => {
                     </Select>
                   </div>
                 </div>
-                
-                <div className="flex items-center space-x-2 mt-2">
-                  <Switch 
-                    checked={autoDetectUnit} 
-                    onCheckedChange={(checked) => {
-                      setAutoDetectUnit(checked);
-                      if (checked) {
-                        setEditItemUnit(detectUnitFromItemName(editItemName));
-                      }
-                    }}
-                    id="edit-auto-detect"
-                  />
-                  <Label htmlFor="edit-auto-detect" className="cursor-pointer flex items-center text-sm">
-                    Auto-detect unit based on item name
-                  </Label>
-                </div>
               </div>
               
               <DialogFooter>
                 <Button 
-                  type="button" 
-                  variant="secondary" 
-                  onClick={() => setEditDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit"
-                  disabled={!editItemName.trim() || editItemMutation.isPending}
-                >
+                  type="submit" 
+                  disabled={editItemMutation.isPending}
+                  className="bg-primary">
                   Save Changes
                 </Button>
               </DialogFooter>
