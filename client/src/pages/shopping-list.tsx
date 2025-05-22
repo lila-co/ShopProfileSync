@@ -230,7 +230,7 @@ const ShoppingListPage: React.FC = () => {
                 min="0.01"
                 step="0.01"
                 defaultValue="1"
-                onChange={(e) => setNewItemQuantity(parseFloat(e.target.value) || 1)}
+                onChange={(e) => setNewItemQuantity(Math.round(parseFloat(e.target.value) || 1))}
                 className="w-full"
               />
             </div>
@@ -297,8 +297,18 @@ const ShoppingListPage: React.FC = () => {
                             {item.productName}
                           </span>
                           <span className="ml-2 text-sm bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
-                            Qty: {item.quantity} {item.unit && item.unit !== "COUNT" && (
-                              <span className="text-xs text-gray-500">{item.unit.toLowerCase()}</span>
+                            Qty: {item.quantity} {item.unit && (
+                              <span className="text-xs text-gray-500">
+                                {item.unit === "LB" ? "lbs" : 
+                                 item.unit === "OZ" ? "oz" : 
+                                 item.unit === "PKG" ? "pkg" : 
+                                 item.unit === "BOX" ? "box" : 
+                                 item.unit === "CAN" ? "can" : 
+                                 item.unit === "BOTTLE" ? "bottle" : 
+                                 item.unit === "JAR" ? "jar" : 
+                                 item.unit === "BUNCH" ? "bunch" : 
+                                 item.unit === "ROLL" ? "roll" : ""}
+                              </span>
                             )}
                           </span>
                         </div>
@@ -362,7 +372,7 @@ const ShoppingListPage: React.FC = () => {
                       min="0.01"
                       step="0.01"
                       value={editItemQuantity}
-                      onChange={(e) => setEditItemQuantity(parseFloat(e.target.value) || 1)}
+                      onChange={(e) => setEditItemQuantity(Math.round(parseFloat(e.target.value) || 1))}
                       className="w-full"
                     />
                   </div>
