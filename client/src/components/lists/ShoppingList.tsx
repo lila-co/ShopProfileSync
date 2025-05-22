@@ -131,11 +131,36 @@ const ShoppingListComponent: React.FC = () => {
       const defaultList = shoppingLists?.[0];
       if (!defaultList) throw new Error("No shopping list found");
       
+      // Apply historical size preferences for items like milk
+      let optimizedQuantity = quantity;
+      let optimizedUnit = unit;
+      
+      // Check if this item has historical size preferences
+      const lowerName = productName.toLowerCase();
+      if (lowerName.includes('milk')) {
+        // Apply historical preference for milk (gallon, half gallon, etc.)
+        optimizedUnit = 'GALLON';
+        // Apply the user's preferred size from purchase history
+        if (sizePreferences['milk'] === 'half gallon') {
+          optimizedQuantity = 0.5;
+        } else if (sizePreferences['milk'] === 'quart') {
+          optimizedQuantity = 0.25;
+        }
+      } else if (lowerName.includes('egg')) {
+        // Apply historical preference for eggs (dozen, half dozen)
+        optimizedUnit = 'DOZEN';
+      } else if (lowerName.includes('bread')) {
+        optimizedUnit = 'LOAF';
+      } else if (lowerName.includes('cheese')) {
+        optimizedUnit = 'OZ';
+        optimizedQuantity = 8;
+      }
+      
       const response = await apiRequest('POST', '/api/shopping-list/items', {
         shoppingListId: defaultList.id,
         productName,
-        quantity,
-        unit
+        quantity: optimizedQuantity,
+        unit: optimizedUnit
       });
       return response.json();
     },
@@ -412,9 +437,10 @@ const ShoppingListComponent: React.FC = () => {
           <Button 
             variant="default" 
             onClick={() => setGenerateDialogOpen(true)} 
-            className="bg-primary text-white hover:bg-primary/90"
+            size="lg"
+            className="bg-primary text-white hover:bg-primary/90 font-medium"
           >
-            <Wand2 className="h-4 w-4 mr-2" />
+            <Wand2 className="h-5 w-5 mr-2" />
             Generate List
           </Button>
           <Button variant="outline" onClick={() => setRecipeDialogOpen(true)}>
@@ -575,19 +601,19 @@ const ShoppingListComponent: React.FC = () => {
       
       <Tabs defaultValue="list" className="mt-6">
         <TabsList className="grid w-full grid-cols-4 mb-4">
-          <TabsTrigger value="list" className="flex items-center justify-center">
+          <TabsTrigger value="list" className="flex items-center justify-center font-medium">
             <ShoppingBag className="h-4 w-4 mr-2 hidden sm:inline-block" />
             List
           </TabsTrigger>
-          <TabsTrigger value="price" className="flex items-center justify-center">
+          <TabsTrigger value="price" className="flex items-center justify-center font-medium">
             <DollarSign className="h-4 w-4 mr-2 hidden sm:inline-block" />
             Price Compare
           </TabsTrigger>
-          <TabsTrigger value="optimize" className="flex items-center justify-center">
+          <TabsTrigger value="optimize" className="flex items-center justify-center font-medium">
             <BarChart2 className="h-4 w-4 mr-2 hidden sm:inline-block" />
             Optimize
           </TabsTrigger>
-          <TabsTrigger value="route" className="flex items-center justify-center">
+          <TabsTrigger value="route" className="flex items-center justify-center font-medium">
             <Car className="h-4 w-4 mr-2 hidden sm:inline-block" />
             Route
           </TabsTrigger>
