@@ -357,16 +357,16 @@ const ShoppingListPage: React.FC = () => {
           </CardContent>
         </Card>
         
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="items">Shopping Items</TabsTrigger>
-            <TabsTrigger value="optimization">Shopping Optimization</TabsTrigger>
-            <TabsTrigger value="comparison">Price Comparison</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4 sm:mb-6">
+          <TabsList className="grid w-full grid-cols-3 h-auto">
+            <TabsTrigger value="items" className="px-1 sm:px-3 py-2 text-xs sm:text-sm">Shopping Items</TabsTrigger>
+            <TabsTrigger value="optimization" className="px-1 sm:px-3 py-2 text-xs sm:text-sm">Shopping Optimization</TabsTrigger>
+            <TabsTrigger value="comparison" className="px-1 sm:px-3 py-2 text-xs sm:text-sm">Price Comparison</TabsTrigger>
           </TabsList>
           
           <TabsContent value="items" className="pt-4">
-            <form onSubmit={handleAddItem} className="mb-6">
-              <div className="flex space-x-2 mb-2">
+            <form onSubmit={handleAddItem} className="mb-4 sm:mb-6">
+              <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2 mb-2">
                 <Input
                   type="text"
                   placeholder="Add an item..."
@@ -376,15 +376,15 @@ const ShoppingListPage: React.FC = () => {
                 />
                 <Button 
                   type="submit" 
-                  className="bg-primary text-white"
+                  className="bg-primary text-white w-full sm:w-auto"
                   disabled={addItemMutation.isPending}
                 >
-                  Add
+                  {addItemMutation.isPending ? 'Adding...' : 'Add Item'}
                 </Button>
               </div>
               
-              <div className="flex space-x-2">
-                <div className="w-20">
+              <div className="flex flex-wrap gap-2">
+                <div className="w-full sm:w-20">
                   <Input
                     type="number"
                     placeholder="Qty"
@@ -425,7 +425,7 @@ const ShoppingListPage: React.FC = () => {
                   onCheckedChange={setAutoDetectUnit}
                   id="auto-detect"
                 />
-                <Label htmlFor="auto-detect" className="cursor-pointer flex items-center">
+                <Label htmlFor="auto-detect" className="cursor-pointer flex items-center text-xs sm:text-sm">
                   Auto-detect best unit based on item name
                 </Label>
               </div>
@@ -434,30 +434,30 @@ const ShoppingListPage: React.FC = () => {
             <div className="space-y-3">
               {items.length === 0 ? (
                 <Card>
-                  <CardContent className="p-6 text-center text-gray-500">
-                    <ShoppingBag className="h-12 w-12 mx-auto text-gray-300 mb-2" />
+                  <CardContent className="p-4 sm:p-6 text-center text-gray-500">
+                    <ShoppingBag className="h-10 w-10 sm:h-12 sm:w-12 mx-auto text-gray-300 mb-2" />
                     <p>Your shopping list is empty</p>
-                    <p className="text-sm mt-1">Add items to get started</p>
+                    <p className="text-xs sm:text-sm mt-1">Add items to get started</p>
                   </CardContent>
                 </Card>
               ) : (
                 items.map((item) => (
                   <Card key={item.id} className={item.isCompleted ? "opacity-60" : ""}>
                     <CardContent className="p-3">
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center flex-1">
+                      <div className="flex justify-between items-start sm:items-center">
+                        <div className="flex items-start sm:items-center flex-1">
                           <input
                             type="checkbox"
                             checked={item.isCompleted}
                             onChange={() => handleToggleItem(item.id, item.isCompleted)}
-                            className="h-5 w-5 text-primary rounded mr-3"
+                            className="h-5 w-5 text-primary rounded mr-3 mt-1 sm:mt-0"
                           />
-                          <div className="flex-1">
-                            <div className="flex items-center">
-                              <span className={`font-medium ${item.isCompleted ? "line-through text-gray-500" : "text-gray-800"}`}>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap sm:flex-nowrap sm:items-center gap-1 sm:gap-2">
+                              <span className={`font-medium break-words ${item.isCompleted ? "line-through text-gray-500" : "text-gray-800"}`}>
                                 {item.productName}
                               </span>
-                              <span className="ml-2 text-sm bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
+                              <span className="text-sm bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full whitespace-nowrap">
                                 Qty: {item.quantity} {item.unit && (
                                   <span className="text-xs text-gray-500">
                                     {item.unit === "LB" ? "lbs" : 
@@ -482,22 +482,22 @@ const ShoppingListPage: React.FC = () => {
                             )}
                           </div>
                         </div>
-                        <div className="flex space-x-2">
+                        <div className="flex space-x-1 sm:space-x-2 ml-2 shrink-0">
                           <button
                             onClick={() => handleEditItem(item)}
-                            className="text-gray-400 hover:text-blue-500"
+                            className="text-gray-400 hover:text-blue-500 p-1"
                             aria-label="Edit item"
                             title="Edit item"
                           >
-                            <Pencil className="h-5 w-5" />
+                            <Pencil className="h-4 w-4 sm:h-5 sm:w-5" />
                           </button>
                           <button
                             onClick={() => handleDeleteItem(item.id)}
-                            className="text-gray-400 hover:text-red-500"
+                            className="text-gray-400 hover:text-red-500 p-1"
                             aria-label="Delete item"
                             title="Delete item"
                           >
-                            <Trash2 className="h-5 w-5" />
+                            <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
                           </button>
                         </div>
                       </div>
@@ -510,56 +510,56 @@ const ShoppingListPage: React.FC = () => {
           
           <TabsContent value="optimization" className="pt-4">
             <Card className="mb-4">
-              <CardContent className="p-6">
+              <CardContent className="p-4 sm:p-6">
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">Shopping Optimization</h3>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                    <div className={`border rounded-lg p-4 cursor-pointer transition-all hover:border-primary hover:shadow-md ${selectedOptimization === 'cost' ? 'bg-primary/10 border-primary' : 'bg-gray-50 dark:bg-gray-800/50'}`} 
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 mt-3 sm:mt-4">
+                    <div className={`border rounded-lg p-3 sm:p-4 cursor-pointer transition-all hover:border-primary hover:shadow-md ${selectedOptimization === 'cost' ? 'bg-primary/10 border-primary' : 'bg-gray-50 dark:bg-gray-800/50'}`} 
                          onClick={() => setSelectedOptimization('cost')}>
-                      <div className="flex items-center mb-2">
-                        <div className={`w-5 h-5 rounded-full mr-3 flex items-center justify-center ${selectedOptimization === 'cost' ? 'bg-primary' : 'border border-gray-300'}`}>
-                          {selectedOptimization === 'cost' && <Check className="h-3 w-3 text-white" />}
+                      <div className="flex items-center mb-1 sm:mb-2">
+                        <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full mr-2 sm:mr-3 flex items-center justify-center ${selectedOptimization === 'cost' ? 'bg-primary' : 'border border-gray-300'}`}>
+                          {selectedOptimization === 'cost' && <Check className="h-2 w-2 sm:h-3 sm:w-3 text-white" />}
                         </div>
-                        <h4 className="font-medium">Lowest Total Cost</h4>
+                        <h4 className="font-medium text-sm sm:text-base">Lowest Total Cost</h4>
                       </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 ml-8">
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 ml-6 sm:ml-8">
                         Get the absolute best prices across all stores
                       </p>
                     </div>
                     
-                    <div className={`border rounded-lg p-4 cursor-pointer transition-all hover:border-primary hover:shadow-md ${selectedOptimization === 'time' ? 'bg-primary/10 border-primary' : 'bg-gray-50 dark:bg-gray-800/50'}`}
+                    <div className={`border rounded-lg p-3 sm:p-4 cursor-pointer transition-all hover:border-primary hover:shadow-md ${selectedOptimization === 'time' ? 'bg-primary/10 border-primary' : 'bg-gray-50 dark:bg-gray-800/50'}`}
                          onClick={() => setSelectedOptimization('time')}>
-                      <div className="flex items-center mb-2">
-                        <div className={`w-5 h-5 rounded-full mr-3 flex items-center justify-center ${selectedOptimization === 'time' ? 'bg-primary' : 'border border-gray-300'}`}>
-                          {selectedOptimization === 'time' && <Check className="h-3 w-3 text-white" />}
+                      <div className="flex items-center mb-1 sm:mb-2">
+                        <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full mr-2 sm:mr-3 flex items-center justify-center ${selectedOptimization === 'time' ? 'bg-primary' : 'border border-gray-300'}`}>
+                          {selectedOptimization === 'time' && <Check className="h-2 w-2 sm:h-3 sm:w-3 text-white" />}
                         </div>
-                        <h4 className="font-medium">Quickest Trip</h4>
+                        <h4 className="font-medium text-sm sm:text-base">Quickest Trip</h4>
                       </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 ml-8">
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 ml-6 sm:ml-8">
                         Focus on a single store with good availability
                       </p>
                     </div>
                     
-                    <div className={`border rounded-lg p-4 cursor-pointer transition-all hover:border-primary hover:shadow-md ${selectedOptimization === 'balance' ? 'bg-primary/10 border-primary' : 'bg-gray-50 dark:bg-gray-800/50'}`}
+                    <div className={`border rounded-lg p-3 sm:p-4 cursor-pointer transition-all hover:border-primary hover:shadow-md ${selectedOptimization === 'balance' ? 'bg-primary/10 border-primary' : 'bg-gray-50 dark:bg-gray-800/50'}`}
                          onClick={() => setSelectedOptimization('balance')}>
-                      <div className="flex items-center mb-2">
-                        <div className={`w-5 h-5 rounded-full mr-3 flex items-center justify-center ${selectedOptimization === 'balance' ? 'bg-primary' : 'border border-gray-300'}`}>
-                          {selectedOptimization === 'balance' && <Check className="h-3 w-3 text-white" />}
+                      <div className="flex items-center mb-1 sm:mb-2">
+                        <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full mr-2 sm:mr-3 flex items-center justify-center ${selectedOptimization === 'balance' ? 'bg-primary' : 'border border-gray-300'}`}>
+                          {selectedOptimization === 'balance' && <Check className="h-2 w-2 sm:h-3 sm:w-3 text-white" />}
                         </div>
-                        <h4 className="font-medium">Balanced Approach</h4>
+                        <h4 className="font-medium text-sm sm:text-base">Balanced Approach</h4>
                       </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 ml-8">
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 ml-6 sm:ml-8">
                         Balance cost savings with time efficiency
                       </p>
                     </div>
                   </div>
                   
-                  <div className="mt-4 flex justify-end">
+                  <div className="mt-4 flex justify-center sm:justify-end">
                     <Button
                       onClick={() => defaultList?.id && priceComparisonMutation.mutate(defaultList.id)}
                       disabled={priceComparisonMutation.isPending || !items.length}
-                      className="w-full md:w-auto"
+                      className="w-full sm:w-auto"
                     >
                       {priceComparisonMutation.isPending ? 
                         <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Optimizing...</> : 
@@ -571,7 +571,7 @@ const ShoppingListPage: React.FC = () => {
             </Card>
             
             <Card>
-              <CardContent className="p-6">
+              <CardContent className="p-4 sm:p-6">
                 <div className="space-y-4">
                   <div className="border-b pb-3 mb-4">
                     <h3 className="text-lg font-medium">Optimized Shopping Plan</h3>
@@ -582,94 +582,94 @@ const ShoppingListPage: React.FC = () => {
                   
                   {priceComparisonMutation.data?.retailers?.length > 0 ? (
                     <div>
-                      <div className="space-y-6 mb-6">
-                        <div className="border border-blue-200 rounded-xl overflow-hidden">
-                          <div className="bg-blue-50 dark:bg-blue-900/10 px-4 py-3 border-b border-blue-200">
-                            <div className="font-medium text-blue-700 dark:text-blue-300">Single Store Option (80% of your items)</div>
+                      <div className="space-y-4 sm:space-y-6 mb-4 sm:mb-6">
+                        <div className="border border-blue-200 rounded-lg sm:rounded-xl overflow-hidden">
+                          <div className="bg-blue-50 dark:bg-blue-900/10 px-3 sm:px-4 py-2 sm:py-3 border-b border-blue-200">
+                            <div className="font-medium text-sm sm:text-base text-blue-700 dark:text-blue-300">Single Store Option (80% of your items)</div>
                           </div>
-                          <div className="p-4">
-                            <div className="flex items-center mb-4">
-                              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mr-4">
-                                <StoreIcon className="h-6 w-6 text-blue-600" />
+                          <div className="p-3 sm:p-4">
+                            <div className="flex items-center mb-3 sm:mb-4">
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 flex items-center justify-center mr-3 sm:mr-4 shrink-0">
+                                <StoreIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                               </div>
                               <div>
-                                <h4 className="font-medium text-lg">Kroger</h4>
-                                <p className="text-sm text-gray-500">8 out of 10 items • $45.35 total</p>
+                                <h4 className="font-medium text-base sm:text-lg">Kroger</h4>
+                                <p className="text-xs sm:text-sm text-gray-500">8 out of 10 items • $45.35 total</p>
                               </div>
                             </div>
-                            <Button size="sm" variant="outline" className="w-full">
-                              <MapPin className="h-4 w-4 mr-2" />
+                            <Button size="sm" variant="outline" className="w-full text-xs sm:text-sm">
+                              <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                               View Shopping Plan
                             </Button>
                           </div>
                         </div>
                         
-                        <div className="border border-green-200 rounded-xl overflow-hidden">
-                          <div className="bg-green-50 dark:bg-green-900/10 px-4 py-3 border-b border-green-200">
-                            <div className="font-medium text-green-700 dark:text-green-300">Best Value Option (Save $8.50)</div>
+                        <div className="border border-green-200 rounded-lg sm:rounded-xl overflow-hidden">
+                          <div className="bg-green-50 dark:bg-green-900/10 px-3 sm:px-4 py-2 sm:py-3 border-b border-green-200">
+                            <div className="font-medium text-sm sm:text-base text-green-700 dark:text-green-300">Best Value Option (Save $8.50)</div>
                           </div>
-                          <div className="p-4">
-                            <div className="flex items-center mb-4">
-                              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mr-4">
-                                <ShoppingCart className="h-6 w-6 text-green-600" />
+                          <div className="p-3 sm:p-4">
+                            <div className="flex items-center mb-3 sm:mb-4">
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-100 flex items-center justify-center mr-3 sm:mr-4 shrink-0">
+                                <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                               </div>
                               <div>
-                                <h4 className="font-medium text-lg">Kroger + Walmart</h4>
-                                <p className="text-sm text-gray-500">All items • $36.85 total</p>
+                                <h4 className="font-medium text-base sm:text-lg">Kroger + Walmart</h4>
+                                <p className="text-xs sm:text-sm text-gray-500">All items • $36.85 total</p>
                               </div>
                             </div>
-                            <Button size="sm" variant="default" className="w-full">
-                              <ArrowRight className="h-4 w-4 mr-2" />
+                            <Button size="sm" variant="default" className="w-full text-xs sm:text-sm">
+                              <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                               View Multi-Store Plan
                             </Button>
                           </div>
                         </div>
                         
-                        <div className="border rounded-xl overflow-hidden">
-                          <div className="bg-gray-50 dark:bg-gray-800 px-4 py-3 border-b">
-                            <div className="font-medium">Balanced Option</div>
+                        <div className="border rounded-lg sm:rounded-xl overflow-hidden">
+                          <div className="bg-gray-50 dark:bg-gray-800 px-3 sm:px-4 py-2 sm:py-3 border-b">
+                            <div className="font-medium text-sm sm:text-base">Balanced Option</div>
                           </div>
-                          <div className="p-4">
-                            <div className="flex items-center mb-4">
-                              <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mr-4">
-                                <Clock className="h-6 w-6 text-gray-600" />
+                          <div className="p-3 sm:p-4">
+                            <div className="flex items-center mb-3 sm:mb-4">
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-100 flex items-center justify-center mr-3 sm:mr-4 shrink-0">
+                                <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600" />
                               </div>
                               <div>
-                                <h4 className="font-medium text-lg">Target</h4>
-                                <p className="text-sm text-gray-500">9 out of 10 items • $42.15 total</p>
+                                <h4 className="font-medium text-base sm:text-lg">Target</h4>
+                                <p className="text-xs sm:text-sm text-gray-500">9 out of 10 items • $42.15 total</p>
                               </div>
                             </div>
-                            <Button size="sm" variant="outline" className="w-full">
-                              <BarChart className="h-4 w-4 mr-2" />
+                            <Button size="sm" variant="outline" className="w-full text-xs sm:text-sm">
+                              <BarChart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                               View Balanced Plan
                             </Button>
                           </div>
                         </div>
                       </div>
                       
-                      <div className="border-t pt-4 mt-4 flex justify-between items-center">
+                      <div className="border-t pt-3 sm:pt-4 mt-3 sm:mt-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                         <div>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-xs sm:text-sm text-gray-500">
                             Potential savings: <span className="font-medium text-green-600">$8.50 (19%)</span>
                           </p>
                         </div>
-                        <Button variant="link" size="sm" className="text-gray-500">
-                          <Printer className="h-4 w-4 mr-2" /> Print Options
+                        <Button variant="link" size="sm" className="text-gray-500 text-xs sm:text-sm">
+                          <Printer className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" /> Print Options
                         </Button>
                       </div>
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <div className="relative w-24 h-24 mx-auto mb-4">
+                    <div className="text-center py-6 sm:py-8">
+                      <div className="relative w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4">
                         <div className="absolute inset-0 bg-primary/10 rounded-full flex items-center justify-center">
-                          <BarChart4 className="h-12 w-12 text-primary/60" />
+                          <BarChart4 className="h-8 w-8 sm:h-12 sm:w-12 text-primary/60" />
                         </div>
                       </div>
-                      <h3 className="text-lg font-medium mb-2">Optimize Your Shopping</h3>
-                      <p className="text-gray-500 mb-2 max-w-md mx-auto">
+                      <h3 className="text-base sm:text-lg font-medium mb-2">Optimize Your Shopping</h3>
+                      <p className="text-sm text-gray-500 mb-2 max-w-md mx-auto">
                         We'll analyze prices across stores to find the best deals based on your preferences
                       </p>
-                      <p className="text-sm text-gray-500 mb-6">
+                      <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">
                         {items.length === 0 ? 
                           "Add items to your shopping list first" : 
                           `Ready to optimize ${items.length} items in your list`}
@@ -677,7 +677,7 @@ const ShoppingListPage: React.FC = () => {
                       <Button
                         onClick={() => defaultList?.id && priceComparisonMutation.mutate(defaultList.id)}
                         disabled={priceComparisonMutation.isPending || !items.length}
-                        className="px-6"
+                        className="px-4 sm:px-6 text-sm"
                       >
                         {items.length === 0 ? 
                           "Add Items First" : 
