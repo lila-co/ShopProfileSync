@@ -516,21 +516,22 @@ const ShoppingListComponent: React.FC = () => {
         </div>
       </form>
       
-      <div className="mb-4 flex gap-2">
+      <div className="mb-6 mt-4 flex flex-col sm:flex-row gap-4">
         <Button
           variant="default"
           onClick={() => previewGenerateMutation.mutate()}
           disabled={previewGenerateMutation.isPending || generateListMutation.isPending}
-          className="flex items-center gap-1 bg-primary"
+          className="flex items-center justify-center gap-2 bg-primary text-white py-6 text-lg font-bold w-full"
+          size="lg"
         >
-          <ShoppingBag className="h-4 w-4" />
-          <span>Generate List</span>
+          <Wand2 className="h-5 w-5" />
+          <span>GENERATE SHOPPING LIST</span>
         </Button>
         
         <Button
           variant="outline"
           onClick={() => setRecipeDialogOpen(true)}
-          className="flex items-center gap-1"
+          className="flex items-center justify-center gap-2"
         >
           <FileText className="h-4 w-4" />
           <span>Import Recipe</span>
