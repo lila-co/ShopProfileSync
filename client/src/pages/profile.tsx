@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
+import { useLocation } from 'wouter';
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
 import ProfileSetup from '@/components/profile/ProfileSetup';
 import PurchaseAnomalies from '@/components/profile/PurchaseAnomalies';
 import { Button } from '@/components/ui/button';
-import { UserCircle, Calendar, Repeat, Timer } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { UserCircle, Calendar, Repeat, Timer, BarChart3, LockKeyhole, ShieldAlert } from 'lucide-react';
 
 const ProfilePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'profile' | 'patterns' | 'exceptions'>('profile');
