@@ -663,18 +663,65 @@ const ShoppingListPage: React.FC = () => {
                         </div>
                       </div>
                       
-                      <div className="border-t pt-3 sm:pt-4 mt-3 sm:mt-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                        <div>
-                          <p className="text-xs sm:text-sm text-gray-500">
-                            Potential savings: <span className="font-medium text-green-600">
-                              ${((priceComparisonMutation.data?.multiStore?.[0]?.savings || 850) / 100).toFixed(2)}
-                              ({priceComparisonMutation.data?.multiStore?.[0]?.savingsPercent || 19}%)
-                            </span>
-                          </p>
+                      <div className="border-t pt-3 sm:pt-4 mt-3 sm:mt-4">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
+                          <div>
+                            <p className="text-xs sm:text-sm text-gray-500">
+                              Potential savings: <span className="font-medium text-green-600">
+                                ${((priceComparisonMutation.data?.multiStore?.[0]?.savings || 850) / 100).toFixed(2)}
+                                ({priceComparisonMutation.data?.multiStore?.[0]?.savingsPercent || 19}%)
+                              </span>
+                            </p>
+                          </div>
+                          <Button variant="link" size="sm" className="text-gray-500 text-xs sm:text-sm">
+                            <Printer className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" /> Print Options
+                          </Button>
                         </div>
-                        <Button variant="link" size="sm" className="text-gray-500 text-xs sm:text-sm">
-                          <Printer className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" /> Print Options
-                        </Button>
+                        
+                        <h4 className="font-medium text-sm sm:text-base mb-2 mt-3">Special Deals & Offers</h4>
+                        <div className="space-y-3">
+                          <div className="border border-amber-200 rounded-lg p-3 bg-amber-50 dark:bg-amber-900/10">
+                            <div className="flex">
+                              <ShoppingBag className="h-5 w-5 text-amber-500 mr-2 shrink-0 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                                  Spend $5.50 more on Dairy at Kroger
+                                </p>
+                                <p className="text-xs text-gray-600 dark:text-gray-400">
+                                  Get $3 off your total purchase
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="border border-purple-200 rounded-lg p-3 bg-purple-50 dark:bg-purple-900/10">
+                            <div className="flex">
+                              <ShoppingCart className="h-5 w-5 text-purple-500 mr-2 shrink-0 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                                  Buy 1 more Coca Cola at Walmart
+                                </p>
+                                <p className="text-xs text-gray-600 dark:text-gray-400">
+                                  Get 1 free (Buy 12, Get 1 Free promotion)
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="border border-teal-200 rounded-lg p-3 bg-teal-50 dark:bg-teal-900/10">
+                            <div className="flex">
+                              <ShoppingCart className="h-5 w-5 text-teal-500 mr-2 shrink-0 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-teal-700 dark:text-teal-300">
+                                  Target Circle Members Save 10%
+                                </p>
+                                <p className="text-xs text-gray-600 dark:text-gray-400">
+                                  On Fresh Produce items (additional $0.85 savings)
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ) : (
