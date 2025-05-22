@@ -13,6 +13,7 @@ import Scan from "@/pages/scan";
 import Shop from "@/pages/shop";
 import InternalAnalytics from "@/pages/internal-analytics";
 import AdminSettings from "@/pages/admin-settings";
+import Auth from "@/pages/auth";
 
 function Router() {
   return (
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/profile" component={Profile} />
       <Route path="/internal/analytics" component={InternalAnalytics} />
       <Route path="/admin-settings" component={AdminSettings} />
+      <Route path="/auth" component={Auth} />
       <Route component={NotFound} />
     </Switch>
   );

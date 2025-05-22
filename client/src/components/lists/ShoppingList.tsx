@@ -8,7 +8,8 @@ import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Plus, ShoppingBag, FileText, Clock, Check, Trash2, AlertTriangle, DollarSign, MapPin, Car, BarChart2, Wand2, Pencil } from 'lucide-react';
+import { Plus, ShoppingBag, FileText, Clock, Check, Trash2, AlertTriangle, DollarSign, MapPin, Car, BarChart2, Wand2, Pencil, Image } from 'lucide-react';
+import { getItemImage, getBestProductImage } from '@/lib/imageUtils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -867,24 +868,48 @@ const ShoppingListComponent: React.FC = () => {
                 <div>
                   <h4 className="font-semibold mb-3">Select your preferred retailers</h4>
                   <div className="grid grid-cols-2 gap-2">
-                    {retailers && retailers.map((retailer: any) => (
-                      <div key={retailer.id} className="flex items-center space-x-2">
-                        <input 
-                          type="checkbox" 
-                          id={`retailer-${retailer.id}`}
-                          checked={selectedRetailers.includes(retailer.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedRetailers([...selectedRetailers, retailer.id]);
-                            } else {
-                              setSelectedRetailers(selectedRetailers.filter(id => id !== retailer.id));
-                            }
-                          }}
-                          className="h-4 w-4 text-primary rounded"
-                        />
-                        <Label htmlFor={`retailer-${retailer.id}`} className="text-sm">{retailer.name}</Label>
-                      </div>
-                    ))}
+                    {retailers && retailers.map((retailer: any) => {
+                      const logoUrl = getCompanyLogo(retailer.name);
+                      
+                      return (
+                        <div key={retailer.id} className="flex items-center space-x-2">
+                          <input 
+                            type="checkbox" 
+                            id={`retailer-${retailer.id}`}
+                            checked={selectedRetailers.includes(retailer.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedRetailers([...selectedRetailers, retailer.id]);
+                              } else {
+                                setSelectedRetailers(selectedRetailers.filter(id => id !== retailer.id));
+                              }
+                            }}
+                            className="h-4 w-4 text-primary rounded"
+                          />
+                          <div className="flex items-center">
+                            {logoUrl ? (
+                              <img 
+                                src={logoUrl} 
+                                alt={retailer.name} 
+                                className="h-5 w-5 mr-2 object-contain" 
+                              />
+                            ) : (
+                              <div 
+                                className="h-5 w-5 mr-2 rounded-full flex items-center justify-center"
+                                style={{backgroundColor: retailer.logoColor || '#4A7CFA'}}
+                              >
+                                <span className="text-xs text-white font-bold">
+                                  {retailer.name.charAt(0)}
+                                </span>
+                              </div>
+                            )}
+                            <Label htmlFor={`retailer-${retailer.id}`} className="text-sm">
+                              {retailer.name}
+                            </Label>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
                 
