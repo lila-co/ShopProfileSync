@@ -70,6 +70,10 @@ const AdminSettings: React.FC = () => {
                   <Globe className="mr-2 h-4 w-4" />
                   API Configuration
                 </Button>
+                <Button variant={activeTab === 'affiliate' ? 'default' : 'ghost'} className="w-full justify-start" onClick={() => setActiveTab('affiliate')}>
+                  <DollarSign className="mr-2 h-4 w-4" />
+                  Affiliate Revenue
+                </Button>
               </nav>
             </CardContent>
           </Card>
@@ -389,8 +393,64 @@ const AdminSettings: React.FC = () => {
             </Card>
           )}
           
+          {/* Affiliate Revenue Dashboard */}
+          {activeTab === 'affiliate' && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Affiliate Revenue Management</CardTitle>
+                <CardDescription>Track and manage your affiliate marketing program revenue.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="rounded-lg border border-green-100 bg-green-50 p-4 mb-4">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-green-800">Affiliate Program Active</h3>
+                      <div className="mt-2 text-sm text-green-700">
+                        <p>Your affiliate program is configured and actively tracking revenue through retailer accounts.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="border rounded-lg p-4">
+                      <div className="text-lg font-bold">$3,089.50</div>
+                      <div className="text-sm text-gray-500">Total Revenue</div>
+                    </div>
+                    <div className="border rounded-lg p-4">
+                      <div className="text-lg font-bold">$247.16</div>
+                      <div className="text-sm text-gray-500">This Month</div>
+                    </div>
+                    <div className="border rounded-lg p-4">
+                      <div className="text-lg font-bold">8.4%</div>
+                      <div className="text-sm text-gray-500">Conversion Rate</div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Affiliate Dashboard Access</Label>
+                    <p className="text-sm text-gray-500 mb-3">
+                      Access the complete affiliate dashboard with detailed analytics, revenue reporting, and retailer performance metrics.
+                    </p>
+                    <Button 
+                      onClick={() => navigate('/affiliate-dashboard')}
+                      className="w-full md:w-auto"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Open Affiliate Dashboard
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          
           {/* Other tabs would be implemented similarly */}
-          {activeTab !== 'general' && activeTab !== 'retailers' && activeTab !== 'api' && (
+          {activeTab !== 'general' && activeTab !== 'retailers' && activeTab !== 'api' && activeTab !== 'affiliate' && (
             <Card>
               <CardHeader>
                 <CardTitle>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Settings</CardTitle>
