@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Settings, Users, Store, Bell, Shield, Database, Cloud, Globe, Key } from 'lucide-react';
+import { Settings, Users, Store, Bell, Shield, Database, Cloud, Globe, Key, DollarSign, ExternalLink, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
 
