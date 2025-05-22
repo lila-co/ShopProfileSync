@@ -10,7 +10,25 @@ import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Plus, ShoppingBag, FileText, Pencil, Trash2, BarChart4, ListChecks, ShoppingCart } from 'lucide-react';
+import { 
+  Plus, 
+  ShoppingBag, 
+  FileText, 
+  Pencil, 
+  Trash2, 
+  BarChart4, 
+  ListChecks, 
+  ShoppingCart,
+  Check,
+  Loader2,
+  Store as StoreIcon,
+  MapPin,
+  ArrowRight,
+  Clock,
+  BarChart,
+  Printer,
+  Sparkles
+} from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { detectUnitFromItemName } from '@/lib/utils';
@@ -40,6 +58,7 @@ const ShoppingListPage: React.FC = () => {
   
   // Tab state
   const [activeTab, setActiveTab] = useState('items');
+  const [selectedOptimization, setSelectedOptimization] = useState('cost');
 
   const { data: shoppingLists, isLoading } = useQuery<ShoppingList[]>({
     queryKey: ['/api/shopping-lists'],
@@ -494,38 +513,58 @@ const ShoppingListPage: React.FC = () => {
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">Shopping Optimization</h3>
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-600">Optimization Preference</p>
-                    <div className="flex flex-col space-y-2">
-                      <div className="flex items-center">
-                        <input 
-                          type="radio" 
-                          id="opt-cost" 
-                          name="optimization" 
-                          className="mr-2 h-4 w-4 text-primary" 
-                          defaultChecked
-                        />
-                        <label htmlFor="opt-cost" className="text-sm">Optimize for lowest total cost</label>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                    <div className={`border rounded-lg p-4 cursor-pointer transition-all hover:border-primary hover:shadow-md ${selectedOptimization === 'cost' ? 'bg-primary/10 border-primary' : 'bg-gray-50 dark:bg-gray-800/50'}`} 
+                         onClick={() => setSelectedOptimization('cost')}>
+                      <div className="flex items-center mb-2">
+                        <div className={`w-5 h-5 rounded-full mr-3 flex items-center justify-center ${selectedOptimization === 'cost' ? 'bg-primary' : 'border border-gray-300'}`}>
+                          {selectedOptimization === 'cost' && <Check className="h-3 w-3 text-white" />}
+                        </div>
+                        <h4 className="font-medium">Lowest Total Cost</h4>
                       </div>
-                      <div className="flex items-center">
-                        <input 
-                          type="radio" 
-                          id="opt-time" 
-                          name="optimization" 
-                          className="mr-2 h-4 w-4 text-primary"
-                        />
-                        <label htmlFor="opt-time" className="text-sm">Optimize for quickest trip</label>
-                      </div>
-                      <div className="flex items-center">
-                        <input 
-                          type="radio" 
-                          id="opt-balance" 
-                          name="optimization" 
-                          className="mr-2 h-4 w-4 text-primary"
-                        />
-                        <label htmlFor="opt-balance" className="text-sm">Balance time and cost</label>
-                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 ml-8">
+                        Get the absolute best prices across all stores
+                      </p>
                     </div>
+                    
+                    <div className={`border rounded-lg p-4 cursor-pointer transition-all hover:border-primary hover:shadow-md ${selectedOptimization === 'time' ? 'bg-primary/10 border-primary' : 'bg-gray-50 dark:bg-gray-800/50'}`}
+                         onClick={() => setSelectedOptimization('time')}>
+                      <div className="flex items-center mb-2">
+                        <div className={`w-5 h-5 rounded-full mr-3 flex items-center justify-center ${selectedOptimization === 'time' ? 'bg-primary' : 'border border-gray-300'}`}>
+                          {selectedOptimization === 'time' && <Check className="h-3 w-3 text-white" />}
+                        </div>
+                        <h4 className="font-medium">Quickest Trip</h4>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 ml-8">
+                        Focus on a single store with good availability
+                      </p>
+                    </div>
+                    
+                    <div className={`border rounded-lg p-4 cursor-pointer transition-all hover:border-primary hover:shadow-md ${selectedOptimization === 'balance' ? 'bg-primary/10 border-primary' : 'bg-gray-50 dark:bg-gray-800/50'}`}
+                         onClick={() => setSelectedOptimization('balance')}>
+                      <div className="flex items-center mb-2">
+                        <div className={`w-5 h-5 rounded-full mr-3 flex items-center justify-center ${selectedOptimization === 'balance' ? 'bg-primary' : 'border border-gray-300'}`}>
+                          {selectedOptimization === 'balance' && <Check className="h-3 w-3 text-white" />}
+                        </div>
+                        <h4 className="font-medium">Balanced Approach</h4>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 ml-8">
+                        Balance cost savings with time efficiency
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 flex justify-end">
+                    <Button
+                      onClick={() => defaultList?.id && priceComparisonMutation.mutate(defaultList.id)}
+                      disabled={priceComparisonMutation.isPending || !items.length}
+                      className="w-full md:w-auto"
+                    >
+                      {priceComparisonMutation.isPending ? 
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Optimizing...</> : 
+                        <><Sparkles className="mr-2 h-4 w-4" /> Find Best Shopping Options</>}
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -534,69 +573,115 @@ const ShoppingListPage: React.FC = () => {
             <Card>
               <CardContent className="p-6">
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center">
+                  <div className="border-b pb-3 mb-4">
                     <h3 className="text-lg font-medium">Optimized Shopping Plan</h3>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => defaultList?.id && priceComparisonMutation.mutate(defaultList.id)}
-                      disabled={priceComparisonMutation.isPending || !items.length}
-                    >
-                      {priceComparisonMutation.isPending ? "Optimizing..." : "Find Best Options"}
-                    </Button>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Based on {items.length} items in your shopping list
+                    </p>
                   </div>
                   
                   {priceComparisonMutation.data?.retailers?.length > 0 ? (
                     <div>
-                      <div className="mb-4">
-                        <h4 className="font-medium mb-2">Recommended Shopping Plan</h4>
-                        <div className="text-sm text-gray-600 mb-4">
-                          Based on your optimization preference, here's the best way to shop:
+                      <div className="space-y-6 mb-6">
+                        <div className="border border-blue-200 rounded-xl overflow-hidden">
+                          <div className="bg-blue-50 dark:bg-blue-900/10 px-4 py-3 border-b border-blue-200">
+                            <div className="font-medium text-blue-700 dark:text-blue-300">Single Store Option (80% of your items)</div>
+                          </div>
+                          <div className="p-4">
+                            <div className="flex items-center mb-4">
+                              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mr-4">
+                                <StoreIcon className="h-6 w-6 text-blue-600" />
+                              </div>
+                              <div>
+                                <h4 className="font-medium text-lg">Kroger</h4>
+                                <p className="text-sm text-gray-500">8 out of 10 items • $45.35 total</p>
+                              </div>
+                            </div>
+                            <Button size="sm" variant="outline" className="w-full">
+                              <MapPin className="h-4 w-4 mr-2" />
+                              View Shopping Plan
+                            </Button>
+                          </div>
                         </div>
                         
-                        <div className="border rounded-lg p-4 bg-blue-50 dark:bg-blue-900/10 mb-4">
-                          <div className="font-medium mb-1">Single Store Option (80% of your items)</div>
-                          <div className="text-sm mb-3">
-                            Shop at <span className="font-medium">Kroger</span> to get 8 out of 10 items for <span className="font-medium">$45.35</span>
+                        <div className="border border-green-200 rounded-xl overflow-hidden">
+                          <div className="bg-green-50 dark:bg-green-900/10 px-4 py-3 border-b border-green-200">
+                            <div className="font-medium text-green-700 dark:text-green-300">Best Value Option (Save $8.50)</div>
                           </div>
-                          <Button size="sm" variant="outline" className="w-full">View Shopping Plan</Button>
+                          <div className="p-4">
+                            <div className="flex items-center mb-4">
+                              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mr-4">
+                                <ShoppingCart className="h-6 w-6 text-green-600" />
+                              </div>
+                              <div>
+                                <h4 className="font-medium text-lg">Kroger + Walmart</h4>
+                                <p className="text-sm text-gray-500">All items • $36.85 total</p>
+                              </div>
+                            </div>
+                            <Button size="sm" variant="default" className="w-full">
+                              <ArrowRight className="h-4 w-4 mr-2" />
+                              View Multi-Store Plan
+                            </Button>
+                          </div>
                         </div>
                         
-                        <div className="border rounded-lg p-4 bg-green-50 dark:bg-green-900/10 mb-4">
-                          <div className="font-medium mb-1">Best Value Option (Save $8.50)</div>
-                          <div className="text-sm mb-3">
-                            Shop at <span className="font-medium">Kroger + Walmart</span> to maximize savings
+                        <div className="border rounded-xl overflow-hidden">
+                          <div className="bg-gray-50 dark:bg-gray-800 px-4 py-3 border-b">
+                            <div className="font-medium">Balanced Option</div>
                           </div>
-                          <Button size="sm" variant="default" className="w-full">View Value Plan</Button>
-                        </div>
-                        
-                        <div className="border rounded-lg p-4 dark:bg-gray-800/50">
-                          <div className="font-medium mb-1">Balanced Option</div>
-                          <div className="text-sm mb-3">
-                            Shop at <span className="font-medium">Target</span> to balance cost and convenience
+                          <div className="p-4">
+                            <div className="flex items-center mb-4">
+                              <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mr-4">
+                                <Clock className="h-6 w-6 text-gray-600" />
+                              </div>
+                              <div>
+                                <h4 className="font-medium text-lg">Target</h4>
+                                <p className="text-sm text-gray-500">9 out of 10 items • $42.15 total</p>
+                              </div>
+                            </div>
+                            <Button size="sm" variant="outline" className="w-full">
+                              <BarChart className="h-4 w-4 mr-2" />
+                              View Balanced Plan
+                            </Button>
                           </div>
-                          <Button size="sm" variant="outline" className="w-full">View Balanced Plan</Button>
                         </div>
                       </div>
                       
-                      <div className="mt-6 text-center">
-                        <p className="text-sm text-gray-500">
-                          Saving potential: <span className="font-medium text-green-600">$8.50 (19%)</span> compared to shopping at a single store
-                        </p>
+                      <div className="border-t pt-4 mt-4 flex justify-between items-center">
+                        <div>
+                          <p className="text-sm text-gray-500">
+                            Potential savings: <span className="font-medium text-green-600">$8.50 (19%)</span>
+                          </p>
+                        </div>
+                        <Button variant="link" size="sm" className="text-gray-500">
+                          <Printer className="h-4 w-4 mr-2" /> Print Options
+                        </Button>
                       </div>
                     </div>
                   ) : (
                     <div className="text-center py-8">
-                      <BarChart4 className="h-12 w-12 mx-auto text-gray-300 mb-2" />
-                      <p className="text-gray-500 mb-2">Optimize your shopping across stores</p>
-                      <p className="text-sm text-gray-500 mb-4">
-                        We'll find the best combination of stores based on your preferences
+                      <div className="relative w-24 h-24 mx-auto mb-4">
+                        <div className="absolute inset-0 bg-primary/10 rounded-full flex items-center justify-center">
+                          <BarChart4 className="h-12 w-12 text-primary/60" />
+                        </div>
+                      </div>
+                      <h3 className="text-lg font-medium mb-2">Optimize Your Shopping</h3>
+                      <p className="text-gray-500 mb-2 max-w-md mx-auto">
+                        We'll analyze prices across stores to find the best deals based on your preferences
+                      </p>
+                      <p className="text-sm text-gray-500 mb-6">
+                        {items.length === 0 ? 
+                          "Add items to your shopping list first" : 
+                          `Ready to optimize ${items.length} items in your list`}
                       </p>
                       <Button
                         onClick={() => defaultList?.id && priceComparisonMutation.mutate(defaultList.id)}
                         disabled={priceComparisonMutation.isPending || !items.length}
+                        className="px-6"
                       >
-                        {items.length === 0 ? "Add items to optimize" : "Find Best Shopping Options"}
+                        {items.length === 0 ? 
+                          "Add Items First" : 
+                          <><Sparkles className="mr-2 h-4 w-4" /> Find Best Options</>}
                       </Button>
                     </div>
                   )}
