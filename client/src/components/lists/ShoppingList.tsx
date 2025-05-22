@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Plus, ShoppingBag, FileText, Clock, Check, Trash2, AlertTriangle, DollarSign, MapPin, Car, BarChart2, Wand2, Pencil, Image } from 'lucide-react';
-import { getItemImage, getBestProductImage } from '@/lib/imageUtils';
+import { getItemImage, getBestProductImage, getCompanyLogo } from '@/lib/imageUtils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -48,6 +48,15 @@ const ShoppingListComponent: React.FC = () => {
   // Optimization state
   const [optimizationPreference, setOptimizationPreference] = useState('cost');
   const [selectedRetailers, setSelectedRetailers] = useState<number[]>([]);
+  
+  // Size preference tracking (to optimize based on historical preferences)
+  const [sizePreferences, setSizePreferences] = useState<Record<string, string>>({
+    'milk': 'gallon',
+    'eggs': 'dozen',
+    'bread': 'loaf',
+    'cheese': '8oz',
+    'yogurt': 'quart'
+  });
   const [showRouteMap, setShowRouteMap] = useState(false);
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   
@@ -549,7 +558,7 @@ const ShoppingListComponent: React.FC = () => {
       </Dialog>
       
       <Tabs defaultValue="list" className="mt-6">
-        <TabsList className="grid grid-cols-4 mb-4">
+        <TabsList className="grid w-full grid-cols-4 mb-4">
           <TabsTrigger value="list" className="flex items-center justify-center">
             <ShoppingBag className="h-4 w-4 mr-2 hidden sm:inline-block" />
             List
