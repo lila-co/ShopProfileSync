@@ -99,7 +99,7 @@ const ProfilePage: React.FC = () => {
                         <Button 
                           variant="outline" 
                           className="w-full"
-                          onClick={() => navigate('/admin/settings')}
+                          onClick={() => navigate('/admin-settings')}
                         >
                           System Settings
                         </Button>
