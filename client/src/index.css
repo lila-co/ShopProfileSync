@@ -3,31 +3,41 @@
 @tailwind utilities;
 
 :root {
-  --background: 0 0% 100%;
-  --foreground: 20 14.3% 4.1%;
-  --muted: 60 4.8% 95.9%;
-  --muted-foreground: 25 5.3% 44.7%;
+  /* SavvyCart Color Scheme */
+  --background: 220 33% 98%;
+  --foreground: 223 19% 28%;
+  --muted: 220 16% 96%;
+  --muted-foreground: 223 10% 45%;
   --popover: 0 0% 100%;
-  --popover-foreground: 20 14.3% 4.1%;
+  --popover-foreground: 223 19% 28%;
   --card: 0 0% 100%;
-  --card-foreground: 20 14.3% 4.1%;
-  --border: 20 5.9% 90%;
-  --input: 20 5.9% 90%;
-  --primary: 207 90% 54%;
-  --primary-foreground: 211 100% 99%;
-  --secondary: 142 76% 43%;
-  --secondary-foreground: 142 76% 96%;
-  --accent: 0 91% 71%;
-  --accent-foreground: 0 91% 96%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 60 9.1% 97.8%;
-  --ring: 20 14.3% 4.1%;
+  --card-foreground: 223 19% 28%;
+  --border: 220 13% 91%;
+  --input: 220 13% 91%;
+  
+  /* Primary: Vibrant but not harsh blue */
+  --primary: 217 91% 64%;
+  --primary-foreground: 0 0% 100%;
+  
+  /* Secondary: Mint green for savings/success */
+  --secondary: 157 64% 52%;
+  --secondary-foreground: 0 0% 100%;
+  
+  /* Accent: Warm amber for deals/highlights */
+  --accent: 37 90% 63%;
+  --accent-foreground: 223 19% 28%;
+  
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --ring: 217 91% 64%;
   --radius: 0.5rem;
   
   /* Chart colors */
-  --chart-1: 207 90% 54%;
-  --chart-2: 142 76% 43%;
-  --chart-3: 0 91% 71%;
+  --chart-1: 217 91% 64%;
+  --chart-2: 157 64% 52%;
+  --chart-3: 37 90% 63%;
+  --chart-4: 263 70% 60%;
+  --chart-5: 187 85% 43%;
   --chart-4: 34 94% 65%;
   --chart-5: 262 83% 58%;
   
