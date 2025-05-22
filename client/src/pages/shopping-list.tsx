@@ -358,10 +358,10 @@ const ShoppingListPage: React.FC = () => {
         </Card>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4 sm:mb-6">
-          <TabsList className="grid w-full grid-cols-3 h-auto">
-            <TabsTrigger value="items" className="px-1 sm:px-3 py-2 text-xs sm:text-sm">Shopping Items</TabsTrigger>
-            <TabsTrigger value="optimization" className="px-1 sm:px-3 py-2 text-xs sm:text-sm">Shopping Optimization</TabsTrigger>
-            <TabsTrigger value="comparison" className="px-1 sm:px-3 py-2 text-xs sm:text-sm">Price Comparison</TabsTrigger>
+          <TabsList className="flex w-full h-auto flex-wrap">
+            <TabsTrigger value="items" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Items</TabsTrigger>
+            <TabsTrigger value="optimization" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Optimization</TabsTrigger>
+            <TabsTrigger value="comparison" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Price Comparison</TabsTrigger>
           </TabsList>
           
           <TabsContent value="items" className="pt-4">
@@ -514,7 +514,7 @@ const ShoppingListPage: React.FC = () => {
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">Shopping Optimization</h3>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 mt-3 sm:mt-4">
+                  <div className="grid grid-cols-1 gap-3 sm:gap-4 mt-3 sm:mt-4">
                     <div className={`border rounded-lg p-3 sm:p-4 cursor-pointer transition-all hover:border-primary hover:shadow-md ${selectedOptimization === 'cost' ? 'bg-primary/10 border-primary' : 'bg-gray-50 dark:bg-gray-800/50'}`} 
                          onClick={() => setSelectedOptimization('cost')}>
                       <div className="flex items-center mb-1 sm:mb-2">
@@ -580,7 +580,7 @@ const ShoppingListPage: React.FC = () => {
                     </p>
                   </div>
                   
-                  {priceComparisonMutation.data?.retailers?.length > 0 ? (
+                  {priceComparisonMutation.data?.singleStore?.length > 0 ? (
                     <div>
                       <div className="space-y-4 sm:space-y-6 mb-4 sm:mb-6">
                         <div className="border border-blue-200 rounded-lg sm:rounded-xl overflow-hidden">
@@ -593,8 +593,13 @@ const ShoppingListPage: React.FC = () => {
                                 <StoreIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                               </div>
                               <div>
-                                <h4 className="font-medium text-base sm:text-lg">Kroger</h4>
-                                <p className="text-xs sm:text-sm text-gray-500">8 out of 10 items • $45.35 total</p>
+                                <h4 className="font-medium text-base sm:text-lg">
+                                  {priceComparisonMutation.data?.bestSingleStore?.retailerName || 'Kroger'}
+                                </h4>
+                                <p className="text-xs sm:text-sm text-gray-500">
+                                  {priceComparisonMutation.data?.bestSingleStore?.availableItems || 8} out of {items.length} items • 
+                                  ${((priceComparisonMutation.data?.bestSingleStore?.totalCost || 4535) / 100).toFixed(2)} total
+                                </p>
                               </div>
                             </div>
                             <Button size="sm" variant="outline" className="w-full text-xs sm:text-sm">
@@ -606,7 +611,9 @@ const ShoppingListPage: React.FC = () => {
                         
                         <div className="border border-green-200 rounded-lg sm:rounded-xl overflow-hidden">
                           <div className="bg-green-50 dark:bg-green-900/10 px-3 sm:px-4 py-2 sm:py-3 border-b border-green-200">
-                            <div className="font-medium text-sm sm:text-base text-green-700 dark:text-green-300">Best Value Option (Save $8.50)</div>
+                            <div className="font-medium text-sm sm:text-base text-green-700 dark:text-green-300">
+                              Best Value Option (Save ${((priceComparisonMutation.data?.multiStore?.[0]?.savings || 850) / 100).toFixed(2)})
+                            </div>
                           </div>
                           <div className="p-3 sm:p-4">
                             <div className="flex items-center mb-3 sm:mb-4">
@@ -614,8 +621,12 @@ const ShoppingListPage: React.FC = () => {
                                 <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                               </div>
                               <div>
-                                <h4 className="font-medium text-base sm:text-lg">Kroger + Walmart</h4>
-                                <p className="text-xs sm:text-sm text-gray-500">All items • $36.85 total</p>
+                                <h4 className="font-medium text-base sm:text-lg">
+                                  {priceComparisonMutation.data?.multiStore?.[0]?.retailerNames?.join(' + ') || 'Kroger + Walmart'}
+                                </h4>
+                                <p className="text-xs sm:text-sm text-gray-500">
+                                  All items • ${((priceComparisonMutation.data?.multiStore?.[0]?.totalCost || 3685) / 100).toFixed(2)} total
+                                </p>
                               </div>
                             </div>
                             <Button size="sm" variant="default" className="w-full text-xs sm:text-sm">
@@ -635,8 +646,13 @@ const ShoppingListPage: React.FC = () => {
                                 <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600" />
                               </div>
                               <div>
-                                <h4 className="font-medium text-base sm:text-lg">Target</h4>
-                                <p className="text-xs sm:text-sm text-gray-500">9 out of 10 items • $42.15 total</p>
+                                <h4 className="font-medium text-base sm:text-lg">
+                                  {priceComparisonMutation.data?.balancedOption?.retailerName || 'Target'}
+                                </h4>
+                                <p className="text-xs sm:text-sm text-gray-500">
+                                  {priceComparisonMutation.data?.balancedOption?.availableItems || 9} out of {items.length} items • 
+                                  ${((priceComparisonMutation.data?.balancedOption?.totalCost || 4215) / 100).toFixed(2)} total
+                                </p>
                               </div>
                             </div>
                             <Button size="sm" variant="outline" className="w-full text-xs sm:text-sm">
@@ -650,7 +666,10 @@ const ShoppingListPage: React.FC = () => {
                       <div className="border-t pt-3 sm:pt-4 mt-3 sm:mt-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                         <div>
                           <p className="text-xs sm:text-sm text-gray-500">
-                            Potential savings: <span className="font-medium text-green-600">$8.50 (19%)</span>
+                            Potential savings: <span className="font-medium text-green-600">
+                              ${((priceComparisonMutation.data?.multiStore?.[0]?.savings || 850) / 100).toFixed(2)}
+                              ({priceComparisonMutation.data?.multiStore?.[0]?.savingsPercent || 19}%)
+                            </span>
                           </p>
                         </div>
                         <Button variant="link" size="sm" className="text-gray-500 text-xs sm:text-sm">
