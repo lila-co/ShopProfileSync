@@ -11,6 +11,7 @@ import { UserCircle, Calendar, Repeat, Timer, BarChart3, LockKeyhole, ShieldAler
 
 const ProfilePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'profile' | 'patterns' | 'exceptions'>('profile');
+  const [, navigate] = useLocation();
   
   return (
     <div className="max-w-4xl mx-auto bg-white min-h-screen flex flex-col">
@@ -48,7 +49,67 @@ const ProfilePage: React.FC = () => {
           
           {/* Tab Content */}
           <div className="mt-6">
-            {activeTab === 'profile' && <ProfileSetup />}
+            {activeTab === 'profile' && (
+              <>
+                <ProfileSetup />
+                
+                {/* ADMIN ACCESS SECTION */}
+                <div className="mt-8">
+                  <Separator className="mb-4" />
+                  <h2 className="text-xl font-bold mb-4 flex items-center">
+                    <LockKeyhole className="w-5 h-5 mr-2 text-amber-500" />
+                    Admin Access
+                  </h2>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card className="hover:shadow-md transition-all duration-200 cursor-pointer">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg flex items-center">
+                          <BarChart3 className="w-5 h-5 mr-2 text-blue-600" />
+                          Internal Analytics
+                        </CardTitle>
+                        <CardDescription>Access comprehensive analytics and reporting</CardDescription>
+                      </CardHeader>
+                      <CardContent className="text-sm text-gray-600">
+                        View customer segments, shopping patterns, and retailer performance data to optimize the shopping experience.
+                      </CardContent>
+                      <CardFooter className="pt-0">
+                        <Button 
+                          variant="outline" 
+                          className="w-full"
+                          onClick={() => navigate('/internal/analytics')}
+                        >
+                          Access Analytics
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                    
+                    <Card className="hover:shadow-md transition-all duration-200 cursor-pointer">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg flex items-center">
+                          <ShieldAlert className="w-5 h-5 mr-2 text-red-600" />
+                          System Administration
+                        </CardTitle>
+                        <CardDescription>Manage system settings and configurations</CardDescription>
+                      </CardHeader>
+                      <CardContent className="text-sm text-gray-600">
+                        Configure app settings, manage retailer integrations, and monitor system performance.
+                      </CardContent>
+                      <CardFooter className="pt-0">
+                        <Button 
+                          variant="outline" 
+                          className="w-full"
+                          onClick={() => navigate('/admin/settings')}
+                        >
+                          System Settings
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  </div>
+                </div>
+              </>
+            )}
+            
             {activeTab === 'patterns' && (
               <div className="bg-white rounded-lg p-4">
                 <h2 className="text-lg font-bold mb-4">Recurring Shopping Patterns</h2>
@@ -80,6 +141,7 @@ const ProfilePage: React.FC = () => {
                 </div>
               </div>
             )}
+            
             {activeTab === 'exceptions' && <PurchaseAnomalies />}
           </div>
         </div>
