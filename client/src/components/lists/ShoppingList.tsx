@@ -431,18 +431,27 @@ const ShoppingListComponent: React.FC = () => {
   
   return (
     <div className="p-4 pb-20">
+      <div className="mb-8 w-full border-2 border-primary shadow-lg rounded-lg overflow-hidden">
+        <div className="bg-primary text-white px-4 py-2 text-lg font-bold text-center">
+          Generate Your Shopping List
+        </div>
+        <div className="p-4 bg-primary/5">
+          <p className="text-center mb-4 text-sm">Our AI analyzes your purchase history to create personalized shopping lists</p>
+          <Button 
+            variant="default" 
+            onClick={() => previewGenerateMutation.mutate()}
+            size="lg"
+            className="w-full bg-primary hover:bg-primary/90 text-white py-6 text-lg font-bold"
+          >
+            <Wand2 className="h-5 w-5 mr-2" />
+            GENERATE SHOPPING LIST
+          </Button>
+        </div>
+      </div>
+      
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold">Shopping List</h2>
         <div className="flex space-x-2">
-          <Button 
-            variant="default" 
-            onClick={() => setGenerateDialogOpen(true)} 
-            size="lg"
-            className="bg-primary text-white hover:bg-primary/90 font-medium"
-          >
-            <Wand2 className="h-5 w-5 mr-2" />
-            Generate List
-          </Button>
           <Button variant="outline" onClick={() => setRecipeDialogOpen(true)}>
             <FileText className="h-4 w-4 mr-2" />
             Import Recipe
