@@ -3,11 +3,12 @@ import { useLocation } from 'wouter';
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
 import ProfileSetup from '@/components/profile/ProfileSetup';
+import RetailerLinking from '@/components/profile/RetailerLinking';
 import PurchaseAnomalies from '@/components/profile/PurchaseAnomalies';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { UserCircle, Calendar, Repeat, Timer, BarChart3, LockKeyhole, ShieldAlert } from 'lucide-react';
+import { UserCircle, Calendar, Repeat, Timer, BarChart3, LockKeyhole, ShieldAlert, Store } from 'lucide-react';
 
 const ProfilePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'profile' | 'patterns' | 'exceptions'>('profile');
@@ -52,6 +53,17 @@ const ProfilePage: React.FC = () => {
             {activeTab === 'profile' && (
               <>
                 <ProfileSetup />
+                
+                {/* RETAILER ACCOUNT LINKING */}
+                <div className="mt-8 mb-8">
+                  <Separator className="mb-4" />
+                  <h2 className="text-xl font-bold mb-4 flex items-center">
+                    <Store className="w-5 h-5 mr-2 text-primary" />
+                    Connected Retailers
+                  </h2>
+                  
+                  <RetailerLinking />
+                </div>
                 
                 {/* ADMIN ACCESS SECTION */}
                 <div className="mt-8">
