@@ -172,6 +172,13 @@ const AdminSettings: React.FC = () => {
               </CardContent>
               <CardFooter className="flex justify-end space-x-2">
                 <Button variant="outline">Reset to Defaults</Button>
+                <Button
+                  variant="outline"
+                  className="ml-2"
+                  onClick={() => navigate('/affiliate-dashboard')}
+                >
+                  View Affiliate Dashboard
+                </Button>
                 <Button onClick={saveSettings}>Save Changes</Button>
               </CardFooter>
             </Card>
