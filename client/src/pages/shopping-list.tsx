@@ -339,8 +339,9 @@ const ShoppingListPage: React.FC = () => {
         </Card>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="items">Shopping Items</TabsTrigger>
+            <TabsTrigger value="optimization">Shopping Optimization</TabsTrigger>
             <TabsTrigger value="comparison">Price Comparison</TabsTrigger>
           </TabsList>
           
@@ -488,7 +489,7 @@ const ShoppingListPage: React.FC = () => {
             </div>
           </TabsContent>
           
-          <TabsContent value="comparison" className="pt-4">
+          <TabsContent value="optimization" className="pt-4">
             <Card className="mb-4">
               <CardContent className="p-6">
                 <div className="space-y-4">
@@ -530,6 +531,81 @@ const ShoppingListPage: React.FC = () => {
               </CardContent>
             </Card>
             
+            <Card>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-medium">Optimized Shopping Plan</h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => defaultList?.id && priceComparisonMutation.mutate(defaultList.id)}
+                      disabled={priceComparisonMutation.isPending || !items.length}
+                    >
+                      {priceComparisonMutation.isPending ? "Optimizing..." : "Find Best Options"}
+                    </Button>
+                  </div>
+                  
+                  {priceComparisonMutation.data?.retailers?.length > 0 ? (
+                    <div>
+                      <div className="mb-4">
+                        <h4 className="font-medium mb-2">Recommended Shopping Plan</h4>
+                        <div className="text-sm text-gray-600 mb-4">
+                          Based on your optimization preference, here's the best way to shop:
+                        </div>
+                        
+                        <div className="border rounded-lg p-4 bg-blue-50 dark:bg-blue-900/10 mb-4">
+                          <div className="font-medium mb-1">Single Store Option (80% of your items)</div>
+                          <div className="text-sm mb-3">
+                            Shop at <span className="font-medium">Kroger</span> to get 8 out of 10 items for <span className="font-medium">$45.35</span>
+                          </div>
+                          <Button size="sm" variant="outline" className="w-full">View Shopping Plan</Button>
+                        </div>
+                        
+                        <div className="border rounded-lg p-4 bg-green-50 dark:bg-green-900/10 mb-4">
+                          <div className="font-medium mb-1">Best Value Option (Save $8.50)</div>
+                          <div className="text-sm mb-3">
+                            Shop at <span className="font-medium">Kroger + Walmart</span> to maximize savings
+                          </div>
+                          <Button size="sm" variant="default" className="w-full">View Value Plan</Button>
+                        </div>
+                        
+                        <div className="border rounded-lg p-4 dark:bg-gray-800/50">
+                          <div className="font-medium mb-1">Balanced Option</div>
+                          <div className="text-sm mb-3">
+                            Shop at <span className="font-medium">Target</span> to balance cost and convenience
+                          </div>
+                          <Button size="sm" variant="outline" className="w-full">View Balanced Plan</Button>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-6 text-center">
+                        <p className="text-sm text-gray-500">
+                          Saving potential: <span className="font-medium text-green-600">$8.50 (19%)</span> compared to shopping at a single store
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <BarChart4 className="h-12 w-12 mx-auto text-gray-300 mb-2" />
+                      <p className="text-gray-500 mb-2">Optimize your shopping across stores</p>
+                      <p className="text-sm text-gray-500 mb-4">
+                        We'll find the best combination of stores based on your preferences
+                      </p>
+                      <Button
+                        onClick={() => defaultList?.id && priceComparisonMutation.mutate(defaultList.id)}
+                        disabled={priceComparisonMutation.isPending || !items.length}
+                      >
+                        {items.length === 0 ? "Add items to optimize" : "Find Best Shopping Options"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="comparison" className="pt-4">
             <Card>
               <CardContent className="p-6">
                 <div className="space-y-4">
