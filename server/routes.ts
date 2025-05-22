@@ -326,7 +326,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       // Normalize the product name to lowercase for matching
-      const normalizedName = productName.toLowerCase().trim();
+      const normalizedName = productName ? productName.toLowerCase().trim() : '';
       
       // Check if this is likely a duplicate with a slightly different spelling
       let correctedName = normalizedName;
