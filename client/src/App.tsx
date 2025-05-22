@@ -13,6 +13,7 @@ import Scan from "@/pages/scan";
 import Shop from "@/pages/shop";
 import InternalAnalytics from "@/pages/internal-analytics";
 import AdminSettings from "@/pages/admin-settings";
+import AffiliateDashboard from "@/pages/affiliate-dashboard";
 import Auth from "@/pages/auth";
 
 function Router() {
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/profile" component={Profile} />
       <Route path="/internal/analytics" component={InternalAnalytics} />
       <Route path="/admin-settings" component={AdminSettings} />
+      <Route path="/affiliate-dashboard" component={AffiliateDashboard} />
       <Route path="/auth" component={Auth} />
       <Route component={NotFound} />
     </Switch>
