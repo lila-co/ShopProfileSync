@@ -406,7 +406,23 @@ const ShoppingListComponent: React.FC = () => {
   
   return (
     <div className="p-4 pb-20">
-      <h2 className="text-xl font-bold mb-4">Shopping List</h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-bold">Shopping List</h2>
+        <div className="flex space-x-2">
+          <Button 
+            variant="default" 
+            onClick={() => setGenerateDialogOpen(true)} 
+            className="bg-primary text-white hover:bg-primary/90"
+          >
+            <Wand2 className="h-4 w-4 mr-2" />
+            Generate List
+          </Button>
+          <Button variant="outline" onClick={() => setRecipeDialogOpen(true)}>
+            <FileText className="h-4 w-4 mr-2" />
+            Import Recipe
+          </Button>
+        </div>
+      </div>
       
       <form onSubmit={handleAddItem} className="mb-6">
         <div className="flex space-x-2 mb-2">
