@@ -384,12 +384,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { productName, quantity, unit, shoppingListId } = req.body;
       
-      if (!shoppingListId) {
-        return res.status(400).json({ message: 'Shopping list ID is required' });
+      // If no shoppingListId provided, use the default list
+      let targetListId = shoppingListId;
+      if (!targetListId) {
+        const lists = await storage.getShoppingLists();
+        const defaultList = lists.find(list => list.isDefault) || lists[0];
+        if (!defaultList) {
+          return res.status(400).json({ message: 'No shopping list available' });
+        }
+        targetListId = defaultList.id;
       }
       
       // Get existing items to check for duplicates
-      const existingItems = await storage.getShoppingListItems(shoppingListId);
+      const existingItems = await storage.getShoppingListItems(targetListId);
       
       // Common item names and alternate spellings/misspellings
       const commonItemCorrections: Record<string, string[]> = {
@@ -495,7 +502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Add as new item with the specified unit (or default to COUNT)
         const newItem = await storage.addShoppingListItem({
-          shoppingListId,
+          shoppingListId: targetListId,
           productName: nameToUse,
           quantity,
           unit: unit || 'COUNT'
