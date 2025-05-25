@@ -1,3 +1,4 @@
+typescript
 import React, { useState, useRef } from 'react';
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
@@ -911,43 +912,6 @@ const ShoppingListPage: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                    </div>
-
-                    <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                      <h4 className="text-lg font-semibold mb-4">Ready to Shop?</h4>
-                      <div className="space-y-3">
-                        <Button 
-                          className="w-full justify-start" 
-                          variant="outline"
-                          onClick={() => window.location.href = `/shop?listId=${defaultList?.id}&mode=instore`}
-                        >
-                          <Store className="h-4 w-4 mr-2" />
-                          Shop In-Store
-                          <span className="ml-auto text-xs text-gray-500">Get organized route & printable list</span>
-                        </Button>
-
-                        <Button 
-                          className="w-full justify-start" 
-                          variant="outline"
-                          onClick={() => window.location.href = `/shop?listId=${defaultList?.id}&mode=online`}
-                        >
-                          <ShoppingCart className="h-4 w-4 mr-2" />
-                          Shop Online
-                          <span className="ml-auto text-xs text-gray-500">Pickup, delivery, or cart transfer</span>
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-6 sm:py-8">
-                      <div className="relative w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4">
-                        <div className="absolute inset-0 bg-primary/10 rounded-full flex items-center justify-center">
-                          <BarChart4 className="h-8 w-8 sm:h-12 sm:w-12 text-primary/60" />
-                        </div>
-                      </div>
-                      <h3 className="text-base sm:text-lg font-medium mb-2">Optimize Your Shopping</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                        Add items to your list to see optimization options and compare prices across stores.
-                      </p>
                     </div>
                   )}
                 </div>
