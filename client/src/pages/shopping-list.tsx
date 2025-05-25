@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
 import { Card, CardContent } from '@/components/ui/card';
@@ -35,6 +35,7 @@ import { detectUnitFromItemName } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { useLocation } from 'wouter';
+import { extractTextFromReceiptImage } from '@/lib/openai';
 
 const ShoppingListPage: React.FC = () => {
   const [location, navigate] = useLocation();
@@ -57,6 +58,13 @@ const ShoppingListPage: React.FC = () => {
   // Generate list dialog state
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
   const [generatedItems, setGeneratedItems] = useState<any[]>([]);
+
+  // Upload list dialog state
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [uploadedItems, setUploadedItems] = useState<any[]>([]);
+  const [uploadType, setUploadType] = useState<'file' | 'image'>('file');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   // Tab state
   const [activeTab, setActiveTab] = useState('items');
@@ -125,6 +133,67 @@ const ShoppingListPage: React.FC = () => {
       toast({
         title: "Error",
         description: "Failed to generate shopping list: " + error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Upload shopping list from file
+  const uploadListMutation = useMutation({
+    mutationFn: async (items: any[]) => {
+      const selectedItems = items.filter(item => item.isSelected);
+      
+      const response = await apiRequest('POST', '/api/shopping-list/items', {
+        shoppingListId: shoppingLists?.[0].id,
+        items: selectedItems
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      setUploadDialogOpen(false);
+      setUploadedItems([]);
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      toast({
+        title: "Shopping List Uploaded",
+        description: "Your list has been imported successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to upload shopping list: " + error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Process image OCR
+  const processImageMutation = useMutation({
+    mutationFn: async (base64Image: string) => {
+      const extractedData = await extractTextFromReceiptImage(base64Image);
+      return extractedData;
+    },
+    onSuccess: (data) => {
+      if (data.items && Array.isArray(data.items)) {
+        const processedItems = data.items.map((item: any) => ({
+          productName: item.productName || item.name || item,
+          quantity: item.quantity || 1,
+          unit: item.unit || 'COUNT',
+          isSelected: true
+        }));
+        setUploadedItems(processedItems);
+      } else {
+        toast({
+          title: "No items found",
+          description: "Could not extract items from the image. Please try a clearer photo.",
+          variant: "destructive"
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error processing image",
+        description: "Failed to extract text from image: " + error.message,
         variant: "destructive"
       });
     }
@@ -349,6 +418,96 @@ const ShoppingListPage: React.FC = () => {
     setGeneratedItems(updatedItems);
   };
 
+  // Handle file upload
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      
+      // Parse different file types
+      let items: any[] = [];
+      
+      if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+        // Parse plain text - each line is an item
+        items = content.split('\n')
+          .filter(line => line.trim())
+          .map(line => ({
+            productName: line.trim(),
+            quantity: 1,
+            unit: 'COUNT',
+            isSelected: true
+          }));
+      } else if (file.type === 'application/json' || file.name.endsWith('.json')) {
+        try {
+          const jsonData = JSON.parse(content);
+          if (Array.isArray(jsonData)) {
+            items = jsonData.map(item => ({
+              productName: typeof item === 'string' ? item : item.name || item.productName || '',
+              quantity: typeof item === 'object' ? item.quantity || 1 : 1,
+              unit: typeof item === 'object' ? item.unit || 'COUNT' : 'COUNT',
+              isSelected: true
+            }));
+          }
+        } catch (error) {
+          toast({
+            title: "Error parsing JSON",
+            description: "Invalid JSON format",
+            variant: "destructive"
+          });
+          return;
+        }
+      } else if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+        // Parse CSV - assume first column is item name
+        const lines = content.split('\n').filter(line => line.trim());
+        items = lines.map(line => {
+          const columns = line.split(',');
+          return {
+            productName: columns[0]?.trim() || '',
+            quantity: parseInt(columns[1]) || 1,
+            unit: columns[2]?.trim() || 'COUNT',
+            isSelected: true
+          };
+        }).filter(item => item.productName);
+      }
+
+      if (items.length > 0) {
+        setUploadedItems(items);
+      } else {
+        toast({
+          title: "No items found",
+          description: "Could not parse items from the uploaded file.",
+          variant: "destructive"
+        });
+      }
+    };
+
+    reader.readAsText(file);
+  };
+
+  // Handle image upload for OCR
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64Image = e.target?.result as string;
+      processImageMutation.mutate(base64Image.split(',')[1]);
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+  // Handle toggling uploaded item selection
+  const handleToggleUploadedItem = (index: number) => {
+    const updatedItems = [...uploadedItems];
+    updatedItems[index].isSelected = !updatedItems[index].isSelected;
+    setUploadedItems(updatedItems);
+  };
+
   // Show loading state
   if (isLoading) {
     return (
@@ -385,39 +544,58 @@ const ShoppingListPage: React.FC = () => {
       <main className="flex-1 overflow-y-auto p-4 pb-20">
         <h2 className="text-xl font-bold mb-4">Shopping List</h2>
 
-        {/* Generate Shopping List Card - PROMINENTLY DISPLAYED */}
-        <Card className="mb-6 border-2 border-primary bg-primary/5">
-          <CardContent className="p-6">
-            <div className="flex flex-col items-center text-center">
-              <ShoppingCart className="h-12 w-12 text-primary mb-2" />
-              <h3 className="text-xl font-bold mb-2">GENERATE SHOPPING LIST</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Let us create a shopping list for you based on your typical purchases and preferences.
-              </p>
-              <Button 
-                className="w-full bg-primary hover:bg-primary/90"
-                size="lg"
-                onClick={() => previewGenerateMutation.mutate()}
-                disabled={previewGenerateMutation.isPending}
-              >
-                {previewGenerateMutation.isPending ? (
-                  <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Generating...
-                  </span>
-                ) : (
-                  <span className="flex items-center">
-                    <ListChecks className="mr-2 h-5 w-5" />
-                    Generate Your Shopping List
-                  </span>
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+          <Card className="border border-gray-200">
+            <CardContent className="p-4">
+              <div className="flex flex-col items-center text-center">
+                <ShoppingCart className="h-8 w-8 text-primary mb-2" />
+                <h3 className="text-base font-semibold mb-1">Generate List</h3>
+                <p className="text-xs text-gray-600 mb-3">
+                  Based on your purchase patterns
+                </p>
+                <Button 
+                  className="w-full bg-primary hover:bg-primary/90"
+                  size="sm"
+                  onClick={() => previewGenerateMutation.mutate()}
+                  disabled={previewGenerateMutation.isPending}
+                >
+                  {previewGenerateMutation.isPending ? (
+                    <span className="flex items-center">
+                      <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                      Generating...
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      <ListChecks className="mr-2 h-4 w-4" />
+                      Generate
+                    </span>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-gray-200">
+            <CardContent className="p-4">
+              <div className="flex flex-col items-center text-center">
+                <FileText className="h-8 w-8 text-blue-600 mb-2" />
+                <h3 className="text-base font-semibold mb-1">Upload List</h3>
+                <p className="text-xs text-gray-600 mb-3">
+                  Import from file or photo
+                </p>
+                <Button 
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  size="sm"
+                  onClick={() => setUploadDialogOpen(true)}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Upload
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4 sm:mb-6">
           <TabsList className="flex w-full h-auto flex-wrap">
@@ -1010,6 +1188,144 @@ const ShoppingListPage: React.FC = () => {
                 className="bg-primary">
                 Generate List
               </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Upload List Dialog */}
+        <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Upload Shopping List</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              {uploadedItems.length === 0 ? (
+                <div className="space-y-4">
+                  <Tabs value={uploadType} onValueChange={(value) => setUploadType(value as 'file' | 'image')} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="file">Import File</TabsTrigger>
+                      <TabsTrigger value="image">Photo of List</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="file" className="space-y-4">
+                      <div className="text-center">
+                        <FileText className="h-12 w-12 mx-auto text-blue-500 mb-3" />
+                        <p className="text-sm text-gray-600 mb-4">
+                          Upload a text file, JSON, or CSV with your shopping list
+                        </p>
+                        <Button 
+                          onClick={() => fileInputRef.current?.click()}
+                          className="w-full"
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Choose File
+                        </Button>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".txt,.json,.csv"
+                          onChange={handleFileUpload}
+                          className="hidden"
+                        />
+                        <p className="text-xs text-gray-500 mt-2">
+                          Supports: .txt, .json, .csv files
+                        </p>
+                      </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="image" className="space-y-4">
+                      <div className="text-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-green-500 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+                          <circle cx="12" cy="13" r="3"/>
+                        </svg>
+                        <p className="text-sm text-gray-600 mb-4">
+                          Take a photo of your handwritten shopping list. We'll use OCR to convert it to digital format.
+                        </p>
+                        <Button 
+                          onClick={() => imageInputRef.current?.click()}
+                          disabled={processImageMutation.isPending}
+                          className="w-full bg-green-600 hover:bg-green-700"
+                        >
+                          {processImageMutation.isPending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="mr-2 h-4 w-4" />
+                              Upload Photo
+                            </>
+                          )}
+                        </Button>
+                        <input
+                          ref={imageInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                        <p className="text-xs text-gray-500 mt-2">
+                          Best results with clear, well-lit photos
+                        </p>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium">Imported Items ({uploadedItems.length})</h4>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setUploadedItems([])}
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                  
+                  <div className="max-h-[50vh] overflow-y-auto space-y-2">
+                    {uploadedItems.map((item, index) => (
+                      <div key={index} className="flex items-center p-2 border rounded-lg">
+                        <input
+                          type="checkbox"
+                          checked={item.isSelected}
+                          onChange={() => handleToggleUploadedItem(index)}
+                          className="h-5 w-5 text-primary rounded mr-3"
+                        />
+                        <div className="flex-1">
+                          <p className="font-medium">{item.productName}</p>
+                          <p className="text-sm text-gray-500">
+                            Qty: {item.quantity} {item.unit.toLowerCase()}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            <DialogFooter className="flex justify-between">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setUploadDialogOpen(false);
+                  setUploadedItems([]);
+                }}
+              >
+                Cancel
+              </Button>
+              {uploadedItems.length > 0 && (
+                <Button 
+                  onClick={() => uploadListMutation.mutate(uploadedItems)}
+                  disabled={uploadListMutation.isPending}
+                  className="bg-primary"
+                >
+                  {uploadListMutation.isPending ? 'Adding...' : 'Add to List'}
+                </Button>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>
