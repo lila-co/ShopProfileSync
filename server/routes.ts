@@ -483,8 +483,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const currentQuantity = existingItem.quantity || 1;
         const newQuantity = (typeof quantity === 'number' && !isNaN(quantity)) ? quantity : 1;
         
+        // Ensure we're using valid numbers before database operations
+        let safeCurrentQuantity = 1;
+        if (typeof currentQuantity === 'number' && !isNaN(currentQuantity)) {
+          safeCurrentQuantity = currentQuantity;
+        } else if (typeof currentQuantity === 'string') {
+          const parsed = parseInt(currentQuantity, 10);
+          if (!isNaN(parsed)) {
+            safeCurrentQuantity = parsed;
+          }
+        }
+        
+        let safeNewQuantity = 1;
+        if (typeof newQuantity === 'number' && !isNaN(newQuantity)) {
+          safeNewQuantity = newQuantity;
+        } else if (typeof newQuantity === 'string') {
+          const parsed = parseInt(newQuantity, 10);
+          if (!isNaN(parsed)) {
+            safeNewQuantity = parsed;
+          }
+        }
+        
         const updatedItem = await storage.updateShoppingListItem(existingItem.id, {
-          quantity: currentQuantity + newQuantity,
+          quantity: safeCurrentQuantity + safeNewQuantity,
           // Keep the existing unit or update to the new one if specified
           unit: unit || existingItem.unit || 'COUNT'
         });
