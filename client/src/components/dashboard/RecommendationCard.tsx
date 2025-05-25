@@ -3,6 +3,7 @@ import { Recommendation } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
 
 interface RecommendationCardProps {
   recommendation: Recommendation;
@@ -10,7 +11,8 @@ interface RecommendationCardProps {
 
 const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommendation }) => {
   const queryClient = useQueryClient();
-  
+  const { toast } = useToast();
+
   const addToShoppingListMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest('POST', '/api/shopping-list/items', {
@@ -23,13 +25,39 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommendation 
       });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+
+      if (data.merged) {
+        toast({
+          title: "Items Combined",
+          description: data.message || `Added quantity to existing "${data.productName}" item.`,
+          variant: "default"
+        });
+      } else if (data.corrected) {
+        toast({
+          title: "Item Added",
+          description: `Added as "${data.productName}" (corrected from "${data.originalName}")`,
+          variant: "default"
+        });
+      } else {
+        toast({
+          title: "Item Added",
+          description: `${recommendation.productName} has been added to your shopping list.`
+        });
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to Add Item",
+        description: "Could not add item to shopping list.",
+        variant: "destructive"
+      });
     }
   });
-  
+
   const isUrgent = recommendation.daysUntilPurchase !== undefined && recommendation.daysUntilPurchase <= 3;
-  
+
   return (
     <div className={`bg-white rounded-xl shadow-sm p-4 border ${isUrgent ? 'border-green-100' : 'border-gray-100'}`}>
       <div className="flex justify-between items-start">
@@ -55,7 +83,7 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommendation 
           </div>
         )}
       </div>
-      
+
       <div className="mt-3 pt-3 border-t border-gray-100">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
@@ -77,7 +105,7 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommendation 
             ${recommendation.suggestedPrice ? (recommendation.suggestedPrice / 100).toFixed(2) : '0.00'}
           </span>
         </div>
-        
+
         <Button
           className={`mt-3 w-full ${isUrgent ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700'}`}
           onClick={() => addToShoppingListMutation.mutate()}

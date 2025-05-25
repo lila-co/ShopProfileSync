@@ -91,7 +91,7 @@ const Dashboard: React.FC = () => {
           <section className="mb-6">
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-bold text-gray-800">Recommended Purchases</h3>
-              <a href="#" className="text-primary text-sm font-medium">View All</a>
+              <a href="/recommendations" className="text-primary text-sm font-medium">View All</a>
             </div>
             
             <div className="space-y-3">
@@ -136,6 +136,24 @@ const Dashboard: React.FC = () => {
           
           {/* Weekly Deals */}
           <WeeklyDeals />
+          
+          {/* Quick Link to Shopping Lists */}
+          <section className="mb-6">
+            <div className="bg-primary/5 rounded-xl p-4 border border-primary/20">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="font-bold text-primary mb-1">Shopping Lists</h3>
+                  <p className="text-sm text-gray-600">Manage your shopping lists and optimize your trips</p>
+                </div>
+                <a 
+                  href="/shopping-list"
+                  className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90"
+                >
+                  View Lists
+                </a>
+              </div>
+            </div>
+          </section>
         </div>
         
         {/* Conditional Modals */}

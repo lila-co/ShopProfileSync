@@ -1,47 +1,31 @@
-import { Switch, Route } from "wouter";
-import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/not-found";
-import Dashboard from "@/pages/dashboard";
-import ShoppingList from "@/pages/shopping-list";
-import Deals from "@/pages/deals";
-import Circulars from "@/pages/circulars";
-import Profile from "@/pages/profile";
-import Scan from "@/pages/scan";
-import Shop from "@/pages/shop";
-import InternalAnalytics from "@/pages/internal-analytics";
-import AdminSettings from "@/pages/admin-settings";
-import AffiliateDashboard from "@/pages/affiliate-dashboard";
-import Auth from "@/pages/auth";
-
-function Router() {
-  return (
-    <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/lists" component={ShoppingList} />
-      <Route path="/scan" component={Scan} />
-      <Route path="/shop" component={Shop} />
-      <Route path="/deals" component={Deals} />
-      <Route path="/circulars" component={Circulars} />
-      <Route path="/profile" component={Profile} />
-      <Route path="/internal/analytics" component={InternalAnalytics} />
-      <Route path="/admin-settings" component={AdminSettings} />
-      <Route path="/affiliate-dashboard" component={AffiliateDashboard} />
-      <Route path="/auth" component={Auth} />
-      <Route component={NotFound} />
-    </Switch>
-  );
-}
+import React from 'react';
+import { Router, Route, Switch, Redirect } from 'wouter';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from '@/components/ui/toaster';
+import Dashboard from '@/pages/dashboard';
+import ShoppingListPage from '@/pages/shopping-list';
+import ProfilePage from '@/pages/profile';
+import NotFound from '@/pages/not-found';
+import DealsPage from '@/pages/deals';
+import { queryClient } from '@/lib/queryClient';
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <Router>
+        <div className="App">
+          <Switch>
+            <Route path="/" component={() => <Redirect to="/dashboard" />} />
+            <Route path="/dashboard" component={Dashboard} />
+            <Route path="/shopping-list" component={ShoppingListPage} />
+            <Route path="/profile" component={ProfilePage} />
+            <Route path="/deals" component={DealsPage} />
+            <Route path="/retailers" component={Dashboard} />
+            <Route component={NotFound} />
+          </Switch>
+        </div>
+      </Router>
+      <Toaster />
     </QueryClientProvider>
   );
 }

@@ -384,12 +384,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { productName, quantity, unit, shoppingListId } = req.body;
       
-      if (!shoppingListId) {
-        return res.status(400).json({ message: 'Shopping list ID is required' });
+      // If no shoppingListId provided, use the default list
+      let targetListId = shoppingListId;
+      if (!targetListId) {
+        const lists = await storage.getShoppingLists();
+        const defaultList = lists.find(list => list.isDefault) || lists[0];
+        if (!defaultList) {
+          return res.status(400).json({ message: 'No shopping list available' });
+        }
+        targetListId = defaultList.id;
       }
       
       // Get existing items to check for duplicates
-      const existingItems = await storage.getShoppingListItems(shoppingListId);
+      const existingItems = await storage.getShoppingListItems(targetListId);
       
       // Common item names and alternate spellings/misspellings
       const commonItemCorrections: Record<string, string[]> = {
@@ -472,8 +479,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (isDuplicate && existingItem) {
         // Update the quantity of the existing item instead of adding a new one
+        // Ensure quantity is a valid number before updating
+        const currentQuantity = existingItem.quantity || 1;
+        const newQuantity = (typeof quantity === 'number' && !isNaN(quantity)) ? quantity : 1;
+        
         const updatedItem = await storage.updateShoppingListItem(existingItem.id, {
-          quantity: existingItem.quantity + quantity,
+          quantity: currentQuantity + newQuantity,
           // Keep the existing unit or update to the new one if specified
           unit: unit || existingItem.unit || 'COUNT'
         });
@@ -495,7 +506,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Add as new item with the specified unit (or default to COUNT)
         const newItem = await storage.addShoppingListItem({
-          shoppingListId,
+          shoppingListId: targetListId,
           productName: nameToUse,
           quantity,
           unit: unit || 'COUNT'
@@ -864,6 +875,293 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Generate single store optimization plan
+  app.post('/api/shopping-lists/optimize/single-store', async (req: Request, res: Response) => {
+    try {
+      const { shoppingListId } = req.body;
+      const listId = shoppingListId || 1;
+      
+      const items = await storage.getShoppingListItems(listId);
+      if (!items.length) {
+        return res.json({ store: null, items: [], totalCost: 0, availabilityRate: 0 });
+      }
+      
+      const retailers = await storage.getRetailers();
+      
+      // Find the best single store with at least 80% item availability
+      let bestStore = null;
+      let bestCost = Number.MAX_SAFE_INTEGER;
+      let bestAvailability = 0;
+      
+      for (const retailer of retailers) {
+        // Simulate item availability and pricing for each retailer
+        let availableItems = 0;
+        let totalCost = 0;
+        const storeItems = [];
+        
+        for (const item of items) {
+          // Simulate availability (85-95% chance per item for demo)
+          const isAvailable = Math.random() > 0.1;
+          
+          if (isAvailable) {
+            availableItems++;
+            // Generate realistic pricing per retailer
+            const basePrice = 200 + Math.floor(Math.random() * 600); // $2-$8 range
+            const retailerMultiplier = 
+              retailer.id === 1 ? 0.9 : // Walmart - cheaper
+              retailer.id === 2 ? 1.1 : // Target - slightly more expensive  
+              retailer.id === 3 ? 0.95 : // Kroger - competitive
+              1.0; // Others
+            
+            const price = Math.round(basePrice * retailerMultiplier);
+            totalCost += price * item.quantity;
+            
+            storeItems.push({
+              id: item.id,
+              productName: item.productName,
+              quantity: item.quantity,
+              unit: item.unit,
+              price,
+              isAvailable: true
+            });
+          } else {
+            storeItems.push({
+              id: item.id,
+              productName: item.productName,
+              quantity: item.quantity,
+              unit: item.unit,
+              price: 0,
+              isAvailable: false
+            });
+          }
+        }
+        
+        const availabilityRate = availableItems / items.length;
+        
+        // Only consider stores with at least 80% availability
+        if (availabilityRate >= 0.8 && totalCost < bestCost) {
+          bestCost = totalCost;
+          bestStore = {
+            retailerId: retailer.id,
+            retailerName: retailer.name,
+            items: storeItems,
+            totalCost,
+            availabilityRate,
+            availableItems,
+            totalItems: items.length
+          };
+          bestAvailability = availabilityRate;
+        }
+      }
+      
+      res.json(bestStore || { store: null, items: [], totalCost: 0, availabilityRate: 0 });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+  
+  // Generate best value multi-store optimization plan
+  app.post('/api/shopping-lists/optimize/best-value', async (req: Request, res: Response) => {
+    try {
+      const { shoppingListId } = req.body;
+      const listId = shoppingListId || 1;
+      
+      const items = await storage.getShoppingListItems(listId);
+      if (!items.length) {
+        return res.json({ stores: [], totalCost: 0, totalSavings: 0 });
+      }
+      
+      const retailers = await storage.getRetailers();
+      
+      // Find the best price for each item across all stores
+      const optimizedPlan = { stores: {}, totalCost: 0, itemAssignments: {} };
+      
+      for (const item of items) {
+        let bestPrice = Number.MAX_SAFE_INTEGER;
+        let bestRetailer = null;
+        
+        for (const retailer of retailers) {
+          // Generate pricing for this item at this retailer
+          const basePrice = 200 + Math.floor(Math.random() * 600);
+          const retailerMultiplier = 
+            retailer.id === 1 ? 0.85 : // Walmart - cheapest for most items
+            retailer.id === 2 ? 1.15 : // Target - premium pricing
+            retailer.id === 3 ? 0.90 : // Kroger - competitive
+            1.0;
+          
+          const price = Math.round(basePrice * retailerMultiplier);
+          
+          if (price < bestPrice) {
+            bestPrice = price;
+            bestRetailer = retailer;
+          }
+        }
+        
+        if (bestRetailer) {
+          if (!optimizedPlan.stores[bestRetailer.id]) {
+            optimizedPlan.stores[bestRetailer.id] = {
+              retailerId: bestRetailer.id,
+              retailerName: bestRetailer.name,
+              items: [],
+              subtotal: 0
+            };
+          }
+          
+          const itemCost = bestPrice * item.quantity;
+          optimizedPlan.stores[bestRetailer.id].items.push({
+            id: item.id,
+            productName: item.productName,
+            quantity: item.quantity,
+            unit: item.unit,
+            price: bestPrice,
+            totalPrice: itemCost
+          });
+          
+          optimizedPlan.stores[bestRetailer.id].subtotal += itemCost;
+          optimizedPlan.totalCost += itemCost;
+          optimizedPlan.itemAssignments[item.id] = bestRetailer.id;
+        }
+      }
+      
+      // Calculate savings compared to single most expensive store
+      const singleStoreCosts = retailers.map(retailer => {
+        let cost = 0;
+        items.forEach(item => {
+          const basePrice = 200 + Math.floor(Math.random() * 600);
+          const multiplier = 
+            retailer.id === 1 ? 0.85 :
+            retailer.id === 2 ? 1.15 :
+            retailer.id === 3 ? 0.90 : 1.0;
+          cost += Math.round(basePrice * multiplier) * item.quantity;
+        });
+        return cost;
+      });
+      
+      const mostExpensiveCost = Math.max(...singleStoreCosts);
+      const totalSavings = mostExpensiveCost - optimizedPlan.totalCost;
+      
+      res.json({
+        stores: Object.values(optimizedPlan.stores),
+        totalCost: optimizedPlan.totalCost,
+        totalSavings,
+        savingsPercentage: Math.round((totalSavings / mostExpensiveCost) * 100)
+      });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+  
+  // Generate balanced optimization plan
+  app.post('/api/shopping-lists/optimize/balanced', async (req: Request, res: Response) => {
+    try {
+      const { shoppingListId } = req.body;
+      const listId = shoppingListId || 1;
+      
+      const items = await storage.getShoppingListItems(listId);
+      if (!items.length) {
+        return res.json({ stores: [], totalCost: 0, estimatedTime: 0 });
+      }
+      
+      const retailers = await storage.getRetailers();
+      
+      // Balanced approach: limit to 2-3 stores, optimize for reasonable prices and convenience
+      const balancedPlan = { stores: {}, totalCost: 0, storeCount: 0 };
+      const maxStores = Math.min(3, retailers.length);
+      
+      // Select top stores based on a balance of price and convenience
+      const storeScores = retailers.map(retailer => {
+        let avgPrice = 0;
+        let availabilityScore = 0;
+        
+        items.forEach(item => {
+          const basePrice = 200 + Math.floor(Math.random() * 600);
+          const multiplier = 
+            retailer.id === 1 ? 0.90 : // Walmart - good balance
+            retailer.id === 2 ? 1.05 : // Target - slightly higher but convenient
+            retailer.id === 3 ? 0.95 : // Kroger - competitive
+            1.0;
+          
+          avgPrice += Math.round(basePrice * multiplier);
+          availabilityScore += 0.9; // 90% availability assumption
+        });
+        
+        avgPrice /= items.length;
+        availabilityScore /= items.length;
+        
+        // Convenience factor (proximity, store hours, etc.)
+        const convenienceScore = 
+          retailer.id === 2 ? 0.9 : // Target - convenient locations
+          retailer.id === 1 ? 0.85 : // Walmart - good but can be crowded
+          retailer.id === 3 ? 0.8 : // Kroger - decent
+          0.7;
+        
+        // Balanced score: 40% price, 30% availability, 30% convenience
+        const normalizedPrice = 1 - (avgPrice - 200) / 600; // Normalize to 0-1
+        const score = (normalizedPrice * 0.4) + (availabilityScore * 0.3) + (convenienceScore * 0.3);
+        
+        return { retailer, score, avgPrice };
+      });
+      
+      // Sort by balanced score and take top 2-3 stores
+      storeScores.sort((a, b) => b.score - a.score);
+      const selectedStores = storeScores.slice(0, maxStores);
+      
+      // Distribute items across selected stores
+      const storeItemCounts = {};
+      selectedStores.forEach(store => {
+        storeItemCounts[store.retailer.id] = 0;
+        balancedPlan.stores[store.retailer.id] = {
+          retailerId: store.retailer.id,
+          retailerName: store.retailer.name,
+          items: [],
+          subtotal: 0
+        };
+      });
+      
+      // Assign items to stores in a balanced way
+      items.forEach((item, index) => {
+        // Round-robin assignment with price consideration
+        const storeIndex = index % selectedStores.length;
+        const selectedStore = selectedStores[storeIndex];
+        
+        const basePrice = 200 + Math.floor(Math.random() * 600);
+        const multiplier = 
+          selectedStore.retailer.id === 1 ? 0.90 :
+          selectedStore.retailer.id === 2 ? 1.05 :
+          selectedStore.retailer.id === 3 ? 0.95 : 1.0;
+        
+        const price = Math.round(basePrice * multiplier);
+        const itemCost = price * item.quantity;
+        
+        balancedPlan.stores[selectedStore.retailer.id].items.push({
+          id: item.id,
+          productName: item.productName,
+          quantity: item.quantity,
+          unit: item.unit,
+          price,
+          totalPrice: itemCost
+        });
+        
+        balancedPlan.stores[selectedStore.retailer.id].subtotal += itemCost;
+        balancedPlan.totalCost += itemCost;
+        storeItemCounts[selectedStore.retailer.id]++;
+      });
+      
+      // Estimate shopping time (15 min per store + 5 min per item group)
+      const estimatedTime = (Object.keys(balancedPlan.stores).length * 15) + 
+                           (items.length * 2); // 2 min per item average
+      
+      res.json({
+        stores: Object.values(balancedPlan.stores),
+        totalCost: balancedPlan.totalCost,
+        estimatedTime,
+        storeCount: Object.keys(balancedPlan.stores).length
+      });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
   // Calculate shopping list costs by retailer
   app.post('/api/shopping-lists/costs', async (req: Request, res: Response) => {
     try {

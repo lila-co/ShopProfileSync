@@ -112,7 +112,7 @@ const ShoppingInsights: React.FC = () => {
     <section className="mb-6">
       <div className="flex justify-between items-center mb-3">
         <h3 className="font-bold text-gray-800">Your Shopping Insights</h3>
-        <a href="#" className="text-primary text-sm font-medium">See all</a>
+        <a href="/insights" className="text-primary text-sm font-medium">See all</a>
       </div>
       
       <Card className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
