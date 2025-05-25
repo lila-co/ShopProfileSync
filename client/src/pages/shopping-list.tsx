@@ -142,7 +142,7 @@ const ShoppingListPage: React.FC = () => {
   const uploadListMutation = useMutation({
     mutationFn: async (items: any[]) => {
       const selectedItems = items.filter(item => item.isSelected);
-      
+
       const response = await apiRequest('POST', '/api/shopping-list/items', {
         shoppingListId: shoppingLists?.[0].id,
         items: selectedItems
@@ -426,10 +426,10 @@ const ShoppingListPage: React.FC = () => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const content = e.target?.result as string;
-      
+
       // Parse different file types
       let items: any[] = [];
-      
+
       if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
         // Parse plain text - each line is an item
         items = content.split('\n')
@@ -1206,7 +1206,7 @@ const ShoppingListPage: React.FC = () => {
                       <TabsTrigger value="file">Import File</TabsTrigger>
                       <TabsTrigger value="image">Photo of List</TabsTrigger>
                     </TabsList>
-                    
+
                     <TabsContent value="file" className="space-y-4">
                       <div className="text-center">
                         <FileText className="h-12 w-12 mx-auto text-blue-500 mb-3" />
@@ -1232,7 +1232,7 @@ const ShoppingListPage: React.FC = () => {
                         </p>
                       </div>
                     </TabsContent>
-                    
+
                     <TabsContent value="image" className="space-y-4">
                       <div className="text-center">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-green-500 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1285,7 +1285,7 @@ const ShoppingListPage: React.FC = () => {
                       Clear
                     </Button>
                   </div>
-                  
+
                   <div className="max-h-[50vh] overflow-y-auto space-y-2">
                     {uploadedItems.map((item, index) => (
                       <div key={index} className="flex items-center p-2 border rounded-lg">
@@ -1400,7 +1400,7 @@ const ShoppingListPage: React.FC = () => {
         </Dialog>
       </main>
 
-      <BottomNavigation activeTab="lists" />
+      
     </div>
   );
 };

@@ -1,120 +1,42 @@
 import React from 'react';
-import { useLocation } from 'wouter';
-
-type Tab = 'home' | 'lists' | 'shop' | 'deals' | 'circulars' | 'profile';
+import { Home, List, User, Store } from 'lucide-react';
 
 interface BottomNavigationProps {
-  activeTab: Tab;
+  activeTab: 'home' | 'lists' | 'profile' | 'stores';
 }
 
 const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab }) => {
-  const [, navigate] = useLocation();
-  
-  const handleTabClick = (tab: Tab) => {
-    switch(tab) {
-      case 'home':
-        navigate('/');
-        break;
-      case 'lists':
-        navigate('/lists');
-        break;
-      case 'shop':
-        navigate('/shop');
-        break;
-      case 'deals':
-        navigate('/deals');
-        break;
-      case 'circulars':
-        navigate('/circulars');
-        break;
-      case 'profile':
-        navigate('/profile');
-        break;
-    }
-  };
-  
+  const tabs = [
+    { id: 'home', label: 'Home', icon: Home, href: '/' },
+    { id: 'lists', label: 'Shopping Lists', icon: List, href: '/shopping-list' },
+    { id: 'stores', label: 'Stores', icon: Store, href: '/retailers' },
+    { id: 'profile', label: 'Profile', icon: User, href: '/profile' },
+  ];
+
   return (
-    <nav className="bg-white border-t border-gray-200 fixed bottom-0 left-0 right-0 z-10">
-      <div className="max-w-md mx-auto px-4 pb-1">
-        <div className="flex justify-between items-center">
-          <button 
-            className={`py-2 flex flex-col items-center w-1/5 ${activeTab === 'home' ? 'text-primary' : 'text-gray-400'}`}
-            onClick={() => handleTabClick('home')}
-            aria-label="Home"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-              <polyline points="9 22 9 12 15 12 15 22"/>
-            </svg>
-            <span className="text-xs font-medium mt-1">Home</span>
-          </button>
-          
-          <button 
-            className={`py-2 flex flex-col items-center w-1/5 ${activeTab === 'lists' ? 'text-primary' : 'text-gray-400'}`}
-            onClick={() => handleTabClick('lists')}
-            aria-label="Lists"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
-              <rect x="9" y="3" width="6" height="4" rx="2"/>
-              <line x1="9" y1="12" x2="15" y2="12"/>
-              <line x1="9" y1="16" x2="15" y2="16"/>
-            </svg>
-            <span className="text-xs font-medium mt-1">Lists</span>
-          </button>
-          
-          <button 
-            className={`py-2 flex flex-col items-center w-1/5`}
-            onClick={() => handleTabClick('shop')}
-            aria-label="Shop Now"
-          >
-            <div className="bg-primary text-white rounded-full h-12 w-12 flex items-center justify-center -mt-6">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="9" cy="21" r="1"></circle>
-                <circle cx="20" cy="21" r="1"></circle>
-                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-              </svg>
-            </div>
-            <span className={`text-xs font-medium mt-1 ${activeTab === 'shop' ? 'text-primary' : 'text-gray-400'}`}>Shop Now</span>
-          </button>
-          
-          <button 
-            className={`py-2 flex flex-col items-center w-1/6 ${activeTab === 'deals' ? 'text-primary' : 'text-gray-400'}`}
-            onClick={() => handleTabClick('deals')}
-            aria-label="Deals"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-            </svg>
-            <span className="text-xs font-medium mt-1">Deals</span>
-          </button>
-          
-          <button 
-            className={`py-2 flex flex-col items-center w-1/6 ${activeTab === 'circulars' ? 'text-primary' : 'text-gray-400'}`}
-            onClick={() => handleTabClick('circulars')}
-            aria-label="Circulars"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="3" y1="9" x2="21" y2="9"></line>
-              <line x1="9" y1="21" x2="9" y2="9"></line>
-            </svg>
-            <span className="text-xs font-medium mt-1">Circulars</span>
-          </button>
-          
-          <button 
-            className={`py-2 flex flex-col items-center w-1/6 ${activeTab === 'profile' ? 'text-primary' : 'text-gray-400'}`}
-            onClick={() => handleTabClick('profile')}
-            aria-label="Profile"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-            <span className="text-xs font-medium mt-1">Profile</span>
-          </button>
-        </div>
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+      <div className="max-w-md mx-auto flex justify-around items-center h-16 px-4">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+
+          return (
+            <a
+              key={tab.id}
+              href={tab.href}
+              className={`flex flex-col items-center justify-center flex-1 py-1 ${
+                isActive 
+                  ? 'text-primary' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <Icon className={`h-6 w-6 mb-1 ${isActive ? 'text-primary' : ''}`} />
+              <span className={`text-xs ${isActive ? 'font-medium' : ''}`}>
+                {tab.label}
+              </span>
+            </a>
+          );
+        })}
       </div>
     </nav>
   );
