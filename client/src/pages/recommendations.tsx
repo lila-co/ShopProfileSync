@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,9 +9,13 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Star, Clock, Percent, Plus, TrendingDown, MapPin } from 'lucide-react';
 import { User, Recommendation } from '@/lib/types';
+import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
 
 const RecommendationsPage: React.FC = () => {
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: user } = useQuery<User>({
     queryKey: ['/api/user/profile'],
@@ -19,6 +23,37 @@ const RecommendationsPage: React.FC = () => {
 
   const { data: recommendations } = useQuery<Recommendation[]>({
     queryKey: ['/api/recommendations'],
+  });
+
+  // Add items to shopping list mutation
+  const addToShoppingListMutation = useMutation({
+    mutationFn: async (items: typeof enhancedRecommendations) => {
+      const selectedItemsToAdd = items.filter(item => selectedItems.has(item.id));
+      
+      for (const item of selectedItemsToAdd) {
+        await apiRequest('POST', '/api/shopping-list/items', {
+          productName: item.productName,
+          quantity: 1,
+          unit: 'COUNT'
+        });
+      }
+      
+      return selectedItemsToAdd;
+    },
+    onSuccess: (addedItems) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      toast({
+        title: "Items Added",
+        description: `${addedItems.length} items added to your shopping list`
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to add items to shopping list",
+        variant: "destructive"
+      });
+    }
   });
 
   // Enhanced recommendations with more details
@@ -114,9 +149,16 @@ const RecommendationsPage: React.FC = () => {
   };
 
   const addSelectedToList = async () => {
-    const itemsToAdd = enhancedRecommendations.filter(item => selectedItems.has(item.id));
-    // In a real app, this would make an API call to add items to shopping list
-    console.log('Adding items to shopping list:', itemsToAdd);
+    if (selectedItems.size === 0) {
+      toast({
+        title: "No Items Selected",
+        description: "Please select items to add to your shopping list",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    addToShoppingListMutation.mutate(enhancedRecommendations);
     setSelectedItems(new Set());
   };
 

@@ -111,46 +111,53 @@ const ShoppingListPage: React.FC = () => {
 
   // Generate shopping list from typical purchases
   const generateListMutation = useMutation({
-    mutationFn: async (items: any[]) => {
-      const response = await apiRequest('POST', '/api/shopping-lists/generate', {
-        items: items,
-        shoppingListId: shoppingLists?.[0].id
-      });
-      return response.json();
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/shopping-lists/preview', {});
+      const data = await response.json();
+      setGeneratedItems(data.items || []);
+      setGenerateDialogOpen(true);
+      return data;
     },
     onSuccess: (data) => {
-      setGenerateDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-      
-      // Show detailed success message about merges
-      const { itemsAdded, itemsUpdated, updatedItems } = data;
-      let description = '';
-      
-      if (itemsAdded > 0 && itemsUpdated > 0) {
-        description = `Added ${itemsAdded} new items and updated ${itemsUpdated} existing items with increased quantities.`;
-      } else if (itemsAdded > 0) {
-        description = `Added ${itemsAdded} new items to your shopping list.`;
-      } else if (itemsUpdated > 0) {
-        description = `Updated ${itemsUpdated} existing items with increased quantities.`;
-      } else {
-        description = "Your shopping list has been updated.";
-      }
-      
-      // Show merge details if any items were merged
-      if (updatedItems && updatedItems.length > 0) {
-        const mergedNames = updatedItems.map((item: any) => item.productName).join(', ');
-        description += ` Merged items: ${mergedNames}`;
-      }
-      
       toast({
-        title: "Shopping List Generated",
-        description,
+        title: "Shopping List Preview Generated",
+        description: `Found ${data.items?.length || 0} recommended items`
       });
     },
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to generate shopping list: " + error.message,
+        description: "Failed to generate shopping list preview",
+        variant: "destructive" 
+      });
+    }
+  });
+
+  // Add generated items to shopping list
+  const addGeneratedItemsMutation = useMutation({
+    mutationFn: async (selectedItems: any[]) => {
+      const defaultList = shoppingLists?.[0];
+      if (!defaultList) throw new Error("No shopping list found");
+
+      const response = await apiRequest('POST', '/api/shopping-lists/generate', {
+        items: selectedItems,
+        shoppingListId: defaultList.id
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      setGenerateDialogOpen(false);
+      setGeneratedItems([]);
+      toast({
+        title: "Items Added",
+        description: `Added ${data.totalItems || 0} items to your shopping list`
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to add items to shopping list",
         variant: "destructive"
       });
     }
@@ -971,7 +978,7 @@ const ShoppingListPage: React.FC = () => {
                             <div className="text-xs text-gray-500">Get directions to stores</div>
                           </div>
                         </Button>
-                        
+
                         <Button 
                           className="w-full h-auto p-4 flex flex-col items-center space-y-2"
                           onClick={() => {
@@ -1453,6 +1460,108 @@ const ShoppingListPage: React.FC = () => {
             </form>
           </DialogContent>
         </Dialog>
+
+      {/* Recipe Import Dialog */}
+      <Dialog open={recipeDialogOpen} onOpenChange={setRecipeDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Import Recipe</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="recipeUrl">Recipe URL</Label>
+              <Input
+                id="recipeUrl"
+                value={recipeUrl}
+                onChange={(e) => setRecipeUrl(e.target.value)}
+                placeholder="https://www.example.com/recipe"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="servings">Number of Servings</Label>
+              <Select value={servings} onValueChange={setServings}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select servings" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 serving</SelectItem>
+                  <SelectItem value="2">2 servings</SelectItem>
+                  <SelectItem value="4">4 servings</SelectItem>
+                  <SelectItem value="6">6 servings</SelectItem>
+                  <SelectItem value="8">8 servings</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRecipeDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => importRecipeMutation.mutate()} 
+              disabled={!recipeUrl || importRecipeMutation.isPending}
+            >
+              Import
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Generate List Dialog */}
+      <Dialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Generated Shopping List Preview</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-96 overflow-y-auto">
+            {generatedItems.length > 0 ? (
+              <div className="space-y-2">
+                {generatedItems.map((item, index) => (
+                  <div key={index} className="flex items-center space-x-2 p-2 border rounded">
+                    <input
+                      type="checkbox"
+                      checked={item.isSelected}
+                      onChange={(e) => {
+                        const updated = [...generatedItems];
+                        updated[index].isSelected = e.target.checked;
+                        setGeneratedItems(updated);
+                      }}
+                      className="h-4 w-4"
+                    />
+                    <div className="flex-1">
+                      <p className="font-medium">{item.productName}</p>
+                      <p className="text-sm text-gray-500">
+                        {item.quantity} {item.unit} • {item.reason}
+                      </p>
+                      {item.savings > 0 && (
+                        <p className="text-sm text-green-600">
+                          Save ${(item.savings / 100).toFixed(2)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-gray-500 py-4">No items generated</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setGenerateDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                const selectedItems = generatedItems.filter(item => item.isSelected);
+                addGeneratedItemsMutation.mutate(selectedItems);
+              }}
+              disabled={addGeneratedItemsMutation.isPending || !generatedItems.some(item => item.isSelected)}
+            >
+              Add Selected Items
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       </main>
 
       <BottomNavigation activeTab="lists" />

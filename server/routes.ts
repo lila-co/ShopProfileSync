@@ -138,19 +138,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If no recommendations exist, generate some
       if (!recommendations || recommendations.length === 0) {
-        const user = await storage.getDefaultUser();
-        const purchases = await storage.getPurchases();
-        recommendations = await generateRecommendations(user, purchases);
-        
-        // Save the generated recommendations
-        for (const rec of recommendations) {
-          await storage.createRecommendation(rec);
+        try {
+          const user = await storage.getDefaultUser();
+          const purchases = await storage.getPurchases();
+          recommendations = await generateRecommendations(user, purchases);
+          
+          // Save the generated recommendations
+          for (const rec of recommendations) {
+            try {
+              await storage.createRecommendation(rec);
+            } catch (saveError) {
+              console.error('Error saving recommendation:', saveError);
+              // Continue with other recommendations
+            }
+          }
+        } catch (generateError) {
+          console.error('Error generating recommendations:', generateError);
+          // Return empty array if generation fails
+          recommendations = [];
         }
       }
       
-      res.json(recommendations);
+      res.json(recommendations || []);
     } catch (error) {
-      handleError(res, error);
+      console.error('Error in recommendations endpoint:', error);
+      // Return empty array instead of error to prevent frontend crashes
+      res.json([]);
     }
   });
 
