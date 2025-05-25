@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Router, Route, Switch, Redirect } from 'wouter';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -12,7 +11,7 @@ import CircularsPage from '@/pages/circulars';
 import ShopPage from '@/pages/shop';
 import InsightsPage from '@/pages/insights';
 import RecommendationsPage from '@/pages/recommendations';
-import NotFound from '@/pages/not-found';
+import ExpirationTrackerPage from '@/pages/expiration-tracker';
 import AdminSettings from '@/pages/admin-settings';
 import AffiliateDashboard from '@/pages/affiliate-dashboard';
 import InternalAnalytics from '@/pages/internal-analytics';
@@ -43,6 +42,7 @@ function App() {
             <Route path="/shop" component={ShopPage} />
             <Route path="/insights" component={InsightsPage} />
             <Route path="/recommendations" component={RecommendationsPage} />
+            <Route path="/expiration-tracker" component={ExpirationTrackerPage} />
             <Route path="/admin" component={AdminSettings} />
             <Route path="/affiliate" component={AffiliateDashboard} />
             <Route path="/analytics" component={InternalAnalytics} />
