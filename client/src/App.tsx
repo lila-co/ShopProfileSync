@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Router, Route, Switch, Redirect } from 'wouter';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import Dashboard from '@/pages/dashboard';
@@ -31,23 +32,23 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <Router>
         <div className="App">
-          <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/lists" element={<ShoppingListPage />} />
-            <Route path="/scan" element={<ScanPage />} />
-            <Route path="/deals" element={<DealsPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/circulars" element={<CircularsPage />} />
-            <Route path="/shop" element={<ShopPage />} />
-            <Route path="/insights" element={<InsightsPage />} />
-            <Route path="/recommendations" element={<RecommendationsPage />} />
-            <Route path="/admin" element={<AdminSettings />} />
-            <Route path="/affiliate" element={<AffiliateDashboard />} />
-            <Route path="/analytics" element={<InternalAnalytics />} />
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <Switch>
+            <Route path="/" component={() => <Redirect to="/dashboard" />} />
+            <Route path="/dashboard" component={Dashboard} />
+            <Route path="/lists" component={ShoppingListPage} />
+            <Route path="/scan" component={ScanPage} />
+            <Route path="/deals" component={DealsPage} />
+            <Route path="/profile" component={ProfilePage} />
+            <Route path="/circulars" component={CircularsPage} />
+            <Route path="/shop" component={ShopPage} />
+            <Route path="/insights" component={InsightsPage} />
+            <Route path="/recommendations" component={RecommendationsPage} />
+            <Route path="/admin" component={AdminSettings} />
+            <Route path="/affiliate" component={AffiliateDashboard} />
+            <Route path="/analytics" component={InternalAnalytics} />
+            <Route path="/auth" component={AuthPage} />
+            <Route component={NotFound} />
+          </Switch>
         </div>
       </Router>
       <Toaster />
