@@ -8,6 +8,10 @@ import ProfilePage from '@/pages/profile';
 import NotFound from '@/pages/not-found';
 import DealsPage from '@/pages/deals';
 import RetailersPage from '@/pages/retailers';
+import InsightsPage from '@/pages/insights';
+import RecommendationsPage from '@/pages/recommendations';
+import InternalAnalytics from '@/pages/internal-analytics';
+import AdminSettings from '@/pages/admin-settings';
 import { queryClient } from '@/lib/queryClient';
 
 function App() {
@@ -22,6 +26,10 @@ function App() {
             <Route path="/profile" component={ProfilePage} />
             <Route path="/deals" component={DealsPage} />
             <Route path="/retailers" component={RetailersPage} />
+            <Route path="/insights" component={InsightsPage} />
+            <Route path="/recommendations" component={RecommendationsPage} />
+            <Route path="/internal/analytics" component={InternalAnalytics} />
+            <Route path="/admin-settings" component={AdminSettings} />
             <Route component={NotFound} />
           </Switch>
         </div>
