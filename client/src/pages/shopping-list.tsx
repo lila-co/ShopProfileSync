@@ -1308,7 +1308,7 @@ const ShoppingListPage: React.FC = () => {
                           <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
                           <circle cx="12" cy="13" r="3"/>
                         </svg>
-                        <p classNameclassName="text-sm text-gray-600 mb-4">
+                        <p className="text-sm text-gray-600 mb-4">
                           Take a photo of your handwritten shopping list. We'll use OCR to convert it to digital format.
                         </p>
                         <Button 
