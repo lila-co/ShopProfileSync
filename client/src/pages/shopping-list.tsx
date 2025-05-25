@@ -114,12 +114,25 @@ const ShoppingListPage: React.FC = () => {
     mutationFn: async (items: any[]) => {
       // Filter only selected items
       const selectedItems = items.filter(item => item.isSelected);
-
-      const response = await apiRequest('POST', '/api/shopping-list/items', {
-        shoppingListId: shoppingLists?.[0].id,
-        items: selectedItems
-      });
-      return response.json();
+      
+      // Process each item individually to avoid batch errors
+      const results = [];
+      for (const item of selectedItems) {
+        try {
+          const response = await apiRequest('POST', '/api/shopping-list/items', {
+            shoppingListId: defaultList?.id,
+            productName: item.productName,
+            quantity: item.quantity || 1,
+            unit: item.unit || 'COUNT'
+          });
+          const result = await response.json();
+          results.push(result);
+        } catch (error) {
+          console.error(`Error adding item ${item.productName}:`, error);
+        }
+      }
+      
+      return results;
     },
     onSuccess: () => {
       setGenerateDialogOpen(false);
@@ -606,19 +619,69 @@ const ShoppingListPage: React.FC = () => {
             </TabsList>
             
             {items.length > 0 && (
-              <Button 
-                variant="default"
-                size="sm"
-                className="w-full sm:w-auto"
-                onClick={() => {
-                  if (defaultList?.id) {
-                    window.location.href = `/shop?listId=${defaultList.id}`;
-                  }
-                }}
-              >
-                <ShoppingBag className="h-4 w-4 mr-2" />
-                Order Online/Pickup
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button 
+                  variant="default"
+                  size="sm"
+                  className="w-full sm:w-auto"
+                  onClick={() => {
+                    if (defaultList?.id) {
+                      window.location.href = `/shop?listId=${defaultList.id}`;
+                    }
+                  }}
+                >
+                  <ShoppingBag className="h-4 w-4 mr-2" />
+                  Order Online/Pickup
+                </Button>
+                
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  className="w-full sm:w-auto"
+                  onClick={() => {
+                    // Open print dialog with formatted list
+                    const printWindow = window.open('', '_blank');
+                    if (printWindow) {
+                      printWindow.document.write(`
+                        <html>
+                          <head>
+                            <title>Shopping List - ${defaultList?.name || 'My Shopping List'}</title>
+                            <style>
+                              body { font-family: Arial, sans-serif; margin: 20px; }
+                              h1 { font-size: 18px; margin-bottom: 15px; }
+                              .list { border: 1px solid #ddd; border-radius: 5px; padding: 15px; }
+                              .item { padding: 8px 0; border-bottom: 1px solid #eee; display: flex; }
+                              .checkbox { width: 20px; height: 20px; margin-right: 10px; }
+                              .name { flex: 1; }
+                              .quantity { margin-left: 10px; color: #666; }
+                              @media print {
+                                button { display: none; }
+                              }
+                            </style>
+                          </head>
+                          <body>
+                            <button onclick="window.print();" style="padding: 8px 15px; background: #4F46E5; color: white; border: none; border-radius: 4px; margin-bottom: 20px; cursor: pointer;">Print List</button>
+                            <h1>Shopping List: ${defaultList?.name || 'My Shopping List'}</h1>
+                            <div class="list">
+                              ${items.map(item => `
+                                <div class="item">
+                                  <div class="checkbox">□</div>
+                                  <div class="name">${item.productName}</div>
+                                  <div class="quantity">${item.quantity} ${item.unit || 'COUNT'}</div>
+                                </div>
+                              `).join('')}
+                            </div>
+                          </body>
+                        </html>
+                      `);
+                      printWindow.document.close();
+                    }
+                  }}
+                >
+                  <Printer className="h-4 w-4 mr-2" />
+                  Print List
+                </Button>
+              </div>
             )}
           </div>
 
