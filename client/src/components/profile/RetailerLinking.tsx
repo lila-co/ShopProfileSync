@@ -26,8 +26,25 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-import { Eye, EyeOff, Lock, ExternalLink, RefreshCw, Plus, Check, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Lock, ExternalLink, RefreshCw, Plus, Check, AlertCircle, Store, CheckCircle } from 'lucide-react';
 import { getCompanyLogo } from '@/lib/imageUtils';
+
+interface Retailer {
+  id: number;
+  name: string;
+  logoColor: string;
+}
+
+interface RetailerAccount {
+  id: number;
+  retailerId: number;
+  isConnected: boolean;
+  username?: string;
+  allowOrdering?: boolean;
+  storeCredentials?: boolean;
+  lastSync?: string;
+  retailerName?: string;
+}
 
 const RetailerLinking: React.FC = () => {
   const { toast } = useToast();
@@ -35,7 +52,7 @@ const RetailerLinking: React.FC = () => {
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [selectedRetailer, setSelectedRetailer] = useState<any>(null);
   const [showPassword, setShowPassword] = useState(false);
-  
+
   // Form state
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -63,10 +80,10 @@ const RetailerLinking: React.FC = () => {
       setUsername('');
       setPassword('');
       setLinkDialogOpen(false);
-      
+
       // Invalidate queries to refresh the data
       queryClient.invalidateQueries({ queryKey: ['/api/user/retailer-accounts'] });
-      
+
       // Show success message
       toast({
         title: 'Account Linked Successfully',
@@ -92,7 +109,7 @@ const RetailerLinking: React.FC = () => {
     onSuccess: (data) => {
       // Invalidate queries to refresh the data
       queryClient.invalidateQueries({ queryKey: ['/api/user/retailer-accounts'] });
-      
+
       // Show success message
       toast({
         title: 'Account Updated',
@@ -110,10 +127,10 @@ const RetailerLinking: React.FC = () => {
     onSuccess: (_, id) => {
       // Invalidate queries to refresh the data
       queryClient.invalidateQueries({ queryKey: ['/api/user/retailer-accounts'] });
-      
+
       // Find the retailer name for the toast message
       const account = retailerAccounts?.find((acc: any) => acc.id === id);
-      
+
       // Show success message
       toast({
         title: 'Account Unlinked',
@@ -125,9 +142,9 @@ const RetailerLinking: React.FC = () => {
   // Handle linking a new retailer account
   const handleLinkAccount = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!selectedRetailer) return;
-    
+
     linkAccountMutation.mutate({
       retailerId: selectedRetailer.id,
       username,
@@ -153,6 +170,14 @@ const RetailerLinking: React.FC = () => {
     return retailerAccounts?.find((account: any) => account.retailerId === retailerId);
   };
 
+  const isConnected = (retailerId: number) => {
+    return retailerAccounts?.some(account => account.retailerId === retailerId && account.isConnected);
+  };
+
+  if (retailersLoading) {
+    return <div>Loading retailers...</div>;
+  }
+
   return (
     <div className="space-y-8">
       <h3 className="text-xl font-semibold mb-2">Connected Retailer Accounts</h3>
@@ -167,7 +192,7 @@ const RetailerLinking: React.FC = () => {
           retailerAccounts.map((account: any) => {
             const retailer = retailers?.find((r: any) => r.id === account.retailerId);
             const logoUrl = retailer ? getCompanyLogo(retailer.name) : undefined;
-            
+
             return (
               <Card key={account.id} className="border-primary/30">
                 <CardHeader className="pb-2">
@@ -202,7 +227,7 @@ const RetailerLinking: React.FC = () => {
                         {new Date(account.lastSync || Date.now()).toLocaleDateString()}
                       </span>
                     </div>
-                    
+
                     <div className="flex justify-between items-center">
                       <Label htmlFor={`order-${account.id}`} className="flex items-center">
                         <ExternalLink className="h-4 w-4 mr-2 text-gray-500" />
@@ -219,7 +244,7 @@ const RetailerLinking: React.FC = () => {
                         }}
                       />
                     </div>
-                    
+
                     {account.storeCredentials && (
                       <div className="flex justify-between items-center">
                         <Label htmlFor={`creds-${account.id}`} className="flex items-center">
@@ -272,7 +297,7 @@ const RetailerLinking: React.FC = () => {
           const isLinked = isRetailerLinked(retailer.id);
           const account = getLinkedAccount(retailer.id);
           const logoUrl = getCompanyLogo(retailer.name);
-          
+
           return (
             <Card key={retailer.id} className={isLinked ? "border-primary/30" : ""}>
               <CardContent className="p-4">
@@ -288,7 +313,7 @@ const RetailerLinking: React.FC = () => {
                     </div>
                   )}
                   <h5 className="font-medium">{retailer.name}</h5>
-                  
+
                   {isLinked ? (
                     <div className="mt-2 w-full">
                       <Badge className="w-full mb-2 bg-primary/20 text-primary border border-primary/30">
@@ -355,7 +380,7 @@ const RetailerLinking: React.FC = () => {
               Enter your account credentials to connect your retailer account with SavvyCart.
             </DialogDescription>
           </DialogHeader>
-          
+
           <form onSubmit={handleLinkAccount}>
             <div className="space-y-4 py-2">
               <div className="space-y-2">
@@ -368,7 +393,7 @@ const RetailerLinking: React.FC = () => {
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
@@ -391,7 +416,7 @@ const RetailerLinking: React.FC = () => {
                   </Button>
                 </div>
               </div>
-              
+
               <div className="flex items-center space-x-2">
                 <Switch
                   id="remember-me"
@@ -400,7 +425,7 @@ const RetailerLinking: React.FC = () => {
                 />
                 <Label htmlFor="remember-me">Remember my credentials</Label>
               </div>
-              
+
               <div className="flex items-center space-x-2">
                 <Switch
                   id="allow-ordering"
@@ -409,7 +434,7 @@ const RetailerLinking: React.FC = () => {
                 />
                 <Label htmlFor="allow-ordering">Allow SavvyCart to place orders for me</Label>
               </div>
-              
+
               <div className="bg-blue-50 p-3 rounded-md">
                 <p className="text-xs text-blue-600">
                   <strong>Privacy Note:</strong> SavvyCart uses the highest security standards to protect your data. 
@@ -418,7 +443,7 @@ const RetailerLinking: React.FC = () => {
                 </p>
               </div>
             </div>
-            
+
             <DialogFooter className="mt-4">
               <Button 
                 type="button" 
@@ -437,110 +462,8 @@ const RetailerLinking: React.FC = () => {
           </form>
         </DialogContent>
       </Dialog>
-    import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
-import { useToast } from '@/hooks/use-toast';
-import { Store, CheckCircle, ExternalLink } from 'lucide-react';
-
-interface Retailer {
-  id: number;
-  name: string;
-  logoColor: string;
-}
-
-interface RetailerAccount {
-  id: number;
-  retailerId: number;
-  isConnected: boolean;
-}
-
-const RetailerLinking: React.FC = () => {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  
-  const { data: retailers, isLoading } = useQuery<Retailer[]>({
-    queryKey: ['/api/retailers'],
-  });
-  
-  const { data: connectedAccounts } = useQuery<RetailerAccount[]>({
-    queryKey: ['/api/user/retailer-accounts'],
-  });
-  
-  const connectRetailerMutation = useMutation({
-    mutationFn: async (retailerId: number) => {
-      const response = await apiRequest('POST', '/api/user/retailer-accounts', {
-        retailerId,
-        isConnected: true
-      });
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/user/retailer-accounts'] });
-      toast({
-        title: "Account Linked",
-        description: "Your retailer account has been successfully connected."
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Connection Failed",
-        description: error.message || "Failed to link retailer account.",
-        variant: "destructive"
-      });
-    }
-  });
-  
-  const isConnected = (retailerId: number) => {
-    return connectedAccounts?.some(account => account.retailerId === retailerId && account.isConnected);
-  };
-
-  if (isLoading) {
-    return <div>Loading retailers...</div>;
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <Store className="h-5 w-5" />
-          <span>Store Accounts</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {retailers?.map((retailer) => (
-          <div key={retailer.id} className="flex items-center justify-between p-3 border rounded-lg">
-            <div className="flex items-center space-x-3">
-              <div 
-                className={`w-3 h-3 rounded-full bg-${retailer.logoColor}-500`}
-              />
-              <span className="font-medium">{retailer.name}</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              {isConnected(retailer.id) ? (
-                <>
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span className="text-sm text-green-600">Connected</span>
-                </>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => connectRetailerMutation.mutate(retailer.id)}
-                  disabled={connectRetailerMutation.isPending}
-                >
-                  <ExternalLink className="h-4 w-4 mr-1" />
-                  Connect
-                </Button>
-              )}
-            </div>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
+    </div>
   );
 };
 
-export default RetailerLinking; RetailerLinking;
+export default RetailerLinking;
