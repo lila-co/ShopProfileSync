@@ -479,8 +479,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (isDuplicate && existingItem) {
         // Update the quantity of the existing item instead of adding a new one
+        // Ensure quantity is a valid number before updating
+        const currentQuantity = existingItem.quantity || 1;
+        const newQuantity = (typeof quantity === 'number' && !isNaN(quantity)) ? quantity : 1;
+        
         const updatedItem = await storage.updateShoppingListItem(existingItem.id, {
-          quantity: existingItem.quantity + quantity,
+          quantity: currentQuantity + newQuantity,
           // Keep the existing unit or update to the new one if specified
           unit: unit || existingItem.unit || 'COUNT'
         });

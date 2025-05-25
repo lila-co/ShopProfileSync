@@ -598,11 +598,29 @@ const ShoppingListPage: React.FC = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4 sm:mb-6">
-          <TabsList className="flex w-full h-auto flex-wrap">
-            <TabsTrigger value="items" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Items</TabsTrigger>
-            <TabsTrigger value="optimization" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Optimization</TabsTrigger>
-            <TabsTrigger value="comparison" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Price Comparison</TabsTrigger>
-          </TabsList>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <TabsList className="flex w-full sm:w-auto h-auto flex-wrap">
+              <TabsTrigger value="items" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Items</TabsTrigger>
+              <TabsTrigger value="optimization" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Optimization</TabsTrigger>
+              <TabsTrigger value="comparison" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Price Comparison</TabsTrigger>
+            </TabsList>
+            
+            {items.length > 0 && (
+              <Button 
+                variant="default"
+                size="sm"
+                className="w-full sm:w-auto"
+                onClick={() => {
+                  if (defaultList?.id) {
+                    window.location.href = `/shop?listId=${defaultList.id}`;
+                  }
+                }}
+              >
+                <ShoppingBag className="h-4 w-4 mr-2" />
+                Order Online/Pickup
+              </Button>
+            )}
+          </div>
 
           <TabsContent value="items" className="pt-4">
             <form onSubmit={handleAddItem} className="mb-4 sm:mb-6">
