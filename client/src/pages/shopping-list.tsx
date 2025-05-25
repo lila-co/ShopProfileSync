@@ -115,46 +115,18 @@ const ShoppingListPage: React.FC = () => {
       // Filter only selected items
       const selectedItems = items.filter(item => item.isSelected);
 
-      if (selectedItems.length === 0) {
-        throw new Error("No items selected");
-      }
-
-      // Process each item individually to avoid batch errors
-      const results = [];
-      for (const item of selectedItems) {
-        try {
-          const response = await fetch('/api/shopping-list/items', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              shoppingListId: defaultList?.id,
-              productName: item.productName,
-              quantity: item.quantity || 1,
-              unit: item.unit || 'COUNT'
-            }),
-          });
-
-          if (!response.ok) {
-            throw new Error(`Server responded with ${response.status}`);
-          }
-
-          const result = await response.json();
-          results.push(result);
-        } catch (error) {
-          console.error(`Error adding item ${item.productName}:`, error);
-        }
-      }
-
-      return results;
+      const response = await apiRequest('POST', '/api/shopping-list/items', {
+        shoppingListId: shoppingLists?.[0].id,
+        items: selectedItems
+      });
+      return response.json();
     },
-    onSuccess: (results) => {
+    onSuccess: () => {
       setGenerateDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
       toast({
-        title: "Shopping List Updated",
-        description: `Added ${results.length} items to your shopping list.`,
+        title: "Shopping List Generated",
+        description: "Your shopping list has been created based on your typical purchases.",
       });
     },
     onError: (error: any) => {
@@ -310,47 +282,27 @@ const ShoppingListPage: React.FC = () => {
   // Add item to shopping list
   const addItemMutation = useMutation({
     mutationFn: async ({ productName, quantity, unit }: { productName: string, quantity: number, unit: string }) => {
+      // Add to default shopping list (using the first list as default for simplicity)
       const defaultList = shoppingLists?.[0];
       if (!defaultList) throw new Error("No shopping list found");
 
-      // Check if item already exists (case-insensitive)
-      const existingItem = items.find(item => 
-        item.productName.toLowerCase().trim() === productName.toLowerCase().trim()
-      );
-
-      if (existingItem) {
-        // Update existing item quantity
-        const response = await apiRequest('PATCH', `/api/shopping-list/items/${existingItem.id}`, {
-          quantity: existingItem.quantity + quantity
-        });
-        return { ...response.json(), merged: true, originalQuantity: existingItem.quantity };
-      } else {
-        // Add new item
-        const response = await apiRequest('POST', '/api/shopping-list/items', {
-          shoppingListId: defaultList.id,
-          productName,
-          quantity,
-          unit
-        });
-        return { ...response.json(), merged: false };
-      }
+      const response = await apiRequest('POST', '/api/shopping-list/items', {
+        shoppingListId: defaultList.id,
+        productName,
+        quantity,
+        unit
+      });
+      return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       setNewItemName('');
       setNewItemQuantity(1);
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
 
-      if (data.merged) {
-        toast({
-          title: "Item Updated",
-          description: `Increased quantity to ${data.originalQuantity + newItemQuantity} for existing item`
-        });
-      } else {
-        toast({
-          title: "Item Added",
-          description: "Item has been added to your shopping list"
-        });
-      }
+      toast({
+        title: "Item Added",
+        description: "Item has been added to your shopping list"
+      });
     },
     onError: (error: any) => {
       toast({
@@ -590,41 +542,134 @@ const ShoppingListPage: React.FC = () => {
       <Header title="Shopping Lists" />
 
       <main className="flex-1 overflow-y-auto p-4 pb-20">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold">Shopping List</h2>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline"
-              size="sm"
-              onClick={() => previewGenerateMutation.mutate()}
-              disabled={previewGenerateMutation.isPending}
-            >
-              {previewGenerateMutation.isPending ? (
-                <Loader2 className="animate-spin h-4 w-4 mr-2" />
-              ) : (
-                <ListChecks className="mr-2 h-4 w-4" />
-              )}
-              Generate
-            </Button>
-            <Button 
-              variant="outline"
-              size="sm"
-              onClick={() => setUploadDialogOpen(true)}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Upload
-            </Button>
-          </div>
+        <h2 className="text-xl font-bold mb-4">Shopping List</h2>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+          <Card className="border border-gray-200">
+            <CardContent className="p-4">
+              <div className="flex flex-col items-center text-center">
+                <ShoppingCart className="h-8 w-8 text-primary mb-2" />
+                <h3 className="text-base font-semibold mb-1">Generate List</h3>
+                <p className="text-xs text-gray-600 mb-3">
+                  Based on your purchase patterns
+                </p>
+                <Button 
+                  className="w-full bg-primary hover:bg-primary/90"
+                  size="sm"
+                  onClick={() => previewGenerateMutation.mutate()}
+                  disabled={previewGenerateMutation.isPending}
+                >
+                  {previewGenerateMutation.isPending ? (
+                    <span className="flex items-center">
+                      <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                      Generating...
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      <ListChecks className="mr-2 h-4 w-4" />
+                      Generate
+                    </span>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-gray-200">
+            <CardContent className="p-4">
+              <div className="flex flex-col items-center text-center">
+                <FileText className="h-8 w-8 text-blue-600 mb-2" />
+                <h3 className="text-base font-semibold mb-1">Upload List</h3>
+                <p className="text-xs text-gray-600 mb-3">
+                  Import from file or photo
+                </p>
+                <Button 
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  size="sm"
+                  onClick={() => setUploadDialogOpen(true)}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Upload
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
-          <TabsList className="grid w-full grid-cols-3 mb-4">
-            <TabsTrigger value="items">Items ({items.length})</TabsTrigger>
-            <TabsTrigger value="optimization">Optimize</TabsTrigger>
-            <TabsTrigger value="comparison">Compare</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4 sm:mb-6">
+          <TabsList className="flex w-full h-auto flex-wrap">
+            <TabsTrigger value="items" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Items</TabsTrigger>
+            <TabsTrigger value="optimization" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Optimization</TabsTrigger>
+            <TabsTrigger value="comparison" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Price Comparison</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="items" className="space-y-4">
+          <TabsContent value="items" className="pt-4">
+            <form onSubmit={handleAddItem} className="mb-4 sm:mb-6">
+              <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2 mb-2">
+                <Input
+                  type="text"
+                  placeholder="Add an item..."
+                  value={newItemName}
+                  onChange={(e) => setNewItemName(e.target.value)}
+                  className="flex-1"
+                />
+                <Button 
+                  type="submit" 
+                  className="bg-primary text-white w-full sm:w-auto"
+                  disabled={addItemMutation.isPending}
+                >
+                  {addItemMutation.isPending ? 'Adding...' : 'Add Item'}
+                </Button>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <div className="w-full sm:w-20">
+                  <Input
+                    type="number"
+                    placeholder="Qty"
+                    min="0.01"
+                    step="0.01"
+                    defaultValue="1"
+                    onChange={(e) => setNewItemQuantity(Math.round(parseFloat(e.target.value) || 1))}
+                    className="w-full"
+                  />
+                </div>
+
+                <Select 
+                  value={newItemUnit} 
+                  onValueChange={setNewItemUnit}
+                  disabled={autoDetectUnit}
+                >
+                  <SelectTrigger className={`flex-1 ${autoDetectUnit ? 'opacity-60' : ''}`}>
+                    <SelectValue placeholder="Unit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="COUNT">Count</SelectItem>
+                    <SelectItem value="LB">lb (Pounds)</SelectItem>
+                    <SelectItem value="OZ">oz (Ounces)</SelectItem>
+                    <SelectItem value="PKG">Package</SelectItem>
+                    <SelectItem value="ROLL">Rolls</SelectItem>
+                    <SelectItem value="BOX">Box</SelectItem>
+                    <SelectItem value="CAN">Can</SelectItem>
+                    <SelectItem value="BOTTLE">Bottle</SelectItem>
+                    <SelectItem value="JAR">Jar</SelectItem>
+                    <SelectItem value="BUNCH">Bunch</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center space-x-2 mt-2 text-sm text-gray-600">
+                <Switch 
+                  checked={autoDetectUnit} 
+                  onCheckedChange={setAutoDetectUnit}
+                  id="auto-detect"
+                />
+                <Label htmlFor="auto-detect" className="cursor-pointer flex items-center text-xs sm:text-sm">
+                  Auto-detect best unit based on item name
+                </Label>
+              </div>
+            </form>
 
             <div className="space-y-3">
               {items.length === 0 ? (
@@ -632,7 +677,7 @@ const ShoppingListPage: React.FC = () => {
                   <CardContent className="p-4 sm:p-6 text-center text-gray-500">
                     <ShoppingBag className="h-10 w-10 sm:h-12 sm:w-12 mx-auto text-gray-300 mb-2" />
                     <p>Your shopping list is empty</p>
-                    <p className="text-xs sm:text-sm mt-1">Add items below to get started</p>
+                    <p className="text-xs sm:text-sm mt-1">Add items to get started</p>
                   </CardContent>
                 </Card>
               ) : (
@@ -701,168 +746,66 @@ const ShoppingListPage: React.FC = () => {
                 ))
               )}
             </div>
-
-            {/* Add Item Form - Now at bottom */}
-            <Card className="mt-6 border-dashed border-2 border-primary/20">
-              <CardContent className="p-4">
-                <form onSubmit={handleAddItem} className="space-y-4">
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Input
-                      type="text"
-                      placeholder="Add an item..."
-                      value={newItemName}
-                      onChange={(e) => setNewItemName(e.target.value)}
-                      className="flex-1"
-                    />
-                    <Button 
-                      type="submit" 
-                      className="bg-primary text-white w-full sm:w-auto"
-                      disabled={addItemMutation.isPending}
-                    >
-                      {addItemMutation.isPending ? 'Adding...' : 'Add Item'}
-                    </Button>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    <div className="w-full sm:w-20">
-                      <Input
-                        type="number"
-                        placeholder="Qty"
-                        min="0.01"
-                        step="0.01"
-                        value={newItemQuantity}
-                        onChange={(e) => setNewItemQuantity(Math.round(parseFloat(e.target.value) || 1))}
-                        className="w-full"
-                      />
-                    </div>
-
-                    <Select 
-                      value={newItemUnit} 
-                      onValueChange={setNewItemUnit}
-                      disabled={autoDetectUnit}
-                    >
-                      <SelectTrigger className={`flex-1 ${autoDetectUnit ? 'opacity-60' : ''}`}>
-                        <SelectValue placeholder="Unit" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="COUNT">Count</SelectItem>
-                        <SelectItem value="LB">lb (Pounds)</SelectItem>
-                        <SelectItem value="OZ">oz (Ounces)</SelectItem>
-                        <SelectItem value="PKG">Package</SelectItem>
-                        <SelectItem value="ROLL">Rolls</SelectItem>
-                        <SelectItem value="BOX">Box</SelectItem>
-                        <SelectItem value="CAN">Can</SelectItem>
-                        <SelectItem value="BOTTLE">Bottle</SelectItem>
-                        <SelectItem value="JAR">Jar</SelectItem>
-                        <SelectItem value="BUNCH">Bunch</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
-                    <Switch 
-                      checked={autoDetectUnit} 
-                      onCheckedChange={setAutoDetectUnit}
-                      id="auto-detect"
-                    />
-                    <Label htmlFor="auto-detect" className="cursor-pointer flex items-center text-xs sm:text-sm">
-                      Auto-detect best unit based on item name
-                    </Label>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-
-            {/* Action Buttons */}
-            {items.length > 0 && (
-              <div className="flex flex-col sm:flex-row gap-3 mt-6">
-                <Button 
-                  variant="default"
-                  size="lg"
-                  className="w-full sm:flex-1"
-                  onClick={() => {
-                    if (defaultList?.id) {
-                      window.location.href = `/shop?listId=${defaultList.id}`;
-                    }
-                  }}
-                >
-                  <ShoppingBag className="h-4 w-4 mr-2" />
-                  Order Online/Pickup
-                </Button>
-
-                <Button 
-                  variant="outline"
-                  size="lg"
-                  className="w-full sm:w-auto"
-                  onClick={() => {
-                    const printWindow = window.open('', '_blank');
-                    if (printWindow) {
-                      printWindow.document.write(`
-                        <html>
-                          <head>
-                            <title>Shopping List - ${defaultList?.name || 'My Shopping List'}</title>
-                            <style>
-                              body { font-family: Arial, sans-serif; margin: 20px; }
-                              h1 { font-size: 18px; margin-bottom: 15px; }
-                              .list { border: 1px solid #ddd; border-radius: 5px; padding: 15px; }
-                              .item { padding: 8px 0; border-bottom: 1px solid #eee; display: flex; }
-                              .checkbox { width: 20px; height: 20px; margin-right: 10px; }
-                              .name { flex: 1; }
-                              .quantity { margin-left: 10px; color: #666; }
-                              @media print {
-                                button { display: none; }
-                              }
-                            </style>
-                          </head>
-                          <body>
-                            <button onclick="window.print();" style="padding: 8px 15px; background: #4F46E5; color: white; border: none; border-radius: 4px; margin-bottom: 20px; cursor: pointer;">Print List</button>
-                            <h1>Shopping List: ${defaultList?.name || 'My Shopping List'}</h1>
-                            <div class="list">
-                              ${items.map(item => `
-                                <div class="item">
-                                  <div class="checkbox">□</div>
-                                  <div class="name">${item.productName}</div>
-                                  <div class="quantity">${item.quantity} ${item.unit || 'COUNT'}</div>
-                                </div>
-                              `).join('')}
-                            </div>
-                          </body>
-                        </html>
-                      `);
-                      printWindow.document.close();
-                    }
-                  }}
-                >
-                  <Printer className="h-4 w-4 mr-2" />
-                  Print List
-                </Button>
-              </div>
-            )}
           </TabsContent>
 
-          <TabsContent value="optimization" className="space-y-4">
-            {items.length === 0 ? (
-              <Card>
-                <CardContent className="p-6 text-center">
-                  <BarChart className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-                  <h3 className="text-lg font-medium mb-2">Ready to Optimize</h3>
-                  <p className="text-gray-500 mb-4">Add items to your list first, then we'll find the best shopping options.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <>
-                <div className="text-center mb-4">
-                  <Button
-                    onClick={() => defaultList?.id && priceComparisonMutation.mutate(defaultList.id)}
-                    disabled={priceComparisonMutation.isPending}
-                    size="lg"
-                    className="w-full sm:w-auto"
-                  >
-                    {priceComparisonMutation.isPending ? 
-                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing...</> : 
-                      <><Sparkles className="mr-2 h-4 w-4" /> Find Best Shopping Options</>}
-                  </Button>
+          <TabsContent value="optimization" className="pt-4">
+            <Card className="mb-4">
+              <CardContent className="p-4 sm:p-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Shopping Optimization</h3>
+
+                  <div className="mt-3">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      We'll analyze your shopping list across stores to find the best deals based on your preferences. You'll see options for:
+                    </p>
+
+                    <div className="space-y-3 mb-5">
+                      <div className="flex items-start">
+                        <div className="bg-blue-100 dark:bg-blue-900/20 p-2 rounded-full mr-3">
+                          <StoreIcon className="h-4 w-4 text-blue-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-sm text-blue-700 dark:text-blue-300">Single Store Option</h4>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">Best store with at least 80% of your items</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start">
+                        <div className="bg-green-100 dark:bg-green-900/20 p-2 rounded-full mr-3">
+                          <ShoppingCart className="h-4 w-4 text-green-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-sm text-green-700 dark:text-green-300">Best Value Option</h4>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">Lowest total cost using multiple stores</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start">
+                        <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-full mr-3">
+                          <Clock className="h-4 w-4 text-gray-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-sm">Balanced Option</h4>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">Balances convenience, time and cost</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-center">
+                      <Button
+                        onClick={() => defaultList?.id && priceComparisonMutation.mutate(defaultList.id)}
+                        disabled={priceComparisonMutation.isPending || !items.length}
+                        className="w-full sm:w-auto"
+                      >
+                        {priceComparisonMutation.isPending ? 
+                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Optimizing...</> : 
+                          <><Sparkles className="mr-2 h-4 w-4" /> Calculate Shopping Options</>}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
+              </CardContent>
+            </Card>
 
             <Card>
               <CardContent className="p-4 sm:p-6">
@@ -876,95 +819,115 @@ const ShoppingListPage: React.FC = () => {
 
                   {priceComparisonMutation.data?.singleStore?.length > 0 ? (
                     <div>
-                      <div className="grid gap-4 md:grid-cols-3">
-                  <Card className="border-blue-200">
-                    <CardContent className="p-4">
-                      <div className="flex items-center mb-3">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
-                          <StoreIcon className="h-4 w-4 text-blue-600" />
+                      <div className="space-y-4 sm:space-y-6 mb-4 sm:mb-6">
+                        <div className="border border-blue-200 rounded-lg sm:rounded-xl overflow-hidden">
+                          <div className="bg-blue-50 dark:bg-blue-900/10 px-3 sm:px-4 py-2 sm:py-3 border-b border-blue-200">
+                            <div className="font-medium text-sm sm:text-base text-blue-700 dark:text-blue-300">Single Store Option (80% of your items)</div>
+                          </div>
+                          <div className="p-3 sm:p-4">
+                            <div className="flex items-center mb-3 sm:mb-4">
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 flex items-center justify-center mr-3 sm:mr-4 shrink-0">
+                                <StoreIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+                              </div>
+                              <div>
+                                <h4 className="font-medium text-base sm:text-lg">
+                                  {priceComparisonMutation.data?.bestSingleStore?.retailerName || 'Kroger'}
+                                </h4>
+                                <p className="text-xs sm:text-sm text-gray-500">
+                                  {priceComparisonMutation.data?.bestSingleStore?.availableItems || 8} out of {items.length} items • 
+                                  ${((priceComparisonMutation.data?.bestSingleStore?.totalCost || 4535) / 100).toFixed(2)} total
+                                </p>
+                              </div>
+                            </div>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="w-full text-xs sm:text-sm"
+                              onClick={() => defaultList?.id && singleStoreOptimization.mutate(defaultList.id)}
+                              disabled={singleStoreOptimization.isPending || !items.length}
+                            >
+                              {singleStoreOptimization.isPending ? (
+                                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" />
+                              ) : (
+                                <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                              )}
+                              View Shopping Plan
+                            </Button>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="font-medium text-sm">Single Store</h4>
-                          <p className="text-xs text-gray-500">Most convenient</p>
-                        </div>
-                      </div>
-                      <div className="space-y-2 mb-3">
-                        <p className="text-sm font-medium">{priceComparisonMutation.data?.bestSingleStore?.retailerName || 'Kroger'}</p>
-                        <p className="text-xs text-gray-500">
-                          {priceComparisonMutation.data?.bestSingleStore?.availableItems || 8}/{items.length} items
-                        </p>
-                        <p className="text-lg font-bold">${((priceComparisonMutation.data?.bestSingleStore?.totalCost || 4535) / 100).toFixed(2)}</p>
-                      </div>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="w-full"
-                        onClick={() => defaultList?.id && singleStoreOptimization.mutate(defaultList.id)}
-                        disabled={singleStoreOptimization.isPending}
-                      >
-                        Select Plan
-                      </Button>
-                    </CardContent>
-                  </Card>
 
-                  <Card className="border-green-200 ring-2 ring-green-500">
-                    <CardContent className="p-4">
-                      <div className="flex items-center mb-3">
-                        <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center mr-3">
-                          <ShoppingCart className="h-4 w-4 text-green-600" />
+                        <div className="border border-green-200 rounded-lg sm:rounded-xl overflow-hidden">
+                          <div className="bg-green-50 dark:bg-green-900/10 px-3 sm:px-4 py-2 sm:py-3 border-b border-green-200">
+                            <div className="font-medium text-sm sm:text-base text-green-700 dark:text-green-300">
+                              Best Value Option (Save ${((priceComparisonMutation.data?.multiStore?.[0]?.savings || 850) / 100).toFixed(2)})
+                            </div>
+                          </div>
+                          <div className="p-3 sm:p-4">
+                            <div className="flex items-center mb-3 sm:mb-4">
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-100 flex items-center justify-center mr-3 sm:mr-4 shrink-0">
+                                <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+                              </div>
+                              <div>
+                                <h4 className="font-medium text-base sm:text-lg">
+                                  {priceComparisonMutation.data?.multiStore?.[0]?.retailerNames?.join(' + ') || 'Kroger + Walmart'}
+                                </h4>
+                                <p className="text-xs sm:text-sm text-gray-500">
+                                  All items • ${((priceComparisonMutation.data?.multiStore?.[0]?.totalCost || 3685) / 100).toFixed(2)} total
+                                </p>
+                              </div>
+                            </div>
+                            <Button 
+                              size="sm" 
+                              variant="default" 
+                              className="w-full text-xs sm:text-sm"
+                              onClick={() => defaultList?.id && bestValueOptimization.mutate(defaultList.id)}
+                              disabled={bestValueOptimization.isPending || !items.length}
+                            >
+                              {bestValueOptimization.isPending ? (
+                                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" />
+                              ) : (
+                                <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                              )}
+                              View Multi-Store Plan
+                            </Button>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="font-medium text-sm">Best Value</h4>
-                          <p className="text-xs text-green-600">Recommended</p>
-                        </div>
-                      </div>
-                      <div className="space-y-2 mb-3">
-                        <p className="text-sm font-medium">Multiple Stores</p>
-                        <p className="text-xs text-gray-500">All items available</p>
-                        <p className="text-lg font-bold text-green-600">${((priceComparisonMutation.data?.multiStore?.[0]?.totalCost || 3685) / 100).toFixed(2)}</p>
-                        <p className="text-xs text-green-600">Save ${((priceComparisonMutation.data?.multiStore?.[0]?.savings || 850) / 100).toFixed(2)}</p>
-                      </div>
-                      <Button 
-                        size="sm" 
-                        className="w-full bg-green-600 hover:bg-green-700"
-                        onClick={() => defaultList?.id && bestValueOptimization.mutate(defaultList.id)}
-                        disabled={bestValueOptimization.isPending}
-                      >
-                        Select Plan
-                      </Button>
-                    </CardContent>
-                  </Card>
 
-                  <Card className="border-gray-200">
-                    <CardContent className="p-4">
-                      <div className="flex items-center mb-3">
-                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mr-3">
-                          <Clock className="h-4 w-4 text-gray-600" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-sm">Balanced</h4>
-                          <p className="text-xs text-gray-500">Time + savings</p>
+                        <div className="border rounded-lg sm:rounded-xl overflow-hidden">
+                          <div className="bg-gray-50 dark:bg-gray-800 px-3 sm:px-4 py-2 sm:py-3 border-b">
+                            <div className="font-medium text-sm sm:text-base">Balanced Option</div>
+                          </div>
+                          <div className="p-3 sm:p-4">
+                            <div className="flex items-center mb-3 sm:mb-4">
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-100 flex items-center justify-center mr-3 sm:mr-4 shrink-0">
+                                <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600" />
+                              </div>
+                              <div>
+                                <h4 className="font-medium text-base sm:text-lg">
+                                  {priceComparisonMutation.data?.balancedOption?.retailerName || 'Target'}
+                                </h4>
+                                <p className="text-xs sm:text-sm text-gray-500">
+                                  {priceComparisonMutation.data?.balancedOption?.availableItems || 9} out of {items.length} items • 
+                                  ${((priceComparisonMutation.data?.balancedOption?.totalCost || 4215) / 100).toFixed(2)} total
+                                </p>
+                              </div>
+                            </div>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="w-full text-xs sm:text-sm"
+                              onClick={() => defaultList?.id && balancedOptimization.mutate(defaultList.id)}
+                              disabled={balancedOptimization.isPending || !items.length}
+                            >
+                              {balancedOptimization.isPending ? (
+                                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" />                              ) : (
+                                <BarChart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                              )}
+                              View Balanced Plan
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                      <div className="space-y-2 mb-3">
-                        <p className="text-sm font-medium">{priceComparisonMutation.data?.balancedOption?.retailerName || 'Target'}</p>
-                        <p className="text-xs text-gray-500">
-                          {priceComparisonMutation.data?.balancedOption?.availableItems || 9}/{items.length} items
-                        </p>
-                        <p className="text-lg font-bold">${((priceComparisonMutation.data?.balancedOption?.totalCost || 4215) / 100).toFixed(2)}</p>
-                      </div>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="w-full"
-                        onClick={() => defaultList?.id && balancedOptimization.mutate(defaultList.id)}
-                        disabled={balancedOptimization.isPending}
-                      >
-                        Select Plan
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </div>
 
                       <div className="border-t pt-3 sm:pt-4 mt-3 sm:mt-4">
                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
@@ -1220,42 +1183,10 @@ const ShoppingListPage: React.FC = () => {
                 Cancel
               </Button>
               <Button 
-                onClick={() => {
-                  // Filter only selected items
-                  const selectedItems = generatedItems.filter(item => item.isSelected);
-
-                  // Add each selected item individually to ensure they're processed correctly
-                  for (const item of selectedItems) {
-                    const itemData = {
-                      shoppingListId: defaultList?.id,
-                      productName: item.productName,
-                      quantity: item.quantity || 1,
-                      unit: item.unit || 'COUNT'
-                    };
-
-                    // Use fetch API directly for simplicity
-                    fetch('/api/shopping-list/items', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify(itemData),
-                    }).catch(err => console.error(`Error adding ${item.productName}:`, err));
-                  }
-
-                  // Close dialog and refresh the list
-                  setGenerateDialogOpen(false);
-                  setTimeout(() => {
-                    queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-                    toast({
-                      title: "Shopping List Updated",
-                      description: `Added ${selectedItems.length} items to your shopping list.`,
-                    });
-                  }, 500);
-                }}
-                disabled={generateListMutation.isPending || generatedItems.filter(i => i.isSelected).length === 0}
+                onClick={() => generateListMutation.mutate(generatedItems)}
+                disabled={generateListMutation.isPending}
                 className="bg-primary">
-                {generateListMutation.isPending ? 'Adding...' : 'Add Selected Items'}
+                Generate List
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1469,7 +1400,7 @@ const ShoppingListPage: React.FC = () => {
         </Dialog>
       </main>
 
-      <BottomNavigation activeTab="lists" />
+      
     </div>
   );
 };
