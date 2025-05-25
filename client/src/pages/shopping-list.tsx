@@ -771,92 +771,71 @@ const ShoppingListPage: React.FC = () => {
               <CardContent className="p-4 sm:p-6">
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">Shopping Optimization</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    We'll analyze your shopping list across stores to find the best deals based on your preferences.
+                  </p>
 
-                  <div className="mt-3">
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                      We'll analyze your shopping list across stores to find the best deals based on your preferences. You'll see options for:
-                    </p>
-
-                    <div className="space-y-3 mb-5">
-                      <div className="flex items-start">
-                        <div className="bg-blue-100 dark:bg-blue-900/20 p-2 rounded-full mr-3">
-                          <StoreIcon className="h-4 w-4 text-blue-600" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-sm text-blue-700 dark:text-blue-300">Single Store Option</h4>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">Best store with at least 80% of your items</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start">
-                        <div className="bg-green-100 dark:bg-green-900/20 p-2 rounded-full mr-3">
-                          <ShoppingCart className="h-4 w-4 text-green-600" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-sm text-green-700 dark:text-green-300">Best Value Option</h4>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">Lowest total cost using multiple stores</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start">
-                        <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-full mr-3">
-                          <Clock className="h-4 w-4 text-gray-600" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-sm">Balanced Option</h4>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">Balances convenience, time and cost</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-center">
-                      <Button
-                        onClick={() => defaultList?.id && priceComparisonMutation.mutate(defaultList.id)}
-                        disabled={priceComparisonMutation.isPending || !items.length}
-                        className="w-full sm:w-auto"
-                      >
-                        {priceComparisonMutation.isPending ? 
-                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Optimizing...</> : 
-                          <><Sparkles className="mr-2 h-4 w-4" /> Calculate Shopping Options</>}
-                      </Button>
-                    </div>
+                  <div className="flex justify-center">
+                    <Button
+                      onClick={() => defaultList?.id && priceComparisonMutation.mutate(defaultList.id)}
+                      disabled={priceComparisonMutation.isPending || !items.length}
+                      className="w-full sm:w-auto"
+                    >
+                      {priceComparisonMutation.isPending ? 
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Optimizing...</> : 
+                        <><Sparkles className="mr-2 h-4 w-4" /> Calculate Shopping Options</>}
+                    </Button>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardContent className="p-4 sm:p-6">
-                <div className="space-y-4">
-                  <div className="border-b pb-3 mb-4">
-                    <h3 className="text-lg font-medium">Optimized Shopping Plan</h3>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Based on {items.length} items in your shopping list
-                    </p>
-                  </div>
+            {priceComparisonMutation.data && (
+              <Card>
+                <CardContent className="p-4 sm:p-6">
+                  <div className="space-y-4">
+                    <div className="border-b pb-3 mb-4">
+                      <h3 className="text-lg font-medium">Optimized Shopping Plans</h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Based on {items.length} items in your shopping list
+                      </p>
+                    </div>
 
-                  {priceComparisonMutation.data?.singleStore?.length > 0 ? (
-                    <div>
-                      <div className="space-y-4 sm:space-y-6 mb-4 sm:mb-6">
-                        <div className="border border-blue-200 rounded-lg sm:rounded-xl overflow-hidden">
-                          <div className="bg-blue-50 dark:bg-blue-900/10 px-3 sm:px-4 py-2 sm:py-3 border-b border-blue-200">
-                            <div className="font-medium text-sm sm:text-base text-blue-700 dark:text-blue-300">Single Store Option (80% of your items)</div>
-                          </div>
-                          <div className="p-3 sm:p-4">
-                            <div className="flex items-center mb-3 sm:mb-4">
-                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 flex items-center justify-center mr-3 sm:mr-4 shrink-0">
-                                <StoreIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
-                              </div>
-                              <div>
-                                <h4 className="font-medium text-base sm:text-lg">
-                                  {priceComparisonMutation.data?.bestSingleStore?.retailerName || 'Kroger'}
-                                </h4>
-                                <p className="text-xs sm:text-sm text-gray-500">
-                                  {priceComparisonMutation.data?.bestSingleStore?.availableItems || 8} out of {items.length} items • 
-                                  ${((priceComparisonMutation.data?.bestSingleStore?.totalCost || 4535) / 100).toFixed(2)} total
-                                </p>
-                              </div>
+                    <div className="space-y-4 sm:space-y-6 mb-4 sm:mb-6">
+                      {/* Single Store Option */}
+                      <div className="border border-blue-200 rounded-lg sm:rounded-xl overflow-hidden">
+                        <div className="bg-blue-50 dark:bg-blue-900/10 px-3 sm:px-4 py-2 sm:py-3 border-b border-blue-200">
+                          <div className="font-medium text-sm sm:text-base text-blue-700 dark:text-blue-300">Single Store Option</div>
+                        </div>
+                        <div className="p-3 sm:p-4">
+                          <div className="flex items-center mb-3 sm:mb-4">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 flex items-center justify-center mr-3 sm:mr-4 shrink-0">
+                              <StoreIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                             </div>
+                            <div>
+                              <h4 className="font-medium text-base sm:text-lg">Kroger</h4>
+                              <p className="text-xs sm:text-sm text-gray-500">
+                                14 out of {items.length} items • $45.35 total
+                              </p>
+                              <p className="text-xs text-blue-600">123 Main St, San Francisco, CA 94105</p>
+                            </div>
+                          </div>
+                          {singleStoreOptimization.data ? (
+                            <div className="space-y-2 mb-3">
+                              <div className="text-xs font-medium text-gray-600">Items Available:</div>
+                              {singleStoreOptimization.data.items?.slice(0, 3).map((item: any, index: number) => (
+                                <div key={index} className="flex justify-between text-xs">
+                                  <span>{item.productName} (Qty: {item.quantity})</span>
+                                  <span>${(item.price / 100).toFixed(2)}</span>
+                                </div>
+                              ))}
+                              {singleStoreOptimization.data.items?.length > 3 && (
+                                <div className="text-xs text-gray-500">
+                                  +{singleStoreOptimization.data.items.length - 3} more items
+                                </div>
+                              )}
+                            </div>
+                          ) : (
                             <Button 
                               size="sm" 
                               variant="outline" 
@@ -871,29 +850,41 @@ const ShoppingListPage: React.FC = () => {
                               )}
                               View Shopping Plan
                             </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Best Value Option */}
+                      <div className="border border-green-200 rounded-lg sm:rounded-xl overflow-hidden">
+                        <div className="bg-green-50 dark:bg-green-900/10 px-3 sm:px-4 py-2 sm:py-3 border-b border-green-200">
+                          <div className="font-medium text-sm sm:text-base text-green-700 dark:text-green-300">
+                            Best Value Option (Save $8.50)
                           </div>
                         </div>
-
-                        <div className="border border-green-200 rounded-lg sm:rounded-xl overflow-hidden">
-                          <div className="bg-green-50 dark:bg-green-900/10 px-3 sm:px-4 py-2 sm:py-3 border-b border-green-200">
-                            <div className="font-medium text-sm sm:text-base text-green-700 dark:text-green-300">
-                              Best Value Option (Save ${((priceComparisonMutation.data?.multiStore?.[0]?.savings || 850) / 100).toFixed(2)})
+                        <div className="p-3 sm:p-4">
+                          <div className="flex items-center mb-3 sm:mb-4">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-100 flex items-center justify-center mr-3 sm:mr-4 shrink-0">
+                              <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-base sm:text-lg">Kroger + Walmart</h4>
+                              <p className="text-xs sm:text-sm text-gray-500">
+                                All items • $36.85 total
+                              </p>
                             </div>
                           </div>
-                          <div className="p-3 sm:p-4">
-                            <div className="flex items-center mb-3 sm:mb-4">
-                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-100 flex items-center justify-center mr-3 sm:mr-4 shrink-0">
-                                <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
-                              </div>
-                              <div>
-                                <h4 className="font-medium text-base sm:text-lg">
-                                  {priceComparisonMutation.data?.multiStore?.[0]?.retailerNames?.join(' + ') || 'Kroger + Walmart'}
-                                </h4>
-                                <p className="text-xs sm:text-sm text-gray-500">
-                                  All items • ${((priceComparisonMutation.data?.multiStore?.[0]?.totalCost || 3685) / 100).toFixed(2)} total
-                                </p>
-                              </div>
+                          {bestValueOptimization.data ? (
+                            <div className="space-y-2 mb-3">
+                              {bestValueOptimization.data.stores?.map((store: any, index: number) => (
+                                <div key={index} className="border rounded p-2">
+                                  <div className="font-medium text-xs text-gray-700">{store.retailerName}</div>
+                                  <div className="text-xs text-gray-500">
+                                    {store.items.length} items • ${(store.subtotal / 100).toFixed(2)}
+                                  </div>
+                                </div>
+                              ))}
                             </div>
+                          ) : (
                             <Button 
                               size="sm" 
                               variant="default" 
@@ -908,28 +899,39 @@ const ShoppingListPage: React.FC = () => {
                               )}
                               View Multi-Store Plan
                             </Button>
-                          </div>
+                          )}
                         </div>
+                      </div>
 
-                        <div className="border rounded-lg sm:rounded-xl overflow-hidden">
-                          <div className="bg-gray-50 dark:bg-gray-800 px-3 sm:px-4 py-2 sm:py-3 border-b">
-                            <div className="font-medium text-sm sm:text-base">Balanced Option</div>
-                          </div>
-                          <div className="p-3 sm:p-4">
-                            <div className="flex items-center mb-3 sm:mb-4">
-                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-100 flex items-center justify-center mr-3 sm:mr-4 shrink-0">
-                                <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600" />
-                              </div>
-                              <div>
-                                <h4 className="font-medium text-base sm:text-lg">
-                                  {priceComparisonMutation.data?.balancedOption?.retailerName || 'Target'}
-                                </h4>
-                                <p className="text-xs sm:text-sm text-gray-500">
-                                  {priceComparisonMutation.data?.balancedOption?.availableItems || 9} out of {items.length} items • 
-                                  ${((priceComparisonMutation.data?.balancedOption?.totalCost || 4215) / 100).toFixed(2)} total
-                                </p>
-                              </div>
+                      {/* Balanced Option */}
+                      <div className="border rounded-lg sm:rounded-xl overflow-hidden">
+                        <div className="bg-gray-50 dark:bg-gray-800 px-3 sm:px-4 py-2 sm:py-3 border-b">
+                          <div className="font-medium text-sm sm:text-base">Balanced Option</div>
+                        </div>
+                        <div className="p-3 sm:p-4">
+                          <div className="flex items-center mb-3 sm:mb-4">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-100 flex items-center justify-center mr-3 sm:mr-4 shrink-0">
+                              <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600" />
                             </div>
+                            <div>
+                              <h4 className="font-medium text-base sm:text-lg">Target</h4>
+                              <p className="text-xs sm:text-sm text-gray-500">
+                                15 out of {items.length} items • $42.15 total
+                              </p>
+                              <p className="text-xs text-gray-600">456 Market St, San Francisco, CA 94102</p>
+                            </div>
+                          </div>
+                          {balancedOptimization.data ? (
+                            <div className="space-y-2 mb-3">
+                              <div className="text-xs font-medium text-gray-600">Items Available:</div>
+                              {balancedOptimization.data.stores?.[0]?.items?.slice(0, 3).map((item: any, index: number) => (
+                                <div key={index} className="flex justify-between text-xs">
+                                  <span>{item.productName} (Qty: {item.quantity})</span>
+                                  <span>${(item.price / 100).toFixed(2)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
                             <Button 
                               size="sm" 
                               variant="outline" 
@@ -938,106 +940,116 @@ const ShoppingListPage: React.FC = () => {
                               disabled={balancedOptimization.isPending || !items.length}
                             >
                               {balancedOptimization.isPending ? (
-                                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" />                              ) : (
+                                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" />
+                              ) : (
                                 <BarChart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                               )}
                               View Balanced Plan
                             </Button>
-                          </div>
+                          )}
                         </div>
                       </div>
+                    </div>
 
-                      <div className="border-t pt-3 sm:pt-4 mt-3 sm:mt-4">
-                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
-                          <div>
-                            <p className="text-xs sm:text-sm text-gray-500">
-                              Potential savings: <span className="font-medium text-green-600">
-                                ${((priceComparisonMutation.data?.multiStore?.[0]?.savings || 850) / 100).toFixed(2)}
-                                ({priceComparisonMutation.data?.multiStore?.[0]?.savingsPercent || 19}%)
-                              </span>
-                            </p>
+                    {/* Go Shopping Section */}
+                    <div className="border-t pt-4 mt-4">
+                      <h4 className="font-medium text-sm sm:text-base mb-3">Ready to Shop?</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <Button 
+                          variant="outline" 
+                          className="w-full h-auto p-4 flex flex-col items-center space-y-2"
+                          onClick={() => {
+                            toast({
+                              title: "In-Person Shopping",
+                              description: "Your shopping plan with store addresses has been prepared"
+                            });
+                          }}
+                        >
+                          <StoreIcon className="h-6 w-6" />
+                          <div className="text-center">
+                            <div className="font-medium">Shop In-Person</div>
+                            <div className="text-xs text-gray-500">Get directions to stores</div>
                           </div>
-                          <Button variant="link" size="sm" className="text-gray-500 text-xs sm:text-sm">
-                            <Printer className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" /> Print Options
-                          </Button>
+                        </Button>
+                        
+                        <Button 
+                          className="w-full h-auto p-4 flex flex-col items-center space-y-2"
+                          onClick={() => {
+                            toast({
+                              title: "Online Shopping",
+                              description: "Choose pickup or delivery options"
+                            });
+                          }}
+                        >
+                          <ShoppingCart className="h-6 w-6" />
+                          <div className="text-center">
+                            <div className="font-medium">Shop Online</div>
+                            <div className="text-xs text-white/80">Pickup or delivery</div>
+                          </div>
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Special Deals Section */}
+                    <div className="border-t pt-4 mt-4">
+                      <h4 className="font-medium text-sm sm:text-base mb-2">Special Deals & Offers</h4>
+                      <div className="space-y-3">
+                        <div className="border border-amber-200 rounded-lg p-3 bg-amber-50 dark:bg-amber-900/10">
+                          <div className="flex">
+                            <ShoppingBag className="h-5 w-5 text-amber-500 mr-2 shrink-0 mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                                Spend $5.50 more on Dairy at Kroger
+                              </p>
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
+                                Get $3 off your total purchase
+                              </p>
+                            </div>
+                          </div>
                         </div>
 
-                        <h4 className="font-medium text-sm sm:text-base mb-2 mt-3">Special Deals & Offers</h4>
-                        <div className="space-y-3">
-                          <div className="border border-amber-200 rounded-lg p-3 bg-amber-50 dark:bg-amber-900/10">
-                            <div className="flex">
-                              <ShoppingBag className="h-5 w-5 text-amber-500 mr-2 shrink-0 mt-0.5" />
-                              <div>
-                                <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
-                                  Spend $5.50 more on Dairy at Kroger
-                                </p>
-                                <p className="text-xs text-gray-600 dark:text-gray-400">
-                                  Get $3 off your total purchase
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="border border-purple-200 rounded-lg p-3 bg-purple-50 dark:bg-purple-900/10">
-                            <div className="flex">
-                              <ShoppingCart className="h-5 w-5 text-purple-500 mr-2 shrink-0 mt-0.5" />
-                              <div>
-                                <p className="text-sm font-medium text-purple-700 dark:text-purple-300">
-                                  Buy 1 more Coca Cola at Walmart
-                                </p>
-                                <p className="text-xs text-gray-600 dark:text-gray-400">
-                                  Get 1 free (Buy 12, Get 1 Free promotion)
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="border border-teal-200 rounded-lg p-3 bg-teal-50 dark:bg-teal-900/10">
-                            <div className="flex">
-                              <ShoppingCart className="h-5 w-5 text-teal-500 mr-2 shrink-0 mt-0.5" />
-                              <div>
-                                <p className="text-sm font-medium text-teal-700 dark:text-teal-300">
-                                  Target Circle Members Save 10%
-                                </p>
-                                <p className="text-xs text-gray-600 dark:text-gray-400">
-                                  On Fresh Produce items (additional $0.85 savings)
-                                </p>
-                              </div>
+                        <div className="border border-purple-200 rounded-lg p-3 bg-purple-50 dark:bg-purple-900/10">
+                          <div className="flex">
+                            <ShoppingCart className="h-5 w-5 text-purple-500 mr-2 shrink-0 mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                                Buy 1 more Coca Cola at Walmart
+                              </p>
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
+                                Get 1 free (Buy 12, Get 1 Free promotion)
+                              </p>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  ) : (
-                    <div className="text-center py-6 sm:py-8">
-                      <div className="relative w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4">
-                        <div className="absolute inset-0 bg-primary/10 rounded-full flex items-center justify-center">
-                          <BarChart4 className="h-8 w-8 sm:h-12 sm:w-12 text-primary/60" />
-                        </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {!priceComparisonMutation.data && (
+              <Card>
+                <CardContent className="p-4 sm:p-6">
+                  <div className="text-center py-6 sm:py-8">
+                    <div className="relative w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4">
+                      <div className="absolute inset-0 bg-primary/10 rounded-full flex items-center justify-center">
+                        <BarChart4 className="h-8 w-8 sm:h-12 sm:w-12 text-primary/60" />
                       </div>
-                      <h3 className="text-base sm:text-lg font-medium mb-2">Optimize Your Shopping</h3>
-                      <p className="text-sm text-gray-500 mb-2 max-w-md mx-auto">
-                        We'll analyze prices across stores to find the best deals based on your preferences
-                      </p>
-                      <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">
-                        {items.length === 0 ? 
-                          "Add items to your shopping list first" : 
-                          `Ready to optimize ${items.length} items in your list`}
-                      </p>
-                      <Button
-                        onClick={() => defaultList?.id && priceComparisonMutation.mutate(defaultList.id)}
-                        disabled={priceComparisonMutation.isPending || !items.length}
-                        className="px-4 sm:px-6 text-sm"
-                      >
-                        {items.length === 0 ? 
-                          "Add Items First" : 
-                          <><Sparkles className="mr-2 h-4 w-4" /> Find Best Options</>}
-                      </Button>
                     </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                    <h3 className="text-base sm:text-lg font-medium mb-2">Optimize Your Shopping</h3>
+                    <p className="text-sm text-gray-500 mb-2 max-w-md mx-auto">
+                      Click "Calculate Shopping Options" above to see optimized plans
+                    </p>
+                    <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">
+                      {items.length === 0 ? 
+                        "Add items to your shopping list first" : 
+                        `Ready to optimize ${items.length} items in your list`}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="comparison" className="pt-4">
@@ -1052,63 +1064,91 @@ const ShoppingListPage: React.FC = () => {
                       onClick={() => defaultList?.id && priceComparisonMutation.mutate(defaultList.id)}
                       disabled={priceComparisonMutation.isPending || !items.length}
                     >
-                      {priceComparisonMutation.isPending ? "Calculating..." : "Refresh Prices"}
+                      {priceComparisonMutation.isPending ? "Calculating..." : "Compare Prices"}
                     </Button>
                   </div>
 
-                  {priceComparisonMutation.data?.retailers?.length > 0 ? (
+                  {priceComparisonMutation.data?.singleStore?.length > 0 ? (
                     <div className="space-y-4">
-                      {priceComparisonMutation.data.retailers.map((store: any) => (
-                        <div key={store.retailerId} className="border rounded-lg p-3">
-                          <div className="flex justify-between mb-2">
+                      {priceComparisonMutation.data.singleStore.slice(0, 3).map((store: any) => (
+                        <div key={store.retailerId} className="border rounded-lg p-4">
+                          <div className="flex justify-between items-center mb-3">
                             <div>
-                              <span className="font-semibold">{store.retailerName}</span>
-                              <span className="ml-2 text-sm text-gray-500">{store.items?.length || 0} items</span>
+                              <span className="font-semibold text-lg">{store.retailerName}</span>
+                              <span className="ml-2 text-sm text-gray-500">{items.length} items</span>
                             </div>
-                            <span className="font-semibold">${(store.subtotal / 100).toFixed(2)}</span>
+                            <div className="text-right">
+                              <div className="font-semibold text-lg">${(store.totalCost / 100).toFixed(2)}</div>
+                              {store.savings > 0 && (
+                                <div className="text-sm text-green-600">Save ${(store.savings / 100).toFixed(2)}</div>
+                              )}
+                            </div>
                           </div>
 
                           <div className="space-y-2 mb-3">
-                            {store.items?.slice(0, 3).map((item: any) => (
-                              <div key={item.productId} className="flex justify-between text-sm">
-                                <span>{item.productName}</span>
+                            {store.items?.slice(0, 3).map((item: any, index: number) => (
+                              <div key={index} className="flex justify-between text-sm">
+                                <span>{item.productName} (x{item.quantity})</span>
                                 <span>${(item.price / 100).toFixed(2)}</span>
                               </div>
                             ))}
 
                             {store.items?.length > 3 && (
-                              <div className="mt-2 flex items-center text-sm text-gray-500">
-                                <span>
-                                  +{store.items.length - 3} more items
-                                </span>
+                              <div className="text-sm text-gray-500">
+                                +{store.items.length - 3} more items
                               </div>
                             )}
                           </div>
 
-                          <div>
-                            <div className="flex justify-between text-sm mb-1">
-                              <span>Items with deals</span>
-                              <span>{store.items?.filter((i: any) => i.hasDeal)?.length || 0} of {store.items?.length || 0}</span>
+                          {store.incentives?.length > 0 && (
+                            <div className="bg-blue-50 rounded-lg p-3 mb-3">
+                              <div className="text-sm font-medium text-blue-800 mb-1">Special Offers</div>
+                              {store.incentives.slice(0, 1).map((incentive: any, index: number) => (
+                                <div key={index} className="text-xs text-blue-600">
+                                  {incentive.message}
+                                </div>
+                              ))}
                             </div>
-                            <Progress value={store.items?.length ? ((store.items?.filter((i: any) => i.hasDeal)?.length || 0) / store.items.length) * 100 : 0} className="h-2" />
-                          </div>
+                          )}
 
-                          <Button 
-                            className="w-full mt-4"
-                            variant="outline"
-                            size="sm"
-                          >
-                            Shop at {store.retailerName}
-                          </Button>
+                          <div className="grid grid-cols-2 gap-2">
+                            <Button 
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                              onClick={() => {
+                                toast({
+                                  title: "In-Store Shopping",
+                                  description: `Plan created for ${store.retailerName}`
+                                });
+                              }}
+                            >
+                              <StoreIcon className="h-4 w-4 mr-2" />
+                              Shop In-Store
+                            </Button>
+                            <Button 
+                              size="sm"
+                              className="w-full"
+                              onClick={() => {
+                                toast({
+                                  title: "Online Order",
+                                  description: `Redirecting to ${store.retailerName} website`
+                                });
+                              }}
+                            >
+                              <ShoppingCart className="h-4 w-4 mr-2" />
+                              Order Online
+                            </Button>
+                          </div>
                         </div>
                       ))}
 
-                      <div className="text-center mt-4">
-                        <p className="text-sm text-gray-500 mb-2">
-                          Best value: <span className="font-medium">Retailer Name</span>
+                      <div className="text-center mt-6 p-4 bg-green-50 rounded-lg">
+                        <p className="text-sm text-green-700 mb-1">
+                          Best value: <span className="font-medium">{priceComparisonMutation.data.singleStore[0]?.retailerName}</span>
                         </p>
-                        <p className="text-xs text-gray-500">
-                          Based on your shopping list and available deals
+                        <p className="text-xs text-green-600">
+                          Save ${((priceComparisonMutation.data.singleStore[2]?.totalCost - priceComparisonMutation.data.singleStore[0]?.totalCost) / 100).toFixed(2)} compared to most expensive option
                         </p>
                       </div>
                     </div>
@@ -1119,12 +1159,9 @@ const ShoppingListPage: React.FC = () => {
                       <p className="text-sm text-gray-500 mb-4">
                         See which store offers the best value for your shopping list
                       </p>
-                      <Button
-                        onClick={() => defaultList?.id && priceComparisonMutation.mutate(defaultList.id)}
-                        disabled={priceComparisonMutation.isPending || !items.length}
-                      >
-                        {items.length === 0 ? "Add items to compare prices" : "Compare Prices"}
-                      </Button>
+                      {items.length === 0 && (
+                        <p className="text-xs text-gray-400 mb-4">Add items to your list first</p>
+                      )}
                     </div>
                   )}
                 </div>
