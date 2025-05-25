@@ -15,23 +15,23 @@ const Dashboard: React.FC = () => {
   const [showReceiptScanner, setShowReceiptScanner] = useState(false);
   const [showStoreLinking, setShowStoreLinking] = useState(false);
   const [showProfileSetup, setShowProfileSetup] = useState(false);
-  
+
   const { data: user } = useQuery<User>({
     queryKey: ['/api/user/profile'],
   });
-  
+
   const { data: recommendations, isLoading: loadingRecommendations } = useQuery<Recommendation[]>({
     queryKey: ['/api/recommendations'],
   });
-  
+
   const { data: monthlySavings } = useQuery<number>({
     queryKey: ['/api/insights/monthly-savings'],
   });
-  
+
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
       <Header user={user} />
-      
+
       <main className="flex-1 overflow-y-auto">
         <div className="p-4 pb-20">
           {/* Welcome Section */}
@@ -48,7 +48,7 @@ const Dashboard: React.FC = () => {
               )}
             </div>
           </section>
-          
+
           {/* Quick Actions */}
           <section className="mb-6">
             <div className="grid grid-cols-2 gap-3">
@@ -68,7 +68,7 @@ const Dashboard: React.FC = () => {
                 onClick={() => setShowReceiptScanner(true)}
                 iconBgColor="bg-primary/10"
               />
-              
+
               <ActionCard 
                 icon={
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -83,17 +83,17 @@ const Dashboard: React.FC = () => {
               />
             </div>
           </section>
-          
+
           {/* Shopping Insights */}
           <ShoppingInsights />
-          
+
           {/* Shopping Recommendations */}
           <section className="mb-6">
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-bold text-gray-800">Recommended Purchases</h3>
               <a href="/recommendations" className="text-primary text-sm font-medium">View All</a>
             </div>
-            
+
             <div className="space-y-3">
               {loadingRecommendations ? (
                 // Loading state
@@ -133,10 +133,10 @@ const Dashboard: React.FC = () => {
               )}
             </div>
           </section>
-          
+
           {/* Weekly Deals */}
           <WeeklyDeals />
-          
+
           {/* Quick Link to Shopping Lists */}
           <section className="mb-6">
             <div className="bg-primary/5 rounded-xl p-4 border border-primary/20">
@@ -155,13 +155,13 @@ const Dashboard: React.FC = () => {
             </div>
           </section>
         </div>
-        
+
         {/* Conditional Modals */}
         {showReceiptScanner && <ReceiptScanner />}
         {showStoreLinking && <StoreLinking />}
         {showProfileSetup && <ProfileSetup />}
       </main>
-      
+
       <BottomNavigation activeTab="home" />
     </div>
   );

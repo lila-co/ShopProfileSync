@@ -1,15 +1,16 @@
 import React from 'react';
-import { Home, List, User, Store } from 'lucide-react';
+import { Home, List, User, Store, Tag } from 'lucide-react';
 
 interface BottomNavigationProps {
-  activeTab: 'home' | 'lists' | 'profile' | 'stores';
+  activeTab: 'home' | 'lists' | 'profile' | 'stores' | 'deals';
 }
 
 const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab }) => {
   const tabs = [
-    { id: 'lists', label: 'Lists', icon: Home, href: '/shopping-list' },
-    { id: 'home', label: 'Home', icon: List, href: '/' },
+    { id: 'home', label: 'Home', icon: Home, href: '/' },
     { id: 'stores', label: 'Stores', icon: Store, href: '/retailers' },
+    { id: 'lists', label: 'Lists', icon: List, href: '/shopping-list' },
+    { id: 'deals', label: 'Weekly Deals', icon: Tag, href: '/deals' },
     { id: 'profile', label: 'Profile', icon: User, href: '/profile' },
   ];
 
