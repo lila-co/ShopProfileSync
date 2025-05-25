@@ -114,11 +114,11 @@ const ShoppingListPage: React.FC = () => {
     mutationFn: async (items: any[]) => {
       // Filter only selected items
       const selectedItems = items.filter(item => item.isSelected);
-      
+
       if (selectedItems.length === 0) {
         throw new Error("No items selected");
       }
-      
+
       // Process each item individually to avoid batch errors
       const results = [];
       for (const item of selectedItems) {
@@ -135,18 +135,18 @@ const ShoppingListPage: React.FC = () => {
               unit: item.unit || 'COUNT'
             }),
           });
-          
+
           if (!response.ok) {
             throw new Error(`Server responded with ${response.status}`);
           }
-          
+
           const result = await response.json();
           results.push(result);
         } catch (error) {
           console.error(`Error adding item ${item.productName}:`, error);
         }
       }
-      
+
       return results;
     },
     onSuccess: (results) => {
@@ -789,7 +789,7 @@ const ShoppingListPage: React.FC = () => {
                   <ShoppingBag className="h-4 w-4 mr-2" />
                   Order Online/Pickup
                 </Button>
-                
+
                 <Button 
                   variant="outline"
                   size="lg"
@@ -1223,7 +1223,7 @@ const ShoppingListPage: React.FC = () => {
                 onClick={() => {
                   // Filter only selected items
                   const selectedItems = generatedItems.filter(item => item.isSelected);
-                  
+
                   // Add each selected item individually to ensure they're processed correctly
                   for (const item of selectedItems) {
                     const itemData = {
@@ -1232,7 +1232,7 @@ const ShoppingListPage: React.FC = () => {
                       quantity: item.quantity || 1,
                       unit: item.unit || 'COUNT'
                     };
-                    
+
                     // Use fetch API directly for simplicity
                     fetch('/api/shopping-list/items', {
                       method: 'POST',
@@ -1242,7 +1242,7 @@ const ShoppingListPage: React.FC = () => {
                       body: JSON.stringify(itemData),
                     }).catch(err => console.error(`Error adding ${item.productName}:`, err));
                   }
-                  
+
                   // Close dialog and refresh the list
                   setGenerateDialogOpen(false);
                   setTimeout(() => {
@@ -1308,7 +1308,7 @@ const ShoppingListPage: React.FC = () => {
                           <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
                           <circle cx="12" cy="13" r="3"/>
                         </svg>
-                        <p className="text-sm text-gray-600 mb-4">
+                        <p classNameclassName="text-sm text-gray-600 mb-4">
                           Take a photo of your handwritten shopping list. We'll use OCR to convert it to digital format.
                         </p>
                         <Button 
