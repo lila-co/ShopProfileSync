@@ -599,12 +599,7 @@ const ShoppingListPage: React.FC = () => {
                                 </p>
                               </div>
                             </div>
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="w-full text-xs sm:text-sm"
-                              onClick={() => setActiveTab('comparison')}
-                            >
+                            <Button size="sm" variant="outline" className="w-full text-xs sm:text-sm">
                               <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                               View Shopping Plan
                             </Button>
@@ -631,12 +626,7 @@ const ShoppingListPage: React.FC = () => {
                                 </p>
                               </div>
                             </div>
-                            <Button 
-                              size="sm" 
-                              variant="default" 
-                              className="w-full text-xs sm:text-sm"
-                              onClick={() => setActiveTab('comparison')}
-                            >
+                            <Button size="sm" variant="default" className="w-full text-xs sm:text-sm">
                               <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                               View Multi-Store Plan
                             </Button>
@@ -662,12 +652,7 @@ const ShoppingListPage: React.FC = () => {
                                 </p>
                               </div>
                             </div>
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="w-full text-xs sm:text-sm"
-                              onClick={() => setActiveTab('comparison')}
-                            >
+                            <Button size="sm" variant="outline" className="w-full text-xs sm:text-sm">
                               <BarChart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                               View Balanced Plan
                             </Button>
