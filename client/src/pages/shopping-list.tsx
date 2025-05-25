@@ -21,13 +21,13 @@ import {
   ShoppingCart,
   Check,
   Loader2,
+  Store as StoreIcon,
   MapPin,
   ArrowRight,
   Clock,
   BarChart,
   Printer,
-  Sparkles,
-  Store
+  Sparkles
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
@@ -742,7 +742,8 @@ const ShoppingListPage: React.FC = () => {
                               disabled={balancedOptimization.isPending || !items.length}
                             >
                               {balancedOptimization.isPending ? (
-                                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" />                              ) : (                                <BarChart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" />                              ) : (
+                                <BarChart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                               )}
                               View Balanced Plan
                             </Button>
@@ -811,32 +812,6 @@ const ShoppingListPage: React.FC = () => {
                         </div>
                       </div>
                     </div>
-
-                    {/* Shop Now Options */}
-                    <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                      <h4 className="text-lg font-semibold mb-4">Ready to Shop?</h4>
-                      <div className="space-y-3">
-                        <Button 
-                          className="w-full justify-start" 
-                          variant="outline"
-                          onClick={() => window.location.href = `/shop?listId=${defaultList?.id}&mode=instore`}
-                        >
-                          <StoreIcon className="h-4 w-4 mr-2" />
-                          Shop In-Store
-                          <span className="ml-auto text-xs text-gray-500">Get organized route & printable list</span>
-                        </Button>
-
-                        <Button 
-                          className="w-full justify-start" 
-                          variant="outline"
-                          onClick={() => window.location.href = `/shop?listId=${defaultList?.id}&mode=online`}
-                        >
-                          <ShoppingCart className="h-4 w-4 mr-2" />
-                          Shop Online
-                          <span className="ml-auto text-xs text-gray-500">Pickup, delivery, or cart transfer</span>
-                        </Button>
-                      </div>
-                    </div>
                   ) : (
                     <div className="text-center py-6 sm:py-8">
                       <div className="relative w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4">
@@ -845,14 +820,29 @@ const ShoppingListPage: React.FC = () => {
                         </div>
                       </div>
                       <h3 className="text-base sm:text-lg font-medium mb-2">Optimize Your Shopping</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                        Add items to your list to see optimization options and compare prices across stores.
+                      <p className="text-sm text-gray-500 mb-2 max-w-md mx-auto">
+                        We'll analyze prices across stores to find the best deals based on your preferences
                       </p>
+                      <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">
+                        {items.length === 0 ? 
+                          "Add items to your shopping list first" : 
+                          `Ready to optimize ${items.length} items in your list`}
+                      </p>
+                      <Button
+                        onClick={() => defaultList?.id && priceComparisonMutation.mutate(defaultList.id)}
+                        disabled={priceComparisonMutation.isPending || !items.length}
+                        className="px-4 sm:px-6 text-sm"
+                      >
+                        {items.length === 0 ? 
+                          "Add Items First" : 
+                          <><Sparkles className="mr-2 h-4 w-4" /> Find Best Options</>}
+                      </Button>
                     </div>
                   )}
                 </div>
               </CardContent>
-            </TabsContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="comparison" className="pt-4">
             <Card>
