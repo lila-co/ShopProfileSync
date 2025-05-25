@@ -112,21 +112,39 @@ const ShoppingListPage: React.FC = () => {
   // Generate shopping list from typical purchases
   const generateListMutation = useMutation({
     mutationFn: async (items: any[]) => {
-      // Filter only selected items
-      const selectedItems = items.filter(item => item.isSelected);
-
-      const response = await apiRequest('POST', '/api/shopping-list/items', {
-        shoppingListId: shoppingLists?.[0].id,
-        items: selectedItems
+      const response = await apiRequest('POST', '/api/shopping-lists/generate', {
+        items: items,
+        shoppingListId: shoppingLists?.[0].id
       });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       setGenerateDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      
+      // Show detailed success message about merges
+      const { itemsAdded, itemsUpdated, updatedItems } = data;
+      let description = '';
+      
+      if (itemsAdded > 0 && itemsUpdated > 0) {
+        description = `Added ${itemsAdded} new items and updated ${itemsUpdated} existing items with increased quantities.`;
+      } else if (itemsAdded > 0) {
+        description = `Added ${itemsAdded} new items to your shopping list.`;
+      } else if (itemsUpdated > 0) {
+        description = `Updated ${itemsUpdated} existing items with increased quantities.`;
+      } else {
+        description = "Your shopping list has been updated.";
+      }
+      
+      // Show merge details if any items were merged
+      if (updatedItems && updatedItems.length > 0) {
+        const mergedNames = updatedItems.map((item: any) => item.productName).join(', ');
+        description += ` Merged items: ${mergedNames}`;
+      }
+      
       toast({
         title: "Shopping List Generated",
-        description: "Your shopping list has been created based on your typical purchases.",
+        description,
       });
     },
     onError: (error: any) => {

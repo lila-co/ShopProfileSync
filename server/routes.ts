@@ -192,6 +192,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate a shopping list from typical purchases
   app.post('/api/shopping-lists/generate', async (req: Request, res: Response) => {
     try {
+      const { items: selectedItems, shoppingListId } = req.body;
+      const userId = 1; // For demo purposes, use default user
+      
+      // Get the target shopping list
+      const lists = await storage.getShoppingLists();
+      const targetListId = shoppingListId || lists[0]?.id;
+      
+      if (!targetListId) {
+        return res.status(400).json({ message: 'No shopping list available' });
+      }
+      
+      // Get existing items to check for duplicates
+      const existingItems = await storage.getShoppingListItems(targetListId);
+      
+      const addedItems = [];
+      const updatedItems = [];
+      
+      // Process each selected item
+      for (const item of selectedItems || []) {
+        if (!item.isSelected) continue;
+        
+        const normalizedName = item.productName.toLowerCase().trim();
+        
+        // Check for duplicates using the same logic as the regular add item endpoint
+        let existingItem = existingItems.find(existing => 
+          existing.productName.toLowerCase() === normalizedName ||
+          existing.productName.toLowerCase() + 's' === normalizedName ||
+          existing.productName.toLowerCase() === normalizedName + 's'
+        );
+        
+        // Check for common item variations
+        if (!existingItem) {
+          const commonItemCorrections: Record<string, string[]> = {
+            'milk': ['milk (gallon)', 'milk whole', 'whole milk', 'organic milk'],
+            'bread': ['sandwich bread', 'loaf bread', 'white bread'],
+            'eggs': ['egg', 'dozen eggs'],
+            'banana': ['bananas'],
+            'chicken': ['chicken breast', 'chicken breasts'],
+            'pasta': ['spaghetti', 'noodles'],
+            'coffee': ['ground coffee', 'coffee beans']
+          };
+          
+          for (const [baseItem, variations] of Object.entries(commonItemCorrections)) {
+            if (normalizedName.includes(baseItem) || variations.some(v => normalizedName.includes(v))) {
+              existingItem = existingItems.find(existing => {
+                const existingName = existing.productName.toLowerCase();
+                return existingName.includes(baseItem) || variations.some(v => existingName.includes(v));
+              });
+              if (existingItem) break;
+            }
+          }
+        }
+        
+        if (existingItem) {
+          // Update existing item by adding quantities
+          const updatedItem = await storage.updateShoppingListItem(existingItem.id, {
+            quantity: existingItem.quantity + item.quantity,
+            unit: item.unit || existingItem.unit || 'COUNT'
+          });
+          updatedItems.push({
+            ...updatedItem,
+            merged: true,
+            originalName: item.productName,
+            message: `Combined with existing "${existingItem.productName}" item`
+          });
+        } else {
+          // Add as new item
+          const newItem = await storage.addShoppingListItem({
+            shoppingListId: targetListId,
+            productName: item.productName,
+            quantity: item.quantity,
+            unit: item.unit || 'COUNT'
+          });
+          addedItems.push(newItem);
+        }
+      }
+      
+      res.json({
+        addedItems,
+        updatedItems,
+        itemsAdded: addedItems.length,
+        itemsUpdated: updatedItems.length,
+        totalItems: addedItems.length + updatedItems.length
+      });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Generate shopping list preview (separate endpoint for previewing items)
+  app.post('/api/shopping-lists/preview', async (req: Request, res: Response) => {
+    try {
       const userId = 1; // For demo purposes, use default user
       const user = await storage.getUser(userId);
       if (!user) {
@@ -209,7 +301,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           suggestedPrice: 359,
           savings: 40,
           reason: "You typically buy milk weekly. On sale at Walmart today!",
-          daysUntilPurchase: 2
+          daysUntilPurchase: 2,
+          isSelected: true
         },
         { 
           productName: 'Eggs', 
@@ -219,7 +312,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           suggestedPrice: 249,
           savings: 50,
           reason: "You're running low based on your purchase pattern",
-          daysUntilPurchase: 3
+          daysUntilPurchase: 3,
+          isSelected: true
         },
         { 
           productName: 'Bread', 
@@ -229,7 +323,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           suggestedPrice: 229,
           savings: 30,
           reason: "You buy this every 5 days on average",
-          daysUntilPurchase: 1
+          daysUntilPurchase: 1,
+          isSelected: true
         },
         { 
           productName: 'Bananas', 
@@ -239,7 +334,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           suggestedPrice: 129,
           savings: 20,
           reason: "Currently on special at Walmart",
-          daysUntilPurchase: 4
+          daysUntilPurchase: 4,
+          isSelected: true
         },
         { 
           productName: 'Ground Coffee', 
@@ -249,17 +345,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           suggestedPrice: 899,
           savings: 200,
           reason: "Running low based on your 2-week purchase cycle",
-          daysUntilPurchase: 0
+          daysUntilPurchase: 0,
+          isSelected: true
         },
         { 
           productName: 'Chicken Breast', 
-          quantity: 1, 
+          quantity: 2, 
           unit: 'LB',
           suggestedRetailerId: 2,
           suggestedPrice: 599,
           savings: 100,
           reason: "25% off this week at Target",
-          daysUntilPurchase: 1
+          daysUntilPurchase: 1,
+          isSelected: true
         },
         { 
           productName: 'Yogurt', 
@@ -269,7 +367,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           suggestedPrice: 149,
           savings: 30,
           reason: "Buy 5 get 1 free this week at Kroger",
-          daysUntilPurchase: 2
+          daysUntilPurchase: 2,
+          isSelected: true
         },
         { 
           productName: 'Pasta', 
@@ -279,7 +378,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           suggestedPrice: 129,
           savings: 0,
           reason: "Based on your monthly pasta purchase",
-          daysUntilPurchase: 0
+          daysUntilPurchase: 0,
+          isSelected: true
         },
         { 
           productName: 'Pasta Sauce', 
@@ -289,7 +389,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           suggestedPrice: 329,
           savings: 0,
           reason: "Pairs with pasta in your cart",
-          daysUntilPurchase: 0
+          daysUntilPurchase: 0,
+          isSelected: true
         },
         { 
           productName: 'Apples', 
@@ -299,12 +400,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           suggestedPrice: 459,
           savings: 40,
           reason: "Fresh seasonal Honeycrisp apples on sale",
-          daysUntilPurchase: 3
+          daysUntilPurchase: 3,
+          isSelected: true
         }
       ];
       
-      // Return the recommendations directly for the preview
-      // This lets the user see and confirm items before they're added to the list
+      // Return the recommendations for preview
       res.json({
         userId,
         items: recommendedItems,
