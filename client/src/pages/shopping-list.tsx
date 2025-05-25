@@ -952,7 +952,8 @@ const ShoppingListPage: React.FC = () => {
                   )}
                 </div>
               </CardContent>
-            </TabsContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="comparison" className="pt-4">
             <Card>
