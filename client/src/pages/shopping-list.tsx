@@ -392,14 +392,14 @@ const ShoppingListPage: React.FC = () => {
   // Handle text list upload
   const handleTextUpload = () => {
     if (!uploadText.trim()) return;
-    
+
     // Parse text into items (split by lines, commas, or bullet points)
     const items = uploadText
       .split(/\n|,|•|\*|-/)
       .map(item => item.trim())
       .filter(item => item.length > 0)
       .filter(item => !item.match(/^\d+\.?\s*$/)); // Remove just numbers
-    
+
     uploadListMutation.mutate({ items, source: 'text_input' });
   };
 
@@ -411,7 +411,7 @@ const ShoppingListPage: React.FC = () => {
     reader.onloadend = async () => {
       const base64Image = reader.result as string;
       setUploadImagePreview(base64Image);
-      
+
       try {
         // Use OpenAI Vision API to extract text from the image
         const response = await fetch('/api/ocr/extract-list', {
@@ -419,7 +419,7 @@ const ShoppingListPage: React.FC = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ image: base64Image.split(',')[1] })
         });
-        
+
         const data = await response.json();
         if (data.items && data.items.length > 0) {
           uploadListMutation.mutate({ items: data.items, source: 'image_ocr' });
@@ -685,7 +685,7 @@ const ShoppingListPage: React.FC = () => {
                     <div className="space-y-3 mb-5">
                       <div className="flex items-start">
                         <div className="bg-blue-100 dark:bg-blue-900/20 p-2 rounded-full mr-3">
-                          <StoreIcon className="h-4 w-4 text-blue-600" />
+                          <Store className="h-4 w-4 text-blue-600" />
                         </div>
                         <div>
                           <h4 className="font-medium text-sm text-blue-700 dark:text-blue-300">Single Store Option</h4>
@@ -750,7 +750,7 @@ const ShoppingListPage: React.FC = () => {
                           <div className="p-3 sm:p-4">
                             <div className="flex items-center mb-3 sm:mb-4">
                               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 flex items-center justify-center mr-3 sm:mr-4 shrink-0">
-                                <StoreIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+                                <Store className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                               </div>
                               <div>
                                 <h4 className="font-medium text-base sm:text-lg">
@@ -922,7 +922,7 @@ const ShoppingListPage: React.FC = () => {
                           variant="outline"
                           onClick={() => window.location.href = `/shop?listId=${defaultList?.id}&mode=instore`}
                         >
-                          <StoreIcon className="h-4 w-4 mr-2" />
+                          <Store className="h-4 w-4 mr-2" />
                           Shop In-Store
                           <span className="ml-auto text-xs text-gray-500">Get organized route & printable list</span>
                         </Button>
@@ -1278,7 +1278,7 @@ const ShoppingListPage: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  
+
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -1289,7 +1289,7 @@ const ShoppingListPage: React.FC = () => {
                       if (file) handleImageUpload(file);
                     }}
                   />
-                  
+
                   <p className="text-xs text-gray-500">
                     Our AI will read your handwritten or printed list and add items to your shopping list with smart matching based on your purchase history.
                   </p>
