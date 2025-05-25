@@ -7,6 +7,7 @@ import ShoppingListPage from '@/pages/shopping-list';
 import ProfilePage from '@/pages/profile';
 import NotFound from '@/pages/not-found';
 import DealsPage from '@/pages/deals';
+import RetailersPage from '@/pages/retailers';
 import { queryClient } from '@/lib/queryClient';
 
 function App() {
@@ -20,7 +21,7 @@ function App() {
             <Route path="/shopping-list" component={ShoppingListPage} />
             <Route path="/profile" component={ProfilePage} />
             <Route path="/deals" component={DealsPage} />
-            <Route path="/retailers" component={Dashboard} />
+            <Route path="/retailers" component={RetailersPage} />
             <Route component={NotFound} />
           </Switch>
         </div>

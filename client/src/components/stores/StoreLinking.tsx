@@ -162,4 +162,105 @@ const StoreLinking: React.FC = () => {
   );
 };
 
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
+import { Store, CheckCircle, AlertCircle } from 'lucide-react';
+
+interface Retailer {
+  id: number;
+  name: string;
+  logoColor: string;
+}
+
+interface RetailerAccount {
+  id: number;
+  retailerId: number;
+  isConnected: boolean;
+}
+
+const StoreLinking: React.FC = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const { data: retailers, isLoading } = useQuery<Retailer[]>({
+    queryKey: ['/api/retailers'],
+  });
+  
+  const { data: connectedAccounts } = useQuery<RetailerAccount[]>({
+    queryKey: ['/api/user/retailer-accounts'],
+  });
+  
+  const connectRetailerMutation = useMutation({
+    mutationFn: async (retailerId: number) => {
+      const response = await apiRequest('POST', '/api/user/retailer-accounts', {
+        retailerId,
+        isConnected: true
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/user/retailer-accounts'] });
+      toast({
+        title: "Store Connected",
+        description: "Your store account has been successfully linked."
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Connection Failed",
+        description: error.message || "Failed to connect store account. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+  
+  const isConnected = (retailerId: number) => {
+    return connectedAccounts?.some(account => account.retailerId === retailerId && account.isConnected);
+  };
+  
+  if (isLoading) {
+    return <div>Loading retailers...</div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <h3 className="text-lg font-semibold">Link Store Accounts</h3>
+      <div className="grid gap-4">
+        {retailers?.map((retailer) => (
+          <Card key={retailer.id}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Store className="h-6 w-6" />
+                  <span className="font-medium">{retailer.name}</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {isConnected(retailer.id) ? (
+                    <>
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <span className="text-sm text-green-600">Connected</span>
+                    </>
+                  ) : (
+                    <Button
+                      size="sm"
+                      onClick={() => connectRetailerMutation.mutate(retailer.id)}
+                      disabled={connectRetailerMutation.isPending}
+                    >
+                      Connect
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export default StoreLinking;
