@@ -74,7 +74,7 @@ const ReceiptScanner: React.FC = () => {
           
           context?.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
           
-          const imageDataUrl = canvas.toDataURL('image/jpeg');
+          const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
           setPreviewUrl(imageDataUrl);
           
           // Stop the camera stream
@@ -87,10 +87,16 @@ const ReceiptScanner: React.FC = () => {
           scanReceiptMutation.mutate(imageDataUrl.split(',')[1]);
         }
       } else {
-        // Start camera
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { facingMode: 'environment' } 
-        });
+        // Start camera with environment (back) camera preference for better receipt scanning
+        const constraints = {
+          video: { 
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          }
+        };
+        
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
         
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -137,28 +143,35 @@ const ReceiptScanner: React.FC = () => {
         <div className="w-8"></div>
       </div>
       
-      <div className="bg-gray-100 rounded-xl h-80 flex flex-col items-center justify-center mb-4 overflow-hidden">
+      <div className="bg-gray-100 rounded-xl h-80 flex flex-col items-center justify-center mb-4 overflow-hidden relative">
         {isCapturing ? (
-          <video 
-            ref={videoRef} 
-            className="w-full h-full object-cover"
-            playsInline
-            autoPlay
-          />
+          <>
+            <video 
+              ref={videoRef} 
+              className="w-full h-full object-cover"
+              playsInline
+              autoPlay
+            />
+            {/* Receipt frame overlay */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="border-2 border-white border-dashed w-4/5 h-4/5 rounded-lg flex items-center justify-center">
+                <div className="bg-black bg-opacity-50 text-white px-3 py-1 rounded text-sm">
+                  Position receipt within frame
+                </div>
+              </div>
+            </div>
+          </>
         ) : previewUrl ? (
           <img src={previewUrl} alt="Receipt preview" className="w-full h-full object-contain" />
         ) : (
-          <div className="text-gray-400 text-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-14 w-14 mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9.5 9.5 14.5 14.5"/>
-              <path d="M14.5 9.5 9.5 14.5"/>
-              <rect width="16" height="16" x="4" y="4" rx="2"/>
-              <path d="M4 15h16"/>
-              <path d="M15 4v6"/>
-              <path d="M9 4v2"/>
+          <div className="text-gray-400 text-center p-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto mb-4 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+              <circle cx="12" cy="13" r="3"/>
             </svg>
-            <p className="font-medium">Position receipt in frame</p>
-            <p className="text-sm mt-1">Make sure the receipt is well-lit and visible</p>
+            <p className="font-medium text-gray-600 mb-1">Take a photo of your receipt</p>
+            <p className="text-sm text-gray-500">Position the receipt clearly in good lighting</p>
+            <p className="text-xs text-gray-400 mt-2">Make sure all text is readable and the receipt is flat</p>
           </div>
         )}
       </div>
@@ -169,7 +182,23 @@ const ReceiptScanner: React.FC = () => {
           onClick={handleCameraCapture}
           disabled={scanReceiptMutation.isPending}
         >
-          {isCapturing ? 'Take Photo' : 'Open Camera'}
+          {isCapturing ? (
+            <>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+                <circle cx="12" cy="13" r="3"/>
+              </svg>
+              Capture Receipt Photo
+            </>
+          ) : (
+            <>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+                <circle cx="12" cy="13" r="3"/>
+              </svg>
+              Take Photo of Receipt
+            </>
+          )}
         </Button>
         
         <input
@@ -185,7 +214,12 @@ const ReceiptScanner: React.FC = () => {
           onClick={() => fileInputRef.current?.click()}
           disabled={scanReceiptMutation.isPending || isCapturing}
         >
-          Upload from Gallery
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7,10 12,15 17,10"/>
+            <line x1="12" x2="12" y1="15" y2="3"/>
+          </svg>
+          Upload Existing Photo
         </Button>
         
         {scanReceiptMutation.isPending && (
