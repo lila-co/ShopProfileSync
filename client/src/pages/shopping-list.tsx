@@ -913,7 +913,6 @@ const ShoppingListPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Shop Now Options */}
                     <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                       <h4 className="text-lg font-semibold mb-4">Ready to Shop?</h4>
                       <div className="space-y-3">
