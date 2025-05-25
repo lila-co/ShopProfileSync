@@ -1,26 +1,13 @@
 import React from 'react';
 import { Router, Route, Switch, Redirect } from 'wouter';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import Dashboard from '@/pages/dashboard';
 import ShoppingListPage from '@/pages/shopping-list';
 import ProfilePage from '@/pages/profile';
 import NotFound from '@/pages/not-found';
 import DealsPage from '@/pages/deals';
-import { apiRequest } from '@/lib/queryClient';
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      queryFn: async ({ queryKey }) => {
-        const response = await apiRequest('GET', queryKey[0] as string, {});
-        return response.json();
-      },
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      retry: 1,
-    },
-  },
-});
+import { queryClient } from '@/lib/queryClient';
 
 function App() {
   return (
