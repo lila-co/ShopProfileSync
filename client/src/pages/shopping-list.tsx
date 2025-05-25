@@ -605,73 +605,7 @@ const ShoppingListPage: React.FC = () => {
           </TabsList>
 
           <TabsContent value="items" className="pt-4">
-            <form onSubmit={handleAddItem} className="mb-4 sm:mb-6">
-              <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2 mb-2">
-                <Input
-                  type="text"
-                  placeholder="Add an item..."
-                  value={newItemName}
-                  onChange={(e) => setNewItemName(e.target.value)}
-                  className="flex-1"
-                />
-                <Button 
-                  type="submit" 
-                  className="bg-primary text-white w-full sm:w-auto"
-                  disabled={addItemMutation.isPending}
-                >
-                  {addItemMutation.isPending ? 'Adding...' : 'Add Item'}
-                </Button>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <div className="w-full sm:w-20">
-                  <Input
-                    type="number"
-                    placeholder="Qty"
-                    min="0.01"
-                    step="0.01"
-                    defaultValue="1"
-                    onChange={(e) => setNewItemQuantity(Math.round(parseFloat(e.target.value) || 1))}
-                    className="w-full"
-                  />
-                </div>
-
-                <Select 
-                  value={newItemUnit} 
-                  onValueChange={setNewItemUnit}
-                  disabled={autoDetectUnit}
-                >
-                  <SelectTrigger className={`flex-1 ${autoDetectUnit ? 'opacity-60' : ''}`}>
-                    <SelectValue placeholder="Unit" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="COUNT">Count</SelectItem>
-                    <SelectItem value="LB">lb (Pounds)</SelectItem>
-                    <SelectItem value="OZ">oz (Ounces)</SelectItem>
-                    <SelectItem value="PKG">Package</SelectItem>
-                    <SelectItem value="ROLL">Rolls</SelectItem>
-                    <SelectItem value="BOX">Box</SelectItem>
-                    <SelectItem value="CAN">Can</SelectItem>
-                    <SelectItem value="BOTTLE">Bottle</SelectItem>
-                    <SelectItem value="JAR">Jar</SelectItem>
-                    <SelectItem value="BUNCH">Bunch</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center space-x-2 mt-2 text-sm text-gray-600">
-                <Switch 
-                  checked={autoDetectUnit} 
-                  onCheckedChange={setAutoDetectUnit}
-                  id="auto-detect"
-                />
-                <Label htmlFor="auto-detect" className="cursor-pointer flex items-center text-xs sm:text-sm">
-                  Auto-detect best unit based on item name
-                </Label>
-              </div>
-            </form>
-
-            <div className="space-y-3">
+            <div className="space-y-3 mb-4 sm:mb-6">
               {items.length === 0 ? (
                 <Card>
                   <CardContent className="p-4 sm:p-6 text-center text-gray-500">
@@ -746,6 +680,72 @@ const ShoppingListPage: React.FC = () => {
                 ))
               )}
             </div>
+
+            <form onSubmit={handleAddItem} className="mb-4 sm:mb-6">
+              <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2 mb-2">
+                <Input
+                  type="text"
+                  placeholder="Add an item..."
+                  value={newItemName}
+                  onChange={(e) => setNewItemName(e.target.value)}
+                  className="flex-1"
+                />
+                <Button 
+                  type="submit" 
+                  className="bg-primary text-white w-full sm:w-auto"
+                  disabled={addItemMutation.isPending}
+                >
+                  {addItemMutation.isPending ? 'Adding...' : 'Add Item'}
+                </Button>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <div className="w-full sm:w-20">
+                  <Input
+                    type="number"
+                    placeholder="Qty"
+                    min="0.01"
+                    step="0.01"
+                    defaultValue="1"
+                    onChange={(e) => setNewItemQuantity(Math.round(parseFloat(e.target.value) || 1))}
+                    className="w-full"
+                  />
+                </div>
+
+                <Select 
+                  value={newItemUnit} 
+                  onValueChange={setNewItemUnit}
+                  disabled={autoDetectUnit}
+                >
+                  <SelectTrigger className={`flex-1 ${autoDetectUnit ? 'opacity-60' : ''}`}>
+                    <SelectValue placeholder="Unit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="COUNT">Count</SelectItem>
+                    <SelectItem value="LB">lb (Pounds)</SelectItem>
+                    <SelectItem value="OZ">oz (Ounces)</SelectItem>
+                    <SelectItem value="PKG">Package</SelectItem>
+                    <SelectItem value="ROLL">Rolls</SelectItem>
+                    <SelectItem value="BOX">Box</SelectItem>
+                    <SelectItem value="CAN">Can</SelectItem>
+                    <SelectItem value="BOTTLE">Bottle</SelectItem>
+                    <SelectItem value="JAR">Jar</SelectItem>
+                    <SelectItem value="BUNCH">Bunch</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center space-x-2 mt-2 text-sm text-gray-600">
+                <Switch 
+                  checked={autoDetectUnit} 
+                  onCheckedChange={setAutoDetectUnit}
+                  id="auto-detect"
+                />
+                <Label htmlFor="auto-detect" className="cursor-pointer flex items-center text-xs sm:text-sm">
+                  Auto-detect best unit based on item name
+                </Label>
+              </div>
+            </form>
           </TabsContent>
 
           <TabsContent value="optimization" className="pt-4">
