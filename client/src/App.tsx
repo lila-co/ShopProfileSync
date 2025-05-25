@@ -16,7 +16,7 @@ import AdminSettings from '@/pages/admin-settings';
 import AffiliateDashboard from '@/pages/affiliate-dashboard';
 import InternalAnalytics from '@/pages/internal-analytics';
 import AuthPage from '@/pages/auth';
-import NotFound from '@/pages/not-found';
+import NotFound from '@/components/NotFound';
 
 const queryClient = new QueryClient({
   defaultOptions: {
