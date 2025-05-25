@@ -66,6 +66,11 @@ const ShoppingListPage: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
+  // Recipe dialog state
+  const [recipeDialogOpen, setRecipeDialogOpen] = useState(false);
+  const [recipeUrl, setRecipeUrl] = useState('');
+  const [servings, setServings] = useState('4');
+
   // Tab state
   const [activeTab, setActiveTab] = useState('items');
   const [selectedOptimization, setSelectedOptimization] = useState('cost');
@@ -158,6 +163,37 @@ const ShoppingListPage: React.FC = () => {
       toast({
         title: "Error",
         description: "Failed to add items to shopping list",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Import recipe ingredients
+  const importRecipeMutation = useMutation({
+    mutationFn: async () => {
+      const defaultList = shoppingLists?.[0];
+      if (!defaultList) throw new Error("No shopping list found");
+      
+      const response = await apiRequest('POST', '/api/shopping-lists/recipe', {
+        recipeUrl,
+        shoppingListId: defaultList.id,
+        servings: parseInt(servings)
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      setRecipeDialogOpen(false);
+      setRecipeUrl('');
+      toast({
+        title: "Recipe Imported",
+        description: "Ingredients have been added to your shopping list"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to import recipe ingredients",
         variant: "destructive"
       });
     }
@@ -570,7 +606,7 @@ const ShoppingListPage: React.FC = () => {
         <h2 className="text-xl font-bold mb-4">Shopping List</h2>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
           <Card className="border border-gray-200">
             <CardContent className="p-4">
               <div className="flex flex-col items-center text-center">
@@ -616,6 +652,26 @@ const ShoppingListPage: React.FC = () => {
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Upload
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-gray-200">
+            <CardContent className="p-4">
+              <div className="flex flex-col items-center text-center">
+                <FileText className="h-8 w-8 text-green-600 mb-2" />
+                <h3 className="text-base font-semibold mb-1">Import Recipe</h3>
+                <p className="text-xs text-gray-600 mb-3">
+                  Add ingredients from recipe URL
+                </p>
+                <Button 
+                  className="w-full bg-green-600 hover:bg-green-700 text-white"
+                  size="sm"
+                  onClick={() => setRecipeDialogOpen(true)}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Recipe
                 </Button>
               </div>
             </CardContent>
@@ -1463,11 +1519,14 @@ const ShoppingListPage: React.FC = () => {
 
       {/* Recipe Import Dialog */}
       <Dialog open={recipeDialogOpen} onOpenChange={setRecipeDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Import Recipe</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            <p className="text-sm text-gray-500">
+              Enter a recipe URL to automatically add all ingredients to your shopping list.
+            </p>
             <div className="space-y-2">
               <Label htmlFor="recipeUrl">Recipe URL</Label>
               <Input
@@ -1501,63 +1560,7 @@ const ShoppingListPage: React.FC = () => {
               onClick={() => importRecipeMutation.mutate()} 
               disabled={!recipeUrl || importRecipeMutation.isPending}
             >
-              Import
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Generate List Dialog */}
-      <Dialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Generated Shopping List Preview</DialogTitle>
-          </DialogHeader>
-          <div className="max-h-96 overflow-y-auto">
-            {generatedItems.length > 0 ? (
-              <div className="space-y-2">
-                {generatedItems.map((item, index) => (
-                  <div key={index} className="flex items-center space-x-2 p-2 border rounded">
-                    <input
-                      type="checkbox"
-                      checked={item.isSelected}
-                      onChange={(e) => {
-                        const updated = [...generatedItems];
-                        updated[index].isSelected = e.target.checked;
-                        setGeneratedItems(updated);
-                      }}
-                      className="h-4 w-4"
-                    />
-                    <div className="flex-1">
-                      <p className="font-medium">{item.productName}</p>
-                      <p className="text-sm text-gray-500">
-                        {item.quantity} {item.unit} • {item.reason}
-                      </p>
-                      {item.savings > 0 && (
-                        <p className="text-sm text-green-600">
-                          Save ${(item.savings / 100).toFixed(2)}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-center text-gray-500 py-4">No items generated</p>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setGenerateDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={() => {
-                const selectedItems = generatedItems.filter(item => item.isSelected);
-                addGeneratedItemsMutation.mutate(selectedItems);
-              }}
-              disabled={addGeneratedItemsMutation.isPending || !generatedItems.some(item => item.isSelected)}
-            >
-              Add Selected Items
+              {importRecipeMutation.isPending ? 'Importing...' : 'Import'}
             </Button>
           </DialogFooter>
         </DialogContent>
