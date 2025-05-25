@@ -10,15 +10,15 @@ const StoreLinking: React.FC = () => {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   const { data: retailers, isLoading } = useQuery<Retailer[]>({
     queryKey: ['/api/retailers'],
   });
-  
+
   const { data: connectedAccounts } = useQuery<RetailerAccount[]>({
     queryKey: ['/api/user/retailer-accounts'],
   });
-  
+
   const connectRetailerMutation = useMutation({
     mutationFn: async (retailerId: number) => {
       // In a real app, this would redirect to OAuth or show a credential input form
@@ -44,11 +44,11 @@ const StoreLinking: React.FC = () => {
       });
     }
   });
-  
+
   const isConnected = (retailerId: number) => {
     return connectedAccounts?.some(account => account.retailerId === retailerId && account.isConnected);
   };
-  
+
   const getColorClasses = (color: string) => {
     const colorMap: Record<string, { bg: string, icon: string }> = {
       blue: { bg: 'bg-blue-100', icon: 'text-blue-600' },
@@ -60,10 +60,10 @@ const StoreLinking: React.FC = () => {
       indigo: { bg: 'bg-indigo-100', icon: 'text-indigo-600' },
       gray: { bg: 'bg-gray-100', icon: 'text-gray-600' },
     };
-    
+
     return colorMap[color] || colorMap.blue;
   };
-  
+
   return (
     <div className="fixed inset-0 bg-white p-4 z-20">
       <div className="flex justify-between items-center mb-4">
@@ -80,11 +80,11 @@ const StoreLinking: React.FC = () => {
         <h2 className="text-lg font-bold">Link Store Account</h2>
         <div className="w-8"></div>
       </div>
-      
+
       <p className="text-gray-600 mb-6">
         Connect your store accounts to automatically import your purchase history and get personalized recommendations.
       </p>
-      
+
       <div className="space-y-3 mb-6">
         {isLoading ? (
           // Skeleton loading
@@ -107,7 +107,7 @@ const StoreLinking: React.FC = () => {
           (retailers || []).map((retailer) => {
             const colorClasses = getColorClasses(retailer.logoColor || 'blue');
             const connected = isConnected(retailer.id);
-            
+
             return (
               <div key={retailer.id} className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
                 <div className="flex justify-between items-center">
@@ -139,7 +139,7 @@ const StoreLinking: React.FC = () => {
           })
         )}
       </div>
-      
+
       <div className="text-center">
         <p className="text-sm text-gray-500 mb-3">Don't see your store?</p>
         <Button 
@@ -157,107 +157,6 @@ const StoreLinking: React.FC = () => {
           </svg>
           Add Custom Store
         </Button>
-      </div>
-    </div>
-  );
-};
-
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
-import { useToast } from '@/hooks/use-toast';
-import { Store, CheckCircle, AlertCircle } from 'lucide-react';
-
-interface Retailer {
-  id: number;
-  name: string;
-  logoColor: string;
-}
-
-interface RetailerAccount {
-  id: number;
-  retailerId: number;
-  isConnected: boolean;
-}
-
-const StoreLinking: React.FC = () => {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  
-  const { data: retailers, isLoading } = useQuery<Retailer[]>({
-    queryKey: ['/api/retailers'],
-  });
-  
-  const { data: connectedAccounts } = useQuery<RetailerAccount[]>({
-    queryKey: ['/api/user/retailer-accounts'],
-  });
-  
-  const connectRetailerMutation = useMutation({
-    mutationFn: async (retailerId: number) => {
-      const response = await apiRequest('POST', '/api/user/retailer-accounts', {
-        retailerId,
-        isConnected: true
-      });
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/user/retailer-accounts'] });
-      toast({
-        title: "Store Connected",
-        description: "Your store account has been successfully linked."
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Connection Failed",
-        description: error.message || "Failed to connect store account. Please try again.",
-        variant: "destructive"
-      });
-    }
-  });
-  
-  const isConnected = (retailerId: number) => {
-    return connectedAccounts?.some(account => account.retailerId === retailerId && account.isConnected);
-  };
-  
-  if (isLoading) {
-    return <div>Loading retailers...</div>;
-  }
-
-  return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold">Link Store Accounts</h3>
-      <div className="grid gap-4">
-        {retailers?.map((retailer) => (
-          <Card key={retailer.id}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Store className="h-6 w-6" />
-                  <span className="font-medium">{retailer.name}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  {isConnected(retailer.id) ? (
-                    <>
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                      <span className="text-sm text-green-600">Connected</span>
-                    </>
-                  ) : (
-                    <Button
-                      size="sm"
-                      onClick={() => connectRetailerMutation.mutate(retailer.id)}
-                      disabled={connectRetailerMutation.isPending}
-                    >
-                      Connect
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
       </div>
     </div>
   );
