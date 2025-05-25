@@ -742,7 +742,9 @@ const ShoppingListPage: React.FC = () => {
                               disabled={balancedOptimization.isPending || !items.length}
                             >
                               {balancedOptimization.isPending ? (
-                                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin"                              ) : (                                <BarChart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" />
+                              ) : (
+                                <BarChart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                               )}
                               View Balanced Plan
                             </Button>
