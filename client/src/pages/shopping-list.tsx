@@ -38,24 +38,24 @@ import { Progress } from '@/components/ui/progress';
 const ShoppingListPage: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   // Form state
   const [newItemName, setNewItemName] = useState('');
   const [newItemQuantity, setNewItemQuantity] = useState(1);
   const [newItemUnit, setNewItemUnit] = useState('COUNT');
   const [autoDetectUnit, setAutoDetectUnit] = useState(true);
-  
+
   // Edit dialog state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editItemName, setEditItemName] = useState('');
   const [editItemQuantity, setEditItemQuantity] = useState(1);
   const [editItemUnit, setEditItemUnit] = useState('COUNT');
   const [editItemId, setEditItemId] = useState<number | null>(null);
-  
+
   // Generate list dialog state
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
   const [generatedItems, setGeneratedItems] = useState<any[]>([]);
-  
+
   // Tab state
   const [activeTab, setActiveTab] = useState('items');
   const [selectedOptimization, setSelectedOptimization] = useState('cost');
@@ -63,17 +63,17 @@ const ShoppingListPage: React.FC = () => {
   const { data: shoppingLists, isLoading } = useQuery<ShoppingList[]>({
     queryKey: ['/api/shopping-lists'],
   });
-  
+
   // Get retailers for price comparison
   const { data: retailers } = useQuery({
     queryKey: ['/api/retailers'],
   });
-  
+
   // Get recommendations for the generate list feature
   const { data: recommendations } = useQuery({
     queryKey: ['/api/recommendations'],
   });
-  
+
   // Generate shopping list preview
   const previewGenerateMutation = useMutation({
     mutationFn: async () => {
@@ -86,7 +86,7 @@ const ShoppingListPage: React.FC = () => {
         ...item,
         isSelected: true,
       }));
-      
+
       setGeneratedItems(enhancedItems);
       setGenerateDialogOpen(true);
     },
@@ -98,13 +98,13 @@ const ShoppingListPage: React.FC = () => {
       });
     }
   });
-  
+
   // Generate shopping list from typical purchases
   const generateListMutation = useMutation({
     mutationFn: async (items: any[]) => {
       // Filter only selected items
       const selectedItems = items.filter(item => item.isSelected);
-      
+
       const response = await apiRequest('POST', '/api/shopping-list/items', {
         shoppingListId: shoppingLists?.[0].id,
         items: selectedItems
@@ -127,7 +127,7 @@ const ShoppingListPage: React.FC = () => {
       });
     }
   });
-  
+
   // Calculate price comparison across retailers
   const priceComparisonMutation = useMutation({
     mutationFn: async (shoppingListId: number) => {
@@ -148,13 +148,73 @@ const ShoppingListPage: React.FC = () => {
     }
   });
 
+  // Single store optimization
+  const singleStoreOptimization = useMutation({
+    mutationFn: async (shoppingListId: number) => {
+      const response = await apiRequest('POST', '/api/shopping-lists/single-store', {
+        shoppingListId
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      // Handle the response data (e.g., display the optimized list)
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to generate single store optimization: " + error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Best value optimization
+  const bestValueOptimization = useMutation({
+    mutationFn: async (shoppingListId: number) => {
+      const response = await apiRequest('POST', '/api/shopping-lists/best-value', {
+        shoppingListId
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      // Handle the response data (e.g., display the optimized list)
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to generate best value optimization: " + error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Balanced optimization
+  const balancedOptimization = useMutation({
+    mutationFn: async (shoppingListId: number) => {
+      const response = await apiRequest('POST', '/api/shopping-lists/balanced', {
+        shoppingListId
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      // Handle the response data (e.g., display the optimized list)
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to generate balanced optimization: " + error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
   // Add item to shopping list
   const addItemMutation = useMutation({
     mutationFn: async ({ productName, quantity, unit }: { productName: string, quantity: number, unit: string }) => {
       // Add to default shopping list (using the first list as default for simplicity)
       const defaultList = shoppingLists?.[0];
       if (!defaultList) throw new Error("No shopping list found");
-      
+
       const response = await apiRequest('POST', '/api/shopping-list/items', {
         shoppingListId: defaultList.id,
         productName,
@@ -167,7 +227,7 @@ const ShoppingListPage: React.FC = () => {
       setNewItemName('');
       setNewItemQuantity(1);
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-      
+
       toast({
         title: "Item Added",
         description: "Item has been added to your shopping list"
@@ -209,12 +269,12 @@ const ShoppingListPage: React.FC = () => {
       });
     }
   });
-  
+
   // Edit shopping list item
   const editItemMutation = useMutation({
     mutationFn: async () => {
       if (!editItemId) throw new Error("No item selected for editing");
-      
+
       const response = await apiRequest('PATCH', `/api/shopping-list/items/${editItemId}`, {
         productName: editItemName,
         quantity: editItemQuantity,
@@ -243,12 +303,12 @@ const ShoppingListPage: React.FC = () => {
     e.preventDefault();
     if (newItemName.trim()) {
       const productName = newItemName.trim();
-      
+
       // If auto-detect is enabled, determine the unit type based on item name
       const unit = autoDetectUnit 
         ? detectUnitFromItemName(productName) 
         : newItemUnit;
-      
+
       addItemMutation.mutate({
         productName,
         quantity: newItemQuantity,
@@ -256,15 +316,15 @@ const ShoppingListPage: React.FC = () => {
       });
     }
   };
-  
+
   const handleToggleItem = (itemId: number, currentStatus: boolean) => {
     toggleItemMutation.mutate({ itemId, completed: !currentStatus });
   };
-  
+
   const handleDeleteItem = (itemId: number) => {
     deleteItemMutation.mutate(itemId);
   };
-  
+
   const handleEditItem = (item: ShoppingListItem) => {
     setEditItemId(item.id);
     setEditItemName(item.productName);
@@ -272,21 +332,21 @@ const ShoppingListPage: React.FC = () => {
     setEditItemUnit(item.unit || 'COUNT');
     setEditDialogOpen(true);
   };
-  
+
   const handleSaveEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editItemName.trim()) {
       editItemMutation.mutate();
     }
   };
-  
+
   // Handle toggling item selection in generate list preview
   const handleToggleGeneratedItem = (index: number) => {
     const updatedItems = [...generatedItems];
     updatedItems[index].isSelected = !updatedItems[index].isSelected;
     setGeneratedItems(updatedItems);
   };
-  
+
   // Show loading state
   if (isLoading) {
     return (
@@ -311,18 +371,18 @@ const ShoppingListPage: React.FC = () => {
       </div>
     );
   }
-  
+
   // Get the default shopping list and its items
   const defaultList = shoppingLists?.[0];
   const items = defaultList?.items ?? [];
-  
+
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
       <Header title="Shopping Lists" />
-      
+
       <main className="flex-1 overflow-y-auto p-4 pb-20">
         <h2 className="text-xl font-bold mb-4">Shopping List</h2>
-        
+
         {/* Generate Shopping List Card - PROMINENTLY DISPLAYED */}
         <Card className="mb-6 border-2 border-primary bg-primary/5">
           <CardContent className="p-6">
@@ -356,14 +416,14 @@ const ShoppingListPage: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4 sm:mb-6">
           <TabsList className="flex w-full h-auto flex-wrap">
             <TabsTrigger value="items" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Items</TabsTrigger>
             <TabsTrigger value="optimization" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Optimization</TabsTrigger>
             <TabsTrigger value="comparison" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Price Comparison</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="items" className="pt-4">
             <form onSubmit={handleAddItem} className="mb-4 sm:mb-6">
               <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2 mb-2">
@@ -382,7 +442,7 @@ const ShoppingListPage: React.FC = () => {
                   {addItemMutation.isPending ? 'Adding...' : 'Add Item'}
                 </Button>
               </div>
-              
+
               <div className="flex flex-wrap gap-2">
                 <div className="w-full sm:w-20">
                   <Input
@@ -395,7 +455,7 @@ const ShoppingListPage: React.FC = () => {
                     className="w-full"
                   />
                 </div>
-                
+
                 <Select 
                   value={newItemUnit} 
                   onValueChange={setNewItemUnit}
@@ -430,7 +490,7 @@ const ShoppingListPage: React.FC = () => {
                 </Label>
               </div>
             </form>
-            
+
             <div className="space-y-3">
               {items.length === 0 ? (
                 <Card>
@@ -507,18 +567,18 @@ const ShoppingListPage: React.FC = () => {
               )}
             </div>
           </TabsContent>
-          
+
           <TabsContent value="optimization" className="pt-4">
             <Card className="mb-4">
               <CardContent className="p-4 sm:p-6">
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">Shopping Optimization</h3>
-                  
+
                   <div className="mt-3">
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                       We'll analyze your shopping list across stores to find the best deals based on your preferences. You'll see options for:
                     </p>
-                    
+
                     <div className="space-y-3 mb-5">
                       <div className="flex items-start">
                         <div className="bg-blue-100 dark:bg-blue-900/20 p-2 rounded-full mr-3">
@@ -529,7 +589,7 @@ const ShoppingListPage: React.FC = () => {
                           <p className="text-xs text-gray-600 dark:text-gray-400">Best store with at least 80% of your items</p>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-start">
                         <div className="bg-green-100 dark:bg-green-900/20 p-2 rounded-full mr-3">
                           <ShoppingCart className="h-4 w-4 text-green-600" />
@@ -539,7 +599,7 @@ const ShoppingListPage: React.FC = () => {
                           <p className="text-xs text-gray-600 dark:text-gray-400">Lowest total cost using multiple stores</p>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-start">
                         <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-full mr-3">
                           <Clock className="h-4 w-4 text-gray-600" />
@@ -550,7 +610,7 @@ const ShoppingListPage: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                  
+
                     <div className="flex justify-center">
                       <Button
                         onClick={() => defaultList?.id && priceComparisonMutation.mutate(defaultList.id)}
@@ -566,7 +626,7 @@ const ShoppingListPage: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardContent className="p-4 sm:p-6">
                 <div className="space-y-4">
@@ -576,7 +636,7 @@ const ShoppingListPage: React.FC = () => {
                       Based on {items.length} items in your shopping list
                     </p>
                   </div>
-                  
+
                   {priceComparisonMutation.data?.singleStore?.length > 0 ? (
                     <div>
                       <div className="space-y-4 sm:space-y-6 mb-4 sm:mb-6">
@@ -599,13 +659,23 @@ const ShoppingListPage: React.FC = () => {
                                 </p>
                               </div>
                             </div>
-                            <Button size="sm" variant="outline" className="w-full text-xs sm:text-sm">
-                              <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="w-full text-xs sm:text-sm"
+                              onClick={() => defaultList?.id && singleStoreOptimization.mutate(defaultList.id)}
+                              disabled={singleStoreOptimization.isPending || !items.length}
+                            >
+                              {singleStoreOptimization.isPending ? (
+                                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" />
+                              ) : (
+                                <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                              )}
                               View Shopping Plan
                             </Button>
                           </div>
                         </div>
-                        
+
                         <div className="border border-green-200 rounded-lg sm:rounded-xl overflow-hidden">
                           <div className="bg-green-50 dark:bg-green-900/10 px-3 sm:px-4 py-2 sm:py-3 border-b border-green-200">
                             <div className="font-medium text-sm sm:text-base text-green-700 dark:text-green-300">
@@ -626,13 +696,23 @@ const ShoppingListPage: React.FC = () => {
                                 </p>
                               </div>
                             </div>
-                            <Button size="sm" variant="default" className="w-full text-xs sm:text-sm">
-                              <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                            <Button 
+                              size="sm" 
+                              variant="default" 
+                              className="w-full text-xs sm:text-sm"
+                              onClick={() => defaultList?.id && bestValueOptimization.mutate(defaultList.id)}
+                              disabled={bestValueOptimization.isPending || !items.length}
+                            >
+                              {bestValueOptimization.isPending ? (
+                                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" />
+                              ) : (
+                                <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                              )}
                               View Multi-Store Plan
                             </Button>
                           </div>
                         </div>
-                        
+
                         <div className="border rounded-lg sm:rounded-xl overflow-hidden">
                           <div className="bg-gray-50 dark:bg-gray-800 px-3 sm:px-4 py-2 sm:py-3 border-b">
                             <div className="font-medium text-sm sm:text-base">Balanced Option</div>
@@ -652,14 +732,24 @@ const ShoppingListPage: React.FC = () => {
                                 </p>
                               </div>
                             </div>
-                            <Button size="sm" variant="outline" className="w-full text-xs sm:text-sm">
-                              <BarChart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="w-full text-xs sm:text-sm"
+                              onClick={() => defaultList?.id && balancedOptimization.mutate(defaultList.id)}
+                              disabled={balancedOptimization.isPending || !items.length}
+                            >
+                              {balancedOptimization.isPending ? (
+                                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" />
+                              ) : (
+                                <BarChart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                              )}
                               View Balanced Plan
                             </Button>
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="border-t pt-3 sm:pt-4 mt-3 sm:mt-4">
                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
                           <div>
@@ -674,7 +764,7 @@ const ShoppingListPage: React.FC = () => {
                             <Printer className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" /> Print Options
                           </Button>
                         </div>
-                        
+
                         <h4 className="font-medium text-sm sm:text-base mb-2 mt-3">Special Deals & Offers</h4>
                         <div className="space-y-3">
                           <div className="border border-amber-200 rounded-lg p-3 bg-amber-50 dark:bg-amber-900/10">
@@ -690,7 +780,7 @@ const ShoppingListPage: React.FC = () => {
                               </div>
                             </div>
                           </div>
-                          
+
                           <div className="border border-purple-200 rounded-lg p-3 bg-purple-50 dark:bg-purple-900/10">
                             <div className="flex">
                               <ShoppingCart className="h-5 w-5 text-purple-500 mr-2 shrink-0 mt-0.5" />
@@ -704,7 +794,7 @@ const ShoppingListPage: React.FC = () => {
                               </div>
                             </div>
                           </div>
-                          
+
                           <div className="border border-teal-200 rounded-lg p-3 bg-teal-50 dark:bg-teal-900/10">
                             <div className="flex">
                               <ShoppingCart className="h-5 w-5 text-teal-500 mr-2 shrink-0 mt-0.5" />
@@ -752,7 +842,7 @@ const ShoppingListPage: React.FC = () => {
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           <TabsContent value="comparison" className="pt-4">
             <Card>
               <CardContent className="p-6">
@@ -768,7 +858,7 @@ const ShoppingListPage: React.FC = () => {
                       {priceComparisonMutation.isPending ? "Calculating..." : "Refresh Prices"}
                     </Button>
                   </div>
-                  
+
                   {priceComparisonMutation.data?.retailers?.length > 0 ? (
                     <div className="space-y-4">
                       {priceComparisonMutation.data.retailers.map((store: any) => (
@@ -780,7 +870,7 @@ const ShoppingListPage: React.FC = () => {
                             </div>
                             <span className="font-semibold">${(store.subtotal / 100).toFixed(2)}</span>
                           </div>
-                          
+
                           <div className="space-y-2 mb-3">
                             {store.items?.slice(0, 3).map((item: any) => (
                               <div key={item.productId} className="flex justify-between text-sm">
@@ -788,7 +878,7 @@ const ShoppingListPage: React.FC = () => {
                                 <span>${(item.price / 100).toFixed(2)}</span>
                               </div>
                             ))}
-                            
+
                             {store.items?.length > 3 && (
                               <div className="mt-2 flex items-center text-sm text-gray-500">
                                 <span>
@@ -797,7 +887,7 @@ const ShoppingListPage: React.FC = () => {
                               </div>
                             )}
                           </div>
-                          
+
                           <div>
                             <div className="flex justify-between text-sm mb-1">
                               <span>Items with deals</span>
@@ -805,7 +895,7 @@ const ShoppingListPage: React.FC = () => {
                             </div>
                             <Progress value={store.items?.length ? ((store.items?.filter((i: any) => i.hasDeal)?.length || 0) / store.items.length) * 100 : 0} className="h-2" />
                           </div>
-                          
+
                           <Button 
                             className="w-full mt-4"
                             variant="outline"
@@ -815,7 +905,7 @@ const ShoppingListPage: React.FC = () => {
                           </Button>
                         </div>
                       ))}
-                      
+
                       <div className="text-center mt-4">
                         <p className="text-sm text-gray-500 mb-2">
                           Best value: <span className="font-medium">Retailer Name</span>
@@ -845,7 +935,7 @@ const ShoppingListPage: React.FC = () => {
             </Card>
           </TabsContent>
         </Tabs>
-        
+
         {/* Generate List Preview Dialog */}
         <Dialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen}>
           <DialogContent className="sm:max-w-md">
@@ -856,7 +946,7 @@ const ShoppingListPage: React.FC = () => {
               <p className="text-sm text-gray-500 mb-4">
                 Based on your usual purchases and current needs, we recommend adding these items to your shopping list:
               </p>
-              
+
               <div className="space-y-2">
                 {generatedItems.map((item, index) => (
                   <div key={index} className="flex items-center p-2 border rounded-lg">
@@ -882,7 +972,7 @@ const ShoppingListPage: React.FC = () => {
                                 item.unit === "BUNCH" ? "bunch" : 
                                 item.unit === "ROLL" ? "roll" : ""}
                             </span>
-                            
+
                             {item.suggestedRetailerId && (
                               <span className="ml-2 text-green-600 text-xs">
                                 On sale at Retailer #{item.suggestedRetailerId}
@@ -896,7 +986,7 @@ const ShoppingListPage: React.FC = () => {
                           </div>
                         )}
                       </div>
-                      
+
                       {item.reason && (
                         <div className="mt-1 text-xs text-gray-500">
                           {item.reason}
@@ -922,7 +1012,7 @@ const ShoppingListPage: React.FC = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        
+
         {/* Edit Item Dialog */}
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
           <DialogContent className="sm:max-w-md">
@@ -939,7 +1029,7 @@ const ShoppingListPage: React.FC = () => {
                   onChange={(e) => setEditItemName(e.target.value)}
                   className="w-full"
                 />
-                
+
                 <div className="flex space-x-2">
                   <div className="w-1/3">
                     <Label htmlFor="edit-item-quantity">Quantity</Label>
@@ -953,7 +1043,7 @@ const ShoppingListPage: React.FC = () => {
                       className="w-full"
                     />
                   </div>
-                  
+
                   <div className="w-2/3">
                     <Label htmlFor="edit-item-unit">Unit</Label>
                     <Select 
@@ -979,7 +1069,7 @@ const ShoppingListPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-              
+
               <DialogFooter>
                 <Button 
                   type="submit" 
@@ -992,7 +1082,7 @@ const ShoppingListPage: React.FC = () => {
           </DialogContent>
         </Dialog>
       </main>
-      
+
       <BottomNavigation activeTab="lists" />
     </div>
   );
