@@ -115,16 +115,31 @@ const ShoppingListPage: React.FC = () => {
       // Filter only selected items
       const selectedItems = items.filter(item => item.isSelected);
       
+      if (selectedItems.length === 0) {
+        throw new Error("No items selected");
+      }
+      
       // Process each item individually to avoid batch errors
       const results = [];
       for (const item of selectedItems) {
         try {
-          const response = await apiRequest('POST', '/api/shopping-list/items', {
-            shoppingListId: defaultList?.id,
-            productName: item.productName,
-            quantity: item.quantity || 1,
-            unit: item.unit || 'COUNT'
+          const response = await fetch('/api/shopping-list/items', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              shoppingListId: defaultList?.id,
+              productName: item.productName,
+              quantity: item.quantity || 1,
+              unit: item.unit || 'COUNT'
+            }),
           });
+          
+          if (!response.ok) {
+            throw new Error(`Server responded with ${response.status}`);
+          }
+          
           const result = await response.json();
           results.push(result);
         } catch (error) {
@@ -134,12 +149,12 @@ const ShoppingListPage: React.FC = () => {
       
       return results;
     },
-    onSuccess: () => {
+    onSuccess: (results) => {
       setGenerateDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
       toast({
-        title: "Shopping List Generated",
-        description: "Your shopping list has been created based on your typical purchases.",
+        title: "Shopping List Updated",
+        description: `Added ${results.length} items to your shopping list.`,
       });
     },
     onError: (error: any) => {
@@ -1264,10 +1279,42 @@ const ShoppingListPage: React.FC = () => {
                 Cancel
               </Button>
               <Button 
-                onClick={() => generateListMutation.mutate(generatedItems)}
-                disabled={generateListMutation.isPending}
+                onClick={() => {
+                  // Filter only selected items
+                  const selectedItems = generatedItems.filter(item => item.isSelected);
+                  
+                  // Add each selected item individually to ensure they're processed correctly
+                  for (const item of selectedItems) {
+                    const itemData = {
+                      shoppingListId: defaultList?.id,
+                      productName: item.productName,
+                      quantity: item.quantity || 1,
+                      unit: item.unit || 'COUNT'
+                    };
+                    
+                    // Use fetch API directly for simplicity
+                    fetch('/api/shopping-list/items', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify(itemData),
+                    }).catch(err => console.error(`Error adding ${item.productName}:`, err));
+                  }
+                  
+                  // Close dialog and refresh the list
+                  setGenerateDialogOpen(false);
+                  setTimeout(() => {
+                    queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+                    toast({
+                      title: "Shopping List Updated",
+                      description: `Added ${selectedItems.length} items to your shopping list.`,
+                    });
+                  }, 500);
+                }}
+                disabled={generateListMutation.isPending || generatedItems.filter(i => i.isSelected).length === 0}
                 className="bg-primary">
-                Generate List
+                {generateListMutation.isPending ? 'Adding...' : 'Add Selected Items'}
               </Button>
             </DialogFooter>
           </DialogContent>
