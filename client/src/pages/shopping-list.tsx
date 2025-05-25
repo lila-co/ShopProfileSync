@@ -21,13 +21,13 @@ import {
   ShoppingCart,
   Check,
   Loader2,
+  Store as StoreIcon,
   MapPin,
   ArrowRight,
   Clock,
   BarChart,
   Printer,
-  Sparkles,
-  Store
+  Sparkles
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
@@ -584,7 +584,7 @@ const ShoppingListPage: React.FC = () => {
                     <div className="space-y-3 mb-5">
                       <div className="flex items-start">
                         <div className="bg-blue-100 dark:bg-blue-900/20 p-2 rounded-full mr-3">
-                          <Store className="h-4 w-4 text-blue-600" />
+                          <StoreIcon className="h-4 w-4 text-blue-600" />
                         </div>
                         <div>
                           <h4 className="font-medium text-sm text-blue-700 dark:text-blue-300">Single Store Option</h4>
@@ -649,7 +649,7 @@ const ShoppingListPage: React.FC = () => {
                           <div className="p-3 sm:p-4">
                             <div className="flex items-center mb-3 sm:mb-4">
                               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 flex items-center justify-center mr-3 sm:mr-4 shrink-0">
-                                <Store className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+                                <StoreIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                               </div>
                               <div>
                                 <h4 className="font-medium text-base sm:text-lg">
@@ -742,9 +742,7 @@ const ShoppingListPage: React.FC = () => {
                               disabled={balancedOptimization.isPending || !items.length}
                             >
                               {balancedOptimization.isPending ? (
-                                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin"```text
- />
-                              ) : (
+                                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" />                              ) : (
                                 <BarChart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                               )}
                               View Balanced Plan
@@ -813,6 +811,32 @@ const ShoppingListPage: React.FC = () => {
                           </div>
                         </div>
                       </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 sm:py-8">
+                      <div className="relative w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4">
+                        <div className="absolute inset-0 bg-primary/10 rounded-full flex items-center justify-center">
+                          <BarChart4 className="h-8 w-8 sm:h-12 sm:w-12 text-primary/60" />
+                        </div>
+                      </div>
+                      <h3 className="text-base sm:text-lg font-medium mb-2">Optimize Your Shopping</h3>
+                      <p className="text-sm text-gray-500 mb-2 max-w-md mx-auto">
+                        We'll analyze prices across stores to find the best deals based on your preferences
+                      </p>
+                      <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">
+                        {items.length === 0 ? 
+                          "Add items to your shopping list first" : 
+                          `Ready to optimize ${items.length} items in your list`}
+                      </p>
+                      <Button
+                        onClick={() => defaultList?.id && priceComparisonMutation.mutate(defaultList.id)}
+                        disabled={priceComparisonMutation.isPending || !items.length}
+                        className="px-4 sm:px-6 text-sm"
+                      >
+                        {items.length === 0 ? 
+                          "Add Items First" : 
+                          <><Sparkles className="mr-2 h-4 w-4" /> Find Best Options</>}
+                      </Button>
                     </div>
                   )}
                 </div>

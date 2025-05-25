@@ -38,7 +38,6 @@ const Shop: React.FC = () => {
     const params = new URLSearchParams(window.location.search);
     const retailerId = params.get('retailerId');
     const listId = params.get('listId');
-    const mode = params.get('mode');
     
     if (retailerId) {
       setSelectedRetailer(parseInt(retailerId));
@@ -47,13 +46,6 @@ const Shop: React.FC = () => {
     
     if (listId) {
       setSelectedList(parseInt(listId));
-    }
-    
-    if (mode === 'instore') {
-      setShoppingMode('instore');
-    } else if (mode === 'online') {
-      // Will default to pickup/delivery based on retailer capabilities
-      setShoppingMode('pickup');
     }
   }, []);
   
@@ -241,31 +233,6 @@ const Shop: React.FC = () => {
     }
   });
   
-  const addItemToListMutation = useMutation({
-    mutationFn: async ({ shoppingListId, productName, quantity }: { shoppingListId: number, productName: string, quantity: number }) => {
-      const response = await apiRequest('POST', '/api/shopping-list/items', {
-        shoppingListId,
-        productName,
-        quantity
-      });
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Item Added",
-        description: "Item added to your shopping list",
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to add item to list",
-        variant: "destructive"
-      });
-    }
-  });
-
   const handleSubmit = () => {
     submitShoppingMutation.mutate();
   };
@@ -549,7 +516,7 @@ const Shop: React.FC = () => {
           
           {selectedRetailer && (
             <div className="mt-4">
-              <form onSubmit={(e) => { e.preventDefault(); searchProducts(); }} className="flex gap-2">
+              <form onSubmit={handleProductSearch} className="flex gap-2">
                 <Input
                   type="text"
                   placeholder="Search for products..."
