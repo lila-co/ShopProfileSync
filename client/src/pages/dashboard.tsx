@@ -91,7 +91,7 @@ const Dashboard: React.FC = () => {
           <section className="mb-6">
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-bold text-gray-800">Recommended Purchases</h3>
-              <a href="#" className="text-primary text-sm font-medium">View All</a>
+              <a href="/recommendations" className="text-primary text-sm font-medium">View All</a>
             </div>
             
             <div className="space-y-3">
