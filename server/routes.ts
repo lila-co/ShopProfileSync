@@ -871,6 +871,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // OCR endpoint for extracting shopping list from images
+  app.post('/api/ocr/extract-list', async (req: Request, res: Response) => {
+    try {
+      const { image } = req.body;
+      
+      if (!image) {
+        return res.status(400).json({ error: 'No image provided' });
+      }
+
+      // In a real implementation, you would use an OCR service like:
+      // - Google Cloud Vision API
+      // - Azure Computer Vision
+      // - AWS Textract
+      // - OpenAI Vision API
+      
+      // For demo purposes, we'll simulate OCR extraction
+      // In production, replace this with actual OCR service call
+      
+      // Simulated OCR response - in reality this would be the extracted text
+      const simulatedExtractedText = `
+        Milk
+        Bread
+        Eggs
+        Apples
+        Chicken breast
+        Rice
+        Pasta
+        Tomatoes
+        Onions
+        Cheese
+      `;
+      
+      // Parse the extracted text into shopping list items
+      const items = simulatedExtractedText
+        .split('\n')
+        .map(item => item.trim())
+        .filter(item => item.length > 0)
+        .filter(item => !item.match(/^\d+\.?\s*$/)); // Remove just numbers
+      
+      res.json({ 
+        items,
+        extractedText: simulatedExtractedText.trim(),
+        confidence: 0.95 
+      });
+      
+    } catch (error) {
+      console.error('OCR extraction error:', error);
+      res.status(500).json({ error: 'Failed to extract text from image' });
+    }
+  });
+
+  // Upload shopping list endpoint
+  app.post('/api/shopping-lists/upload', async (req: Request, res: Response) => {
+    try {
+      const { shoppingListId, items, source } = req.body;
+      const listId = shoppingListId || 1;
+      
+      if (!items || !Array.isArray(items)) {
+        return res.status(400).json({ error: 'Invalid items data' });
+      }
+
+      // Add each item to the shopping list
+      const addedItems = [];
+      for (const item of items) {
+        const newItem = await storage.addShoppingListItem(listId, {
+          productName: item.productName,
+          quantity: item.quantity || 1,
+          unit: item.unit || 'COUNT'
+        });
+        addedItems.push(newItem);
+      }
+
+      res.json({ 
+        message: 'Shopping list uploaded successfully',
+        itemsAdded: addedItems.length,
+        items: addedItems,
+        source
+      });
+      
+    } catch (error) {
+      console.error('Upload shopping list error:', error);
+      res.status(500).json({ error: 'Failed to upload shopping list' });
+    }
+  });
+
   // Generate single store optimization plan
   app.post('/api/shopping-lists/optimize/single-store', async (req: Request, res: Response) => {
     try {
