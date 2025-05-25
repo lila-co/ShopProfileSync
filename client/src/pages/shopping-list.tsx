@@ -1400,7 +1400,7 @@ const ShoppingListPage: React.FC = () => {
         </Dialog>
       </main>
 
-      
+      <BottomNavigation activeTab="lists" />
     </div>
   );
 };
