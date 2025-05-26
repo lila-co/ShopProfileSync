@@ -60,17 +60,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Categorize product
+  // Product categorization endpoint
   app.post('/api/products/categorize', async (req: Request, res: Response) => {
     try {
-      const { productName } = req.body;
+      const { productName, quantity, unit } = req.body;
 
       if (!productName) {
-        return res.status(400).json({ message: 'Product name is required' });
+        return res.status(400).json({ error: 'Product name is required' });
       }
 
+      // Use the product categorizer service
       const category = productCategorizer.categorizeProduct(productName);
-      res.json(category);
+      const normalized = productCategorizer.normalizeQuantity(productName, quantity || 1, unit || 'COUNT');
+      const icon = productCategorizer.getCategoryIcon(category.category);
+
+      res.json({
+        productName,
+        category,
+        normalized,
+        icon
+      });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Batch product categorization endpoint
+  app.post('/api/products/categorize-batch', async (req: Request, res: Response) => {
+    try {
+      const { items } = req.body;
+
+      if (!items || !Array.isArray(items)) {
+        return res.status(400).json({ error: 'Items array is required' });
+      }
+
+      // Process each item through the categorizer
+      const categorizedItems = items.map(item => {
+        const { productName, quantity, unit } = item;
+
+        if (!productName) {
+          throw new Error('Product name is required for each item');
+        }
+
+        const category = productCategorizer.categorizeProduct(productName);
+        const normalized = productCategorizer.normalizeQuantity(productName, quantity || 1, unit || 'COUNT');
+        const icon = productCategorizer.getCategoryIcon(category.category);
+
+        return {
+          productName,
+          category,
+          normalized,
+          icon
+        };
+      });
+
+      res.json(categorizedItems);
     } catch (error) {
       handleError(res, error);
     }
@@ -887,7 +931,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const retailerId = req.query.retailerId ? parseInt(req.query.retailerId as string) : undefined;
       const category = req.query.category as string | undefined;
 
-      let deals = await storage.getDeals(retailerId, category);
+      Adding the batch categorization endpoint and updating the existing categorize endpoint.      let deals = await storage.getDeals(retailerId, category);
 
       // Remove duplicates by creating a unique key for each deal
       const uniqueDeals = deals.filter((deal, index, self) => 
@@ -1550,7 +1594,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Demo data: Split items between Kroger (cheaper produce) and Walmart (cheaper packaged goods)
       const krogerItems = [];
       const walmartItems = [];
-      
+
       // Split items between stores for best value
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
@@ -1562,9 +1606,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           price: 200 + Math.floor(Math.random() * 250), // Lower prices for best value
           totalPrice: 0
         };
-        
+
         itemData.totalPrice = itemData.price * itemData.quantity;
-        
+
         // Alternate between stores or use product type logic
         if (i % 2 === 0 || item.productName.toLowerCase().includes('produce') || 
             item.productName.toLowerCase().includes('fruit') || 
@@ -1574,11 +1618,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           walmartItems.push(itemData);
         }
       }
-      
+
       const krogerSubtotal = krogerItems.reduce((sum, item) => sum + item.totalPrice, 0);
       const walmartSubtotal = walmartItems.reduce((sum, item) => sum + item.totalPrice, 0);
       const totalCost = krogerSubtotal + walmartSubtotal;
-      
+
       res.json({
         stores: [
           {
@@ -1739,7 +1783,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (!categorySpending[category]) {
             categorySpending[category] = 0;
           }
-          categorySpending[category] += item.totalPrice;
+          categorySpending[category] += item.totalPrice);
         });
 
         // Find categories that are close to minimum spending thresholds
