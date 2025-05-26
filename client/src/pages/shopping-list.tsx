@@ -895,7 +895,6 @@ const ShoppingListPage: React.FC = () => {
             body { margin: 0; }
             .mobile-shopping-item { display: none !important; }
           }
-```text
         </style>
       </head>
       <body>
