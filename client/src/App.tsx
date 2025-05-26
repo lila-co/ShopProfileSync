@@ -16,7 +16,7 @@ import AffiliateDashboard from '@/pages/affiliate-dashboard';
 import { queryClient } from '@/lib/queryClient';
 import Shop from '@/pages/shop'; // Import the Shop component
 import ShoppingRoute from '@/pages/shopping-route'; // Import the ShoppingRoute component
-import { lazy } from 'react';
+import RetailerDetailsPage from '@/pages/retailer-details';
 
 function App() {
   return (
@@ -30,7 +30,7 @@ function App() {
             <Route path="/profile" component={ProfilePage} />
             <Route path="/deals" component={DealsPage} />
             <Route path="/retailers" component={RetailersPage} />
-            <Route path="/retailers/:id" component={lazy(() => import('@/pages/retailer-details'))} />
+            <Route path="/retailers/:id" component={RetailerDetailsPage} />
             <Route path="/insights" component={InsightsPage} />
             <Route path="/recommendations" component={RecommendationsPage} />
             <Route path="/internal/analytics" component={InternalAnalytics} />
