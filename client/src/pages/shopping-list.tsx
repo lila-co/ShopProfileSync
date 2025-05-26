@@ -1499,20 +1499,6 @@ const ShoppingListPage: React.FC = () => {
                       <h4 className="font-medium text-sm sm:text-base mb-3">Ready to Shop?</h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <Button 
-                          variant="outline" 
-                          className="w-full h-auto p-4 flex flex-col items-center space-y-2"
-                          onClick={() => {
-                            navigate(`/shopping-route?listId=${selectedList.id}&mode=instore`);
-                          }}
-                        >
-                          <StoreIcon className="h-6 w-6" />
-                          <div className="text-center">
-                            <div className="font-medium">Shop In-Person</div>
-                            <div className="text-xs text-gray-500">Get directions to stores</div>
-                          </div>
-                        </Button>
-
-                        <Button 
                           className="w-full h-auto p-4 flex flex-col items-center space-y-2"
                           onClick={() => {
                             navigate(`/shopping-route?listId=${selectedList.id}&mode=online`);
@@ -1521,7 +1507,21 @@ const ShoppingListPage: React.FC = () => {
                           <ShoppingCart className="h-6 w-6" />
                           <div className="text-center">
                             <div className="font-medium">Shop Online</div>
-                            <div className="text-xs text-white/80">Pickup or delivery</div>
+                            <div className="text-xs text-white/80">Browse and compare prices</div>
+                          </div>
+                        </Button>
+
+                        <Button 
+                          variant="outline"
+                          className="w-full h-auto p-4 flex flex-col items-center space-y-2"
+                          onClick={() => {
+                            navigate(`/shopping-route?listId=${selectedList.id}&mode=delivery`);
+                          }}
+                        >
+                          <StoreIcon className="h-6 w-6" />
+                          <div className="text-center">
+                            <div className="font-medium">Order for Delivery/Pickup</div>
+                            <div className="text-xs text-gray-500">Place orders for pickup or delivery</div>
                           </div>
                         </Button>
                       </div>
