@@ -82,6 +82,7 @@ const ShoppingListPage: React.FC = () => {
   // AI categorization state
   const [showCategorization, setShowCategorization] = useState(false);
   const [categorizedItems, setCategorizedItems] = useState<any[]>([]);
+  const [isCategorizingItems, setIsCategorizingItems] = useState(false);
 
   const { data: shoppingLists, isLoading } = useQuery<ShoppingList[]>({
     queryKey: ['/api/shopping-lists'],
@@ -441,15 +442,55 @@ const ShoppingListPage: React.FC = () => {
     }
   });
 
-  const handleAddItem = (e: React.FormEvent) => {
+  // AI Categorization mutation
+  const categorizeMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/products/batch-categorize', {
+        products: items.map(item => ({
+          productName: item.productName,
+          quantity: item.quantity,
+          unit: item.unit
+        }))
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setCategorizedItems(data);
+      setShowCategorization(true);
+      toast({
+        title: "AI Categorization Complete",
+        description: `Analyzed ${data.length} items with AI-powered categorization`
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to categorize items: " + error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newItemName.trim()) {
       const productName = newItemName.trim();
 
-      // If auto-detect is enabled, determine the unit type based on item name
-      const unit = autoDetectUnit 
-        ? detectUnitFromItemName(productName) 
-        : newItemUnit;
+      let unit = newItemUnit;
+      
+      // If auto-detect is enabled, use AI to determine the optimal unit
+      if (autoDetectUnit) {
+        try {
+          const response = await apiRequest('POST', '/api/products/categorize', {
+            productName
+          });
+          const categoryData = await response.json();
+          unit = categoryData.suggestedQuantityType || detectUnitFromItemName(productName);
+        } catch (error) {
+          // Fallback to local detection if AI fails
+          unit = detectUnitFromItemName(productName);
+        }
+      }
 
       addItemMutation.mutate({
         productName,
@@ -851,6 +892,29 @@ const ShoppingListPage: React.FC = () => {
     return content;
   };
 
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case "Produce": 
+        return "🍎";
+      case "Dairy & Eggs": 
+        return "🥛";
+      case "Meat & Seafood": 
+        return "🥩";
+      case "Pantry & Canned Goods": 
+        return "🥫";
+      case "Frozen Foods": 
+        return "❄️";
+      case "Bakery": 
+        return "🍞";
+      case "Personal Care": 
+        return "🧼";
+      case "Household Items": 
+        return "🏠";
+      default: 
+        return "🛒";
+    }
+  };
+
   // Show loading state
   if (isLoading) {
     return (
@@ -961,6 +1025,42 @@ const ShoppingListPage: React.FC = () => {
           </Card>
         </div>
 
+        {/* AI Categorization Section */}
+        {items.length > 0 && (
+          <Card className="mb-4 border border-purple-200">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Sparkles className="h-5 w-5 text-purple-600 mr-2" />
+                  <div>
+                    <h3 className="text-sm font-semibold text-purple-700">AI Product Categorization</h3>
+                    <p className="text-xs text-gray-600">Analyze your items with AI-powered categorization and retail naming</p>
+                  </div>
+                </div>
+                <Button 
+                  onClick={() => categorizeMutation.mutate()}
+                  disabled={categorizeMutation.isPending || items.length === 0}
+                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                  size="sm"
+                >
+                  {categorizeMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Categorize
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        </div>
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4 sm:mb-6">
           <TabsList className="flex w-full h-auto flex-wrap">
             <TabsTrigger value="items" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Items</TabsTrigger>
@@ -993,7 +1093,7 @@ const ShoppingListPage: React.FC = () => {
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-wrap sm:flex-nowrap sm:items-center gap-1 sm:gap-2">
                               <span className={`font-medium break-words ${item.isCompleted ? "line-through text-gray-500" : "text-gray-800"}`}>
-                                {item.productName}
+                                {getCategoryIcon('Pantry & Canned Goods')} {item.productName}
                               </span>
                               <span className="text-sm bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full whitespace-nowrap">
                                 Qty: {item.quantity} {item.unit && (
