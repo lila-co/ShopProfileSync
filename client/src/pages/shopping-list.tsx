@@ -75,6 +75,13 @@ const ShoppingListPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('items');
   const [selectedOptimization, setSelectedOptimization] = useState('cost');
 
+  // Auto-trigger optimization when optimization tab is selected
+  React.useEffect(() => {
+    if (activeTab === 'optimization' && defaultList?.id && items.length > 0 && !priceComparisonMutation.data && !priceComparisonMutation.isPending) {
+      priceComparisonMutation.mutate(defaultList.id);
+    }
+  }, [activeTab, defaultList?.id, items.length]);
+
   // Shopping plan view state
   const [planViewDialogOpen, setPlanViewDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
@@ -1212,28 +1219,19 @@ const ShoppingListPage: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="optimization" className="pt-4">
-            <Card className="mb-4">
-              <CardContent className="p-4 sm:p-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Shopping Optimization</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    We'll analyze your shopping list across stores to find the best deals based on your preferences.
-                  </p>
-
-                  <div className="flex justify-center">
-                    <Button
-                      onClick={() => defaultList?.id && priceComparisonMutation.mutate(defaultList.id)}
-                      disabled={priceComparisonMutation.isPending || !items.length}
-                      className="w-full sm:w-auto"
-                    >
-                      {priceComparisonMutation.isPending ? 
-                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Optimizing...</> : 
-                        <><Sparkles className="mr-2 h-4 w-4" /> Calculate Shopping Options</>}
-                    </Button>
+            {!priceComparisonMutation.data && priceComparisonMutation.isPending && (
+              <Card className="mb-4">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="space-y-4 text-center">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                    <h3 className="text-lg font-medium">Analyzing Your Shopping List</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Finding the best deals and optimizing your shopping experience...
+                    </p>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
 
             {priceComparisonMutation.data && (
               <Card>
