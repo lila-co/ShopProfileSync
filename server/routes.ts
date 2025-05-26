@@ -948,6 +948,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Optimized deals endpoint with fresh data
+  app.get('/api/deals/optimized', async (req: Request, res: Response) => {
+    try {
+      const retailerId = req.query.retailerId ? parseInt(req.query.retailerId as string) : undefined;
+      const category = req.query.category as string | undefined;
+
+      const { dataOptimizer } = await import('./services/dataOptimizer');
+      const deals = await dataOptimizer.getOptimizedDeals(retailerId, category);
+
+      res.json(deals);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Real-time price comparison endpoint
+  app.post('/api/prices/compare', async (req: Request, res: Response) => {
+    try {
+      const { productName, retailerIds } = req.body;
+
+      if (!productName || !retailerIds || !Array.isArray(retailerIds)) {
+        return res.status(400).json({ message: 'Product name and retailer IDs are required' });
+      }
+
+      const { dataOptimizer } = await import('./services/dataOptimizer');
+      
+      const pricePromises = retailerIds.map(async (retailerId: number) => {
+        const price = await dataOptimizer.getOptimizedPrice(retailerId, productName);
+        const retailer = await storage.getRetailer(retailerId);
+        
+        return {
+          retailerId,
+          retailerName: retailer?.name || `Retailer ${retailerId}`,
+          price,
+          available: price !== null
+        };
+      });
+
+      const prices = await Promise.all(pricePromises);
+      const availablePrices = prices.filter(p => p.available);
+      
+      // Find best price
+      const bestPrice = availablePrices.length > 0 
+        ? availablePrices.reduce((min, current) => current.price! < min.price! ? current : min)
+        : null;
+
+      res.json({
+        productName,
+        prices,
+        bestPrice,
+        totalRetailers: retailerIds.length,
+        availableRetailers: availablePrices.length
+      });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Optimized shopping list with real-time pricing
+  app.get('/api/shopping-lists/:id/optimized', async (req: Request, res: Response) => {
+    try {
+      const listId = parseInt(req.params.id);
+      
+      const { dataOptimizer } = await import('./services/dataOptimizer');
+      const optimizedList = await dataOptimizer.getOptimizedShoppingList(listId);
+
+      res.json(optimizedList);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
   app.get('/api/deals/summary', async (req: Request, res: Response) => {
     try {
       const dealsSummary = await storage.getDealsSummary();
@@ -1950,6 +2022,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         retailers: retailersWithLocations,
         route: route
       });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Purchase tracking with optimization
+  app.post('/api/purchases/track', async (req: Request, res: Response) => {
+    try {
+      const { userId, retailerId, items, totalAmount } = req.body;
+
+      if (!userId || !retailerId || !items || !totalAmount) {
+        return res.status(400).json({ message: 'All purchase data is required' });
+      }
+
+      const { dataOptimizer } = await import('./services/dataOptimizer');
+      const purchase = await dataOptimizer.trackUserTransaction(userId, retailerId, items, totalAmount);
+
+      res.json(purchase);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Sync data manually (for admin use)
+  app.post('/api/admin/sync-data', async (req: Request, res: Response) => {
+    try {
+      const { retailerIds } = req.body;
+      
+      const { dataOptimizer } = await import('./services/dataOptimizer');
+      await dataOptimizer.batchUpdateDeals(retailerIds || [1, 2, 3, 4]);
+
+      res.json({ message: 'Data sync completed successfully' });
     } catch (error) {
       handleError(res, error);
     }
