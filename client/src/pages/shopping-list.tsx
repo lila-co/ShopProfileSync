@@ -915,6 +915,18 @@ const ShoppingListPage: React.FC = () => {
     }
   };
 
+  // Get the default shopping list and its items
+  const defaultList = shoppingLists?.[0];
+  const items = defaultList?.items ?? [];
+  const selectedList = defaultList;
+
+  // Auto-trigger optimization when optimization tab is selected
+  React.useEffect(() => {
+    if (activeTab === 'optimization' && defaultList?.id && items.length > 0 && !priceComparisonMutation.data && !priceComparisonMutation.isPending) {
+      priceComparisonMutation.mutate(defaultList.id);
+    }
+  }, [activeTab, defaultList?.id, items.length, priceComparisonMutation.data, priceComparisonMutation.isPending]);
+
   // Show loading state
   if (isLoading) {
     return (
@@ -939,18 +951,6 @@ const ShoppingListPage: React.FC = () => {
       </div>
     );
   }
-
-  // Get the default shopping list and its items
-  const defaultList = shoppingLists?.[0];
-  const items = defaultList?.items ?? [];
-  const selectedList = defaultList;
-
-  // Auto-trigger optimization when optimization tab is selected
-  React.useEffect(() => {
-    if (activeTab === 'optimization' && defaultList?.id && items.length > 0 && !priceComparisonMutation.data && !priceComparisonMutation.isPending) {
-      priceComparisonMutation.mutate(defaultList.id);
-    }
-  }, [activeTab, defaultList?.id, items.length, priceComparisonMutation.data, priceComparisonMutation.isPending]);
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
