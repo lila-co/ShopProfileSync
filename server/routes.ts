@@ -308,7 +308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const listId = parseInt(req.params.id);
       const lists = await storage.getShoppingLists();
       const list = lists.find(l => l.id === listId);
-
+      
       if (!list) {
         return res.status(404).json({ message: 'Shopping list not found' });
       }
@@ -316,7 +316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Fetch items for this shopping list
       const items = await storage.getShoppingListItems(list.id);
       console.log(`List ${list.id} has ${items.length} items:`, items);
-
+      
       res.json({ ...list, items });
     } catch (error) {
       handleError(res, error);
@@ -824,7 +824,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const category = req.query.category as string | undefined;
 
       let deals = await storage.getDeals(retailerId, category);
-
+      
       // Remove duplicates by creating a unique key for each deal
       const uniqueDeals = deals.filter((deal, index, self) => 
         index === self.findIndex((d) => 
@@ -833,7 +833,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           d.salePrice === deal.salePrice
         )
       );
-
+      
       res.json(uniqueDeals);
     } catch (error) {
       handleError(res, error);
@@ -900,7 +900,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           topSellingCategories: [
             { name: "Produce", salesValue: 98000, percentage: 19.1 },
             { name: "Dairy", salesValue: 85000, percentage: 16.6 },
-            { name: "Meat",salesValue: 76000, percentage: 14.8 },
+            { name: "Meat", salesValue: 76000, percentage: 14.8 },
             { name: "Bakery", salesValue: 63000, percentage: 12.3 },
             { name: "Frozen Foods", salesValue: 58000, percentage: 11.3 }
           ]
@@ -2026,22 +2026,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: hasApiEndpoint && hasApiKey ? 'ready' : 'not_configured'
         }
       });
-    } catch (error) {
-      handleError(res, error);
-    }
-  });
-
-    // Product categorization route
-  app.post('/api/products/categorize', async (req: Request, res: Response) => {
-    try {
-      const { items } = req.body;
-
-      if (!items || !Array.isArray(items)) {
-        return res.status(400).json({ message: 'Items array is required' });
-      }
-
-      const categorizedItems = await categorizeShoppingList(items);
-      res.json(categorizedItems);
     } catch (error) {
       handleError(res, error);
     }

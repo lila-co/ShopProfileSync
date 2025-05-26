@@ -37,22 +37,6 @@ import { Progress } from '@/components/ui/progress';
 import { useLocation } from 'wouter';
 import { extractTextFromReceiptImage } from '@/lib/openai';
 
-// Define CategorizedItem type
-interface CategorizedItem {
-  originalName: string;
-  standardizedName: string;
-  category: string;
-  confidence: number;
-  reasoning: string;
-  quantityNormalization?: {
-    originalQuantity: number;
-    originalUnit: string;
-    normalizedQuantity: number;
-    suggestedUnit: string;
-    conversionReason: string;
-  };
-}
-
 const ShoppingListPage: React.FC = () => {
   const [location, navigate] = useLocation();
   const { toast } = useToast();
@@ -361,11 +345,6 @@ const ShoppingListPage: React.FC = () => {
       });
     }
   });
-  const [isOptimizing, setIsOptimizing] = useState(false);
-  const [optimizationPlan, setOptimizationPlan] = useState<any>(null);
-  const [optimizationMode, setOptimizationMode] = useState<'best-value' | 'balanced'>('best-value');
-  const [categorizedItems, setCategorizedItems] = useState<CategorizedItem[]>([]);
-  const [showCategorization, setShowCategorization] = useState(false);
 
   // Add item to shopping list
   const addItemMutation = useMutation({
@@ -453,30 +432,6 @@ const ShoppingListPage: React.FC = () => {
       toast({
         title: "Error",
         description: "Failed to update item",
-        variant: "destructive"
-      });
-    }
-  });
-
-   const categorizationMutation = useMutation({
-    mutationFn: async (shoppingListId: number) => {
-      const response = await apiRequest('POST', '/api/shopping-lists/categorize', {
-        shoppingListId,
-      });
-      return response.json();
-    },
-    onSuccess: (data) => {
-      setCategorizedItems(data.categorizedItems || []);
-      setShowCategorization(true);
-       toast({
-        title: "AI Categorization Complete",
-        description: "Your shopping list items have been categorized",
-      });
-    },
-    onError: (error: any) => {
-       toast({
-        title: "Error",
-        description: "Failed to categorize shopping list: " + error.message,
         variant: "destructive"
       });
     }
@@ -892,35 +847,6 @@ const ShoppingListPage: React.FC = () => {
     return content;
   };
 
-    const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case "Produce": return "🍎";
-      case "Dairy & Eggs": return "🥛";
-      case "Meat & Seafood": return "🥩";
-```text
-      case "Pantry & Canned Goods": return "🥫";
-      case "Frozen Foods": return "❄️";
-      case "Bakery": return "🍞";
-      case "Personal Care": return "🧼";
-      case "Household Items": return "🏠";
-      default: return "🛒";
-    }
-  };
-
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case "Produce": return "bg-green-100 text-green-800";
-      case "Dairy & Eggs": return "bg-yellow-100 text-yellow-800";
-      case "Meat & Seafood": return "bg-red-100 text-red-800";
-      case "Pantry & Canned Goods": return "bg-gray-100 text-gray-800";
-      case "Frozen Foods": return "bg-blue-100 text-blue-800";
-      case "Bakery": return "bg-amber-100 text-amber-800";
-      case "Personal Care": return "bg-purple-100 text-purple-800";
-      case "Household Items": return "bg-teal-100 text-teal-800";
-      default: return "bg-indigo-100 text-indigo-800";
-    }
-  };
-
   // Show loading state
   if (isLoading) {
     return (
@@ -1034,7 +960,6 @@ const ShoppingListPage: React.FC = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4 sm:mb-6">
           <TabsList className="flex w-full h-auto flex-wrap">
             <TabsTrigger value="items" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Items</TabsTrigger>
-            <TabsTrigger value="categorization" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">AI Categories</TabsTrigger>
             <TabsTrigger value="optimization" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Optimization</TabsTrigger>
             <TabsTrigger value="comparison" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Price Comparison</TabsTrigger>
           </TabsList>
@@ -1183,108 +1108,7 @@ const ShoppingListPage: React.FC = () => {
             </form>
           </TabsContent>
 
-          <TabsContent value="categorization" className="pt-4">
-                <div className="bg-blue-50 p-4 rounded-lg border">
-                  <h3 className="font-semibold text-gray-800 mb-2 flex items-center">
-                    <Sparkles className="h-5 w-5 mr-2 text-blue-600" />
-                    AI-Powered Item Categorization
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Use AI to automatically categorize your items, standardize product names, and optimize quantities based on typical retail packaging.
-                  </p>
-
-                  <Button 
-                    onClick={() => categorizationMutation.mutate(selectedList?.id || 1)}
-                    disabled={categorizationMutation.isPending || !items.length}
-                    className="w-full"
-                  >
-                    {categorizationMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Categorizing Items...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        Categorize {items.length} Items
-                      </>
-                    )}
-                  </Button>
-                </div>
-
-                {categorizedItems.length > 0 && (
-                  <div className="space-y-4">
-                    <div className="bg-white border rounded-lg p-4">
-                      <h4 className="font-semibold mb-3">Categorization Results</h4>
-
-                      {/* Category Summary */}
-                      <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div className="bg-gray-50 p-3 rounded">
-                          <div className="text-sm text-gray-600">Total Items</div>
-                          <div className="text-xl font-bold">{categorizedItems.length}</div>
-                        </div>
-                        <div className="bg-gray-50 p-3 rounded">
-                          <div className="text-sm text-gray-600">Categories</div>
-                          <div className="text-xl font-bold">{new Set(categorizedItems.map(item => item.category)).size}</div>
-                        </div>
-                      </div>
-
-                      {/* Categorized Items by Category */}
-                      {Object.entries(
-                        categorizedItems.reduce((acc, item) => {
-                          if (!acc[item.category]) acc[item.category] = [];
-                          acc[item.category].push(item);
-                          return acc;
-                        }, {} as Record<string, CategorizedItem[]>)
-                      ).map(([category, categoryItems]) => (
-                        <div key={category} className="mb-4">
-                          <div className="flex items-center mb-2">
-                            <span className="text-lg mr-2">{getCategoryIcon(category)}</span>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(category)}`}>
-                              {category}
-                            </span>
-                            <span className="ml-2 text-sm text-gray-500">({categoryItems.length} items)</span>
-                          </div>
-
-                          <div className="space-y-2 ml-4">
-                            {categoryItems.map((item, index) => (
-                              <div key={index} className="border border-gray-200 rounded p-3">
-                                <div className="flex justify-between items-start">
-                                  <div className="flex-1">
-                                    <div className="font-medium">
-                                      {item.originalName !== item.standardizedName ? (
-                                        <div>
-                                          <span className="line-through text-gray-500">{item.originalName}</span>
-                                          <span className="ml-2 text-green-600">→ {item.standardizedName}</span>
-                                        </div>
-                                      ) : (
-                                        item.standardizedName
-                                      )}
-                                    </div>
-
-                                    {item.quantityNormalization?.conversionReason && (
-                                      <div className="text-sm text-blue-600 mt-1">
-                                        {item.quantityNormalization.originalQuantity} {item.quantityNormalization.originalUnit} → {item.quantityNormalization.normalizedQuantity} {item.quantityNormalization.suggestedUnit}
-                                        <span className="block text-xs text-gray-500">{item.quantityNormalization.conversionReason}</span>
-                                      </div>
-                                    )}
-
-                                    <div className="text-xs text-gray-500 mt-1">
-                                      Confidence: {Math.round(item.confidence * 100)}% • {item.reasoning}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="optimization" className="pt-4">
+          <TabsContent value="optimization" className="pt-4">
             <Card className="mb-4">
               <CardContent className="p-4 sm:p-6">
                 <div className="space-y-4">
@@ -1573,7 +1397,7 @@ const ShoppingListPage: React.FC = () => {
                   <div className="text-center py-6 sm:py-8">
                     <div className="relative w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4">
                       <div className="absolute inset-0 bg-primary/10 rounded-full flex items-center justify-center">
-                        <BarChart4 className="h-8 w-8 sm:h-8 sm:w-12 text-primary/60" />
+                        <BarChart4 className="h-8 w-8 sm:h-12 sm:w-12 text-primary/60" />
                       </div>
                     </div>
                     <h3 className="text-base sm:text-lg font-medium mb-2">Optimize Your Shopping</h3>
@@ -2358,7 +2182,6 @@ const ShoppingListPage: React.FC = () => {
               Close
             </Button>
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 order-1 sm:order-2">
-```text
               <Button
                 variant="outline"
                 onClick={handlePrintShoppingPlan}
