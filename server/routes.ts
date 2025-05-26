@@ -1601,51 +1601,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         planType: "Best Value Multi-Store",
         storeCount: 2
       });
-
-      items.forEach((item, index) => {
-        const itemData = {
-          id: item.id,
-          productName: item.productName,
-          quantity: item.quantity,
-          unit: item.unit,
-          price: 200 + Math.floor(Math.random() * 400),
-          totalPrice: 0
-        };
-
-        itemData.totalPrice = itemData.price * itemData.quantity;
-
-        // Alternate between stores for demo
-        if (index % 2 === 0) {
-          krogerItems.push(itemData);
-        } else {
-          walmartItems.push(itemData);
-        }
-      });
-
-      const krogerSubtotal = krogerItems.reduce((sum, item) => sum + item.totalPrice, 0);
-      const walmartSubtotal = walmartItems.reduce((sum, item) => sum + item.totalPrice, 0);
-
-      res.json({
-        stores: [
-          {
-            retailerId: 3,
-            retailerName: "Kroger",
-            items: krogerItems,
-            subtotal: krogerSubtotal,
-            address: "123 Main St, San Francisco, CA 94105"
-          },
-          {
-            retailerId: 1,
-            retailerName: "Walmart",
-            items: walmartItems,
-            subtotal: walmartSubtotal,
-            address: "789 Mission St, San Francisco, CA 94103"
-          }
-        ],
-        totalCost: krogerSubtotal + walmartSubtotal,
-        totalSavings: 850,
-        savingsPercentage: 19
-      });
     } catch (error) {
       handleError(res, error);
     }
