@@ -892,7 +892,7 @@ const ShoppingListPage: React.FC = () => {
         content += `
             </div>
             <div style="text-align: right; font-weight: bold; margin-top: 10px;">
-              Store Total: $${(store.subtotal / 100).toFixed(2)}```python
+              Store Total: $${(store.subtotal / 100).toFixed(2)}
             </div>
           </div>
         `;
