@@ -72,7 +72,7 @@ export interface IStorage {
   getDealsSummary(): Promise<any[]>;
   getDealCategories(): Promise<string[]>;
   createDeal(deal: InsertStoreDeal): Promise<StoreDeal>;
-  
+
   // Weekly Circular methods
   getWeeklyCirculars(retailerId?: number): Promise<WeeklyCircular[]>;
   getWeeklyCircular(id: number): Promise<WeeklyCircular | undefined>;
@@ -87,21 +87,21 @@ export interface IStorage {
   getTopPurchasedItems(): Promise<any[]>;
   getMonthlySpending(): Promise<any[]>;
   getMonthlySavings(): Promise<number>;
-  
+
   // Purchase Anomaly methods
   getPurchaseAnomalies(): Promise<PurchaseAnomaly[]>;
   getPurchaseAnomaly(id: number): Promise<PurchaseAnomaly | undefined>;
   createPurchaseAnomaly(anomaly: InsertPurchaseAnomaly): Promise<PurchaseAnomaly>;
   updatePurchaseAnomaly(id: number, updates: Partial<PurchaseAnomaly>): Promise<PurchaseAnomaly>;
   deletePurchaseAnomaly(id: number): Promise<void>;
-  
+
   // Affiliate Partner methods
   getAffiliatePartners(): Promise<AffiliatePartner[]>;
   getAffiliatePartner(id: number): Promise<AffiliatePartner | undefined>;
   createAffiliatePartner(partner: InsertAffiliatePartner): Promise<AffiliatePartner>;
   updateAffiliatePartner(id: number, updates: Partial<AffiliatePartner>): Promise<AffiliatePartner>;
   deleteAffiliatePartner(id: number): Promise<void>;
-  
+
   // Affiliate Product methods
   getAffiliateProducts(partnerId?: number, category?: string): Promise<AffiliateProduct[]>;
   getAffiliateProduct(id: number): Promise<AffiliateProduct | undefined>;
@@ -109,11 +109,11 @@ export interface IStorage {
   createAffiliateProduct(product: InsertAffiliateProduct): Promise<AffiliateProduct>;
   updateAffiliateProduct(id: number, updates: Partial<AffiliateProduct>): Promise<AffiliateProduct>;
   deleteAffiliateProduct(id: number): Promise<void>;
-  
+
   // Affiliate Click methods
   recordAffiliateClick(click: InsertAffiliateClick): Promise<AffiliateClick>;
   getAffiliateClicks(userId?: number, productId?: number): Promise<AffiliateClick[]>;
-  
+
   // Affiliate Conversion methods
   recordAffiliateConversion(conversion: InsertAffiliateConversion): Promise<AffiliateConversion>;
   getAffiliateConversions(userId?: number, status?: string): Promise<AffiliateConversion[]>;
@@ -132,11 +132,11 @@ export class MemStorage implements IStorage {
   private storeDeals: Map<number, StoreDeal>;
   private weeklyCirculars: Map<number, WeeklyCircular>;
   private recommendations: Map<number, Recommendation>;
+  private purchaseAnomalies: Map<number, PurchaseAnomaly>;
   private affiliatePartners: Map<number, AffiliatePartner>;
   private affiliateProducts: Map<number, AffiliateProduct>;
   private affiliateClicks: Map<number, AffiliateClick>;
   private affiliateConversions: Map<number, AffiliateConversion>;
-  private purchaseAnomalies: Map<number, PurchaseAnomaly>;
 
   private userIdCounter: number = 1;
   private retailerIdCounter: number = 1;
@@ -325,7 +325,7 @@ export class MemStorage implements IStorage {
     this.createSamplePurchase(defaultUser.id, 1, now.getFullYear(), now.getMonth() - 1, 15);
     this.createSamplePurchase(defaultUser.id, 2, now.getFullYear(), now.getMonth() - 1, 5);
     this.createSamplePurchase(defaultUser.id, 4, now.getFullYear(), now.getMonth() - 1, 22);
-    
+
     // This month's purchases 
     this.createSamplePurchase(defaultUser.id, 1, now.getFullYear(), now.getMonth(), 2);
     this.createSamplePurchase(defaultUser.id, 3, now.getFullYear(), now.getMonth(), 10);
@@ -346,7 +346,7 @@ export class MemStorage implements IStorage {
     // Add 3-5 random items to the purchase
     const numItems = Math.floor(Math.random() * 3) + 3;
     const productIds = Array.from(this.products.keys());
-    
+
     for (let i = 0; i < numItems; i++) {
       const productId = productIds[Math.floor(Math.random() * productIds.length)];
       const product = this.products.get(productId)!;
@@ -402,12 +402,12 @@ export class MemStorage implements IStorage {
   }
 
   // Retailer methods
-  async getRetailers(): Promise<Retailer[]> {
-    return Array.from(this.retailers.values());
-  }
-
   async getRetailer(id: number): Promise<Retailer | undefined> {
     return this.retailers.get(id);
+  }
+
+  async getRetailers(): Promise<Retailer[]> {
+    return Array.from(this.retailers.values());
   }
 
   async createRetailer(retailer: InsertRetailer): Promise<Retailer> {
@@ -486,12 +486,12 @@ export class MemStorage implements IStorage {
     const userId = 1; // Default user
     const retailerId = receiptData.retailerId || 1; // Default to Walmart if not specified
     const purchaseDate = receiptData.date ? new Date(receiptData.date).toISOString() : new Date().toISOString();
-    
+
     // Calculate total from items or use the receipt total
     const totalAmount = receiptData.total || 
       receiptData.items?.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0) || 
       Math.floor(Math.random() * 10000) + 2000; // $20 - $120 as fallback
-    
+
     const purchase: InsertPurchase = {
       userId,
       retailerId,
@@ -499,9 +499,9 @@ export class MemStorage implements IStorage {
       totalAmount,
       receiptData
     };
-    
+
     const newPurchase = await this.createPurchase(purchase);
-    
+
     // Create purchase items
     if (receiptData.items && Array.isArray(receiptData.items)) {
       for (const item of receiptData.items) {
@@ -513,7 +513,7 @@ export class MemStorage implements IStorage {
           item.name.toLowerCase().includes(p.name.toLowerCase()) ||
           p.name.toLowerCase().includes(item.name.toLowerCase())
         );
-        
+
         if (matchingProduct) {
           productId = matchingProduct.id;
         } else {
@@ -526,7 +526,7 @@ export class MemStorage implements IStorage {
           });
           productId = newProduct.id;
         }
-        
+
         // Create purchase item
         await this.createPurchaseItem({
           purchaseId: newPurchase.id,
@@ -538,7 +538,7 @@ export class MemStorage implements IStorage {
         });
       }
     }
-    
+
     return this.getPurchase(newPurchase.id) as Promise<Purchase>;
   }
 
@@ -584,7 +584,7 @@ export class MemStorage implements IStorage {
   async getShoppingListItems(listId: number): Promise<ShoppingListItem[]> {
     const items = Array.from(this.shoppingListItems.values())
       .filter(item => item.shoppingListId === listId);
-    
+
     // Add retailer data to items with suggestedRetailerId
     return Promise.all(items.map(async item => {
       if (item.suggestedRetailerId) {
@@ -618,15 +618,15 @@ export class MemStorage implements IStorage {
       suggestedPrice: itemData.suggestedPrice,
       dueDate: itemData.dueDate
     };
-    
+
     this.shoppingListItems.set(id, newItem);
-    
+
     // Add retailer data if available
     if (newItem.suggestedRetailerId) {
       const retailer = await this.getRetailer(newItem.suggestedRetailerId);
       return { ...newItem, suggestedRetailer: retailer };
     }
-    
+
     return newItem;
   }
 
@@ -638,13 +638,13 @@ export class MemStorage implements IStorage {
 
     const updatedItem = { ...item, ...updates };
     this.shoppingListItems.set(id, updatedItem);
-    
+
     // Add retailer data if available
     if (updatedItem.suggestedRetailerId) {
       const retailer = await this.getRetailer(updatedItem.suggestedRetailerId);
       return { ...updatedItem, suggestedRetailer: retailer };
     }
-    
+
     return updatedItem;
   }
 
@@ -658,17 +658,17 @@ export class MemStorage implements IStorage {
   // Deal methods
   async getDeals(retailerId?: number, category?: string): Promise<StoreDeal[]> {
     let deals = Array.from(this.storeDeals.values());
-    
+
     // Filter by retailer if specified
     if (retailerId) {
       deals = deals.filter(deal => deal.retailerId === retailerId);
     }
-    
+
     // Filter by category if specified
     if (category) {
       deals = deals.filter(deal => deal.category === category);
     }
-    
+
     // Add retailer data
     return Promise.all(deals.map(async deal => {
       const retailer = await this.getRetailer(deal.retailerId);
@@ -679,14 +679,14 @@ export class MemStorage implements IStorage {
   async getDealsSummary(): Promise<any[]> {
     const retailers = await this.getRetailers();
     const deals = Array.from(this.storeDeals.values());
-    
+
     // Group deals by retailer
     const summaryMap = new Map<number, { retailerId: number, retailerName: string, logoColor: string, dealsCount: number, validUntil: string }>();
-    
+
     for (const deal of deals) {
       const retailer = retailers.find(r => r.id === deal.retailerId);
       if (!retailer) continue;
-      
+
       if (!summaryMap.has(retailer.id)) {
         summaryMap.set(retailer.id, {
           retailerId: retailer.id,
@@ -696,29 +696,29 @@ export class MemStorage implements IStorage {
           validUntil: deal.endDate // Initialize with this deal's end date
         });
       }
-      
+
       const summary = summaryMap.get(retailer.id)!;
       summary.dealsCount++;
-      
+
       // Keep the latest valid until date
       if (new Date(deal.endDate) > new Date(summary.validUntil)) {
         summary.validUntil = deal.endDate;
       }
     }
-    
+
     return Array.from(summaryMap.values());
   }
 
   async getDealCategories(): Promise<string[]> {
     const deals = Array.from(this.storeDeals.values());
     const categories = new Set<string>();
-    
+
     deals.forEach(deal => {
       if (deal.category) {
         categories.add(deal.category);
       }
     });
-    
+
     return Array.from(categories);
   }
 
@@ -735,27 +735,27 @@ export class MemStorage implements IStorage {
     this.storeDeals.set(id, newDeal);
     return newDeal;
   }
-  
+
   // Weekly Circular methods
   async getWeeklyCirculars(retailerId?: number): Promise<WeeklyCircular[]> {
     const circulars = Array.from(this.weeklyCirculars.values());
-    
+
     // Filter by retailer if specified
     if (retailerId) {
       return circulars.filter(circular => circular.retailerId === retailerId);
     }
-    
+
     // Only return active circulars that haven't ended
     const now = new Date();
     return circulars.filter(circular => 
       circular.isActive && new Date(circular.endDate) >= now
     );
   }
-  
+
   async getWeeklyCircular(id: number): Promise<WeeklyCircular | undefined> {
     return this.weeklyCirculars.get(id);
   }
-  
+
   async createWeeklyCircular(circular: InsertWeeklyCircular): Promise<WeeklyCircular> {
     const id = this.weeklyCircularIdCounter++;
     const newCircular: WeeklyCircular = { 
@@ -767,7 +767,7 @@ export class MemStorage implements IStorage {
     this.weeklyCirculars.set(id, newCircular);
     return newCircular;
   }
-  
+
   async getDealsFromCircular(circularId: number): Promise<StoreDeal[]> {
     return Array.from(this.storeDeals.values())
       .filter(deal => deal.circularId === circularId);
@@ -776,7 +776,7 @@ export class MemStorage implements IStorage {
   // Recommendation methods
   async getRecommendations(): Promise<Recommendation[]> {
     const recommendations = Array.from(this.recommendations.values());
-    
+
     // Add retailer data
     return Promise.all(recommendations.map(async rec => {
       if (rec.suggestedRetailerId) {
@@ -791,13 +791,13 @@ export class MemStorage implements IStorage {
     const id = this.recommendationIdCounter++;
     const newRecommendation: Recommendation = { ...recommendation, id };
     this.recommendations.set(id, newRecommendation);
-    
+
     // Add retailer data if available
     if (newRecommendation.suggestedRetailerId) {
       const retailer = await this.getRetailer(newRecommendation.suggestedRetailerId);
       return { ...newRecommendation, suggestedRetailer: retailer };
     }
-    
+
     return newRecommendation;
   }
 
@@ -810,12 +810,12 @@ export class MemStorage implements IStorage {
       totalSpent: number, 
       retailers: Map<number, { count: number, retailerName: string }> 
     }>();
-    
+
     // Count occurrences of each product
     for (const purchase of purchases) {
       const retailer = await this.getRetailer(purchase.retailerId!);
       const retailerName = retailer?.name || "Unknown";
-      
+
       for (const item of purchase.items || []) {
         if (!productCounts.has(item.productName)) {
           productCounts.set(item.productName, {
@@ -825,11 +825,11 @@ export class MemStorage implements IStorage {
             retailers: new Map()
           });
         }
-        
+
         const product = productCounts.get(item.productName)!;
         product.count += item.quantity;
         product.totalSpent += item.totalPrice;
-        
+
         // Track retailer frequency
         if (!product.retailers.has(purchase.retailerId!)) {
           product.retailers.set(purchase.retailerId!, { count: 0, retailerName });
@@ -837,7 +837,7 @@ export class MemStorage implements IStorage {
         product.retailers.get(purchase.retailerId!)!.count++;
       }
     }
-    
+
     // Convert to array and sort by count
     const topItems = Array.from(productCounts.values())
       .sort((a, b) => b.count - a.count)
@@ -846,14 +846,14 @@ export class MemStorage implements IStorage {
         // Find most frequent retailer
         let typicalRetailer = "Various retailers";
         let maxCount = 0;
-        
+
         product.retailers.forEach(retailer => {
           if (retailer.count > maxCount) {
             maxCount = retailer.count;
             typicalRetailer = retailer.retailerName;
           }
         });
-        
+
         // Determine frequency
         let frequency: string;
         if (product.count >= 10) {
@@ -865,7 +865,7 @@ export class MemStorage implements IStorage {
         } else {
           frequency = "Occasionally";
         }
-        
+
         return {
           productName: product.productName,
           frequency,
@@ -873,7 +873,7 @@ export class MemStorage implements IStorage {
           typicalPrice: Math.round(product.totalSpent / product.count) / 100
         };
       });
-    
+
     return topItems;
   }
 
@@ -881,7 +881,7 @@ export class MemStorage implements IStorage {
     const purchases = await this.getPurchases();
     const currentYear = new Date().getFullYear();
     const previousYear = currentYear - 1;
-    
+
     // Initialize monthly data
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const monthlyData = monthNames.map(month => ({
@@ -889,20 +889,20 @@ export class MemStorage implements IStorage {
       currentYear: 0,
       previousYear: 0
     }));
-    
+
     // Calculate spending by month
     for (const purchase of purchases) {
       const date = new Date(purchase.purchaseDate);
       const month = date.getMonth();
       const year = date.getFullYear();
-      
+
       if (year === currentYear) {
         monthlyData[month].currentYear += purchase.totalAmount / 100;
       } else if (year === previousYear) {
         monthlyData[month].previousYear += purchase.totalAmount / 100;
       }
     }
-    
+
     // Return only the first 6 months for display
     return monthlyData.slice(0, 6);
   }
@@ -912,6 +912,19 @@ export class MemStorage implements IStorage {
     // For demo, return a random amount between $5 and $50
     return Math.floor(Math.random() * 45) + 5;
   }
+
+  async addRetailer(retailerData: { name: string; logoColor: string }): Promise<Retailer> {
+    const newRetailer: Retailer = {
+      id: this.retailerIdCounter++,
+      name: retailerData.name,
+      logoColor: retailerData.logoColor,
+      apiEndpoint: null,
+      apiKey: null
+    };
+
+    this.retailers.set(newRetailer.id, newRetailer);
+    return newRetailer;
+  }
 }
 
 // Database implementation of the storage interface
@@ -920,7 +933,7 @@ export class DatabaseStorage implements IStorage {
   async getDefaultUser(): Promise<User> {
     const [user] = await db.select().from(users).where(eq(users.id, 1));
     if (user) return user;
-    
+
     // Create default user if it doesn't exist
     return this.createUser({
       username: "johndoe",
@@ -955,13 +968,13 @@ export class DatabaseStorage implements IStorage {
 
   async updateUser(userData: Partial<User>): Promise<User> {
     if (!userData.id) throw new Error("User ID is required for update");
-    
+
     const [updatedUser] = await db
       .update(users)
       .set(userData)
       .where(eq(users.id, userData.id))
       .returning();
-    
+
     if (!updatedUser) throw new Error("User not found");
     return updatedUser;
   }
@@ -969,7 +982,7 @@ export class DatabaseStorage implements IStorage {
   // Retailer methods
   async getRetailers(): Promise<Retailer[]> {
     const allRetailers = await db.select().from(retailers);
-    
+
     if (allRetailers.length === 0) {
       // Add default retailers if none exist
       await this.createRetailer({
@@ -978,31 +991,31 @@ export class DatabaseStorage implements IStorage {
         apiEndpoint: null,
         apiKey: null
       });
-      
+
       await this.createRetailer({
         name: "Target",
         logoColor: "red",
         apiEndpoint: null,
         apiKey: null
       });
-      
+
       await this.createRetailer({
         name: "Kroger",
         logoColor: "blue",
         apiEndpoint: null,
         apiKey: null
       });
-      
+
       await this.createRetailer({
         name: "Costco",
         logoColor: "red",
         apiEndpoint: null,
         apiKey: null
       });
-      
+
       return this.getRetailers();
     }
-    
+
     return allRetailers;
   }
 
@@ -1034,7 +1047,7 @@ export class DatabaseStorage implements IStorage {
   // Product methods
   async getProducts(): Promise<Product[]> {
     const allProducts = await db.select().from(products);
-    
+
     if (allProducts.length === 0) {
       // Add some default products if none exist
       await this.createProduct({
@@ -1046,7 +1059,7 @@ export class DatabaseStorage implements IStorage {
         isNameBrand: false,
         isOrganic: false
       });
-      
+
       await this.createProduct({
         name: "Eggs (Dozen)",
         category: "Dairy",
@@ -1056,7 +1069,7 @@ export class DatabaseStorage implements IStorage {
         isNameBrand: false,
         isOrganic: false
       });
-      
+
       await this.createProduct({
         name: "Bananas",
         category: "Produce",
@@ -1066,10 +1079,10 @@ export class DatabaseStorage implements IStorage {
         isNameBrand: false,
         isOrganic: false
       });
-      
+
       return this.getProducts();
     }
-    
+
     return allProducts;
   }
 
@@ -1109,7 +1122,7 @@ export class DatabaseStorage implements IStorage {
       receiptData: receiptData,
       receiptImageUrl: null
     });
-    
+
     return purchase;
   }
 
@@ -1126,7 +1139,7 @@ export class DatabaseStorage implements IStorage {
   // Shopping List methods
   async getShoppingLists(): Promise<ShoppingList[]> {
     const lists = await db.select().from(shoppingLists);
-    
+
     if (lists.length === 0) {
       // Create a default shopping list if none exists
       const newList = await this.createShoppingList({
@@ -1134,28 +1147,28 @@ export class DatabaseStorage implements IStorage {
         userId: 1,
         isDefault: true
       });
-      
+
       return [newList];
     }
-    
+
     return lists;
   }
 
   async getShoppingList(id: number): Promise<ShoppingList | undefined> {
     const [list] = await db.select().from(shoppingLists).where(eq(shoppingLists.id, id));
-    
+
     if (list) {
       // Fetch items for the list
       const items = await this.getShoppingListItems(id);
       return { ...list, items };
     }
-    
+
     return undefined;
   }
 
   async createShoppingList(listData: InsertShoppingList): Promise<ShoppingList> {
     const [list] = await db.insert(shoppingLists).values(listData).returning();
-    
+
     // Initialize with empty items array
     return { ...list, items: [] };
   }
@@ -1168,14 +1181,14 @@ export class DatabaseStorage implements IStorage {
   async addShoppingListItem(itemData: Partial<ShoppingListItem>): Promise<ShoppingListItem> {
     // Ensure quantity defaults to 1 if not provided and is properly converted to number
     let quantity = itemData.quantity || 1;
-    
+
     // Handle both string and number inputs for quantity
     quantity = typeof quantity === 'string' ? parseFloat(quantity) : Number(quantity);
-    
+
     if (isNaN(quantity) || quantity < 0) {
       quantity = 1;
     }
-    
+
     const [item] = await db.insert(shoppingListItems).values({
       ...itemData,
       quantity,
@@ -1185,7 +1198,7 @@ export class DatabaseStorage implements IStorage {
       suggestedRetailerId: null,
       suggestedPrice: null
     } as any).returning();
-    
+
     return item;
   }
 
@@ -1197,11 +1210,11 @@ export class DatabaseStorage implements IStorage {
       const quantityValue = typeof processedUpdates.quantity === 'string' 
         ? parseFloat(processedUpdates.quantity) 
         : Number(processedUpdates.quantity);
-      
+
       if (isNaN(quantityValue) || quantityValue < 0) {
         throw new Error("Invalid quantity value");
       }
-      
+
       processedUpdates.quantity = quantityValue;
     }
 
@@ -1210,7 +1223,7 @@ export class DatabaseStorage implements IStorage {
       .set(processedUpdates)
       .where(eq(shoppingListItems.id, id))
       .returning();
-    
+
     if (!updatedItem) throw new Error("Shopping list item not found");
     return updatedItem;
   }
@@ -1222,21 +1235,21 @@ export class DatabaseStorage implements IStorage {
   // Deal methods
   async getDeals(retailerId?: number, category?: string): Promise<StoreDeal[]> {
     let query = db.select().from(storeDeals);
-    
+
     if (retailerId) {
       query = query.where(eq(storeDeals.retailerId, retailerId));
     }
-    
+
     if (category) {
       query = query.where(eq(storeDeals.category, category));
     }
-    
+
     const deals = await query;
-    
+
     if (deals.length === 0) {
       // Add some default deals if none exist
       const retailers = await this.getRetailers();
-      
+
       if (retailers.length > 0) {
         await this.createDeal({
           retailerId: retailers[0].id,
@@ -1247,7 +1260,7 @@ export class DatabaseStorage implements IStorage {
           startDate: new Date(),
           endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
         });
-        
+
         await this.createDeal({
           retailerId: retailers[0].id,
           productName: "Eggs (Dozen)",
@@ -1257,7 +1270,7 @@ export class DatabaseStorage implements IStorage {
           startDate: new Date(),
           endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) // 3 days from now
         });
-        
+
         await this.createDeal({
           retailerId: retailers[1].id,
           productName: "Paper Towels",
@@ -1268,20 +1281,20 @@ export class DatabaseStorage implements IStorage {
           endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000) // 5 days from now
         });
       }
-      
+
       return this.getDeals(retailerId, category);
     }
-    
+
     return deals;
   }
 
   async getDealsSummary(): Promise<any[]> {
     const deals = await this.getDeals();
     const retailers = await this.getRetailers();
-    
+
     // Group deals by retailer
     const dealsByRetailer = {};
-    
+
     retailers.forEach(retailer => {
       dealsByRetailer[retailer.id] = {
         retailerId: retailer.id,
@@ -1290,27 +1303,27 @@ export class DatabaseStorage implements IStorage {
         totalSavings: 0
       };
     });
-    
+
     deals.forEach(deal => {
       if (dealsByRetailer[deal.retailerId]) {
         dealsByRetailer[deal.retailerId].dealCount += 1;
         dealsByRetailer[deal.retailerId].totalSavings += deal.regularPrice - deal.salePrice;
       }
     });
-    
+
     return Object.values(dealsByRetailer);
   }
 
   async getDealCategories(): Promise<string[]> {
     const deals = await this.getDeals();
     const categories = new Set<string>();
-    
+
     deals.forEach(deal => {
       if (deal.category) {
         categories.add(deal.category);
       }
     });
-    
+
     return Array.from(categories);
   }
 
@@ -1318,14 +1331,14 @@ export class DatabaseStorage implements IStorage {
     const [deal] = await db.insert(storeDeals).values(dealData).returning();
     return deal;
   }
-  
+
   async getWeeklyCirculars(retailerId?: number): Promise<WeeklyCircular[]> {
     let query = db.select().from(weeklyCirculars);
-    
+
     if (retailerId) {
       query = query.where(eq(weeklyCirculars.retailerId, retailerId));
     }
-    
+
     // Get active circulars by default (where end date is in the future)
     query = query.where(
       and(
@@ -1333,20 +1346,20 @@ export class DatabaseStorage implements IStorage {
         gte(weeklyCirculars.endDate, new Date())
       )
     );
-    
+
     return query;
   }
-  
+
   async getWeeklyCircular(id: number): Promise<WeeklyCircular | undefined> {
     const [circular] = await db.select().from(weeklyCirculars).where(eq(weeklyCirculars.id, id));
     return circular;
   }
-  
+
   async createWeeklyCircular(circularData: InsertWeeklyCircular): Promise<WeeklyCircular> {
     const [circular] = await db.insert(weeklyCirculars).values(circularData).returning();
     return circular;
   }
-  
+
   async getDealsFromCircular(circularId: number): Promise<StoreDeal[]> {
     return db.select().from(storeDeals).where(eq(storeDeals.circularId, circularId));
   }
@@ -1355,15 +1368,15 @@ export class DatabaseStorage implements IStorage {
   async getRecommendations(): Promise<Recommendation[]> {
     // Get default user
     const user = await this.getDefaultUser();
-    
+
     const result = await db
       .select()
       .from(recommendations)
       .where(eq(recommendations.userId, user.id));
-    
+
     if (result.length === 0) {
       console.log("Generating recommendations for user:", user.id);
-      
+
       // Create demo recommendations
       await this.createRecommendation({
         userId: user.id,
@@ -1376,7 +1389,7 @@ export class DatabaseStorage implements IStorage {
         savings: 50,
         reason: "Based on your weekly purchase pattern"
       });
-      
+
       await this.createRecommendation({
         userId: user.id,
         productName: "Paper Towels",
@@ -1388,7 +1401,7 @@ export class DatabaseStorage implements IStorage {
         savings: 150,
         reason: "You typically buy this every 2 weeks"
       });
-      
+
       await this.createRecommendation({
         userId: user.id,
         productName: "Milk (Gallon)",
@@ -1400,13 +1413,13 @@ export class DatabaseStorage implements IStorage {
         savings: 40,
         reason: "You're almost out based on purchase history"
       });
-      
+
       return db
         .select()
         .from(recommendations)
         .where(eq(recommendations.userId, user.id));
     }
-    
+
     return result;
   }
 
@@ -1415,7 +1428,7 @@ export class DatabaseStorage implements IStorage {
       .insert(recommendations)
       .values(recommendationData)
       .returning();
-    
+
     return recommendation;
   }
 
@@ -1437,7 +1450,7 @@ export class DatabaseStorage implements IStorage {
     // For demo, return mock data
     const currentYear = new Date().getFullYear();
     const previousYear = currentYear - 1;
-    
+
     return [
       { month: "Jan", currentYear: 35000, previousYear: 32000 },
       { month: "Feb", currentYear: 28000, previousYear: 30000 },
@@ -1488,11 +1501,11 @@ export class DatabaseStorage implements IStorage {
       .set(updates)
       .where(eq(purchaseAnomalies.id, id))
       .returning();
-    
+
     if (!updatedAnomaly) {
       throw new Error(`Purchase anomaly with id ${id} not found`);
     }
-    
+
     return updatedAnomaly;
   }
 

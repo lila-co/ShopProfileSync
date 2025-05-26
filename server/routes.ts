@@ -51,12 +51,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Retailer routes
-  app.get('/api/retailers', async (req: Request, res: Response) => {
+  // Get all retailers
+  app.get('/api/retailers', async (req, res) => {
     try {
       const retailers = await storage.getRetailers();
       res.json(retailers);
-    } catch (error) {
-      handleError(res, error);
+    } catch (error: any) {
+      console.error('Error fetching retailers:', error);
+      res.status(500).json({ error: 'Failed to fetch retailers' });
+    }
+  });
+
+  // Get specific retailer
+  app.get('/api/retailers/:id', async (req, res) => {
+    try {
+      const retailerId = parseInt(req.params.id);
+      const retailer = await storage.getRetailer(retailerId);
+
+      if (!retailer) {
+        return res.status(404).json({ error: 'Retailer not found' });
+      }
+
+      res.json(retailer);
+    } catch (error: any) {
+      console.error('Error fetching retailer:', error);
+      res.status(500).json({ error: 'Failed to fetch retailer' });
+    }
+  });
+
+  // Add custom retailer
+  app.post('/api/retailers', async (req, res) => {
+    try {
+      const { name, logoColor } = req.body;
+
+      if (!name) {
+        return res.status(400).json({ error: 'Store name is required' });
+      }
+
+      const retailer = await storage.addRetailer({
+        name: name.trim(),
+        logoColor: logoColor || 'blue'
+      });
+
+      res.status(201).json(retailer);
+    } catch (error: any) {
+      console.error('Error adding retailer:', error);
+      res.status(500).json({ error: 'Failed to add retailer' });
     }
   });
 
@@ -143,7 +183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { originalName, canonicalName, retailerId, confidence } = req.body;
       const { productNormalizer } = await import('./services/productNormalizer');
-      
+
       await productNormalizer.updateMapping(originalName, canonicalName, retailerId, confidence);
 
       res.json({ success: true });
@@ -1040,11 +1080,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { dataOptimizer } = await import('./services/dataOptimizer');
-      
+
       const pricePromises = retailerIds.map(async (retailerId: number) => {
         const price = await dataOptimizer.getOptimizedPrice(retailerId, productName);
         const retailer = await storage.getRetailer(retailerId);
-        
+
         return {
           retailerId,
           retailerName: retailer?.name || `Retailer ${retailerId}`,
@@ -1055,7 +1095,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const prices = await Promise.all(pricePromises);
       const availablePrices = prices.filter(p => p.available);
-      
+
       // Find best price
       const bestPrice = availablePrices.length > 0 
         ? availablePrices.reduce((min, current) => current.price! < min.price! ? current : min)
@@ -1077,7 +1117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/shopping-lists/:id/optimized', async (req: Request, res: Response) => {
     try {
       const listId = parseInt(req.params.id);
-      
+
       const { dataOptimizer } = await import('./services/dataOptimizer');
       const optimizedList = await dataOptimizer.getOptimizedShoppingList(listId);
 
@@ -2116,7 +2156,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/admin/sync-data', async (req: Request, res: Response) => {
     try {
       const { retailerIds } = req.body;
-      
+
       const { dataOptimizer } = await import('./services/dataOptimizer');
       await dataOptimizer.batchUpdateDeals(retailerIds || [1, 2, 3, 4]);
 

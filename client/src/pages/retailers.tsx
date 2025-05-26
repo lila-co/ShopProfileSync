@@ -1,9 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useQuery } from '@tanstack/react-query';
-import { Store, ExternalLink, CheckCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
+import { Store, ExternalLink, CheckCircle, Plus } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
 
 interface Retailer {
   id: number;
@@ -18,6 +25,12 @@ interface RetailerAccount {
 }
 
 const RetailersPage: React.FC = () => {
+  const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [showAddStore, setShowAddStore] = useState(false);
+  const [newStoreName, setNewStoreName] = useState('');
+
   const { data: retailers, isLoading } = useQuery<Retailer[]>({
     queryKey: ['/api/retailers'],
   });
@@ -26,8 +39,44 @@ const RetailersPage: React.FC = () => {
     queryKey: ['/api/user/retailer-accounts'],
   });
 
+  const addStoreMutation = useMutation({
+    mutationFn: async (storeName: string) => {
+      const response = await apiRequest('POST', '/api/retailers', {
+        name: storeName,
+        logoColor: 'blue'
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/retailers'] });
+      setShowAddStore(false);
+      setNewStoreName('');
+      toast({
+        title: "Store Added",
+        description: "Your custom store has been added successfully."
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to add store. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
   const isConnected = (retailerId: number) => {
     return connectedAccounts?.some(account => account.retailerId === retailerId && account.isConnected);
+  };
+
+  const handleRetailerClick = (retailerId: number) => {
+    navigate(`/retailers/${retailerId}`);
+  };
+
+  const handleAddStore = () => {
+    if (newStoreName.trim()) {
+      addStoreMutation.mutate(newStoreName.trim());
+    }
   };
 
   if (isLoading) {
@@ -51,8 +100,8 @@ const RetailersPage: React.FC = () => {
 
         <div className="space-y-4">
           {retailers?.map((retailer) => (
-            <Card key={retailer.id}>
-              <CardContent className="p-4">
+            <Card key={retailer.id} className="cursor-pointer hover:shadow-md transition-shadow">
+              <CardContent className="p-4" onClick={() => handleRetailerClick(retailer.id)}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div 
@@ -77,6 +126,45 @@ const RetailersPage: React.FC = () => {
               </CardContent>
             </Card>
           ))}
+        </div>
+
+        {/* Add Custom Store Section */}
+        <div className="mt-6">
+          <Dialog open={showAddStore} onOpenChange={setShowAddStore}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="w-full">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Custom Store
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Custom Store</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="storeName">Store Name</Label>
+                  <Input
+                    id="storeName"
+                    value={newStoreName}
+                    onChange={(e) => setNewStoreName(e.target.value)}
+                    placeholder="Enter store name"
+                  />
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={() => setShowAddStore(false)}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleAddStore}
+                    disabled={!newStoreName.trim() || addStoreMutation.isPending}
+                  >
+                    {addStoreMutation.isPending ? 'Adding...' : 'Add Store'}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {(!retailers || retailers.length === 0) && (
