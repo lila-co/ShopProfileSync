@@ -608,10 +608,17 @@ const ShoppingListPage: React.FC = () => {
           .store-section { margin-bottom: 30px; page-break-inside: avoid; }
           .store-header { background-color: #f5f5f5; padding: 10px; font-weight: bold; font-size: 18px; }
           .item-list { margin: 10px 0; }
-          .item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dotted #ccc; }
+          .item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dotted #ccc; }
+          .item-checkbox { display: inline-block; width: 15px; height: 15px; border: 2px solid #333; margin-right: 10px; vertical-align: middle; }
+          .item-text { flex: 1; }
+          .item-price { font-weight: bold; }
           .summary { margin-top: 30px; border-top: 2px solid #000; padding-top: 10px; }
           .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }
-          @media print { body { margin: 0; } }
+          .note { margin-top: 20px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #007bff; }
+          @media print { 
+            body { margin: 0; }
+            .mobile-shopping-item { display: none !important; }
+          }
         </style>
       </head>
       <body>
@@ -635,8 +642,11 @@ const ShoppingListPage: React.FC = () => {
         store.items.forEach((item: any) => {
           content += `
             <div class="item">
-              <span>${item.productName} (Qty: ${item.quantity})</span>
-              <span>$${(item.price / 100).toFixed(2)}</span>
+              <div class="item-text">
+                <span class="item-checkbox"></span>
+                ${item.productName} (Qty: ${item.quantity})
+              </div>
+              <span class="item-price">$${(item.price / 100).toFixed(2)}</span>
             </div>
           `;
         });
@@ -659,8 +669,11 @@ const ShoppingListPage: React.FC = () => {
       selectedPlan.items.forEach((item: any) => {
         content += `
           <div class="item">
-            <span>${item.productName} (Qty: ${item.quantity})</span>
-            <span>$${(item.price / 100).toFixed(2)}</span>
+            <div class="item-text">
+              <span class="item-checkbox"></span>
+              ${item.productName} (Qty: ${item.quantity})
+            </div>
+            <span class="item-price">$${(item.price / 100).toFixed(2)}</span>
           </div>
         `;
       });
@@ -684,6 +697,12 @@ const ShoppingListPage: React.FC = () => {
             </div>
           ` : ''}
         </div>
+        
+        <div class="note">
+          <h4 style="margin-top: 0;">📱 Mobile Shopping Tip:</h4>
+          <p style="margin-bottom: 0;">Access your shopping list on your mobile device to check off items as you shop. Changes sync in real-time!</p>
+        </div>
+        
         <div class="footer">
           <p>Happy Shopping! 🛒</p>
         </div>
@@ -1725,15 +1744,17 @@ const ShoppingListPage: React.FC = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span>{selectedPlan?.planType}</span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handlePrintShoppingPlan}
-                className="flex items-center gap-2"
-              >
-                <Printer className="h-4 w-4" />
-                Print List
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrintShoppingPlan}
+                  className="hidden sm:flex items-center gap-2"
+                >
+                  <Printer className="h-4 w-4" />
+                  Print List
+                </Button>
+              </div>
             </DialogTitle>
           </DialogHeader>
           
@@ -1796,24 +1817,49 @@ const ShoppingListPage: React.FC = () => {
                       </div>
 
                       <div className="space-y-2">
-                        {store.items.map((item: any, itemIndex: number) => (
-                          <div key={itemIndex} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
-                            <div className="flex-1">
-                              <div className="font-medium">{item.productName}</div>
-                              <div className="text-sm text-gray-500">
-                                Quantity: {item.quantity} {item.unit && item.unit !== 'COUNT' ? item.unit.toLowerCase() : ''}
+                        {store.items.map((item: any, itemIndex: number) => {
+                          // Find corresponding item in main shopping list to get checkbox state
+                          const shoppingListItem = items.find(listItem => 
+                            listItem.productName.toLowerCase() === item.productName.toLowerCase()
+                          );
+                          const isCompleted = shoppingListItem?.isCompleted || false;
+
+                          return (
+                            <div key={itemIndex} className={`flex items-center justify-between py-3 px-2 border border-gray-100 rounded-lg ${isCompleted ? 'bg-green-50 opacity-75' : 'bg-white'} mobile-shopping-item`}>
+                              <div className="flex items-center flex-1">
+                                <input
+                                  type="checkbox"
+                                  checked={isCompleted}
+                                  onChange={() => {
+                                    if (shoppingListItem) {
+                                      handleToggleItem(shoppingListItem.id, isCompleted);
+                                    }
+                                  }}
+                                  className="h-5 w-5 text-primary rounded mr-3 cursor-pointer"
+                                  disabled={!shoppingListItem}
+                                />
+                                <div className="flex-1">
+                                  <div className={`font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
+                                    {item.productName}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    Qty: {item.quantity} {item.unit && item.unit !== 'COUNT' ? item.unit.toLowerCase() : ''}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-right ml-4">
+                                <div className={`font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
+                                  ${(item.price / 100).toFixed(2)}
+                                </div>
+                                {item.totalPrice && (
+                                  <div className="text-sm text-gray-500">
+                                    Total: ${(item.totalPrice / 100).toFixed(2)}
+                                  </div>
+                                )}
                               </div>
                             </div>
-                            <div className="text-right">
-                              <div className="font-medium">${(item.price / 100).toFixed(2)}</div>
-                              {item.totalPrice && (
-                                <div className="text-sm text-gray-500">
-                                  Total: ${(item.totalPrice / 100).toFixed(2)}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
 
                       {store.incentives && store.incentives.length > 0 && (
@@ -1840,27 +1886,66 @@ const ShoppingListPage: React.FC = () => {
                     </div>
 
                     <div className="space-y-2">
-                      {selectedPlan.items.map((item: any, index: number) => (
-                        <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
-                          <div className="flex-1">
-                            <div className="font-medium">{item.productName}</div>
-                            <div className="text-sm text-gray-500">
-                              Quantity: {item.quantity} {item.unit && item.unit !== 'COUNT' ? item.unit.toLowerCase() : ''}
+                      {selectedPlan.items.map((item: any, index: number) => {
+                        // Find corresponding item in main shopping list to get checkbox state
+                        const shoppingListItem = items.find(listItem => 
+                          listItem.productName.toLowerCase() === item.productName.toLowerCase()
+                        );
+                        const isCompleted = shoppingListItem?.isCompleted || false;
+
+                        return (
+                          <div key={index} className={`flex items-center justify-between py-3 px-2 border border-gray-100 rounded-lg ${isCompleted ? 'bg-green-50 opacity-75' : 'bg-white'} mobile-shopping-item`}>
+                            <div className="flex items-center flex-1">
+                              <input
+                                type="checkbox"
+                                checked={isCompleted}
+                                onChange={() => {
+                                  if (shoppingListItem) {
+                                    handleToggleItem(shoppingListItem.id, isCompleted);
+                                  }
+                                }}
+                                className="h-5 w-5 text-primary rounded mr-3 cursor-pointer"
+                                disabled={!shoppingListItem}
+                              />
+                              <div className="flex-1">
+                                <div className={`font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
+                                  {item.productName}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  Qty: {item.quantity} {item.unit && item.unit !== 'COUNT' ? item.unit.toLowerCase() : ''}
+                                </div>
+                              </div>
+                            </div>
+                            <div className={`font-medium ml-4 ${isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
+                              ${(item.price / 100).toFixed(2)}
                             </div>
                           </div>
-                          <div className="font-medium">${(item.price / 100).toFixed(2)}</div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </CardContent>
                 </Card>
               ) : null}
 
+              {/* Progress Bar */}
+              <div className="bg-white border rounded-lg p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="font-medium">Shopping Progress</h4>
+                  <span className="text-sm text-gray-600">
+                    {items.filter(item => item.isCompleted).length} of {items.length} completed
+                  </span>
+                </div>
+                <Progress 
+                  value={items.length > 0 ? (items.filter(item => item.isCompleted).length / items.length) * 100 : 0} 
+                  className="h-2"
+                />
+              </div>
+
               {/* Additional Notes */}
-              <div className="bg-yellow-50 rounded-lg p-4">
+              <div className="bg-yellow-50 rounded-lg p-4 print:block">
                 <h4 className="font-medium text-yellow-800 mb-2">Shopping Tips</h4>
                 <ul className="text-sm text-yellow-700 space-y-1">
-                  <li>• Check your shopping list before leaving home</li>
+                  <li>• Check items off as you shop using the mobile interface</li>
                   <li>• Consider bringing reusable bags</li>
                   <li>• Look for additional deals and coupons at the store</li>
                   {selectedPlan.stores && selectedPlan.stores.length > 1 && (
@@ -1871,20 +1956,24 @@ const ShoppingListPage: React.FC = () => {
             </div>
           )}
 
-          <DialogFooter className="flex justify-between">
-            <Button variant="outline" onClick={() => setPlanViewDialogOpen(false)}>
+          <DialogFooter className="flex flex-col sm:flex-row justify-between gap-2">
+            <Button variant="outline" onClick={() => setPlanViewDialogOpen(false)} className="order-2 sm:order-1">
               Close
             </Button>
-            <div className="flex space-x-2">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 order-1 sm:order-2">
               <Button
                 variant="outline"
                 onClick={handlePrintShoppingPlan}
-                className="flex items-center gap-2"
+                className="flex items-center justify-center gap-2"
               >
                 <Printer className="h-4 w-4" />
                 Print List
               </Button>
-              <Button onClick={() => setPlanViewDialogOpen(false)}>
+              <Button 
+                onClick={() => setPlanViewDialogOpen(false)}
+                className="bg-primary hover:bg-primary/90"
+              >
+                <ShoppingCart className="h-4 w-4 mr-2" />
                 Start Shopping
               </Button>
             </div>
