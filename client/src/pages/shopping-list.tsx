@@ -882,7 +882,7 @@ const ShoppingListPage: React.FC = () => {
       <Header title="Shopping Lists" />
 
       <main className="flex-1 overflow-y-auto p-4 pb-20">
-        <h2 className="text-xl font-bold mb-4">Shopping List</h2>
+        Updating the navigation to use `/shopping-route` instead of `/shop` for in-store and online shopping.        <h2 className="text-xl font-bold mb-4">Shopping List</h2>
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
@@ -1328,7 +1328,7 @@ const ShoppingListPage: React.FC = () => {
                           variant="outline" 
                           className="w-full h-auto p-4 flex flex-col items-center space-y-2"
                           onClick={() => {
-                            navigate(`/shop?listId=${selectedList.id}&mode=instore`);
+                            navigate(`/shopping-route?listId=${selectedList.id}&mode=instore`);
                           }}
                         >
                           <StoreIcon className="h-6 w-6" />
@@ -1341,7 +1341,7 @@ const ShoppingListPage: React.FC = () => {
                         <Button 
                           className="w-full h-auto p-4 flex flex-col items-center space-y-2"
                           onClick={() => {
-                            navigate(`/shop?listId=${selectedList.id}&mode=online`);
+                            navigate(`/shopping-route?listId=${selectedList.id}&mode=online`);
                           }}
                         >
                           <ShoppingCart className="h-6 w-6" />
@@ -1927,7 +1927,7 @@ const ShoppingListPage: React.FC = () => {
                       setSelectedPlan(optimizedPlan);
                       // Navigate to shop page with list ID
                       if (selectedList?.id) {
-                        navigate(`/shop?listId=${selectedList.id}`);
+                        navigate(`/shopping-route?listId=${selectedList.id}`);
                       }
                       toast({
                         title: "Optimized Shopping Route Ready!",
@@ -2196,7 +2196,7 @@ const ShoppingListPage: React.FC = () => {
                   setSelectedPlan(optimizedPlan);
                   // Navigate to shop page with list ID
                   if (selectedList?.id) {
-                    navigate(`/shop?listId=${selectedList.id}`);
+                    navigate(`/shopping-route?listId=${selectedList.id}`);
                   }
                   toast({
                     title: "Ready to Shop!",

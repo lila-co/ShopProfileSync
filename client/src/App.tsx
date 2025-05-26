@@ -15,6 +15,7 @@ import AdminSettings from '@/pages/admin-settings';
 import AffiliateDashboard from '@/pages/affiliate-dashboard';
 import { queryClient } from '@/lib/queryClient';
 import Shop from '@/pages/shop'; // Import the Shop component
+import ShoppingRoute from '@/pages/shopping-route'; // Import the ShoppingRoute component
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
             <Route path="/admin-settings" component={AdminSettings} />
             <Route path="/affiliate-dashboard" component={AffiliateDashboard} />
             <Route path="/shop" component={Shop} />
+            <Route path="/shopping-route" component={ShoppingRoute} />
             <Route component={NotFound} />
           </Switch>
         </div>
