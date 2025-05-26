@@ -6,6 +6,7 @@ import { parseReceiptImage } from "./services/receiptParser";
 import { generateRecommendations, analyzePurchasePatterns, extractRecipeIngredients } from "./services/recommendationEngine";
 import { getRetailerAPI } from "./services/retailerIntegration";
 import OpenAI from "openai";
+import { productCategorizer, ProductCategory, QuantityNormalization } from './services/productCategorizer';
 
 // Helper to handle errors consistently
 const handleError = (res: Response, error: any) => {
@@ -54,6 +55,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const retailers = await storage.getRetailers();
       res.json(retailers);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Categorize product
+  app.post('/api/products/categorize', async (req: Request, res: Response) => {
+    try {
+      const { productName } = req.body;
+
+      if (!productName) {
+        return res.status(400).json({ message: 'Product name is required' });
+      }
+
+      const category = productCategorizer.categorizeProduct(productName);
+      res.json(category);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Normalize quantity
+  app.post('/api/products/normalize-quantity', async (req: Request, res: Response) => {
+    try {
+      const { productName, quantity, unit } = req.body;
+
+      if (!productName || !quantity || !unit) {
+        return res.status(400).json({ message: 'Product name, quantity, and unit are required' });
+      }
+
+      const normalized = productCategorizer.normalizeQuantity(productName, quantity, unit);
+      res.json(normalized);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Batch categorize products
+  app.post('/api/products/batch-categorize', async (req: Request, res: Response) => {
+    try {
+      const { products } = req.body;
+
+      if (!Array.isArray(products)) {
+        return res.status(400).json({ message: 'Products array is required' });
+      }
+
+      const results = products.map(product => {
+        const category = productCategorizer.categorizeProduct(product.productName);
+        const normalized = productCategorizer.normalizeQuantity(
+          product.productName, 
+          product.quantity || 1, 
+          product.unit || 'COUNT'
+        );
+
+        return {
+          productName: product.productName,
+          category,
+          normalized,
+          icon: productCategorizer.getCategoryIcon(category.category)
+        };
+      });
+
+      res.json(results);
     } catch (error) {
       handleError(res, error);
     }
@@ -308,7 +372,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const listId = parseInt(req.params.id);
       const lists = await storage.getShoppingLists();
       const list = lists.find(l => l.id === listId);
-      
+
       if (!list) {
         return res.status(404).json({ message: 'Shopping list not found' });
       }
@@ -316,7 +380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Fetch items for this shopping list
       const items = await storage.getShoppingListItems(list.id);
       console.log(`List ${list.id} has ${items.length} items:`, items);
-      
+
       res.json({ ...list, items });
     } catch (error) {
       handleError(res, error);
@@ -824,7 +888,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const category = req.query.category as string | undefined;
 
       let deals = await storage.getDeals(retailerId, category);
-      
+
       // Remove duplicates by creating a unique key for each deal
       const uniqueDeals = deals.filter((deal, index, self) => 
         index === self.findIndex((d) => 
@@ -833,7 +897,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           d.salePrice === deal.salePrice
         )
       );
-      
+
       res.json(uniqueDeals);
     } catch (error) {
       handleError(res, error);

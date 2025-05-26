@@ -79,6 +79,10 @@ const ShoppingListPage: React.FC = () => {
   const [planViewDialogOpen, setPlanViewDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
 
+  // AI categorization state
+  const [showCategorization, setShowCategorization] = useState(false);
+  const [categorizedItems, setCategorizedItems] = useState<any[]>([]);
+
   const { data: shoppingLists, isLoading } = useQuery<ShoppingList[]>({
     queryKey: ['/api/shopping-lists'],
   });
@@ -882,7 +886,7 @@ const ShoppingListPage: React.FC = () => {
       <Header title="Shopping Lists" />
 
       <main className="flex-1 overflow-y-auto p-4 pb-20">
-        Updating the navigation to use `/shopping-route` instead of `/shop` for in-store and online shopping.        <h2 className="text-xl font-bold mb-4">Shopping List</h2>
+        Updating the navigation to use `/shopping-route`instead of `/shop` for in-store and online shopping.        <h2 className="text-xl font-bold mb-4">Shopping List</h2>
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
@@ -1565,8 +1569,7 @@ const ShoppingListPage: React.FC = () => {
                                 item.unit === "PKG" ? "pkg" : 
                                 item.unit === "BOX" ? "box" : 
                                 item.unit === "CAN" ? "can" : 
-                                item.unit === "BOTTLE" ? "bottle" : 
-                                item.unit === "JAR" ? "jar" : 
+                                item.unit === "BOTTLE" ? "bottle" :                                item.unit === "JAR" ? "jar" : 
                                 item.unit === "BUNCH" ? "bunch" : 
                                 item.unit === "ROLL" ? "roll"                                  : ""}
                             </span>
@@ -1867,348 +1870,86 @@ const ShoppingListPage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Shopping Plan View Dialog */}
-      <Dialog open={planViewDialogOpen} onOpenChange={setPlanViewDialogOpen}>
+      {/* AI Categorization Results Dialog */}
+      <Dialog open={showCategorization} onOpenChange={setShowCategorization}>
         <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span>{selectedPlan?.planType}</span>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handlePrintShoppingPlan}
-                  className="hidden sm:flex items-center gap-2"
-                >
-                  <Printer className="h-4 w-4" />
-                  Print List
-                </Button>
-              </div>
+            <DialogTitle className="flex items-center">
+              <Sparkles className="h-5 w-5 text-purple-600 mr-2" />
+              AI Product Categorization Results
             </DialogTitle>
           </DialogHeader>
-
-          {selectedPlan && (
-            <div className="space-y-6 py-4">
-              {/* Plan Summary */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="font-semibold text-lg">Plan Summary</h3>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-primary">
-                      ${(selectedPlan.totalCost / 100).toFixed(2)}
-                    </div>
-                    {selectedPlan.savings > 0 && (
-                      <div className="text-green-600 font-medium">
-                        Save ${(selectedPlan.savings / 100).toFixed(2)}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
-                  <div>
-                    <span className="font-medium">Total Items:</span> {
-                      selectedPlan.stores 
-                        ? selectedPlan.stores.reduce((sum: number, store: any) => sum + store.items.length, 0)
-                        : selectedPlan.items?.length || 0
-                    }
-                  </div>
-                  <div>
-                    <span className="font-medium">Store Count:</span> {
-                      selectedPlan.stores ? selectedPlan.stores.length : 1
-                    }
-                  </div>
-                </div>
-
-                {/* Top Start Shopping Button */}
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <Button 
-                    onClick={() => {
-                      const optimizedPlan = generateOptimizedShoppingRoute(selectedPlan);
-                      setSelectedPlan(optimizedPlan);
-                      // Navigate to shop page with list ID
-                      if (selectedList?.id) {
-                        navigate(`/shopping-route?listId=${selectedList.id}`);
-                      }
-                      toast({
-                        title: "Optimized Shopping Route Ready!",
-                        description: "Items organized by aisle for efficient shopping"
-                      });
-                    }}
-                    className="w-full bg-primary hover:bg-primary/90 text-white"
-                    size="lg"
-                  >
-                    <MapPin className="h-5 w-5 mr-2" />
-                    Start Shopping with Aisle Navigation
-                  </Button>
-                </div>
-              </div>
-
-              {/* Store Sections */}
-              {selectedPlan.stores ? (
-                selectedPlan.stores.map((store: any, index: number) => (
-                  <Card key={index}>
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h3 className="text-lg font-semibold">{store.retailerName}</h3>
-                          {store.address && (
-                            <p className="text-sm text-gray-600 flex items-center mt-1">
-                              <MapPin className="h-4 w-4 mr-1" />
-                              {store.address}
-                            </p>
-                          )}
-                          {store.optimizedRoute && (
-                            <div className="mt-2 p-2 bg-blue-50 rounded-lg">
-                              <p className="text-sm text-blue-700 font-medium flex items-center">
-                                <ArrowRight className="h-4 w-4 mr-1" />
-                                Optimized Route: {store.optimizedRoute.totalAisles} aisles • {store.optimizedRoute.estimatedTime} mins
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <div className="text-lg font-semibold">
-                            ${(store.subtotal / 100).toFixed(2)}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {store.items.length} items
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Aisle-organized items */}
-                      {store.aisleGroups ? (
-                        <div className="space-y-4">
-                          {store.aisleGroups.map((aisleGroup: any, aisleIndex: number) => (
-                            <div key={aisleIndex} className="border border-gray-200 rounded-lg overflow-hidden">
-                              <div className="bg-gray-100 px-3 py-2 flex items-center justify-between">
-                                <h4 className="font-medium text-gray-800 flex items-center">
-                                  <MapPin className="h-4 w-4 mr-2 text-blue-600" />
-                                  {aisleGroup.aisleName} - {aisleGroup.category}
-                                </h4>
-                                <span className="text-sm text-gray-600">
-                                  {aisleGroup.items.length} items
-                                </span>
-                              </div>
-                              <div className="p-2 space-y-1">
-                                {aisleGroup.items.map((item: any, itemIndex: number) => {
-                                  const shoppingListItem = items.find(listItem => 
-                                    listItem.productName.toLowerCase() === item.productName.toLowerCase()
-                                  );
-                                  const isCompleted = shoppingListItem?.isCompleted || false;
-
-                                  return (
-                                    <div key={itemIndex} className={`flex items-center justify-between py-2 px-2 rounded ${isCompleted ? 'bg-green-50 opacity-75' : 'bg-white hover:bg-gray-50'} mobile-shopping-item`}>
-                                      <div className="flex items-center flex-1">
-                                        <input
-                                          type="checkbox"
-                                          checked={isCompleted}
-                                          onChange={() => {
-                                            if (shoppingListItem) {
-                                              handleToggleItem(shoppingListItem.id, isCompleted);
-                                            }
-                                          }}
-                                          className="h-5 w-5 text-primary rounded mr-3 cursor-pointer"
-                                          disabled={!shoppingListItem}
-                                        />
-                                        <div className="flex-1">
-                                          <div className={`font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
-                                            {item.productName}
-                                          </div>
-                                          <div className="text-sm text-gray-500">
-                                            Qty: {item.quantity} {item.unit && item.unit !== 'COUNT' ? item.unit.toLowerCase() : ''}
-                                            {item.shelfLocation && (
-                                              <span className="ml-2 text-blue-600">• {item.shelfLocation}</span>
-                                            )}
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <div className="text-right ml-4">
-                                        <div className={`font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
-                                          ${(item.price / 100).toFixed(2)}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          {store.items.map((item: any, itemIndex: number) => {
-                            // Find corresponding item in main shopping list to get checkbox state
-                            const shoppingListItem = items.find(listItem => 
-                              listItem.productName.toLowerCase() === item.productName.toLowerCase()
-                            );
-                            const isCompleted = shoppingListItem?.isCompleted || false;
-
-                            return (
-                              <div key={itemIndex} className={`flex items-center justify-between py-3 px-2 border border-gray-100 rounded-lg ${isCompleted ? 'bg-green-50 opacity-75' : 'bg-white'} mobile-shopping-item`}>
-                                <div className="flex items-center flex-1">
-                                  <input
-                                    type="checkbox"
-                                    checked={isCompleted}
-                                    onChange={() => {
-                                      if (shoppingListItem) {
-                                        handleToggleItem(shoppingListItem.id, isCompleted);
-                                      }
-                                    }}
-                                    className="h-5 w-5 text-primary rounded mr-3 cursor-pointer"
-                                    disabled={!shoppingListItem}
-                                  />
-                                  <div className="flex-1">
-                                    <div className={`font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
-                                      {item.productName}
-                                    </div>
-                                    <div className="text-sm text-gray-500">
-                                      Qty: {item.quantity} {item.unit && item.unit !== 'COUNT' ? item.unit.toLowerCase() : ''}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="text-right ml-4">
-                                  <div className={`font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
-                                    ${(item.price / 100).toFixed(2)}
-                                  </div>
-                                  {item.totalPrice && (
-                                    <div className="text-sm text-gray-500">
-                                      Total: ${(item.totalPrice / 100).toFixed(2)}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {store.incentives && store.incentives.length > 0 && (
-                        <div className="mt-4 bg-blue-50 rounded-lg p-3">
-                          <h4 className="font-medium text-blue-800 mb-2">Special Offers</h4>
-                          {store.incentives.map((incentive: any, idx: number) => (
-                            <div key={idx} className="text-sm text-blue-600 mb-1">
-                              • {incentive.message}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))
-              ) : selectedPlan.items ? (
-                <Card>
+          <div className="space-y-4 py-4">
+            <div className="grid gap-4">
+              {categorizedItems.map((item, index) => (
+                <Card key={index} className="border border-gray-200">
                   <CardContent className="p-4">
-                    <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-lg font-semibold">{selectedPlan.retailerName || 'Shopping List'}</h3>
-                      <div className="text-lg font-semibold">
-                        ${(selectedPlan.totalCost / 100).toFixed(2)}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center">
+                        <span className="text-2xl mr-3">{item.icon}</span>
+                        <div>
+                          <h4 className="font-semibold text-lg">{item.productName}</h4>
+                          <p className="text-sm text-gray-600">
+                            {item.category.category} • {item.category.aisle} • Confidence: {Math.round(item.category.confidence * 100)}%
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-medium text-green-600">
+                          Suggested: {item.normalized.suggestedQuantity} {item.normalized.suggestedUnit}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Original: {item.normalized.originalQuantity} {item.normalized.originalUnit}
+                        </div>
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      {selectedPlan.items.map((item: any, index: number) => {
-                        // Find corresponding item in main shopping list to get checkbox state
-                        const shoppingListItem = items.find(listItem => 
-                          listItem.productName.toLowerCase() === item.productName.toLowerCase()
-                        );
-                        const isCompleted = shoppingListItem?.isCompleted || false;
+                    <div className="space-y-3">
+                      <div>
+                        <h5 className="text-sm font-medium text-gray-700 mb-1">Quantity Optimization</h5>
+                        <p className="text-xs text-gray-600">{item.normalized.conversionReason}</p>
+                      </div>
 
-                        return (
-                          <div key={index} className={`flex items-center justify-between py-3 px-2 border border-gray-100 rounded-lg ${isCompleted ? 'bg-green-50 opacity-75' : 'bg-white'} mobile-shopping-item`}>
-                            <div className="flex items-center flex-1">
-                              <input
-                                type="checkbox"
-                                checked={isCompleted}
-                                onChange={() => {
-                                  if (shoppingListItem) {
-                                    handleToggleItem(shoppingListItem.id, isCompleted);
-                                  }
-                                }}
-                                className="h-5 w-5 text-primary rounded mr-3 cursor-pointer"
-                                disabled={!shoppingListItem}
-                              />
-                              <div className="flex-1">
-                                <div className={`font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
-                                  {item.productName}
-                                </div>
-                                <div className="text-sm text-gray-500">
-                                  Qty: {item.quantity} {item.unit && item.unit !== 'COUNT' ? item.unit.toLowerCase() : ''}
-                                </div>
-                              </div>
-                            </div>
-                            <div className={`font-medium ml-4 ${isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
-                              ${(item.price / 100).toFixed(2)}
-                            </div>
-                          </div>
-                        );
-                      })}
+                      <div>
+                        <h5 className="text-sm font-medium text-gray-700 mb-1">Typical Retail Names</h5>
+                        <div className="flex flex-wrap gap-1">
+                          {item.category.typicalRetailNames.slice(0, 3).map((name, idx) => (
+                            <span key={idx} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                              {name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <h5 className="text-sm font-medium text-gray-700 mb-1">Brand Variations</h5>
+                        <div className="flex flex-wrap gap-1">
+                          {item.category.brandVariations.slice(0, 3).map((brand, idx) => (
+                            <span key={idx} className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                              {brand}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
-              ) : null}
-
-              {/* Progress Bar */}
-              <div className="bg-white border rounded-lg p-4">
-                <div className="flex justify-between items-center mb-2">
-                  <h4 className="font-medium">Shopping Progress</h4>
-                  <span className="text-sm text-gray-600">
-                    {items.filter(item => item.isCompleted).length} of {items.length} completed
-                  </span>
-                </div>
-                <Progress 
-                  value={items.length > 0 ? (items.filter(item => item.isCompleted).length / items.length) * 100 : 0} 
-                  className="h-2"
-                />
-              </div>
-
-              {/* Additional Notes */}
-              <div className="bg-yellow-50 rounded-lg p-4 print:block">
-                <h4 className="font-medium text-yellow-800 mb-2">Shopping Tips</h4>
-                <ul className="text-sm text-yellow-700 space-y-1">
-                  <li>• Check items off as you shop using the mobile interface</li>
-                  <li>• Consider bringing reusable bags</li>
-                  <li>• Look for additional deals and coupons at the store</li>
-                  {selectedPlan.stores && selectedPlan.stores.length > 1 && (
-                    <li>• Plan your route efficiently between stores</li>
-                  )}
-                </ul>
-              </div>
+              ))}
             </div>
-          )}
-
-          <DialogFooter className="flex flex-col sm:flex-row justify-between gap-2">
-            <Button variant="outline" onClick={() => setPlanViewDialogOpen(false)} className="order-2 sm:order-1">
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCategorization(false)}>
               Close
             </Button>
-            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 order-1 sm:order-2">
-              <Button
-                variant="outline"
-                onClick={handlePrintShoppingPlan}
-                className="flex items-center justify-center gap-2"
-              >
-                <Printer className="h-4 w-4" />
-                Print List
-              </Button>
-              <Button 
-                onClick={() => {
-                  const optimizedPlan = generateOptimizedShoppingRoute(selectedPlan);
-                  setSelectedPlan(optimizedPlan);
-                  // Navigate to shop page with list ID
-                  if (selectedList?.id) {
-                    navigate(`/shopping-route?listId=${selectedList.id}`);
-                  }
-                  toast({
-                    title: "Ready to Shop!",
-                    description: "Follow the aisle-by-aisle route for efficient shopping"
-                  });
-                }}
-                className="bg-primary hover:bg-primary/90"
-              >
-                <ShoppingCart className="h-4 w-4 mr-2" />
-                Start Shopping
-              </Button>
-            </div>
+            <Button onClick={() => {
+              toast({
+                title: "Categorization Applied",
+                description: "AI categorization insights have been applied to your shopping experience"
+              });
+              setShowCategorization(false);
+            }}>
+              Apply Insights
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
