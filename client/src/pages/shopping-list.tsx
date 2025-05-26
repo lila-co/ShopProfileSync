@@ -2133,23 +2133,25 @@ const ShoppingListPage: React.FC = () => {
           console.log('Dialog state changing:', open); // Debug log
           setShowShoppingPlan(open);
         }}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center justify-between">
-                <span>{selectedPlanTitle || 'Shopping Plan'}</span>
-                <div className="flex gap-2">
+          <DialogContent className="w-full max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+            <DialogHeader className="pb-4">
+              <DialogTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <span className="text-lg sm:text-xl font-bold">{selectedPlanTitle || 'Shopping Plan'}</span>
+                <div className="flex gap-2 justify-end">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={handlePrintShoppingPlan}
+                    className="text-xs sm:text-sm"
                   >
-                    <Printer className="h-4 w-4 mr-2" />
+                    <Printer className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                     Print
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setShowShoppingPlan(false)}
+                    className="text-xs sm:text-sm"
                   >
                     Close
                   </Button>
@@ -2157,22 +2159,15 @@ const ShoppingListPage: React.FC = () => {
               </DialogTitle>
             </DialogHeader>
 
-            <DialogContent>
+            <div className="space-y-4 sm:space-y-6">
               {selectedPlan ? (
                 <>
-                  {/* Debug info - remove in production */}
-                  {process.env.NODE_ENV === 'development' && (
-                    <div className="bg-gray-100 p-2 text-xs">
-                      <strong>Debug:</strong> Plan type: {typeof selectedPlan}, Keys: {Object.keys(selectedPlan || {}).join(', ')}
-                    </div>
-                  )}
-
                   {/* Total Cost Section */}
-                  <div className="bg-primary/5 rounded-lg p-4 border border-primary/20">
-                    <div className="flex justify-between items-center mb-2">
-                      <h3 className="font-bold text-primary">Total Cost</h3>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-primary">
+                  <div className="bg-primary/5 rounded-lg p-3 sm:p-4 border border-primary/20">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                      <h3 className="font-bold text-primary text-base sm:text-lg">Total Cost</h3>
+                      <div className="text-left sm:text-right">
+                        <div className="text-xl sm:text-2xl font-bold text-primary">
                           ${selectedPlan.totalCost ? (selectedPlan.totalCost / 100).toFixed(2) : '0.00'}
                         </div>
                         {selectedPlan.savings && selectedPlan.savings > 0 && (
@@ -2184,51 +2179,180 @@ const ShoppingListPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Store Items */}
+                  {/* Mobile-Optimized Shopping Checklist */}
                   {selectedPlan.stores && selectedPlan.stores.length > 0 ? (
-                    selectedPlan.stores.map((store: any, storeIndex: number) => (
-                      <div key={storeIndex} className="mb-6">
-                        <h4 className="text-lg font-semibold mb-2">{store.retailerName}</h4>
-                        {store.items && store.items.length > 0 ? (
-                          <ul className="space-y-2">
-                            {store.items.map((item: any, itemIndex: number) => (
-                              <li key={itemIndex} className="flex justify-between items-center">
-                                <span>{item.productName} (Qty: {item.quantity})</span>
-                                <span>${(item.price / 100).toFixed(2)}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <div className="text-gray-500">No items available for this store</div>
-                        )}
-                      </div>
-                    ))
-                  ) : selectedPlan.items && selectedPlan.items.length > 0 ? (
-                    <div>
-                      <h4 className="text-lg font-semibold mb-2">{selectedPlan.retailerName || 'Shopping List'}</h4>
-                      <ul className="space-y-2">
-                        {selectedPlan.items.map((item: any, itemIndex: number) => (
-                          <li key={itemIndex} className="flex justify-between items-center">
-                            <span>{item.productName} (Qty: {item.quantity})</span>
-                            <span>${(item.price / 100).toFixed(2)}</span>
-                          </li>
-                        ))}
-                      </ul>
+                    <div className="space-y-4 sm:space-y-6">
+                      {selectedPlan.stores.map((store: any, storeIndex: number) => (
+                        <Card key={storeIndex} className="border border-gray-200">
+                          <CardContent className="p-3 sm:p-4">
+                            {/* Store Header */}
+                            <div className="flex items-center justify-between mb-3 sm:mb-4 pb-2 border-b border-gray-100">
+                              <div className="flex items-center gap-2 sm:gap-3">
+                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                  <StoreIcon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                                </div>
+                                <div>
+                                  <h4 className="font-semibold text-sm sm:text-lg">{store.retailerName}</h4>
+                                  <p className="text-xs sm:text-sm text-gray-500">
+                                    {store.items?.length || 0} items • ${((store.subtotal || store.totalCost) / 100).toFixed(2)}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Interactive Shopping List */}
+                            {store.items && store.items.length > 0 ? (
+                              <div className="space-y-2 sm:space-y-3">
+                                {store.items.map((item: any, itemIndex: number) => (
+                                  <div 
+                                    key={itemIndex} 
+                                    className="mobile-shopping-item flex items-center gap-3 p-2 sm:p-3 bg-gray-50 rounded-lg border transition-all duration-200"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      className="h-4 w-4 sm:h-5 sm:w-5 text-primary rounded border-2 border-gray-300 focus:ring-primary focus:ring-offset-0"
+                                      onChange={(e) => {
+                                        // Toggle completed state styling
+                                        const listItem = e.target.parentElement;
+                                        if (e.target.checked) {
+                                          listItem?.classList.add('opacity-60');
+                                          listItem?.querySelector('.item-text')?.classList.add('line-through');
+                                        } else {
+                                          listItem?.classList.remove('opacity-60');
+                                          listItem?.querySelector('.item-text')?.classList.remove('line-through');
+                                        }
+                                      }}
+                                    />
+                                    <div className="flex-1 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2">
+                                      <div className="item-text">
+                                        <span className="font-medium text-sm sm:text-base">{item.productName}</span>
+                                        <span className="text-xs sm:text-sm text-gray-500 ml-2">
+                                          Qty: {item.quantity}
+                                        </span>
+                                      </div>
+                                      <div className="text-right">
+                                        <span className="font-semibold text-sm sm:text-base text-primary">
+                                          ${(item.price / 100).toFixed(2)}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+
+                                {/* Store Total */}
+                                <div className="border-t border-gray-200 pt-3 mt-4">
+                                  <div className="flex justify-between items-center">
+                                    <span className="font-medium text-sm sm:text-base">Store Total:</span>
+                                    <span className="font-bold text-base sm:text-lg text-primary">
+                                      ${((store.subtotal || store.totalCost) / 100).toFixed(2)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-center py-4 text-gray-500 text-sm">
+                                No items available for this store
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
                     </div>
+                  ) : selectedPlan.items && selectedPlan.items.length > 0 ? (
+                    <Card className="border border-gray-200">
+                      <CardContent className="p-3 sm:p-4">
+                        {/* Single Store Header */}
+                        <div className="flex items-center justify-between mb-3 sm:mb-4 pb-2 border-b border-gray-100">
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                              <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-sm sm:text-lg">{selectedPlan.retailerName || 'Shopping List'}</h4>
+                              <p className="text-xs sm:text-sm text-gray-500">
+                                {selectedPlan.items.length} items • ${(selectedPlan.totalCost / 100).toFixed(2)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Interactive Shopping List */}
+                        <div className="space-y-2 sm:space-y-3">
+                          {selectedPlan.items.map((item: any, itemIndex: number) => (
+                            <div 
+                              key={itemIndex} 
+                              className="mobile-shopping-item flex items-center gap-3 p-2 sm:p-3 bg-gray-50 rounded-lg border transition-all duration-200"
+                            >
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 sm:h-5 sm:w-5 text-primary rounded border-2 border-gray-300 focus:ring-primary focus:ring-offset-0"
+                                onChange={(e) => {
+                                  // Toggle completed state styling
+                                  const listItem = e.target.parentElement;
+                                  if (e.target.checked) {
+                                    listItem?.classList.add('opacity-60');
+                                    listItem?.querySelector('.item-text')?.classList.add('line-through');
+                                  } else {
+                                    listItem?.classList.remove('opacity-60');
+                                    listItem?.querySelector('.item-text')?.classList.remove('line-through');
+                                  }
+                                }}
+                              />
+                              <div className="flex-1 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2">
+                                <div className="item-text">
+                                  <span className="font-medium text-sm sm:text-base">{item.productName}</span>
+                                  <span className="text-xs sm:text-sm text-gray-500 ml-2">
+                                    Qty: {item.quantity}
+                                  </span>
+                                </div>
+                                <div className="text-right">
+                                  <span className="font-semibold text-sm sm:text-base text-primary">
+                                    ${(item.price / 100).toFixed(2)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
                   ) : (
                     <div className="text-center py-8 text-gray-500">
-                      <p className="mb-2">No shopping plan data available</p>
-                      <p className="text-sm">Please try generating the shopping plan again.</p>
+                      <ShoppingCart className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                      <p className="mb-2 text-sm sm:text-base">No shopping plan data available</p>
+                      <p className="text-xs sm:text-sm">Please try generating the shopping plan again.</p>
                     </div>
                   )}
+
+                  {/* Mobile Action Buttons */}
+                  <div className="sticky bottom-0 bg-white border-t border-gray-200 pt-4 mt-6 -mx-4 -mb-4 px-4 pb-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <Button
+                        onClick={handlePrintShoppingPlan}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        <Printer className="h-4 w-4 mr-2" />
+                        Print List
+                      </Button>
+                      <Button
+                        onClick={() => setShowShoppingPlan(false)}
+                        className="w-full"
+                      >
+                        <Check className="h-4 w-4 mr-2" />
+                        Done Shopping
+                      </Button>
+                    </div>
+                  </div>
                 </>
               ) : (
                 <div className="text-center py-8 text-gray-500">
-                  <p className="mb-2">Loading shopping plan...</p>
-                  <p className="text-sm">If this persists, please try again.</p>
+                  <Loader2 className="h-8 w-8 mx-auto mb-4 animate-spin" />
+                  <p className="mb-2 text-sm sm:text-base">Loading shopping plan...</p>
+                  <p className="text-xs sm:text-sm">If this persists, please try again.</p>
                 </div>
               )}
-            </DialogContent>
+            </div>
           </DialogContent>
         </Dialog>
       </main>

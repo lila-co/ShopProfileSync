@@ -121,17 +121,49 @@
   transition: all 0.2s ease-in-out;
 }
 
+.mobile-shopping-item {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  touch-action: manipulation;
+}
+
 .mobile-shopping-item:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background-color: rgb(249 250 251);
+}
+
+.mobile-shopping-item:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .mobile-shopping-item input[type="checkbox"] {
-  transform: scale(1.2);
+  transform: scale(1.1);
+  cursor: pointer;
 }
 
 .mobile-shopping-item input[type="checkbox"]:checked + div {
   transition: all 0.3s ease;
+}
+
+.mobile-shopping-item input[type="checkbox"]:checked + div .item-text {
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+
+/* Mobile touch improvements */
+@media (max-width: 640px) {
+  .mobile-shopping-item {
+    min-height: 44px; /* iOS recommended minimum touch target */
+    padding: 12px;
+  }
+  
+  .mobile-shopping-item input[type="checkbox"] {
+    transform: scale(1.3);
+    min-width: 20px;
+    min-height: 20px;
+  }
 }
 
 /* Print Styles */
