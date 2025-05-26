@@ -7,7 +7,7 @@ interface HeaderProps {
   user?: User;
 }
 
-const Header: React.FC<HeaderProps> = ({ title = "SmartCart", user }) => {
+const Header: React.FC<HeaderProps> = ({ title = "LILA:SmartCart", user }) => {
   const [, navigate] = useLocation();
   
   const handleNotifications = () => {
@@ -24,7 +24,7 @@ const Header: React.FC<HeaderProps> = ({ title = "SmartCart", user }) => {
     if (user?.firstName && user?.lastName) {
       return `${user.firstName[0]}${user.lastName[0]}`;
     }
-    return "SC";
+    return "LS";
   };
   
   return (
