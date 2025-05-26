@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { startTransition } from 'react';
 import { useParams } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/layout/Header';
@@ -20,9 +20,11 @@ const RetailerDetailsPage: React.FC = () => {
   const { id } = useParams();
   const retailerId = parseInt(id || '0');
 
-  const { data: retailer, isLoading } = useQuery<Retailer>({
+  const { data: retailer, isLoading, error } = useQuery<Retailer>({
     queryKey: [`/api/retailers/${retailerId}`],
     enabled: !!retailerId,
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   if (isLoading) {
@@ -37,7 +39,7 @@ const RetailerDetailsPage: React.FC = () => {
     );
   }
 
-  if (!retailer) {
+  if (error || (!retailer && !isLoading)) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
         <Header title="Store Not Found" showBackButton />

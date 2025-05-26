@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, startTransition } from 'react';
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -70,7 +70,9 @@ const RetailersPage: React.FC = () => {
   };
 
   const handleRetailerClick = (retailerId: number) => {
-    navigate(`/retailers/${retailerId}`);
+    startTransition(() => {
+      navigate(`/retailers/${retailerId}`);
+    });
   };
 
   const handleAddStore = () => {
