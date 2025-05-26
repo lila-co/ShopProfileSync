@@ -3,8 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
-import { apiRequest } from '@/lib/api';
+import { useToast } from "@/hooks/use-toast"
+import { apiRequest } from '@/lib/queryClient';
 import {
   Select,
   SelectContent,
