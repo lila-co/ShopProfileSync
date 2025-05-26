@@ -2326,7 +2326,7 @@ const ShoppingListPage: React.FC = () => {
 
                   {/* Mobile Action Buttons */}
                   <div className="sticky bottom-0 bg-white border-t border-gray-200 pt-4 mt-6 -mx-4 -mb-4 px-4 pb-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <Button
                         onClick={handlePrintShoppingPlan}
                         variant="outline"
@@ -2334,6 +2334,17 @@ const ShoppingListPage: React.FC = () => {
                       >
                         <Printer className="h-4 w-4 mr-2" />
                         Print List
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setShowShoppingPlan(false);
+                          navigate(`/shopping-route?listId=${defaultList?.id}&mode=instore`);
+                        }}
+                        variant="outline"
+                        className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
+                      >
+                        <MapPin className="h-4 w-4 mr-2" />
+                        Start Route
                       </Button>
                       <Button
                         onClick={() => setShowShoppingPlan(false)}
