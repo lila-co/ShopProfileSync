@@ -45,12 +45,8 @@ const ShoppingRoute: React.FC = () => {
 
   // Fetch shopping list and items
   const { data: shoppingList, isLoading } = useQuery({
-    queryKey: ['/api/shopping-lists', listId],
-    enabled: !!listId,
-    queryFn: async () => {
-      const response = await apiRequest('GET', `/api/shopping-lists/${listId}`, {});
-      return response.json();
-    }
+    queryKey: [`/api/shopping-lists/${listId}`],
+    enabled: !!listId
   });
 
   // Toggle item completion
