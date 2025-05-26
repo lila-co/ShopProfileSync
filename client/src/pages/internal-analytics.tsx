@@ -1,7 +1,4 @@
-The code is modified to include proper error handling and fix AI functionality queries for demographic trends, similar profiles, and trend predictions.
-```
 
-```replit_final_file
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/layout/Header';
@@ -143,11 +140,11 @@ const InternalAnalyticsPage: React.FC = () => {
         </div>
 
         <Tabs defaultValue="retailers" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="retailers">Retailers</TabsTrigger>
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="demographics">AI Insights</TabsTrigger>
-            <TabsTrigger value="predictions">Trend Predictions</TabsTrigger>
+            <TabsTrigger value="predictions">Predictions</TabsTrigger>
           </TabsList>
 
           <TabsContent value="retailers" className="space-y-4">
