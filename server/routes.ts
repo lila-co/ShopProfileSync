@@ -897,8 +897,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         {
           id: "pattern-3",
-          name:```python
-"Payday Splurge",
+          name: "Payday Splurge",
           description: "Premium purchases on 1st and 15th of month",
           affectedProducts: ["Specialty Foods", "Organic Items", "Premium Meats", "Wine & Spirits"],
           customerSegments: ["Single Professionals", "Empty Nesters"],
