@@ -278,6 +278,38 @@ const ShoppingRoute: React.FC = () => {
     }
   };
 
+  const moveToPreviousAisle = () => {
+    if (currentAisleIndex > 0) {
+      setCurrentAisleIndex(currentAisleIndex - 1);
+      toast({
+        title: "Going back to previous aisle",
+        description: `Now shopping in ${optimizedRoute.aisleGroups[currentAisleIndex - 1].aisleName}`,
+        duration: 3000
+      });
+    }
+  };
+
+  const jumpToAisle = (aisleIndex: number) => {
+    setCurrentAisleIndex(aisleIndex);
+    const aisle = optimizedRoute.aisleGroups[aisleIndex];
+    toast({
+      title: "Jumped to aisle",
+      description: `Now shopping in ${aisle.aisleName}`,
+      duration: 3000
+    });
+  };
+
+  const getAisleCompletionStatus = (aisle: any) => {
+    const completedCount = aisle.items.filter((item: any) => 
+      completedItems.has(item.id) || item.isCompleted
+    ).length;
+    return {
+      completed: completedCount,
+      total: aisle.items.length,
+      isComplete: completedCount === aisle.items.length
+    };
+  };
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -444,69 +476,120 @@ const ShoppingRoute: React.FC = () => {
                 })}
               </div>
 
-              {/* Navigation Button */}
-              <div className="mt-4 pt-4 border-t">
-                {isLastAisle ? (
+              {/* Navigation Buttons */}
+              <div className="mt-4 pt-4 border-t space-y-3">
+                <div className="grid grid-cols-2 gap-3">
                   <Button 
-                    className="w-full bg-green-600 hover:bg-green-700"
-                    onClick={() => {
-                      toast({
-                        title: "Shopping Complete!",
-                        description: "Great job! All aisles completed.",
-                        duration: 5000
-                      });
-                      setTimeout(() => navigate('/shopping-list'), 2000);
-                    }}
-                  >
-                    <Check className="h-4 w-4 mr-2" />
-                    Complete Shopping Trip
-                  </Button>
-                ) : (
-                  <Button 
+                    variant="outline"
+                    onClick={moveToPreviousAisle}
+                    disabled={currentAisleIndex === 0}
                     className="w-full"
-                    onClick={moveToNextAisle}
                   >
-                    <ArrowRight className="h-4 w-4 mr-2" />
-                    Next Aisle: {optimizedRoute.aisleGroups[currentAisleIndex + 1]?.aisleName}
+                    <ArrowRight className="h-4 w-4 mr-2 rotate-180" />
+                    Previous
                   </Button>
-                )}
+                  
+                  {isLastAisle ? (
+                    <Button 
+                      className="w-full bg-green-600 hover:bg-green-700"
+                      onClick={() => {
+                        toast({
+                          title: "Shopping Complete!",
+                          description: "Great job! All aisles completed.",
+                          duration: 5000
+                        });
+                        setTimeout(() => navigate('/shopping-list'), 2000);
+                      }}
+                    >
+                      <Check className="h-4 w-4 mr-2" />
+                      Complete
+                    </Button>
+                  ) : (
+                    <Button 
+                      className="w-full"
+                      onClick={moveToNextAisle}
+                    >
+                      Next
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Upcoming Aisles Preview */}
+        {/* All Aisles Overview */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Upcoming Aisles</CardTitle>
+            <CardTitle className="text-base">All Aisles</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {optimizedRoute.aisleGroups.slice(currentAisleIndex + 1).map((aisle: any, index: number) => (
-                <div 
-                  key={aisle.aisleName}
-                  className="flex items-center justify-between p-2 rounded-lg bg-gray-50"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-xs font-medium">
-                      {currentAisleIndex + index + 2}
+              {optimizedRoute.aisleGroups.map((aisle: any, index: number) => {
+                const completionStatus = getAisleCompletionStatus(aisle);
+                const isCurrent = index === currentAisleIndex;
+                const isVisited = index < currentAisleIndex;
+                
+                return (
+                  <button
+                    key={aisle.aisleName}
+                    onClick={() => jumpToAisle(index)}
+                    className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
+                      isCurrent 
+                        ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200' 
+                        : completionStatus.isComplete 
+                        ? 'bg-green-50 border-green-200 hover:bg-green-100' 
+                        : isVisited
+                        ? 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100'
+                        : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                        isCurrent 
+                          ? 'bg-blue-600 text-white' 
+                          : completionStatus.isComplete 
+                          ? 'bg-green-600 text-white' 
+                          : isVisited
+                          ? 'bg-yellow-500 text-white'
+                          : 'bg-gray-300 text-gray-700'
+                      }`}>
+                        {completionStatus.isComplete ? (
+                          <Check className="h-4 w-4" />
+                        ) : (
+                          index + 1
+                        )}
+                      </div>
+                      <div className="text-left">
+                        <div className="font-medium text-sm">{aisle.aisleName}</div>
+                        <div className="text-xs text-gray-500">{aisle.category}</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="font-medium text-sm">{aisle.aisleName}</div>
-                      <div className="text-xs text-gray-500">{aisle.category}</div>
+                    
+                    <div className="flex items-center gap-2">
+                      <div className="text-xs text-gray-600">
+                        {completionStatus.completed}/{completionStatus.total}
+                      </div>
+                      {isCurrent && (
+                        <Badge className="bg-blue-600 text-white text-xs">
+                          Current
+                        </Badge>
+                      )}
+                      {completionStatus.isComplete && !isCurrent && (
+                        <Badge className="bg-green-600 text-white text-xs">
+                          Complete
+                        </Badge>
+                      )}
+                      {!completionStatus.isComplete && isVisited && (
+                        <Badge className="bg-yellow-500 text-white text-xs">
+                          Incomplete
+                        </Badge>
+                      )}
                     </div>
-                  </div>
-                  <Badge variant="outline" className="text-xs">
-                    {aisle.items.length} items
-                  </Badge>
-                </div>
-              ))}
-              
-              {optimizedRoute.aisleGroups.slice(currentAisleIndex + 1).length === 0 && (
-                <p className="text-sm text-gray-500 text-center py-2">
-                  This is your final aisle!
-                </p>
-              )}
+                  </button>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
