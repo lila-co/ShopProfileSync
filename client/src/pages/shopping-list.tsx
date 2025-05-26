@@ -2347,7 +2347,9 @@ const ShoppingListPage: React.FC = () => {
                       <Button
                         onClick={() => {
                           setShowShoppingPlan(false);
-                          navigate(`/shopping-route?listId=${defaultList?.id}&mode=instore`);
+                          // Pass the selected plan data to the route page
+                          const planData = encodeURIComponent(JSON.stringify(selectedPlan));
+                          navigate(`/shopping-route?listId=${defaultList?.id}&mode=instore&planData=${planData}`);
                         }}
                         variant="outline"
                         className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"

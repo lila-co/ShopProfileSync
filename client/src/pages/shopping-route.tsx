@@ -36,8 +36,10 @@ const ShoppingRoute: React.FC = () => {
   const params = new URLSearchParams(window.location.search);
   const listId = params.get('listId');
   const mode = params.get('mode') || 'instore';
+  const planDataParam = params.get('planData');
   
   const [optimizedRoute, setOptimizedRoute] = useState<any>(null);
+  const [selectedPlanData, setSelectedPlanData] = useState<any>(null);
   const [currentAisleIndex, setCurrentAisleIndex] = useState(0);
   const [completedItems, setCompletedItems] = useState<Set<number>>(new Set());
   const [startTime, setStartTime] = useState<Date | null>(null);
@@ -72,14 +74,33 @@ const ShoppingRoute: React.FC = () => {
     }
   });
 
-  // Generate optimized route when component loads
+  // Parse plan data and generate route when component loads
   useEffect(() => {
-    if (shoppingList?.items) {
+    if (planDataParam) {
+      try {
+        const planData = JSON.parse(decodeURIComponent(planDataParam));
+        setSelectedPlanData(planData);
+        
+        // Generate route from the selected plan instead of raw shopping list items
+        const route = generateOptimizedShoppingRouteFromPlan(planData);
+        setOptimizedRoute(route);
+        setStartTime(new Date());
+      } catch (error) {
+        console.error('Error parsing plan data:', error);
+        // Fallback to original method if plan data is invalid
+        if (shoppingList?.items) {
+          const route = generateOptimizedShoppingRoute(shoppingList.items);
+          setOptimizedRoute(route);
+          setStartTime(new Date());
+        }
+      }
+    } else if (shoppingList?.items) {
+      // Fallback to original method if no plan data is provided
       const route = generateOptimizedShoppingRoute(shoppingList.items);
       setOptimizedRoute(route);
       setStartTime(new Date());
     }
-  }, [shoppingList]);
+  }, [shoppingList, planDataParam]);
 
   // Timer effect
   useEffect(() => {
@@ -94,8 +115,41 @@ const ShoppingRoute: React.FC = () => {
     }
   }, [startTime]);
 
+  // Generate optimized shopping route from selected plan data
+  const generateOptimizedShoppingRouteFromPlan = (planData: any) => {
+    let items: any[] = [];
+    let retailerName = 'Store';
+
+    // Extract items from different plan structures
+    if (planData.stores && planData.stores.length > 0) {
+      // Multi-store plan - use first store for route or combine all stores
+      if (planData.stores.length === 1) {
+        items = planData.stores[0].items || [];
+        retailerName = planData.stores[0].retailerName || 'Store';
+      } else {
+        // For multi-store plans, combine all items and let user know it's multi-store
+        items = planData.stores.flatMap((store: any) => 
+          (store.items || []).map((item: any) => ({
+            ...item,
+            storeName: store.retailerName // Add store name to each item
+          }))
+        );
+        retailerName = `Multi-Store (${planData.stores.map((s: any) => s.retailerName).join(', ')})`;
+      }
+    } else if (planData.items) {
+      // Single store plan
+      items = planData.items;
+      retailerName = planData.retailerName || 'Store';
+    } else {
+      // Fallback - use shopping list items
+      items = shoppingList?.items || [];
+    }
+
+    return generateOptimizedShoppingRoute(items, retailerName, planData);
+  };
+
   // Generate optimized shopping route with aisle information
-  const generateOptimizedShoppingRoute = (items: any[]) => {
+  const generateOptimizedShoppingRoute = (items: any[], retailerName?: string, planData?: any) => {
     // Define aisle mappings for different product categories
     const aisleMapping = {
       'Produce': { aisle: 'Aisle 1', category: 'Fresh Produce', order: 1, color: 'bg-green-100 text-green-800' },
@@ -174,8 +228,11 @@ const ShoppingRoute: React.FC = () => {
       totalAisles,
       estimatedTime: Math.round(estimatedTime),
       routeOrder: sortedAisleGroups.map((group: any) => group.aisleName),
-      retailerName: 'Kroger', // Default retailer
-      totalItems: items.length
+      retailerName: retailerName || 'Kroger',
+      totalItems: items.length,
+      planType: planData?.planType || 'Shopping Plan',
+      totalCost: planData?.totalCost || 0,
+      savings: planData?.savings || 0
     };
   };
 
@@ -274,13 +331,32 @@ const ShoppingRoute: React.FC = () => {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Store className="h-5 w-5 text-primary" />
-                <span className="font-semibold">{optimizedRoute.retailerName}</span>
+                <div>
+                  <div className="font-semibold">{optimizedRoute.retailerName}</div>
+                  {optimizedRoute.planType && (
+                    <div className="text-xs text-gray-500">{optimizedRoute.planType}</div>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Timer className="h-4 w-4" />
                 <span>{formatTime(elapsedTime)}</span>
               </div>
             </div>
+
+            {/* Plan Summary */}
+            {(optimizedRoute.totalCost > 0 || optimizedRoute.savings > 0) && (
+              <div className="mb-3 p-2 bg-green-50 rounded-lg">
+                <div className="flex justify-between items-center text-sm">
+                  {optimizedRoute.totalCost > 0 && (
+                    <span className="font-medium">Total: ${(optimizedRoute.totalCost / 100).toFixed(2)}</span>
+                  )}
+                  {optimizedRoute.savings > 0 && (
+                    <span className="text-green-600">Save: ${(optimizedRoute.savings / 100).toFixed(2)}</span>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
