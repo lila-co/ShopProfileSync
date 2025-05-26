@@ -592,6 +592,140 @@ const ShoppingListPage: React.FC = () => {
     printWindow.print();
   };
 
+  // Generate optimized shopping route with aisle information
+  const generateOptimizedShoppingRoute = (plan: any) => {
+    if (!plan) return plan;
+
+    // Define aisle mappings for different product categories
+    const aisleMapping = {
+      'Produce': { aisle: 'Aisle 1', category: 'Fresh Produce', order: 1 },
+      'Dairy': { aisle: 'Aisle 2', category: 'Dairy & Eggs', order: 2 },
+      'Meat': { aisle: 'Aisle 3', category: 'Meat & Seafood', order: 3 },
+      'Pantry': { aisle: 'Aisle 4-6', category: 'Pantry & Canned Goods', order: 4 },
+      'Frozen': { aisle: 'Aisle 7', category: 'Frozen Foods', order: 5 },
+      'Bakery': { aisle: 'Aisle 8', category: 'Bakery', order: 6 },
+      'Personal Care': { aisle: 'Aisle 9', category: 'Health & Personal Care', order: 7 },
+      'Household': { aisle: 'Aisle 10', category: 'Household Items', order: 8 }
+    };
+
+    // Function to categorize items
+    const categorizeItem = (productName: string) => {
+      const name = productName.toLowerCase();
+      
+      if (name.includes('banana') || name.includes('strawberries') || name.includes('produce')) {
+        return 'Produce';
+      } else if (name.includes('milk') || name.includes('yogurt') || name.includes('cheese') || name.includes('egg')) {
+        return 'Dairy';
+      } else if (name.includes('chicken') || name.includes('beef') || name.includes('meat') || name.includes('fish')) {
+        return 'Meat';
+      } else if (name.includes('bread') || name.includes('cake') || name.includes('bakery')) {
+        return 'Bakery';
+      } else if (name.includes('frozen') || name.includes('ice cream')) {
+        return 'Frozen';
+      } else if (name.includes('soap') || name.includes('shampoo') || name.includes('toothpaste')) {
+        return 'Personal Care';
+      } else if (name.includes('towel') || name.includes('cleaner') || name.includes('detergent')) {
+        return 'Household';
+      } else {
+        return 'Pantry';
+      }
+    };
+
+    // Process stores to add aisle organization
+    const optimizedPlan = { ...plan };
+    
+    if (optimizedPlan.stores) {
+      optimizedPlan.stores = optimizedPlan.stores.map((store: any) => {
+        // Group items by aisle
+        const aisleGroups: { [key: string]: any } = {};
+        
+        store.items.forEach((item: any) => {
+          const category = categorizeItem(item.productName);
+          const aisleInfo = aisleMapping[category as keyof typeof aisleMapping];
+          
+          if (!aisleGroups[aisleInfo.aisle]) {
+            aisleGroups[aisleInfo.aisle] = {
+              aisleName: aisleInfo.aisle,
+              category: aisleInfo.category,
+              order: aisleInfo.order,
+              items: []
+            };
+          }
+          
+          // Add shelf location for specific items
+          let shelfLocation = '';
+          const name = item.productName.toLowerCase();
+          if (name.includes('milk')) shelfLocation = 'Cooler Section';
+          else if (name.includes('bread')) shelfLocation = 'End Cap';
+          else if (name.includes('banana')) shelfLocation = 'Front Display';
+          
+          aisleGroups[aisleInfo.aisle].items.push({
+            ...item,
+            shelfLocation
+          });
+        });
+
+        // Sort aisles by order and convert to array
+        const sortedAisleGroups = Object.values(aisleGroups).sort((a: any, b: any) => a.order - b.order);
+        
+        // Calculate route optimization
+        const totalAisles = sortedAisleGroups.length;
+        const estimatedTime = Math.max(15, totalAisles * 3 + store.items.length * 0.5);
+
+        return {
+          ...store,
+          aisleGroups: sortedAisleGroups,
+          optimizedRoute: {
+            totalAisles,
+            estimatedTime: Math.round(estimatedTime),
+            routeOrder: sortedAisleGroups.map((group: any) => group.aisleName)
+          }
+        };
+      });
+    } else if (optimizedPlan.items) {
+      // Handle single store case
+      const aisleGroups: { [key: string]: any } = {};
+      
+      optimizedPlan.items.forEach((item: any) => {
+        const category = categorizeItem(item.productName);
+        const aisleInfo = aisleMapping[category as keyof typeof aisleMapping];
+        
+        if (!aisleGroups[aisleInfo.aisle]) {
+          aisleGroups[aisleInfo.aisle] = {
+            aisleName: aisleInfo.aisle,
+            category: aisleInfo.category,
+            order: aisleInfo.order,
+            items: []
+          };
+        }
+        
+        let shelfLocation = '';
+        const name = item.productName.toLowerCase();
+        if (name.includes('milk')) shelfLocation = 'Cooler Section';
+        else if (name.includes('bread')) shelfLocation = 'End Cap';
+        else if (name.includes('banana')) shelfLocation = 'Front Display';
+        
+        aisleGroups[aisleInfo.aisle].items.push({
+          ...item,
+          shelfLocation
+        });
+      });
+
+      const sortedAisleGroups = Object.values(aisleGroups).sort((a: any, b: any) => a.order - b.order);
+      const totalAisles = sortedAisleGroups.length;
+      const estimatedTime = Math.max(15, totalAisles * 3 + optimizedPlan.items.length * 0.5);
+
+      optimizedPlan.aisleGroups = sortedAisleGroups;
+      optimizedPlan.optimizedRoute = {
+        totalAisles,
+        estimatedTime: Math.round(estimatedTime),
+        routeOrder: sortedAisleGroups.map((group: any) => group.aisleName)
+      };
+    }
+
+    return optimizedPlan;
+  };
+
   // Generate print content
   const generatePrintContent = () => {
     if (!selectedPlan) return '';
@@ -1789,6 +1923,25 @@ const ShoppingListPage: React.FC = () => {
                     }
                   </div>
                 </div>
+                
+                {/* Top Start Shopping Button */}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <Button 
+                    onClick={() => {
+                      const optimizedPlan = generateOptimizedShoppingRoute(selectedPlan);
+                      setSelectedPlan(optimizedPlan);
+                      toast({
+                        title: "Optimized Shopping Route Ready!",
+                        description: "Items organized by aisle for efficient shopping"
+                      });
+                    }}
+                    className="w-full bg-primary hover:bg-primary/90 text-white"
+                    size="lg"
+                  >
+                    <MapPin className="h-5 w-5 mr-2" />
+                    Start Shopping with Aisle Navigation
+                  </Button>
+                </div>
               </div>
 
               {/* Store Sections */}
@@ -1805,6 +1958,14 @@ const ShoppingListPage: React.FC = () => {
                               {store.address}
                             </p>
                           )}
+                          {store.optimizedRoute && (
+                            <div className="mt-2 p-2 bg-blue-50 rounded-lg">
+                              <p className="text-sm text-blue-700 font-medium flex items-center">
+                                <ArrowRight className="h-4 w-4 mr-1" />
+                                Optimized Route: {store.optimizedRoute.totalAisles} aisles • {store.optimizedRoute.estimatedTime} mins
+                              </p>
+                            </div>
+                          )}
                         </div>
                         <div className="text-right">
                           <div className="text-lg font-semibold">
@@ -1816,51 +1977,112 @@ const ShoppingListPage: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        {store.items.map((item: any, itemIndex: number) => {
-                          // Find corresponding item in main shopping list to get checkbox state
-                          const shoppingListItem = items.find(listItem => 
-                            listItem.productName.toLowerCase() === item.productName.toLowerCase()
-                          );
-                          const isCompleted = shoppingListItem?.isCompleted || false;
-
-                          return (
-                            <div key={itemIndex} className={`flex items-center justify-between py-3 px-2 border border-gray-100 rounded-lg ${isCompleted ? 'bg-green-50 opacity-75' : 'bg-white'} mobile-shopping-item`}>
-                              <div className="flex items-center flex-1">
-                                <input
-                                  type="checkbox"
-                                  checked={isCompleted}
-                                  onChange={() => {
-                                    if (shoppingListItem) {
-                                      handleToggleItem(shoppingListItem.id, isCompleted);
-                                    }
-                                  }}
-                                  className="h-5 w-5 text-primary rounded mr-3 cursor-pointer"
-                                  disabled={!shoppingListItem}
-                                />
-                                <div className="flex-1">
-                                  <div className={`font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
-                                    {item.productName}
-                                  </div>
-                                  <div className="text-sm text-gray-500">
-                                    Qty: {item.quantity} {item.unit && item.unit !== 'COUNT' ? item.unit.toLowerCase() : ''}
-                                  </div>
-                                </div>
+                      {/* Aisle-organized items */}
+                      {store.aisleGroups ? (
+                        <div className="space-y-4">
+                          {store.aisleGroups.map((aisleGroup: any, aisleIndex: number) => (
+                            <div key={aisleIndex} className="border border-gray-200 rounded-lg overflow-hidden">
+                              <div className="bg-gray-100 px-3 py-2 flex items-center justify-between">
+                                <h4 className="font-medium text-gray-800 flex items-center">
+                                  <MapPin className="h-4 w-4 mr-2 text-blue-600" />
+                                  {aisleGroup.aisleName} - {aisleGroup.category}
+                                </h4>
+                                <span className="text-sm text-gray-600">
+                                  {aisleGroup.items.length} items
+                                </span>
                               </div>
-                              <div className="text-right ml-4">
-                                <div className={`font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
-                                  ${(item.price / 100).toFixed(2)}
-                                </div>
-                                {item.totalPrice && (
-                                  <div className="text-sm text-gray-500">
-                                    Total: ${(item.totalPrice / 100).toFixed(2)}
-                                  </div>
-                                )}
+                              <div className="p-2 space-y-1">
+                                {aisleGroup.items.map((item: any, itemIndex: number) => {
+                                  const shoppingListItem = items.find(listItem => 
+                                    listItem.productName.toLowerCase() === item.productName.toLowerCase()
+                                  );
+                                  const isCompleted = shoppingListItem?.isCompleted || false;
+
+                                  return (
+                                    <div key={itemIndex} className={`flex items-center justify-between py-2 px-2 rounded ${isCompleted ? 'bg-green-50 opacity-75' : 'bg-white hover:bg-gray-50'} mobile-shopping-item`}>
+                                      <div className="flex items-center flex-1">
+                                        <input
+                                          type="checkbox"
+                                          checked={isCompleted}
+                                          onChange={() => {
+                                            if (shoppingListItem) {
+                                              handleToggleItem(shoppingListItem.id, isCompleted);
+                                            }
+                                          }}
+                                          className="h-5 w-5 text-primary rounded mr-3 cursor-pointer"
+                                          disabled={!shoppingListItem}
+                                        />
+                                        <div className="flex-1">
+                                          <div className={`font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
+                                            {item.productName}
+                                          </div>
+                                          <div className="text-sm text-gray-500">
+                                            Qty: {item.quantity} {item.unit && item.unit !== 'COUNT' ? item.unit.toLowerCase() : ''}
+                                            {item.shelfLocation && (
+                                              <span className="ml-2 text-blue-600">• {item.shelfLocation}</span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className="text-right ml-4">
+                                        <div className={`font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
+                                          ${(item.price / 100).toFixed(2)}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {store.items.map((item: any, itemIndex: number) => {
+                            // Find corresponding item in main shopping list to get checkbox state
+                            const shoppingListItem = items.find(listItem => 
+                              listItem.productName.toLowerCase() === item.productName.toLowerCase()
+                            );
+                            const isCompleted = shoppingListItem?.isCompleted || false;
+
+                            return (
+                              <div key={itemIndex} className={`flex items-center justify-between py-3 px-2 border border-gray-100 rounded-lg ${isCompleted ? 'bg-green-50 opacity-75' : 'bg-white'} mobile-shopping-item`}>
+                                <div className="flex items-center flex-1">
+                                  <input
+                                    type="checkbox"
+                                    checked={isCompleted}
+                                    onChange={() => {
+                                      if (shoppingListItem) {
+                                        handleToggleItem(shoppingListItem.id, isCompleted);
+                                      }
+                                    }}
+                                    className="h-5 w-5 text-primary rounded mr-3 cursor-pointer"
+                                    disabled={!shoppingListItem}
+                                  />
+                                  <div className="flex-1">
+                                    <div className={`font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
+                                      {item.productName}
+                                    </div>
+                                    <div className="text-sm text-gray-500">
+                                      Qty: {item.quantity} {item.unit && item.unit !== 'COUNT' ? item.unit.toLowerCase() : ''}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="text-right ml-4">
+                                  <div className={`font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
+                                    ${(item.price / 100).toFixed(2)}
+                                  </div>
+                                  {item.totalPrice && (
+                                    <div className="text-sm text-gray-500">
+                                      Total: ${(item.totalPrice / 100).toFixed(2)}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
 
                       {store.incentives && store.incentives.length > 0 && (
                         <div className="mt-4 bg-blue-50 rounded-lg p-3">
@@ -1970,7 +2192,14 @@ const ShoppingListPage: React.FC = () => {
                 Print List
               </Button>
               <Button 
-                onClick={() => setPlanViewDialogOpen(false)}
+                onClick={() => {
+                  const optimizedPlan = generateOptimizedShoppingRoute(selectedPlan);
+                  setSelectedPlan(optimizedPlan);
+                  toast({
+                    title: "Ready to Shop!",
+                    description: "Follow the aisle-by-aisle route for efficient shopping"
+                  });
+                }}
                 className="bg-primary hover:bg-primary/90"
               >
                 <ShoppingCart className="h-4 w-4 mr-2" />
