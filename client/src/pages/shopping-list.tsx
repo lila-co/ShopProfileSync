@@ -957,7 +957,7 @@ const ShoppingListPage: React.FC = () => {
       <Header title="Shopping Lists" />
 
       <main className="flex-1 overflow-y-auto p-4 pb-20">
-        Updating the navigation to use `/shopping-route`instead of `/shop` for in-store and online shopping.        <h2 className="text-xl font-bold mb-4">Shopping List</h2>
+        <h2 className="text-xl font-bold mb-4">Shopping List</h2>
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
