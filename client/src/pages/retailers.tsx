@@ -33,10 +33,12 @@ const RetailersPage: React.FC = () => {
 
   const { data: retailers, isLoading } = useQuery<Retailer[]>({
     queryKey: ['/api/retailers'],
+    suspense: false,
   });
 
   const { data: connectedAccounts } = useQuery<RetailerAccount[]>({
     queryKey: ['/api/user/retailer-accounts'],
+    suspense: false,
   });
 
   const addStoreMutation = useMutation({
