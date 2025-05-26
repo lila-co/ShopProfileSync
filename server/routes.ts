@@ -303,6 +303,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Shopping list routes
+  app.get('/api/shopping-lists/:id', async (req: Request, res: Response) => {
+    try {
+      const listId = parseInt(req.params.id);
+      const lists = await storage.getShoppingLists();
+      const list = lists.find(l => l.id === listId);
+      
+      if (!list) {
+        return res.status(404).json({ message: 'Shopping list not found' });
+      }
+
+      // Fetch items for this shopping list
+      const items = await storage.getShoppingListItems(list.id);
+      console.log(`List ${list.id} has ${items.length} items:`, items);
+      
+      res.json({ ...list, items });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
   app.get('/api/shopping-lists', async (req: Request, res: Response) => {
     try {
       const lists = await storage.getShoppingLists();
