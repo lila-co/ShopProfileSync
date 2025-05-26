@@ -803,8 +803,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const retailerId = req.query.retailerId ? parseInt(req.query.retailerId as string) : undefined;
       const category = req.query.category as string | undefined;
 
-      const deals = await storage.getDeals(retailerId, category);
-      res.json(deals);
+      let deals = await storage.getDeals(retailerId, category);
+      
+      // Remove duplicates by creating a unique key for each deal
+      const uniqueDeals = deals.filter((deal, index, self) => 
+        index === self.findIndex((d) => 
+          d.productName === deal.productName && 
+          d.retailerId === deal.retailerId &&
+          d.salePrice === deal.salePrice
+        )
+      );
+      
+      res.json(uniqueDeals);
     } catch (error) {
       handleError(res, error);
     }

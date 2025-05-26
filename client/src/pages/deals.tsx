@@ -111,13 +111,32 @@ const DealsView: React.FC = () => {
 
 
 
-  if (isLoadingDeals) return <div>Loading deals...</div>;
+  if (isLoadingDeals) {
+    return (
+      <div className="container mx-auto py-6">
+        <h1 className="text-2xl font-bold mb-6">Weekly Deals</h1>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          {Array.from({ length: 8 }).map((_, index) => (
+            <Card key={index} className="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-100">
+              <CardContent className="p-3">
+                <div className="aspect-square mb-2 overflow-hidden rounded-md bg-gray-200 animate-pulse" />
+                <div className="h-4 bg-gray-200 rounded animate-pulse mb-1" />
+                <div className="h-6 bg-gray-200 rounded animate-pulse mb-2" />
+                <div className="h-8 bg-gray-200 rounded animate-pulse" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-6">
+      <h1 className="text-2xl font-bold mb-6">Weekly Deals</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Select onValueChange={handleRetailerChange}>
+      <div className="flex flex-wrap gap-4 mb-6">
+        <Select onValueChange={handleRetailerChange} value={selectedRetailer}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filter by Retailer" />
           </SelectTrigger>
@@ -130,7 +149,7 @@ const DealsView: React.FC = () => {
           </SelectContent>
         </Select>
 
-        <Select onValueChange={handleCategoryChange}>
+        <Select onValueChange={handleCategoryChange} value={selectedCategory}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filter by Category" />
           </SelectTrigger>
@@ -144,28 +163,55 @@ const DealsView: React.FC = () => {
         </Select>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-4">
-        {deals?.map((deal: Deal) => (
-          <Card key={deal.id} className="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-100">
-            <CardContent className="p-3">
-              <div className="aspect-square mb-2 overflow-hidden rounded-md">
-                <img src={deal.imageUrl} alt={deal.productName} className="w-full h-full object-cover" />
-              </div>
-              <h3 className="font-medium text-sm line-clamp-2 mb-1">{deal.productName}</h3>
-              <p className="text-lg font-bold text-primary mb-2">${deal.price}</p>
-              <Button 
-                size="sm" 
-                className="w-full h-8 text-xs"
-                onClick={() => addDealToListMutation.mutate(deal)}
-                disabled={addDealToListMutation.isPending}
-              >
-                <Plus className="h-3 w-3 mr-1" />
-                {addDealToListMutation.isPending ? 'Adding...' : 'Add'}
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {deals && deals.length > 0 ? (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          {deals.map((deal: Deal) => (
+            <Card key={`${deal.id}-${deal.retailerId}`} className="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-100 hover:shadow-md transition-shadow">
+              <CardContent className="p-3">
+                <div className="aspect-square mb-2 overflow-hidden rounded-md bg-gray-100">
+                  {deal.imageUrl && (
+                    <img 
+                      src={deal.imageUrl} 
+                      alt={deal.productName} 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  )}
+                </div>
+                <h3 className="font-medium text-sm line-clamp-2 mb-1" title={deal.productName}>
+                  {deal.productName}
+                </h3>
+                <div className="flex items-center gap-1 mb-2">
+                  <span className="text-lg font-bold text-primary">
+                    ${(deal.price / 100).toFixed(2)}
+                  </span>
+                  {deal.category && (
+                    <span className="text-xs text-gray-500 ml-auto">
+                      {deal.category}
+                    </span>
+                  )}
+                </div>
+                <Button 
+                  size="sm" 
+                  className="w-full h-8 text-xs"
+                  onClick={() => addDealToListMutation.mutate(deal)}
+                  disabled={addDealToListMutation.isPending}
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  {addDealToListMutation.isPending ? 'Adding...' : 'Add to List'}
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12">
+          <p className="text-gray-500 text-lg mb-2">No deals found</p>
+          <p className="text-gray-400 text-sm">Try adjusting your filters or check back later for new deals.</p>
+        </div>
+      )}
     </div>
   );
 };
