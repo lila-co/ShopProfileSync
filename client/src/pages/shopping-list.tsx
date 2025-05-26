@@ -893,7 +893,8 @@ const ShoppingListPage: React.FC = () => {
           .note { margin-top: 20px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #007bff; }
           @media print { 
             body { margin: 0; }
-            .mobile-shopping-item { display: none !important; }
+            .mobile-shopping-item { display:```text
+ none !important; }
           }
         </style>
       </head>
