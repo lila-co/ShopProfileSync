@@ -1059,7 +1059,6 @@ const ShoppingListPage: React.FC = () => {
             </CardContent>
           </Card>
         )}
-        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4 sm:mb-6">
           <TabsList className="flex w-full h-auto flex-wrap">
