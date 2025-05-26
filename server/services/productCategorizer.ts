@@ -308,12 +308,14 @@ export class ProductCategorizerService {
       };
     }
     
-    return {
+    const finalCategory = {
       ...bestMatch,
       confidence: Math.max(bestSimilarity, bestMatch.confidence * 0.8),
       typicalRetailNames: this.generateRetailNames(productName),
-      brandVariations: this.generateBrandVariations(productName)
+      brandVariations: this.generateBrandVariations(productName, bestMatch)
     };
+    
+    return finalCategory;
   }
 
   private getCategoryDefaults(categoryKey: string): ProductCategory {
@@ -409,11 +411,26 @@ export class ProductCategorizerService {
     return names;
   }
 
-  private generateBrandVariations(productName: string): string[] {
-    const category = this.categorizeProduct(productName);
-    return category.brandVariations.length > 0 
-      ? category.brandVariations 
-      : ['Generic', 'Store Brand', 'Name Brand'];
+  private generateBrandVariations(productName: string, existingCategory?: ProductCategory): string[] {
+    // Use existing category if provided to avoid circular dependency
+    if (existingCategory && existingCategory.brandVariations.length > 0) {
+      return existingCategory.brandVariations;
+    }
+    
+    // Default brand variations based on product name patterns
+    const name = productName.toLowerCase();
+    
+    if (name.includes('milk') || name.includes('dairy')) {
+      return ['Great Value', 'Horizon Organic', 'Lactaid', 'Fairlife', 'Store Brand'];
+    } else if (name.includes('bread') || name.includes('bakery')) {
+      return ['Wonder', 'Pepperidge Farm', 'Sara Lee', 'Dave\'s Killer Bread', 'Store Brand'];
+    } else if (name.includes('meat') || name.includes('beef') || name.includes('chicken')) {
+      return ['Fresh', 'Organic', 'Grass Fed', 'Antibiotic Free', 'Store Brand'];
+    } else if (name.includes('fruit') || name.includes('vegetable') || name.includes('produce')) {
+      return ['Organic', 'Fresh', 'Local', 'Store Brand'];
+    }
+    
+    return ['Generic', 'Store Brand', 'Name Brand'];
   }
 
   private cleanProductName(name: string): string {
