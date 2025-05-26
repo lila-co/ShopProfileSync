@@ -75,13 +75,6 @@ const ShoppingListPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('items');
   const [selectedOptimization, setSelectedOptimization] = useState('cost');
 
-  // Auto-trigger optimization when optimization tab is selected
-  React.useEffect(() => {
-    if (activeTab === 'optimization' && defaultList?.id && items.length > 0 && !priceComparisonMutation.data && !priceComparisonMutation.isPending) {
-      priceComparisonMutation.mutate(defaultList.id);
-    }
-  }, [activeTab, defaultList?.id, items.length]);
-
   // Shopping plan view state
   const [planViewDialogOpen, setPlanViewDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
@@ -957,7 +950,7 @@ const ShoppingListPage: React.FC = () => {
     if (activeTab === 'optimization' && defaultList?.id && items.length > 0 && !priceComparisonMutation.data && !priceComparisonMutation.isPending) {
       priceComparisonMutation.mutate(defaultList.id);
     }
-  }, [activeTab, defaultList?.id, items.length, priceComparisonMutation]);
+  }, [activeTab, defaultList?.id, items.length, priceComparisonMutation.data, priceComparisonMutation.isPending]);
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
