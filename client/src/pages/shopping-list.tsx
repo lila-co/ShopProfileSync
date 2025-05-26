@@ -671,7 +671,7 @@ const ShoppingListPage: React.FC = () => {
 
   // Handle viewing shopping plan
   const handleViewShoppingPlan = (plan: any, title: string) => {
-    console.log('Opening shopping plan:', { plan, title }); // Debug log
+    console.log('Opening shopping plan:', { plan, title, planType: plan?.planType }); // Debug log
     if (!plan) {
       toast({
         title: "Error",
@@ -1354,7 +1354,10 @@ const ShoppingListPage: React.FC = () => {
                                 size="sm" 
                                 variant="default" 
                                 className="w-full text-xs sm:text-sm mt-2"
-                                onClick={() => handleViewShoppingPlan(singleStoreOptimization.data, "Single Store - Kroger")}
+                                onClick={() => handleViewShoppingPlan({
+                                  ...singleStoreOptimization.data,
+                                  planType: "Single Store"
+                                }, "Single Store - Kroger")}
                               >
                                 <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                                 View Full Shopping Plan
@@ -1412,7 +1415,10 @@ const ShoppingListPage: React.FC = () => {
                                 size="sm" 
                                 variant="default" 
                                 className="w-full text-xs sm:text-sm mt-2"
-                                onClick={() => handleViewShoppingPlan(bestValueOptimization.data, "Best Value - Multi-Store")}
+                                onClick={() => handleViewShoppingPlan({
+                                  ...bestValueOptimization.data,
+                                  planType: "Best Value Multi-Store"
+                                }, "Best Value - Multi-Store")}
                               >
                                 <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                                 View Full Shopping Plan
@@ -1468,7 +1474,10 @@ const ShoppingListPage: React.FC = () => {
                                 size="sm" 
                                 variant="default" 
                                 className="w-full text-xs sm:text-sm mt-2"
-                                onClick={() => handleViewShoppingPlan(balancedOptimization.data, "Balanced - Target")}
+                                onClick={() => handleViewShoppingPlan({
+                                  ...balancedOptimization.data,
+                                  planType: "Balanced"
+                                }, "Balanced - Target")}
                               >
                                 <BarChart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                                 View Full Shopping Plan

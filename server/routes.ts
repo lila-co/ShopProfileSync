@@ -1527,7 +1527,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         availabilityRate: 0.87,
         availableItems: items.length,
         totalItems: items.length,
-        address: "123 Main St, San Francisco, CA 94105"
+        address: "123 Main St, San Francisco, CA 94105",
+        planType: "Single Store",
+        storeCount: 1
       });
     } catch (error) {
       handleError(res, error);
@@ -1548,6 +1550,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Demo data: Split items between Kroger (cheaper produce) and Walmart (cheaper packaged goods)
       const krogerItems = [];
       const walmartItems = [];
+      
+      // Split items between stores for best value
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const itemData = {
+          id: item.id,
+          productName: item.productName,
+          quantity: item.quantity,
+          unit: item.unit,
+          price: 200 + Math.floor(Math.random() * 250), // Lower prices for best value
+          totalPrice: 0
+        };
+        
+        itemData.totalPrice = itemData.price * itemData.quantity;
+        
+        // Alternate between stores or use product type logic
+        if (i % 2 === 0 || item.productName.toLowerCase().includes('produce') || 
+            item.productName.toLowerCase().includes('fruit') || 
+            item.productName.toLowerCase().includes('vegetable')) {
+          krogerItems.push(itemData);
+        } else {
+          walmartItems.push(itemData);
+        }
+      }
+      
+      const krogerSubtotal = krogerItems.reduce((sum, item) => sum + item.totalPrice, 0);
+      const walmartSubtotal = walmartItems.reduce((sum, item) => sum + item.totalPrice, 0);
+      const totalCost = krogerSubtotal + walmartSubtotal;
+      
+      res.json({
+        stores: [
+          {
+            retailerId: 3,
+            retailerName: "Kroger",
+            items: krogerItems,
+            subtotal: krogerSubtotal,
+            address: "123 Main St, San Francisco, CA 94105"
+          },
+          {
+            retailerId: 1,
+            retailerName: "Walmart",
+            items: walmartItems,
+            subtotal: walmartSubtotal,
+            address: "789 Oak Ave, San Francisco, CA 94103"
+          }
+        ],
+        totalCost,
+        savings: 850, // $8.50 savings
+        planType: "Best Value Multi-Store",
+        storeCount: 2
+      });
 
       items.forEach((item, index) => {
         const itemData = {
@@ -1635,7 +1688,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }],
         totalCost,
         estimatedTime: 35, // 35 minutes estimated
-        storeCount: 1
+        storeCount: 1,
+        planType: "Balanced",
+        savings: 320 // $3.20 savings
       });
     } catch (error) {
       handleError(res, error);
