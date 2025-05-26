@@ -17,11 +17,8 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommendation 
     mutationFn: async () => {
       const response = await apiRequest('POST', '/api/shopping-list/items', {
         productName: recommendation.productName,
-        suggestedRetailerId: recommendation.suggestedRetailerId,
-        suggestedPrice: recommendation.suggestedPrice,
-        dueDate: recommendation.daysUntilPurchase ? 
-          new Date(Date.now() + recommendation.daysUntilPurchase * 24 * 60 * 60 * 1000).toISOString() : 
-          undefined
+        quantity: 1,
+        unit: 'COUNT'
       });
       return response.json();
     },
