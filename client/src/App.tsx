@@ -12,6 +12,7 @@ import InsightsPage from '@/pages/insights';
 import RecommendationsPage from '@/pages/recommendations';
 import InternalAnalytics from '@/pages/internal-analytics';
 import AdminSettings from '@/pages/admin-settings';
+import AffiliateDashboard from '@/pages/affiliate-dashboard';
 import { queryClient } from '@/lib/queryClient';
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
             <Route path="/recommendations" component={RecommendationsPage} />
             <Route path="/internal/analytics" component={InternalAnalytics} />
             <Route path="/admin-settings" component={AdminSettings} />
+            <Route path="/affiliate-dashboard" component={AffiliateDashboard} />
             <Route component={NotFound} />
           </Switch>
         </div>
