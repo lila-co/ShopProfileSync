@@ -13,6 +13,23 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
+// Add CSS for line clamping
+const styles = `
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+`;
+
+// Inject styles
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement("style");
+  styleSheet.textContent = styles;
+  document.head.appendChild(styleSheet);
+}
+
 interface Deal {
   id: string;
   productName: string;
@@ -127,28 +144,25 @@ const DealsView: React.FC = () => {
         </Select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-4">
         {deals?.map((deal: Deal) => (
-          <Card key={deal.id} className="bg-white shadow-md rounded-md overflow-hidden">
-            <CardHeader>
-              <CardTitle>{deal.productName}</CardTitle>
-              <CardDescription>{deal.description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <img src={deal.imageUrl} alt={deal.productName} className="w-full h-48 object-cover mb-4" />
-              <p className="text-2xl font-bold text-gray-800">${deal.price}</p>
-            </CardContent>
-            <CardFooter className="flex justify-between items-center">
+          <Card key={deal.id} className="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-100">
+            <CardContent className="p-3">
+              <div className="aspect-square mb-2 overflow-hidden rounded-md">
+                <img src={deal.imageUrl} alt={deal.productName} className="w-full h-full object-cover" />
+              </div>
+              <h3 className="font-medium text-sm line-clamp-2 mb-1">{deal.productName}</h3>
+              <p className="text-lg font-bold text-primary mb-2">${deal.price}</p>
               <Button 
-                        size="sm" 
-                        className="w-full"
-                        onClick={() => addDealToListMutation.mutate(deal)}
-                        disabled={addDealToListMutation.isPending}
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        {addDealToListMutation.isPending ? 'Adding...' : 'Add to List'}
-                      </Button>
-            </CardFooter>
+                size="sm" 
+                className="w-full h-8 text-xs"
+                onClick={() => addDealToListMutation.mutate(deal)}
+                disabled={addDealToListMutation.isPending}
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                {addDealToListMutation.isPending ? 'Adding...' : 'Add'}
+              </Button>
+            </CardContent>
           </Card>
         ))}
       </div>

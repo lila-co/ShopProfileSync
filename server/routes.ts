@@ -900,6 +900,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: 102, 
           name: "Bananas", 
           category: "Produce", 
+```
           totalSales: 65000, 
           unitsSold: 43333, 
           averagePrice: 1.50, 
