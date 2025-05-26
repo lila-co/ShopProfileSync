@@ -78,6 +78,8 @@ const ShoppingListPage: React.FC = () => {
   // Shopping plan view state
   const [planViewDialogOpen, setPlanViewDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [selectedPlanTitle, setSelectedPlanTitle] = useState('');
+  const [showShoppingPlan, setShowShoppingPlan] = useState(false);
 
   // AI categorization state
   const [showCategorization, setShowCategorization] = useState(false);
@@ -668,9 +670,19 @@ const ShoppingListPage: React.FC = () => {
   };
 
   // Handle viewing shopping plan
-  const handleViewShoppingPlan = (planData: any, planType: string) => {
-    setSelectedPlan({ ...planData, planType });
-    setPlanViewDialogOpen(true);
+  const handleViewShoppingPlan = (plan: any, title: string) => {
+    console.log('Opening shopping plan:', { plan, title }); // Debug log
+    if (!plan) {
+      toast({
+        title: "Error",
+        description: "Shopping plan data is not available",
+        variant: "destructive"
+      });
+      return;
+    }
+    setSelectedPlan(plan);
+    setSelectedPlanTitle(title);
+    setShowShoppingPlan(true);
   };
 
   // Handle printing shopping plan
@@ -880,7 +892,7 @@ const ShoppingListPage: React.FC = () => {
         content += `
             </div>
             <div style="text-align: right; font-weight: bold; margin-top: 10px;">
-              Store Total: $${(store.subtotal / 100).toFixed(2)}
+              Store Total: $${(store.subtotal / 100).toFixed(2)}```python
             </div>
           </div>
         `;
@@ -2115,6 +2127,110 @@ const ShoppingListPage: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Shopping Plan Modal */}
+        <Dialog open={showShoppingPlan} onOpenChange={(open) => {
+          console.log('Dialog state changing:', open); // Debug log
+          setShowShoppingPlan(open);
+        }}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center justify-between">
+                <span>{selectedPlanTitle || 'Shopping Plan'}</span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePrintShoppingPlan}
+                  >
+                    <Printer className="h-4 w-4 mr-2" />
+                    Print
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowShoppingPlan(false)}
+                  >
+                    Close
+                  </Button>
+                </div>
+              </DialogTitle>
+            </DialogHeader>
+
+            <DialogContent>
+              {selectedPlan ? (
+                <>
+                  {/* Debug info - remove in production */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <div className="bg-gray-100 p-2 text-xs">
+                      <strong>Debug:</strong> Plan type: {typeof selectedPlan}, Keys: {Object.keys(selectedPlan || {}).join(', ')}
+                    </div>
+                  )}
+
+                  {/* Total Cost Section */}
+                  <div className="bg-primary/5 rounded-lg p-4 border border-primary/20">
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="font-bold text-primary">Total Cost</h3>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-primary">
+                          ${selectedPlan.totalCost ? (selectedPlan.totalCost / 100).toFixed(2) : '0.00'}
+                        </div>
+                        {selectedPlan.savings && selectedPlan.savings > 0 && (
+                          <div className="text-sm text-green-600">
+                            You save ${(selectedPlan.savings / 100).toFixed(2)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Store Items */}
+                  {selectedPlan.stores && selectedPlan.stores.length > 0 ? (
+                    selectedPlan.stores.map((store: any, storeIndex: number) => (
+                      <div key={storeIndex} className="mb-6">
+                        <h4 className="text-lg font-semibold mb-2">{store.retailerName}</h4>
+                        {store.items && store.items.length > 0 ? (
+                          <ul className="space-y-2">
+                            {store.items.map((item: any, itemIndex: number) => (
+                              <li key={itemIndex} className="flex justify-between items-center">
+                                <span>{item.productName} (Qty: {item.quantity})</span>
+                                <span>${(item.price / 100).toFixed(2)}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <div className="text-gray-500">No items available for this store</div>
+                        )}
+                      </div>
+                    ))
+                  ) : selectedPlan.items && selectedPlan.items.length > 0 ? (
+                    <div>
+                      <h4 className="text-lg font-semibold mb-2">{selectedPlan.retailerName || 'Shopping List'}</h4>
+                      <ul className="space-y-2">
+                        {selectedPlan.items.map((item: any, itemIndex: number) => (
+                          <li key={itemIndex} className="flex justify-between items-center">
+                            <span>{item.productName} (Qty: {item.quantity})</span>
+                            <span>${(item.price / 100).toFixed(2)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <p className="mb-2">No shopping plan data available</p>
+                      <p className="text-sm">Please try generating the shopping plan again.</p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <p className="mb-2">Loading shopping plan...</p>
+                  <p className="text-sm">If this persists, please try again.</p>
+                </div>
+              )}
+            </DialogContent>
+          </DialogContent>
+        </Dialog>
       </main>
 
       <BottomNavigation activeTab="lists" />
