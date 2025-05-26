@@ -1783,7 +1783,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (!categorySpending[category]) {
             categorySpending[category] = 0;
           }
-          categorySpending[category] += item.totalPrice);
+          categorySpending[category] += item.totalPrice;
         });
 
         // Find categories that are close to minimum spending thresholds
