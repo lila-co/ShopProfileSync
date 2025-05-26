@@ -75,6 +75,10 @@ const ShoppingListPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('items');
   const [selectedOptimization, setSelectedOptimization] = useState('cost');
 
+  // Shopping plan view state
+  const [planViewDialogOpen, setPlanViewDialogOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<any>(null);
+
   const { data: shoppingLists, isLoading } = useQuery<ShoppingList[]>({
     queryKey: ['/api/shopping-lists'],
   });
@@ -571,6 +575,125 @@ const ShoppingListPage: React.FC = () => {
     setUploadedItems(updatedItems);
   };
 
+  // Handle viewing shopping plan
+  const handleViewShoppingPlan = (planData: any, planType: string) => {
+    setSelectedPlan({ ...planData, planType });
+    setPlanViewDialogOpen(true);
+  };
+
+  // Handle printing shopping plan
+  const handlePrintShoppingPlan = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const printContent = generatePrintContent();
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
+  // Generate print content
+  const generatePrintContent = () => {
+    if (!selectedPlan) return '';
+
+    const currentDate = new Date().toLocaleDateString();
+    let content = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Shopping Plan - ${selectedPlan.planType}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+          .store-section { margin-bottom: 30px; page-break-inside: avoid; }
+          .store-header { background-color: #f5f5f5; padding: 10px; font-weight: bold; font-size: 18px; }
+          .item-list { margin: 10px 0; }
+          .item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dotted #ccc; }
+          .summary { margin-top: 30px; border-top: 2px solid #000; padding-top: 10px; }
+          .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }
+          @media print { body { margin: 0; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Shopping Plan - ${selectedPlan.planType}</h1>
+          <p>Generated on ${currentDate}</p>
+        </div>
+    `;
+
+    if (selectedPlan.stores) {
+      selectedPlan.stores.forEach((store: any) => {
+        content += `
+          <div class="store-section">
+            <div class="store-header">
+              ${store.retailerName}
+              ${store.address ? `<br><small style="font-weight: normal;">${store.address}</small>` : ''}
+            </div>
+            <div class="item-list">
+        `;
+
+        store.items.forEach((item: any) => {
+          content += `
+            <div class="item">
+              <span>${item.productName} (Qty: ${item.quantity})</span>
+              <span>$${(item.price / 100).toFixed(2)}</span>
+            </div>
+          `;
+        });
+
+        content += `
+            </div>
+            <div style="text-align: right; font-weight: bold; margin-top: 10px;">
+              Store Total: $${(store.subtotal / 100).toFixed(2)}
+            </div>
+          </div>
+        `;
+      });
+    } else if (selectedPlan.items) {
+      content += `
+        <div class="store-section">
+          <div class="store-header">${selectedPlan.retailerName || 'Shopping List'}</div>
+          <div class="item-list">
+      `;
+
+      selectedPlan.items.forEach((item: any) => {
+        content += `
+          <div class="item">
+            <span>${item.productName} (Qty: ${item.quantity})</span>
+            <span>$${(item.price / 100).toFixed(2)}</span>
+          </div>
+        `;
+      });
+
+      content += `
+          </div>
+        </div>
+      `;
+    }
+
+    content += `
+        <div class="summary">
+          <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold;">
+            <span>Total Cost:</span>
+            <span>$${(selectedPlan.totalCost / 100).toFixed(2)}</span>
+          </div>
+          ${selectedPlan.savings > 0 ? `
+            <div style="display: flex; justify-content: space-between; color: green;">
+              <span>Total Savings:</span>
+              <span>$${(selectedPlan.savings / 100).toFixed(2)}</span>
+            </div>
+          ` : ''}
+        </div>
+        <div class="footer">
+          <p>Happy Shopping! 🛒</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return content;
+  };
+
   // Show loading state
   if (isLoading) {
     return (
@@ -899,6 +1022,15 @@ const ShoppingListPage: React.FC = () => {
                                   +{singleStoreOptimization.data.items.length - 3} more items
                                 </div>
                               )}
+                              <Button 
+                                size="sm" 
+                                variant="default" 
+                                className="w-full text-xs sm:text-sm mt-2"
+                                onClick={() => handleViewShoppingPlan(singleStoreOptimization.data, "Single Store - Kroger")}
+                              >
+                                <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                View Full Shopping Plan
+                              </Button>
                             </div>
                           ) : (
                             <Button 
@@ -948,6 +1080,15 @@ const ShoppingListPage: React.FC = () => {
                                   </div>
                                 </div>
                               ))}
+                              <Button 
+                                size="sm" 
+                                variant="default" 
+                                className="w-full text-xs sm:text-sm mt-2"
+                                onClick={() => handleViewShoppingPlan(bestValueOptimization.data, "Best Value - Multi-Store")}
+                              >
+                                <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                View Full Shopping Plan
+                              </Button>
                             </div>
                           ) : (
                             <Button 
@@ -995,6 +1136,15 @@ const ShoppingListPage: React.FC = () => {
                                   <span>${(item.price / 100).toFixed(2)}</span>
                                 </div>
                               ))}
+                              <Button 
+                                size="sm" 
+                                variant="default" 
+                                className="w-full text-xs sm:text-sm mt-2"
+                                onClick={() => handleViewShoppingPlan(balancedOptimization.data, "Balanced - Target")}
+                              >
+                                <BarChart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                View Full Shopping Plan
+                              </Button>
                             </div>
                           ) : (
                             <Button 
@@ -1182,10 +1332,11 @@ const ShoppingListPage: React.FC = () => {
                               size="sm"
                               className="w-full"
                               onClick={() => {
-                                toast({
-                                  title: "In-Store Shopping",
-                                  description: `Plan created for ${store.retailerName}`
-                                });
+                                handleViewShoppingPlan({
+                                  stores: [store],
+                                  totalCost: store.totalCost,
+                                  savings: store.savings || 0
+                                }, `In-Store Plan - ${store.retailerName}`);
                               }}
                             >
                               <StoreIcon className="h-4 w-4 mr-2" />
@@ -1564,6 +1715,179 @@ const ShoppingListPage: React.FC = () => {
             >
               {importRecipeMutation.isPending ? 'Importing...' : 'Import'}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Shopping Plan View Dialog */}
+      <Dialog open={planViewDialogOpen} onOpenChange={setPlanViewDialogOpen}>
+        <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>{selectedPlan?.planType}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrintShoppingPlan}
+                className="flex items-center gap-2"
+              >
+                <Printer className="h-4 w-4" />
+                Print List
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedPlan && (
+            <div className="space-y-6 py-4">
+              {/* Plan Summary */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="font-semibold text-lg">Plan Summary</h3>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-primary">
+                      ${(selectedPlan.totalCost / 100).toFixed(2)}
+                    </div>
+                    {selectedPlan.savings > 0 && (
+                      <div className="text-green-600 font-medium">
+                        Save ${(selectedPlan.savings / 100).toFixed(2)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                  <div>
+                    <span className="font-medium">Total Items:</span> {
+                      selectedPlan.stores 
+                        ? selectedPlan.stores.reduce((sum: number, store: any) => sum + store.items.length, 0)
+                        : selectedPlan.items?.length || 0
+                    }
+                  </div>
+                  <div>
+                    <span className="font-medium">Store Count:</span> {
+                      selectedPlan.stores ? selectedPlan.stores.length : 1
+                    }
+                  </div>
+                </div>
+              </div>
+
+              {/* Store Sections */}
+              {selectedPlan.stores ? (
+                selectedPlan.stores.map((store: any, index: number) => (
+                  <Card key={index}>
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h3 className="text-lg font-semibold">{store.retailerName}</h3>
+                          {store.address && (
+                            <p className="text-sm text-gray-600 flex items-center mt-1">
+                              <MapPin className="h-4 w-4 mr-1" />
+                              {store.address}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-semibold">
+                            ${(store.subtotal / 100).toFixed(2)}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {store.items.length} items
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        {store.items.map((item: any, itemIndex: number) => (
+                          <div key={itemIndex} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
+                            <div className="flex-1">
+                              <div className="font-medium">{item.productName}</div>
+                              <div className="text-sm text-gray-500">
+                                Quantity: {item.quantity} {item.unit && item.unit !== 'COUNT' ? item.unit.toLowerCase() : ''}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-medium">${(item.price / 100).toFixed(2)}</div>
+                              {item.totalPrice && (
+                                <div className="text-sm text-gray-500">
+                                  Total: ${(item.totalPrice / 100).toFixed(2)}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {store.incentives && store.incentives.length > 0 && (
+                        <div className="mt-4 bg-blue-50 rounded-lg p-3">
+                          <h4 className="font-medium text-blue-800 mb-2">Special Offers</h4>
+                          {store.incentives.map((incentive: any, idx: number) => (
+                            <div key={idx} className="text-sm text-blue-600 mb-1">
+                              • {incentive.message}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))
+              ) : selectedPlan.items ? (
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start mb-4">
+                      <h3 className="text-lg font-semibold">{selectedPlan.retailerName || 'Shopping List'}</h3>
+                      <div className="text-lg font-semibold">
+                        ${(selectedPlan.totalCost / 100).toFixed(2)}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      {selectedPlan.items.map((item: any, index: number) => (
+                        <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
+                          <div className="flex-1">
+                            <div className="font-medium">{item.productName}</div>
+                            <div className="text-sm text-gray-500">
+                              Quantity: {item.quantity} {item.unit && item.unit !== 'COUNT' ? item.unit.toLowerCase() : ''}
+                            </div>
+                          </div>
+                          <div className="font-medium">${(item.price / 100).toFixed(2)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : null}
+
+              {/* Additional Notes */}
+              <div className="bg-yellow-50 rounded-lg p-4">
+                <h4 className="font-medium text-yellow-800 mb-2">Shopping Tips</h4>
+                <ul className="text-sm text-yellow-700 space-y-1">
+                  <li>• Check your shopping list before leaving home</li>
+                  <li>• Consider bringing reusable bags</li>
+                  <li>• Look for additional deals and coupons at the store</li>
+                  {selectedPlan.stores && selectedPlan.stores.length > 1 && (
+                    <li>• Plan your route efficiently between stores</li>
+                  )}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="flex justify-between">
+            <Button variant="outline" onClick={() => setPlanViewDialogOpen(false)}>
+              Close
+            </Button>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                onClick={handlePrintShoppingPlan}
+                className="flex items-center gap-2"
+              >
+                <Printer className="h-4 w-4" />
+                Print List
+              </Button>
+              <Button onClick={() => setPlanViewDialogOpen(false)}>
+                Start Shopping
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
