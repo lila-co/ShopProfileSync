@@ -530,7 +530,7 @@ const ShoppingListPage: React.FC = () => {
         if (shouldUpdate) {
           const response = await apiRequest('PATCH', `/api/shopping-list/items/${originalItem.id}`, {
             productName: originalItem.productName,
-            quantity: categorizedItem.normalized.suggestedQuantity,
+            quantity: Number(categorizedItem.normalized.suggestedQuantity),
             unit: categorizedItem.normalized.suggestedUnit
           });
           return response.json();
