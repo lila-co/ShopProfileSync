@@ -1166,8 +1166,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async addShoppingListItem(itemData: Partial<ShoppingListItem>): Promise<ShoppingListItem> {
-    // Ensure quantity defaults to 1 if not provided
-    const quantity = itemData.quantity || 1;
+    // Ensure quantity defaults to 1 if not provided and is properly converted to number
+    let quantity = itemData.quantity || 1;
+    quantity = Number(quantity);
+    if (isNaN(quantity)) {
+      quantity = 1;
+    }
     
     const [item] = await db.insert(shoppingListItems).values({
       ...itemData,
@@ -1183,9 +1187,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateShoppingListItem(id: number, updates: Partial<ShoppingListItem>): Promise<ShoppingListItem> {
+    // Ensure quantity is properly converted to a number if provided
+    const processedUpdates = { ...updates };
+    if (processedUpdates.quantity !== undefined) {
+      processedUpdates.quantity = Number(processedUpdates.quantity);
+      if (isNaN(processedUpdates.quantity)) {
+        throw new Error("Invalid quantity value");
+      }
+    }
+
     const [updatedItem] = await db
       .update(shoppingListItems)
-      .set(updates)
+      .set(processedUpdates)
       .where(eq(shoppingListItems.id, id))
       .returning();
     
