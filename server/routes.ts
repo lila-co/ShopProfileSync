@@ -1021,7 +1021,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(filteredTrends);
     } catch (error) {
-      handleError(res, error);
+      console.error('Error in demographic trends endpoint:', error);
+      res.status(500).json({ 
+        error: 'Failed to fetch demographic trends',
+        message: error.message || 'Internal server error'
+      });
     }
   });
 
@@ -1122,7 +1126,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(similarProfileAnalysis);
     } catch (error) {
-      handleError(res, error);
+      console.error('Error in similar profiles endpoint:', error);
+      res.status(500).json({ 
+        error: 'Failed to fetch similar profiles',
+        message: error.message || 'Internal server error'
+      });
     }
   });
 
@@ -1187,7 +1195,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(trendPredictions);
     } catch (error) {
-      handleError(res, error);
+      console.error('Error in trend predictions endpoint:', error);
+      res.status(500).json({ 
+        error: 'Failed to fetch trend predictions',
+        message: error.message || 'Internal server error'
+      });
     }
   });
 

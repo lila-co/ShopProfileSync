@@ -1,3 +1,7 @@
+The code is modified to include proper error handling and fix AI functionality queries for demographic trends, similar profiles, and trend predictions.
+```
+
+```replit_final_file
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/layout/Header';
@@ -90,6 +94,43 @@ const InternalAnalyticsPage: React.FC = () => {
   const { data: purchasePatterns } = useQuery({
     queryKey: ['/api/internal/analytics/purchase-patterns'],
   });
+
+  const { data: fetchedDemographicTrends } = useQuery({
+    queryKey: ['/api/internal/analytics/demographic-trends'],
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const { data: fetchedSimilarProfiles } = useQuery({
+    queryKey: ['/api/internal/analytics/similar-profiles'],
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const { data: fetchedTrendPredictions } = useQuery({
+    queryKey: ['/api/internal/analytics/trend-predictions'],
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  // Use fetched data if available, otherwise fall back to default data
+  React.useEffect(() => {
+    if (fetchedDemographicTrends) {
+      setDemographicTrends(fetchedDemographicTrends);
+    }
+  }, [fetchedDemographicTrends]);
+
+  React.useEffect(() => {
+    if (fetchedSimilarProfiles) {
+      setSimilarProfiles(fetchedSimilarProfiles);
+    }
+  }, [fetchedSimilarProfiles]);
+
+  React.useEffect(() => {
+    if (fetchedTrendPredictions) {
+      setTrendPredictions(fetchedTrendPredictions);
+    }
+  }, [fetchedTrendPredictions]);
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
