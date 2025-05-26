@@ -484,7 +484,7 @@ const ShoppingListPage: React.FC = () => {
       const productName = newItemName.trim();
 
       let unit = newItemUnit;
-      
+
       // If auto-detect is enabled, use AI to determine the optimal unit
       if (autoDetectUnit) {
         try {
@@ -951,6 +951,13 @@ const ShoppingListPage: React.FC = () => {
   const defaultList = shoppingLists?.[0];
   const items = defaultList?.items ?? [];
   const selectedList = defaultList;
+
+  // Auto-trigger optimization when optimization tab is selected
+  React.useEffect(() => {
+    if (activeTab === 'optimization' && defaultList?.id && items.length > 0 && !priceComparisonMutation.data && !priceComparisonMutation.isPending) {
+      priceComparisonMutation.mutate(defaultList.id);
+    }
+  }, [activeTab, defaultList?.id, items.length, priceComparisonMutation]);
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
@@ -1585,7 +1592,8 @@ const ShoppingListPage: React.FC = () => {
                                   stores: [store],
                                   totalCost: store.totalCost,
                                   savings: store.savings || 0
-                                }, `In-Store Plan - ${store.retailerName}`);
+                                }, `In-Store```text
+Plan - ${store.retailerName}`);
                               }}
                             >
                               <StoreIcon className="h-4 w-4 mr-2" />
