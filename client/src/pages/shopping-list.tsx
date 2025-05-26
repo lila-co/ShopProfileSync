@@ -179,7 +179,7 @@ const ShoppingListPage: React.FC = () => {
     mutationFn: async () => {
       const defaultList = shoppingLists?.[0];
       if (!defaultList) throw new Error("No shopping list found");
-      
+
       const response = await apiRequest('POST', '/api/shopping-lists/recipe', {
         recipeUrl,
         shoppingListId: defaultList.id,
@@ -611,7 +611,7 @@ const ShoppingListPage: React.FC = () => {
     // Function to categorize items
     const categorizeItem = (productName: string) => {
       const name = productName.toLowerCase();
-      
+
       if (name.includes('banana') || name.includes('strawberries') || name.includes('produce')) {
         return 'Produce';
       } else if (name.includes('milk') || name.includes('yogurt') || name.includes('cheese') || name.includes('egg')) {
@@ -633,16 +633,16 @@ const ShoppingListPage: React.FC = () => {
 
     // Process stores to add aisle organization
     const optimizedPlan = { ...plan };
-    
+
     if (optimizedPlan.stores) {
       optimizedPlan.stores = optimizedPlan.stores.map((store: any) => {
         // Group items by aisle
         const aisleGroups: { [key: string]: any } = {};
-        
+
         store.items.forEach((item: any) => {
           const category = categorizeItem(item.productName);
           const aisleInfo = aisleMapping[category as keyof typeof aisleMapping];
-          
+
           if (!aisleGroups[aisleInfo.aisle]) {
             aisleGroups[aisleInfo.aisle] = {
               aisleName: aisleInfo.aisle,
@@ -651,14 +651,14 @@ const ShoppingListPage: React.FC = () => {
               items: []
             };
           }
-          
+
           // Add shelf location for specific items
           let shelfLocation = '';
           const name = item.productName.toLowerCase();
           if (name.includes('milk')) shelfLocation = 'Cooler Section';
           else if (name.includes('bread')) shelfLocation = 'End Cap';
           else if (name.includes('banana')) shelfLocation = 'Front Display';
-          
+
           aisleGroups[aisleInfo.aisle].items.push({
             ...item,
             shelfLocation
@@ -667,7 +667,7 @@ const ShoppingListPage: React.FC = () => {
 
         // Sort aisles by order and convert to array
         const sortedAisleGroups = Object.values(aisleGroups).sort((a: any, b: any) => a.order - b.order);
-        
+
         // Calculate route optimization
         const totalAisles = sortedAisleGroups.length;
         const estimatedTime = Math.max(15, totalAisles * 3 + store.items.length * 0.5);
@@ -685,11 +685,11 @@ const ShoppingListPage: React.FC = () => {
     } else if (optimizedPlan.items) {
       // Handle single store case
       const aisleGroups: { [key: string]: any } = {};
-      
+
       optimizedPlan.items.forEach((item: any) => {
         const category = categorizeItem(item.productName);
         const aisleInfo = aisleMapping[category as keyof typeof aisleMapping];
-        
+
         if (!aisleGroups[aisleInfo.aisle]) {
           aisleGroups[aisleInfo.aisle] = {
             aisleName: aisleInfo.aisle,
@@ -698,13 +698,13 @@ const ShoppingListPage: React.FC = () => {
             items: []
           };
         }
-        
+
         let shelfLocation = '';
         const name = item.productName.toLowerCase();
         if (name.includes('milk')) shelfLocation = 'Cooler Section';
         else if (name.includes('bread')) shelfLocation = 'End Cap';
         else if (name.includes('banana')) shelfLocation = 'Front Display';
-        
+
         aisleGroups[aisleInfo.aisle].items.push({
           ...item,
           shelfLocation
@@ -831,12 +831,12 @@ const ShoppingListPage: React.FC = () => {
             </div>
           ` : ''}
         </div>
-        
+
         <div class="note">
           <h4 style="margin-top: 0;">📱 Mobile Shopping Tip:</h4>
           <p style="margin-bottom: 0;">Access your shopping list on your mobile device to check off items as you shop. Changes sync in real-time!</p>
         </div>
-        
+
         <div class="footer">
           <p>Happy Shopping! 🛒</p>
         </div>
@@ -875,6 +875,7 @@ const ShoppingListPage: React.FC = () => {
   // Get the default shopping list and its items
   const defaultList = shoppingLists?.[0];
   const items = defaultList?.items ?? [];
+  const selectedList = defaultList;
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
@@ -1327,10 +1328,7 @@ const ShoppingListPage: React.FC = () => {
                           variant="outline" 
                           className="w-full h-auto p-4 flex flex-col items-center space-y-2"
                           onClick={() => {
-                            toast({
-                              title: "In-Person Shopping",
-                              description: "Your shopping plan with store addresses has been prepared"
-                            });
+                            navigate(`/shop?listId=${selectedList.id}&mode=instore`);
                           }}
                         >
                           <StoreIcon className="h-6 w-6" />
@@ -1343,10 +1341,7 @@ const ShoppingListPage: React.FC = () => {
                         <Button 
                           className="w-full h-auto p-4 flex flex-col items-center space-y-2"
                           onClick={() => {
-                            toast({
-                              title: "Online Shopping",
-                              description: "Choose pickup or delivery options"
-                            });
+                            navigate(`/shop?listId=${selectedList.id}&mode=online`);
                           }}
                         >
                           <ShoppingCart className="h-6 w-6" />
@@ -1891,7 +1886,7 @@ const ShoppingListPage: React.FC = () => {
               </div>
             </DialogTitle>
           </DialogHeader>
-          
+
           {selectedPlan && (
             <div className="space-y-6 py-4">
               {/* Plan Summary */}
@@ -1923,7 +1918,7 @@ const ShoppingListPage: React.FC = () => {
                     }
                   </div>
                 </div>
-                
+
                 {/* Top Start Shopping Button */}
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <Button 
