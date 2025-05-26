@@ -27,8 +27,8 @@ const RecommendationsPage: React.FC = () => {
 
   // Add items to shopping list mutation
   const addToShoppingListMutation = useMutation({
-    mutationFn: async (items: typeof enhancedRecommendations) => {
-      const selectedItemsToAdd = items.filter(item => selectedItems.has(item.id));
+    mutationFn: async () => {
+      const selectedItemsToAdd = enhancedRecommendations.filter(item => selectedItems.has(item.id));
       
       for (const item of selectedItemsToAdd) {
         await apiRequest('POST', '/api/shopping-list/items', {
@@ -42,6 +42,7 @@ const RecommendationsPage: React.FC = () => {
     },
     onSuccess: (addedItems) => {
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      setSelectedItems(new Set()); // Clear selections after adding
       toast({
         title: "Items Added",
         description: `${addedItems.length} items added to your shopping list`
@@ -158,8 +159,7 @@ const RecommendationsPage: React.FC = () => {
       return;
     }
     
-    addToShoppingListMutation.mutate(enhancedRecommendations);
-    setSelectedItems(new Set());
+    addToShoppingListMutation.mutate();
   };
 
   const groupedRecommendations = enhancedRecommendations.reduce((groups, item) => {

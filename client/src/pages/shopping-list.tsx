@@ -140,12 +140,14 @@ const ShoppingListPage: React.FC = () => {
 
   // Add generated items to shopping list
   const addGeneratedItemsMutation = useMutation({
-    mutationFn: async (selectedItems: any[]) => {
+    mutationFn: async () => {
       const defaultList = shoppingLists?.[0];
       if (!defaultList) throw new Error("No shopping list found");
 
+      const selectedItemsToAdd = generatedItems.filter(item => item.isSelected);
+
       const response = await apiRequest('POST', '/api/shopping-lists/generate', {
-        items: selectedItems,
+        items: selectedItemsToAdd,
         shoppingListId: defaultList.id
       });
       return response.json();
@@ -1301,10 +1303,10 @@ const ShoppingListPage: React.FC = () => {
                 Cancel
               </Button>
               <Button 
-                onClick={() => generateListMutation.mutate(generatedItems)}
-                disabled={generateListMutation.isPending}
+                onClick={() => addGeneratedItemsMutation.mutate()}
+                disabled={addGeneratedItemsMutation.isPending}
                 className="bg-primary">
-                Generate List
+                {addGeneratedItemsMutation.isPending ? 'Adding...' : 'Add to List'}
               </Button>
             </DialogFooter>
           </DialogContent>

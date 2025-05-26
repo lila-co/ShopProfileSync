@@ -33,13 +33,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Get the default user ID for demo purposes
       const defaultUser = await storage.getDefaultUser();
-      
+
       // Add the ID to the request body
       const userData = {
         ...req.body,
         id: defaultUser.id
       };
-      
+
       // Simple update via defaultUser to avoid ID issues
       const updatedUser = await storage.updateUser(userData);
       res.json(updatedUser);
@@ -135,14 +135,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Get or generate recommendations based on purchase history
       let recommendations = await storage.getRecommendations();
-      
+
       // If no recommendations exist, generate some
       if (!recommendations || recommendations.length === 0) {
         try {
           const user = await storage.getDefaultUser();
           const purchases = await storage.getPurchases();
           recommendations = await generateRecommendations(user, purchases);
-          
+
           // Save the generated recommendations
           for (const rec of recommendations) {
             try {
@@ -158,7 +158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           recommendations = [];
         }
       }
-      
+
       res.json(recommendations || []);
     } catch (error) {
       console.error('Error in recommendations endpoint:', error);
@@ -171,31 +171,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/shopping-lists', async (req: Request, res: Response) => {
     try {
       const lists = await storage.getShoppingLists();
-      
+
       // Fetch items for each shopping list
       const listsWithItems = await Promise.all(lists.map(async (list) => {
         const items = await storage.getShoppingListItems(list.id);
         console.log(`List ${list.id} has ${items.length} items:`, items);
         return { ...list, items };
       }));
-      
+
       res.json(listsWithItems);
     } catch (error) {
       handleError(res, error);
     }
   });
-  
+
   // Get recent purchases to refresh shopping lists
   app.get('/api/purchases/recent', async (req: Request, res: Response) => {
     try {
       const userId = 1; // For demo purposes, use default user
       const purchases = await storage.getPurchases();
-      
+
       // Get the 5 most recent purchases
       const recentPurchases = purchases
         .sort((a, b) => new Date(b.purchaseDate).getTime() - new Date(a.purchaseDate).getTime())
         .slice(0, 5);
-        
+
       res.json(recentPurchases);
     } catch (error) {
       handleError(res, error);
@@ -207,34 +207,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { items: selectedItems, shoppingListId } = req.body;
       const userId = 1; // For demo purposes, use default user
-      
+
       // Get the target shopping list
       const lists = await storage.getShoppingLists();
       const targetListId = shoppingListId || lists[0]?.id;
-      
+
       if (!targetListId) {
         return res.status(400).json({ message: 'No shopping list available' });
       }
-      
+
       // Get existing items to check for duplicates
       const existingItems = await storage.getShoppingListItems(targetListId);
-      
+
       const addedItems = [];
       const updatedItems = [];
-      
+
       // Process each selected item
       for (const item of selectedItems || []) {
         if (!item.isSelected) continue;
-        
+
         const normalizedName = item.productName.toLowerCase().trim();
-        
+
         // Check for duplicates using the same logic as the regular add item endpoint
         let existingItem = existingItems.find(existing => 
           existing.productName.toLowerCase() === normalizedName ||
           existing.productName.toLowerCase() + 's' === normalizedName ||
           existing.productName.toLowerCase() === normalizedName + 's'
         );
-        
+
         // Check for common item variations
         if (!existingItem) {
           const commonItemCorrections: Record<string, string[]> = {
@@ -246,7 +246,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             'pasta': ['spaghetti', 'noodles'],
             'coffee': ['ground coffee', 'coffee beans']
           };
-          
+
           for (const [baseItem, variations] of Object.entries(commonItemCorrections)) {
             if (normalizedName.includes(baseItem) || variations.some(v => normalizedName.includes(v))) {
               existingItem = existingItems.find(existing => {
@@ -257,7 +257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
         }
-        
+
         if (existingItem) {
           // Update existing item by adding quantities
           const updatedItem = await storage.updateShoppingListItem(existingItem.id, {
@@ -281,7 +281,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           addedItems.push(newItem);
         }
       }
-      
+
       res.json({
         addedItems,
         updatedItems,
@@ -302,7 +302,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
-      
+
       // For demo purposes, provide a rich set of realistic shopping recommendations
       // with personalized insights and deal information
       const recommendedItems = [
@@ -417,7 +417,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isSelected: true
         }
       ];
-      
+
       // Return the recommendations for preview
       res.json({
         userId,
@@ -440,7 +440,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // In a real app, we would scrape the recipe URL to extract ingredients
       // For demo purposes, simulate recipe extraction
       const extractedIngredients = await extractRecipeIngredients(recipeUrl, servings);
-      
+
       // Add each ingredient to the shopping list
       const addedItems = [];
       for (const ingredient of extractedIngredients) {
@@ -487,7 +487,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           reason: "Aligns with your dietary preferences"
         }
       ];
-      
+
       res.json(suggestions);
     } catch (error) {
       handleError(res, error);
@@ -497,7 +497,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/shopping-list/items', async (req: Request, res: Response) => {
     try {
       const { productName, quantity, unit, shoppingListId } = req.body;
-      
+
+      // Validate quantity to ensure it's a number and not NaN
+      const validQuantity = Number(quantity);
+      if (isNaN(validQuantity)) {
+        return res.status(400).json({ message: 'Invalid quantity. Please provide a valid number.' });
+      }
+
       // If no shoppingListId provided, use the default list
       let targetListId = shoppingListId;
       if (!targetListId) {
@@ -508,10 +514,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         targetListId = defaultList.id;
       }
-      
+
       // Get existing items to check for duplicates
       const existingItems = await storage.getShoppingListItems(targetListId);
-      
+
       // Common item names and alternate spellings/misspellings
       const commonItemCorrections: Record<string, string[]> = {
         'banana': ['banan', 'bananna', 'bananas', 'bannana', 'banannas'],
@@ -525,22 +531,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'chicken': ['chickn', 'checken', 'chiken'],
         'cereal': ['ceereal', 'cereals', 'cerel']
       };
-      
+
       // Normalize the product name to lowercase for matching
       const normalizedName = productName ? productName.toLowerCase().trim() : '';
-      
+
       // Check if this is likely a duplicate with a slightly different spelling
       let correctedName = normalizedName;
       let isDuplicate = false;
       let existingItem = null;
-      
+
       // First check for exact matches or plurals
       existingItem = existingItems.find(item => 
         item.productName.toLowerCase() === normalizedName ||
         item.productName.toLowerCase() + 's' === normalizedName ||
         item.productName.toLowerCase() === normalizedName + 's'
       );
-      
+
       if (existingItem) {
         isDuplicate = true;
       } else {
@@ -548,32 +554,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         for (const [correct, variations] of Object.entries(commonItemCorrections)) {
           if (normalizedName === correct || variations.includes(normalizedName)) {
             correctedName = correct;
-            
+
             // Check if the corrected name exists in the list
             existingItem = existingItems.find(item => 
               item.productName.toLowerCase() === correctedName ||
               item.productName.toLowerCase().includes(correctedName)
             );
-            
+
             if (existingItem) {
               isDuplicate = true;
             }
             break;
           }
         }
-        
+
         // If no match in dictionary, use fuzzy matching for other items
         if (!isDuplicate) {
           for (const item of existingItems) {
             const itemName = item.productName.toLowerCase();
-            
+
             // Check for contained substrings (e.g., "tomato" and "roma tomato")
             if (itemName.includes(normalizedName) || normalizedName.includes(itemName)) {
               existingItem = item;
               isDuplicate = true;
               break;
             }
-            
+
             // Simple Levenshtein-like check for similar spellings
             // If names are very close to each other
             if (itemName.length > 3 && normalizedName.length > 3) {
@@ -588,17 +594,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       }
-      
+
       let result;
-      
+
       if (isDuplicate && existingItem) {
         // Update the quantity of the existing item instead of adding a new one
         const updatedItem = await storage.updateShoppingListItem(existingItem.id, {
-          quantity: existingItem.quantity + quantity,
+          quantity: existingItem.quantity + validQuantity,
           // Keep the existing unit or update to the new one if specified
           unit: unit || existingItem.unit || 'COUNT'
         });
-        
+
         // Add information about the merge for the client
         result = {
           ...updatedItem,
@@ -613,15 +619,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Capitalize first letter of corrected name
           nameToUse = correctedName.charAt(0).toUpperCase() + correctedName.slice(1);
         }
-        
+
         // Add as new item with the specified unit (or default to COUNT)
         const newItem = await storage.addShoppingListItem({
           shoppingListId: targetListId,
           productName: nameToUse,
-          quantity,
+          quantity: validQuantity,
           unit: unit || 'COUNT'
         });
-        
+
         result = {
           ...newItem,
           merged: false,
@@ -629,7 +635,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           originalName: productName
         };
       }
-      
+
       res.json(result);
     } catch (error) {
       handleError(res, error);
@@ -661,7 +667,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const retailerId = req.query.retailerId ? parseInt(req.query.retailerId as string) : undefined;
       const category = req.query.category as string | undefined;
-      
+
       const deals = await storage.getDeals(retailerId, category);
       res.json(deals);
     } catch (error) {
@@ -686,7 +692,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       handleError(res, error);
     }
   });
-  
+
   // Internal Analytics API endpoints
   app.get('/api/internal/analytics/retailers', async (req: Request, res: Response) => {
     try {
@@ -735,13 +741,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ]
         }
       ];
-      
+
       res.json(retailerAnalytics);
     } catch (error) {
       handleError(res, error);
     }
   });
-  
+
   app.get('/api/internal/analytics/products', async (req: Request, res: Response) => {
     try {
       // Sample product analytics data
@@ -810,13 +816,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           percentageOfTotalSales: 4.7 
         }
       ];
-      
+
       res.json(productAnalytics);
     } catch (error) {
       handleError(res, error);
     }
   });
-  
+
   app.get('/api/internal/analytics/customer-segments', async (req: Request, res: Response) => {
     try {
       // Sample customer segment data
@@ -862,13 +868,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           topCategories: ["Health", "Produce", "Dairy", "Bakery", "Meat"]
         }
       ];
-      
+
       res.json(customerSegments);
     } catch (error) {
       handleError(res, error);
     }
   });
-  
+
   app.get('/api/internal/analytics/purchase-patterns', async (req: Request, res: Response) => {
     try {
       // Sample purchase pattern data
@@ -891,7 +897,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         {
           id: "pattern-3",
-          name: "Payday Splurge",
+          name:```python
+"Payday Splurge",
           description: "Premium purchases on 1st and 15th of month",
           affectedProducts: ["Specialty Foods", "Organic Items", "Premium Meats", "Wine & Spirits"],
           customerSegments: ["Single Professionals", "Empty Nesters"],
@@ -914,13 +921,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           statisticalSignificance: 0.95
         }
       ];
-      
+
       res.json(purchasePatterns);
     } catch (error) {
       handleError(res, error);
     }
   });
-  
+
   // Weekly circulars routes
   app.get('/api/circulars', async (req: Request, res: Response) => {
     try {
@@ -931,22 +938,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       handleError(res, error);
     }
   });
-  
+
   app.get('/api/circulars/:id', async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       const circular = await storage.getWeeklyCircular(id);
-      
+
       if (!circular) {
         return res.status(404).json({ message: 'Circular not found' });
       }
-      
+
       res.json(circular);
     } catch (error) {
       handleError(res, error);
     }
   });
-  
+
   app.get('/api/circulars/:id/deals', async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
@@ -978,24 +985,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         return acc;
       }, {});
-      
+
       res.json(patterns);
     } catch (error) {
       handleError(res, error);
     }
   });
-  
+
   // Generate single store optimization plan
   app.post('/api/shopping-lists/single-store', async (req: Request, res: Response) => {
     try {
       const { shoppingListId } = req.body;
       const listId = shoppingListId || 1;
-      
+
       const items = await storage.getShoppingListItems(listId);
       if (!items.length) {
         return res.json({ retailerId: null, retailerName: null, items: [], totalCost: 0, availabilityRate: 0 });
       }
-      
+
       // Return demo data for Kroger as the best single store option
       const storeItems = items.map(item => ({
         id: item.id,
@@ -1005,9 +1012,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         price: 250 + Math.floor(Math.random() * 300), // $2.50-$5.50 range
         isAvailable: true
       }));
-      
+
       const totalCost = storeItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      
+
       res.json({
         retailerId: 3,
         retailerName: "Kroger",
@@ -1022,22 +1029,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       handleError(res, error);
     }
   });
-  
+
   // Generate best value multi-store optimization plan
   app.post('/api/shopping-lists/best-value', async (req: Request, res: Response) => {
     try {
       const { shoppingListId } = req.body;
       const listId = shoppingListId || 1;
-      
+
       const items = await storage.getShoppingListItems(listId);
       if (!items.length) {
         return res.json({ stores: [], totalCost: 0, totalSavings: 0 });
       }
-      
+
       // Demo data: Split items between Kroger (cheaper produce) and Walmart (cheaper packaged goods)
       const krogerItems = [];
       const walmartItems = [];
-      
+
       items.forEach((item, index) => {
         const itemData = {
           id: item.id,
@@ -1047,9 +1054,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           price: 200 + Math.floor(Math.random() * 400),
           totalPrice: 0
         };
-        
+
         itemData.totalPrice = itemData.price * itemData.quantity;
-        
+
         // Alternate between stores for demo
         if (index % 2 === 0) {
           krogerItems.push(itemData);
@@ -1057,10 +1064,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           walmartItems.push(itemData);
         }
       });
-      
+
       const krogerSubtotal = krogerItems.reduce((sum, item) => sum + item.totalPrice, 0);
       const walmartSubtotal = walmartItems.reduce((sum, item) => sum + item.totalPrice, 0);
-      
+
       res.json({
         stores: [
           {
@@ -1086,18 +1093,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       handleError(res, error);
     }
   });
-  
+
   // Generate balanced optimization plan
   app.post('/api/shopping-lists/balanced', async (req: Request, res: Response) => {
     try {
       const { shoppingListId } = req.body;
       const listId = shoppingListId || 1;
-      
+
       const items = await storage.getShoppingListItems(listId);
       if (!items.length) {
         return res.json({ stores: [], totalCost: 0, estimatedTime: 0 });
       }
-      
+
       // Demo data: Target as balanced option (good prices, convenient)
       const targetItems = items.map(item => ({
         id: item.id,
@@ -1107,13 +1114,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         price: 250 + Math.floor(Math.random() * 350), // Slightly higher prices but convenient
         totalPrice: 0
       }));
-      
+
       targetItems.forEach(item => {
         item.totalPrice = item.price * item.quantity;
       });
-      
+
       const totalCost = targetItems.reduce((sum, item) => sum + item.totalPrice, 0);
-      
+
       res.json({
         stores: [{
           retailerId: 2,
@@ -1136,25 +1143,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { shoppingListId } = req.body;
       const listId = shoppingListId || 1; // Default to first list if not specified
-      
+
       // Get shopping list
       const list = await storage.getShoppingList(listId);
       if (!list) {
         return res.status(404).json({ message: 'Shopping list not found' });
       }
-      
+
       // Get items in the list
       const items = await storage.getShoppingListItems(listId);
       if (!items.length) {
         return res.json({ retailers: [], itemsByRetailer: {} });
       }
-      
+
       // Get all retailers
       const retailers = await storage.getRetailers();
-      
+
       // Get all deals to check prices at different retailers
       const allDeals = await storage.getDeals();
-      
+
       // Calculate cost at each retailer
       const retailerCosts = retailers.map(retailer => {
         const itemsAtRetailer = items.map(item => {
@@ -1163,7 +1170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             d.retailerId === retailer.id && 
             d.productName.toLowerCase() === item.productName.toLowerCase()
           );
-          
+
           // Check for bulk deals
           const bulkDeal = {
             hasBulkDeal: Math.random() > 0.7, // 30% chance of having a bulk deal for demo
@@ -1171,14 +1178,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             bulkPrice: Math.floor(Math.random() * 500) + 200, // Random bulk price
             regularUnitPrice: Math.floor(Math.random() * 200) + 100, // Regular price per unit
           };
-          
+
           // Calculate potential savings from the bulk deal
           const bulkSavings = bulkDeal.hasBulkDeal ? 
             (bulkDeal.regularUnitPrice * bulkDeal.quantity) - bulkDeal.bulkPrice : 0;
-          
+
           // Use deal price if available, otherwise use a baseline price (random for demo)
           const itemPrice = deal ? deal.salePrice : Math.floor(Math.random() * 800) + 200; // Random price between $2-$10
-          
+
           return {
             id: item.id,
             productName: item.productName,
@@ -1197,10 +1204,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             } : null
           };
         });
-        
+
         // Calculate total cost at this retailer
         const totalCost = itemsAtRetailer.reduce((sum, item) => sum + item.totalPrice, 0);
-        
+
         // Generate minimum purchase incentives (for demo purposes)
         // Categories with spending thresholds for special offers
         const categories = [
@@ -1209,7 +1216,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           { name: "Household", threshold: 5000, reward: 1000 },
           { name: "Cleaning", threshold: 3000, reward: 700 }
         ];
-        
+
         // Randomly assign categories to items
         const categorySpending = {};
         itemsAtRetailer.forEach(item => {
@@ -1220,12 +1227,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           categorySpending[category] += item.totalPrice;
         });
-        
+
         // Find categories that are close to minimum spending thresholds
         const incentives = categories.map(category => {
           const spent = categorySpending[category.name] || 0;
           const remaining = category.threshold - spent;
-          
+
           if (remaining > 0 && remaining < category.threshold * 0.25) { // Within 25% of threshold
             return {
               category: category.name,
@@ -1238,7 +1245,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           return null;
         }).filter(incentive => incentive !== null);
-        
+
         return {
           retailerId: retailer.id,
           retailerName: retailer.name,
@@ -1249,10 +1256,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           incentives: incentives
         };
       });
-      
+
       // Sort retailers by total cost
       retailerCosts.sort((a, b) => a.totalCost - b.totalCost);
-      
+
       // Calculate multi-store optimization (for demo purposes)
       const multiStoreOptimization = {
         totalCost: 0,
@@ -1260,28 +1267,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         retailers: [],
         itemsByRetailer: {}
       };
-      
+
       // Find best price for each item across all retailers
       items.forEach(item => {
         let bestPrice = Number.MAX_VALUE;
         let bestRetailer = null;
-        
+
         retailers.forEach(retailer => {
           // Find deal for this item at this retailer
           const deal = allDeals.find(d => 
             d.retailerId === retailer.id && 
             d.productName.toLowerCase() === item.productName.toLowerCase()
           );
-          
+
           // Calculate price
           const price = deal ? deal.salePrice : Math.floor(Math.random() * 800) + 200;
-          
+
           if (price < bestPrice) {
             bestPrice = price;
             bestRetailer = retailer;
           }
         });
-        
+
         if (bestRetailer) {
           // Add retailer to list if not already added
           if (!multiStoreOptimization.retailers.includes(bestRetailer.id)) {
@@ -1292,7 +1299,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               subtotal: 0
             };
           }
-          
+
           // Add item to this retailer's list
           const totalPrice = bestPrice * item.quantity;
           multiStoreOptimization.itemsByRetailer[bestRetailer.id].items.push({
@@ -1302,19 +1309,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             price: bestPrice,
             totalPrice
           });
-          
+
           // Update retailer subtotal
           multiStoreOptimization.itemsByRetailer[bestRetailer.id].subtotal += totalPrice;
-          
+
           // Update total cost
           multiStoreOptimization.totalCost += totalPrice;
         }
       });
-      
+
       // Calculate savings compared to most expensive retailer
       const mostExpensiveRetailer = retailerCosts[retailerCosts.length - 1];
       multiStoreOptimization.totalSavings = mostExpensiveRetailer.totalCost - multiStoreOptimization.totalCost;
-      
+
       res.json({
         singleStore: retailerCosts,
         multiStore: multiStoreOptimization
@@ -1323,33 +1330,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       handleError(res, error);
     }
   });
-  
+
   // Get optimized shopping route
   app.post('/api/shopping-route', async (req: Request, res: Response) => {
     try {
       const { retailerIds, userLocation } = req.body;
-      
+
       if (!retailerIds || !retailerIds.length) {
         return res.status(400).json({ message: 'At least one retailer ID is required' });
       }
-      
+
       // Get retailers
       const retailers = await storage.getRetailers();
       const selectedRetailers = retailers.filter(r => retailerIds.includes(r.id));
-      
+
       if (selectedRetailers.length === 0) {
         return res.status(404).json({ message: 'No matching retailers found' });
       }
-      
+
       // For demo purposes, generate mock coordinates near the user location
       const userCoords = userLocation || { lat: 37.7749, lng: -122.4194 }; // Default to San Francisco
-      
+
       // Generate retailer locations (in a real app, these would come from the database)
       const retailersWithLocations = selectedRetailers.map((retailer, index) => {
         // Generate locations in a radius around user's location
         const angle = (index / selectedRetailers.length) * 2 * Math.PI;
         const radius = 0.01 + (Math.random() * 0.02); // 1-3km roughly
-        
+
         return {
           id: retailer.id,
           name: retailer.name,
@@ -1362,7 +1369,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           estimatedTime: Math.round(radius * 111 * 2) + ' min' // Very rough estimate
         };
       });
-      
+
       // Calculate a simple route (for a real app, use a routing API)
       const route = {
         totalDistance: retailersWithLocations.reduce((sum, r) => sum + parseFloat(r.distance), 0),
@@ -1380,7 +1387,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }))
         ]
       };
-      
+
       res.json({
         retailers: retailersWithLocations,
         route: route
@@ -1452,79 +1459,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Retailer API Integration Routes
-  
+
   // Search for products at a specific retailer
   app.get('/api/retailers/:retailerId/products/search', async (req: Request, res: Response) => {
     try {
       const retailerId = parseInt(req.params.retailerId);
       const query = req.query.query as string;
-      
+
       if (!query) {
         return res.status(400).json({ message: "Search query is required" });
       }
-      
+
       // Get the retailer API client
       const retailerAPI = await getRetailerAPI(retailerId);
-      
+
       // Search for products
       const products = await retailerAPI.searchProducts(query);
-      
+
       res.json(products);
     } catch (error) {
       handleError(res, error);
     }
   });
-  
+
   // Get product price from a specific retailer
   app.get('/api/retailers/:retailerId/products/price', async (req: Request, res: Response) => {
     try {
       const retailerId = parseInt(req.params.retailerId);
       const productName = req.query.productName as string;
-      
+
       if (!productName) {
         return res.status(400).json({ message: "Product name is required" });
       }
-      
+
       // Get the retailer API client
       const retailerAPI = await getRetailerAPI(retailerId);
-      
+
       // Get product price
       const price = await retailerAPI.getProductPrice(productName);
-      
+
       if (price === null) {
         return res.status(404).json({ message: "Product not found" });
       }
-      
+
       res.json({ price });
     } catch (error) {
       handleError(res, error);
     }
   });
-  
+
   // Submit an order to a retailer
   app.post('/api/retailers/:retailerId/orders', async (req: Request, res: Response) => {
     try {
       const retailerId = parseInt(req.params.retailerId);
       const { items, mode, customerInfo, shoppingListId } = req.body;
-      
+
       if (!items || !Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ message: "Order items are required" });
       }
-      
+
       if (!mode || (mode !== 'pickup' && mode !== 'delivery')) {
         return res.status(400).json({ message: "Valid fulfillment mode (pickup or delivery) is required" });
       }
-      
+
       if (!customerInfo) {
         return res.status(400).json({ message: "Customer information is required" });
       }
-      
+
       // Get the retailer API client
       const retailerAPI = await getRetailerAPI(retailerId);
-      
+
       // Submit the order
       const orderResponse = await retailerAPI.submitOrder(items, mode, customerInfo);
-      
+
       // If the order was successful and a shopping list ID was provided, mark items as completed
       if (shoppingListId && orderResponse.orderId) {
         const listItems = await storage.getShoppingListItems(shoppingListId);
@@ -1533,38 +1540,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
             orderItem.productName.toLowerCase() === item.productName.toLowerCase()
           ))
           .map(item => item.id);
-        
+
         // Mark items as completed
         for (const itemId of itemIds) {
           await storage.updateShoppingListItem(itemId, { isCompleted: true });
         }
       }
-      
+
       res.json(orderResponse);
     } catch (error) {
       handleError(res, error);
     }
   });
-  
-  
-  
+
+
+
   // Get retailer integration status (API, auth, etc.)
   app.get('/api/retailers/:retailerId/integration-status', async (req: Request, res: Response) => {
     try {
       const retailerId = parseInt(req.params.retailerId);
-      
+
       // Get the retailer from the database
       const retailer = await storage.getRetailer(retailerId);
-      
+
       if (!retailer) {
         return res.status(404).json({ message: "Retailer not found" });
       }
-      
+
       // Check if the retailer has the necessary API configuration
       const hasApiEndpoint = !!retailer.apiEndpoint;
       const hasApiKey = !!retailer.apiKey;
       const supportsOnlineOrdering = !!retailer.supportsOnlineOrdering;
-      
+
       res.json({
         retailerId: retailer.id,
         retailerName: retailer.name,
