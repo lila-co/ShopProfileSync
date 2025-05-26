@@ -1,5 +1,3 @@
-
-<line_number>1</line_number>
 import React from 'react';
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
@@ -23,11 +21,11 @@ const RetailersPage: React.FC = () => {
   const { data: retailers, isLoading } = useQuery<Retailer[]>({
     queryKey: ['/api/retailers'],
   });
-  
+
   const { data: connectedAccounts } = useQuery<RetailerAccount[]>({
     queryKey: ['/api/user/retailer-accounts'],
   });
-  
+
   const isConnected = (retailerId: number) => {
     return connectedAccounts?.some(account => account.retailerId === retailerId && account.isConnected);
   };
@@ -47,10 +45,10 @@ const RetailersPage: React.FC = () => {
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
       <Header title="Retailers" />
-      
+
       <main className="flex-1 overflow-y-auto p-4 pb-20">
         <h2 className="text-xl font-bold mb-4">Partner Retailers</h2>
-        
+
         <div className="space-y-4">
           {retailers?.map((retailer) => (
             <Card key={retailer.id}>
@@ -80,7 +78,7 @@ const RetailersPage: React.FC = () => {
             </Card>
           ))}
         </div>
-        
+
         {(!retailers || retailers.length === 0) && (
           <Card>
             <CardContent className="p-6 text-center text-gray-500">
@@ -91,7 +89,7 @@ const RetailersPage: React.FC = () => {
         )}
       </main>
 
-      <BottomNavigation activeTab="retailers" />
+      <BottomNavigation activeTab="stores" />
     </div>
   );
 };
