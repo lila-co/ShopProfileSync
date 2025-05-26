@@ -471,6 +471,53 @@ const ShoppingListPage: React.FC = () => {
     }
   });
 
+  // Apply categorization insights mutation
+  const applyInsightsMutation = useMutation({
+    mutationFn: async () => {
+      const defaultList = shoppingLists?.[0];
+      if (!defaultList) throw new Error("No shopping list found");
+
+      // Update items with optimized quantities and units based on AI insights
+      const updatePromises = categorizedItems.map(async (categorizedItem) => {
+        const originalItem = items.find(item => item.productName === categorizedItem.productName);
+        if (!originalItem) return;
+
+        // Only update if there's a meaningful change suggested
+        const shouldUpdate = 
+          categorizedItem.normalized.suggestedQuantity !== categorizedItem.normalized.originalQuantity ||
+          categorizedItem.normalized.suggestedUnit !== categorizedItem.normalized.originalUnit;
+
+        if (shouldUpdate) {
+          const response = await apiRequest('PATCH', `/api/shopping-list/items/${originalItem.id}`, {
+            productName: originalItem.productName,
+            quantity: categorizedItem.normalized.suggestedQuantity,
+            unit: categorizedItem.normalized.suggestedUnit
+          });
+          return response.json();
+        }
+      });
+
+      await Promise.all(updatePromises.filter(Boolean));
+      return categorizedItems.length;
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      setShowCategorization(false);
+      setCategorizedItems([]);
+      toast({
+        title: "Categorization Applied",
+        description: `Updated ${count} items with AI optimization suggestions`
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to apply categorization insights: " + error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newItemName.trim()) {
@@ -913,6 +960,20 @@ const ShoppingListPage: React.FC = () => {
       default: 
         return "🛒";
     }
+  };
+
+  // Apply categorization insights
+  const applyCategorizationInsights = () => {
+    if (categorizedItems.length === 0) {
+      toast({
+        title: "No insights to apply",
+        description: "Run categorization first to get insights",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    applyInsightsMutation.mutate();
   };
 
   // Get the default shopping list and its items
@@ -2038,14 +2099,18 @@ const ShoppingListPage: React.FC = () => {
             <Button variant="outline" onClick={() => setShowCategorization(false)}>
               Close
             </Button>
-            <Button onClick={() => {
-              toast({
-                title: "Categorization Applied",
-                description: "AI categorization insights have been applied to your shopping experience"
-              });
-              setShowCategorization(false);
-            }}>
-              Apply Insights
+            <Button 
+              onClick={() => applyCategorizationInsights()}
+              disabled={applyInsightsMutation.isPending}
+            >
+              {applyInsightsMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Applying...
+                </>
+              ) : (
+                'Apply Insights'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
