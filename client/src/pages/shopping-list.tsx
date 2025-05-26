@@ -1592,8 +1592,7 @@ const ShoppingListPage: React.FC = () => {
                                   stores: [store],
                                   totalCost: store.totalCost,
                                   savings: store.savings || 0
-                                }, `In-Store```text
-Plan - ${store.retailerName}`);
+                                }, `In-Store Plan - ${store.retailerName}`);
                               }}
                             >
                               <StoreIcon className="h-4 w-4 mr-2" />
