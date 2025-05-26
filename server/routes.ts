@@ -931,7 +931,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const retailerId = req.query.retailerId ? parseInt(req.query.retailerId as string) : undefined;
       const category = req.query.category as string | undefined;
 
-      Adding the batch categorization endpoint and updating the existing categorize endpoint.      let deals = await storage.getDeals(retailerId, category);
+      let deals = await storage.getDeals(retailerId, category);
 
       // Remove duplicates by creating a unique key for each deal
       const uniqueDeals = deals.filter((deal, index, self) => 
