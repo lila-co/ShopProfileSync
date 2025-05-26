@@ -1568,7 +1568,7 @@ const ShoppingListPage: React.FC = () => {
                                 item.unit === "BOTTLE" ? "bottle" : 
                                 item.unit === "JAR" ? "jar" : 
                                 item.unit === "BUNCH" ? "bunch" : 
-                                item.unit === "ROLL" ? "roll" : ""}
+                                item.unit === "ROLL" ? "roll"                                  : ""}
                             </span>
 
                             {item.suggestedRetailerId && (
@@ -1925,6 +1925,10 @@ const ShoppingListPage: React.FC = () => {
                     onClick={() => {
                       const optimizedPlan = generateOptimizedShoppingRoute(selectedPlan);
                       setSelectedPlan(optimizedPlan);
+                      // Navigate to shop page with list ID
+                      if (selectedList?.id) {
+                        navigate(`/shop?listId=${selectedList.id}`);
+                      }
                       toast({
                         title: "Optimized Shopping Route Ready!",
                         description: "Items organized by aisle for efficient shopping"
@@ -2190,6 +2194,10 @@ const ShoppingListPage: React.FC = () => {
                 onClick={() => {
                   const optimizedPlan = generateOptimizedShoppingRoute(selectedPlan);
                   setSelectedPlan(optimizedPlan);
+                  // Navigate to shop page with list ID
+                  if (selectedList?.id) {
+                    navigate(`/shop?listId=${selectedList.id}`);
+                  }
                   toast({
                     title: "Ready to Shop!",
                     description: "Follow the aisle-by-aisle route for efficient shopping"
