@@ -85,6 +85,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Product normalization endpoint
+  app.post('/api/products/normalize', async (req: Request, res: Response) => {
+    try {
+      const { productName, retailerId, additionalData } = req.body;
+
+      if (!productName) {
+        return res.status(400).json({ error: 'Product name is required' });
+      }
+
+      const { productNormalizer } = await import('./services/productNormalizer');
+      const normalized = await productNormalizer.normalizeProduct(
+        productName, 
+        retailerId, 
+        additionalData
+      );
+
+      res.json(normalized);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Batch product normalization endpoint
+  app.post('/api/products/normalize-batch', async (req: Request, res: Response) => {
+    try {
+      const { products } = req.body;
+
+      if (!products || !Array.isArray(products)) {
+        return res.status(400).json({ error: 'Products array is required' });
+      }
+
+      const { productNormalizer } = await import('./services/productNormalizer');
+      const normalized = await productNormalizer.batchNormalize(products);
+
+      res.json(normalized);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Get retailer variations for a product
+  app.get('/api/products/:canonicalName/variations', async (req: Request, res: Response) => {
+    try {
+      const { canonicalName } = req.params;
+      const { productNormalizer } = await import('./services/productNormalizer');
+      const variations = await productNormalizer.getRetailerVariations(canonicalName);
+
+      res.json(variations);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Update product mapping based on user feedback
+  app.post('/api/products/mapping-feedback', async (req: Request, res: Response) => {
+    try {
+      const { originalName, canonicalName, retailerId, confidence } = req.body;
+      const { productNormalizer } = await import('./services/productNormalizer');
+      
+      await productNormalizer.updateMapping(originalName, canonicalName, retailerId, confidence);
+
+      res.json({ success: true });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
   // Batch product categorization endpoint
   app.post('/api/products/categorize-batch', async (req: Request, res: Response) => {
     try {
