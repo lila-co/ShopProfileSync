@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { apiRequest } from '@/lib/queryClient';
+import BottomNavigation from '@/components/layout/BottomNavigation';
 import {
   Select,
   SelectContent,
