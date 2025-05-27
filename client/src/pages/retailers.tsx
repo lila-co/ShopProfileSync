@@ -30,6 +30,7 @@ const RetailersPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [showAddStore, setShowAddStore] = useState(false);
   const [newStoreName, setNewStoreName] = useState('');
+  const [newStoreWebsite, setNewStoreWebsite] = useState('');
 
   const { data: retailers, isLoading } = useQuery<Retailer[]>({
     queryKey: ['/api/retailers'],
@@ -42,17 +43,15 @@ const RetailersPage: React.FC = () => {
   });
 
   const addStoreMutation = useMutation({
-    mutationFn: async (storeName: string) => {
-      const response = await apiRequest('POST', '/api/retailers', {
-        name: storeName,
-        logoColor: 'blue'
-      });
+    mutationFn: async (storeData: {name: string, logoColor: string, websiteUrl?: string}) => {
+      const response = await apiRequest('POST', '/api/retailers', storeData);
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/retailers'] });
       setShowAddStore(false);
       setNewStoreName('');
+      setNewStoreWebsite('');
       toast({
         title: "Store Added",
         description: "Your custom store has been added successfully."
@@ -78,8 +77,20 @@ const RetailersPage: React.FC = () => {
   };
 
   const handleAddStore = () => {
-    if (newStoreName.trim()) {
-      addStoreMutation.mutate(newStoreName.trim());
+    const trimmedName = newStoreName.trim();
+    if (trimmedName) {
+      console.log('Adding store:', trimmedName);
+      addStoreMutation.mutate({
+        name: trimmedName,
+        logoColor: 'blue',
+        websiteUrl: newStoreWebsite.trim() || undefined
+      });
+    } else {
+      toast({
+        title: "Invalid Store Name",
+        description: "Please enter a valid store name.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -153,6 +164,15 @@ const RetailersPage: React.FC = () => {
                     value={newStoreName}
                     onChange={(e) => setNewStoreName(e.target.value)}
                     placeholder="Enter store name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="storeWebsite">Store Website</Label>
+                  <Input
+                    id="storeWebsite"
+                    value={newStoreWebsite}
+                    onChange={(e) => setNewStoreWebsite(e.target.value)}
+                    placeholder="Enter store website"
                   />
                 </div>
                 <div className="flex justify-end space-x-2">

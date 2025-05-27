@@ -88,12 +88,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Store name is required' });
       }
 
-      const retailer = await storage.createRetailer({
-        name: name.trim(),
-        logoColor: logoColor || 'blue'
-      });
+      // Use integration manager to create store with proper integration detection
+      const { storeIntegrationManager } = await import('./services/storeIntegrationManager');
+      const integrationConfig = await storeIntegrationManager.addCustomStore(
+        name.trim(),
+        req.body.websiteUrl // Optional website URL for integration detection
+      );
 
-      res.status(201).json(retailer);
+      // Get the created retailer
+      const retailer = await storage.getRetailer(integrationConfig.id);
+      if (!retailer) {
+        return res.status(500).json({ error: 'Failed to create retailer' });
+      }
+
+      // Return retailer with integration info
+      res.json({
+        ...retailer,
+        integrationLevel: integrationConfig.integrationLevel,
+        supportedFeatures: integrationConfig.supportedFeatures
+      });
     } catch (error: any) {
       console.error('Error adding retailer:', error);
       res.status(500).json({ error: 'Failed to add retailer' });
@@ -914,7 +927,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       existingItem = existingItems.find(item => 
         item.productName.toLowerCase() === normalizedName ||
         item.productName.toLowerCase() + 's' === normalizedName ||
-        item.productName.toLowerCase() === normalizedName + 's'
+        item.productName.```text
+toLowerCase() === normalizedName + 's'
       );
 
       if (existingItem) {
@@ -2357,6 +2371,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       handleError(res, error);
+    }
+  });
+
+  // Get store integration capabilities
+  app.get('/api/retailers/:id/capabilities', async (req, res) => {
+    try {
+      const retailerId = parseInt(req.params.id);
+      const { storeIntegrationManager } = await import('./services/storeIntegrationManager');
+
+      const capabilities = await storeIntegrationManager.getStoreCapabilities(retailerId);
+      res.json(capabilities);
+    } catch (error: any) {
+      console.error('Error getting store capabilities:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Manual deal entry for stores without API integration
+  app.post('/api/retailers/:id/deals/manual', async (req, res) => {
+    try {
+      const retailerId = parseInt(req.params.id);
+      const { productName, regularPrice, salePrice, category, validUntil } = req.body;
+
+      if (!productName || !salePrice) {
+        return res.status(400).json({ error: 'Product name and sale price are required' });
+      }
+
+      const deal = await storage.createStoreDeal({
+        productName: productName.trim(),
+        regularPrice: regularPrice || salePrice * 1.2, // Default regular price if not provided
+        salePrice,
+        category: category || 'General',
+        retailerId,
+        startDate: new Date(),
+        endDate: validUntil ? new Date(validUntil) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        terms: 'Manually entered deal'
+      });
+
+      res.json(deal);
+    } catch (error: any) {
+      console.error('Error creating manual deal:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Trigger manual data collection for a store
+  app.post('/api/retailers/:id/collect-data', async (req, res) => {
+    try {
+      const retailerId = parseInt(req.params.id);
+      const { storeIntegrationManager } = await import('./services/storeIntegrationManager');
+
+      await storeIntegrationManager.scheduleDataCollection(retailerId);
+      res.json({ message: 'Data collection initiated' });
+    } catch (error: any) {
+      console.error('Error triggering data collection:', error);
+      res.status(500).json({ error: error.message });
     }
   });
 
