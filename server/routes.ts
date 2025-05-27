@@ -88,7 +88,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Store name is required' });
       }
 
-      const retailer = await storage.addRetailer({
+      const retailer = await storage.createRetailer({
         name: name.trim(),
         logoColor: logoColor || 'blue'
       });
