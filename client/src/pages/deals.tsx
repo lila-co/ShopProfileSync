@@ -212,6 +212,7 @@ const DealsView: React.FC = () => {
           <p className="text-gray-400 text-sm">Try adjusting your filters or check back later for new deals.</p>
         </div>
       )}
+      <BottomNavigation activeTab="deals" />
     </div>
   );
 };
