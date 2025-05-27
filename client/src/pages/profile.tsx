@@ -55,12 +55,16 @@ const ProfilePage: React.FC = () => {
                 <ProfileSetup />
                 
                 {/* RETAILER ACCOUNT LINKING */}
-                <div className="mt-8 mb-8">
-                  <Separator className="mb-4" />
-                  <h2 className="text-xl font-bold mb-4 flex items-center">
-                    <Store className="w-5 h-5 mr-2 text-primary" />
-                    Connected Retailers
-                  </h2>
+                <div className="mt-6 mb-8">
+                  <div className="bg-primary/5 rounded-xl p-4 border border-primary/20 mb-4">
+                    <h2 className="text-xl font-bold mb-2 flex items-center text-primary">
+                      <Store className="w-5 h-5 mr-2" />
+                      Connected Retailers
+                    </h2>
+                    <p className="text-sm text-gray-600">
+                      Link your store accounts to automatically import purchase history and get personalized recommendations.
+                    </p>
+                  </div>
                   
                   <RetailerLinking />
                 </div>

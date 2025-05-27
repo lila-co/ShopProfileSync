@@ -6,14 +6,14 @@ import ShoppingInsights from '@/components/dashboard/ShoppingInsights';
 import WeeklyDeals from '@/components/dashboard/WeeklyDeals';
 import RecommendationCard from '@/components/dashboard/RecommendationCard';
 import ReceiptScanner from '@/components/receipt/ReceiptScanner';
-import StoreLinking from '@/components/stores/StoreLinking';
+
 import ProfileSetup from '@/components/profile/ProfileSetup';
 import { useQuery } from '@tanstack/react-query';
 import { User, Recommendation } from '@/lib/types';
 
 const Dashboard: React.FC = () => {
   const [showReceiptScanner, setShowReceiptScanner] = useState(false);
-  const [showStoreLinking, setShowStoreLinking] = useState(false);
+  
   const [showProfileSetup, setShowProfileSetup] = useState(false);
 
   const { data: user } = useQuery<User>({
@@ -72,13 +72,13 @@ const Dashboard: React.FC = () => {
               <ActionCard 
                 icon={
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
                   </svg>
                 }
-                title="Link Store"
-                subtitle="Connect accounts"
-                onClick={() => setShowStoreLinking(true)}
+                title="View Profile"
+                subtitle="Settings & preferences"
+                onClick={() => window.location.href = '/profile'}
                 iconBgColor="bg-accent/10"
               />
             </div>
@@ -158,7 +158,7 @@ const Dashboard: React.FC = () => {
 
         {/* Conditional Modals */}
         {showReceiptScanner && <ReceiptScanner />}
-        {showStoreLinking && <StoreLinking />}
+        
         {showProfileSetup && <ProfileSetup />}
       </main>
 
