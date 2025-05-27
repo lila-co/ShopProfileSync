@@ -926,9 +926,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // First check for exact matches or plurals
       existingItem = existingItems.find(item => 
         item.productName.toLowerCase() === normalizedName ||
-        item.productName.toLowerCase() + 's' === normalizedName ||
-        item.productName.```text
-toLowerCase() === normalizedName + 's'
+        item.productName.toLowerCase() + 's=== normalizedName ||
+        item.productName.toLowerCase() === normalizedName + 's'
       );
 
       if (existingItem) {
