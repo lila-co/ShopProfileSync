@@ -33,7 +33,6 @@ const profileSchema = z.object({
   phone: z.string().optional(),
   zipCode: z.string().optional(),
   dietaryPreferences: z.array(z.string()).optional(),
-  householdSize: z.number().min(1).optional(),
   budgetRange: z.string().optional(),
   shoppingFrequency: z.string().optional(),
 });
@@ -58,7 +57,6 @@ const ProfilePage: React.FC = () => {
       phone: user?.phone || '',
       zipCode: user?.zipCode || '',
       dietaryPreferences: user?.dietaryPreferences || [],
-      householdSize: user?.householdSize || 1,
       budgetRange: user?.budgetRange || '',
       shoppingFrequency: user?.shoppingFrequency || '',
     },
@@ -75,7 +73,6 @@ const ProfilePage: React.FC = () => {
         phone: user.phone || '',
         zipCode: user.zipCode || '',
         dietaryPreferences: user.dietaryPreferences || [],
-        householdSize: user.householdSize || 1,
         budgetRange: user.budgetRange || '',
         shoppingFrequency: user.shoppingFrequency || '',
       });
@@ -248,22 +245,6 @@ const ProfilePage: React.FC = () => {
                 <CardDescription>Customize your shopping experience</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="householdSize">Household Size</Label>
-                  <Select value={form.watch('householdSize')?.toString()} onValueChange={(value) => form.setValue('householdSize', parseInt(value))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select household size" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1 person</SelectItem>
-                      <SelectItem value="2">2 people</SelectItem>
-                      <SelectItem value="3">3 people</SelectItem>
-                      <SelectItem value="4">4 people</SelectItem>
-                      <SelectItem value="5">5+ people</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
                 <div>
                   <Label htmlFor="budgetRange">Monthly Budget Range</Label>
                   <Select value={form.watch('budgetRange')} onValueChange={(value) => form.setValue('budgetRange', value)}>
