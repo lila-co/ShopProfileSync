@@ -1,6 +1,6 @@
-# SavvyCart Cost Estimates
+# SmartCart Cost Estimates
 
-This document provides estimated monthly operating costs for SavvyCart at different user scale levels. Estimates are based on AWS cloud infrastructure and represent typical costs for similar applications.
+This document provides estimated monthly operating costs for SmartCart at different user scale levels. Estimates are based on AWS cloud infrastructure and represent typical costs for similar applications.
 
 ## Cost Breakdown by Growth Phase
 

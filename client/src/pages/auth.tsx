@@ -187,7 +187,7 @@ const AuthPage: React.FC = () => {
               </svg>
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">SavvyCart</CardTitle>
+          <CardTitle className="text-2xl font-bold">SmartCart</CardTitle>
           <CardDescription>
             Sign in to your account or create a new one
           </CardDescription>
