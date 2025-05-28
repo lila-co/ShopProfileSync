@@ -1495,6 +1495,7 @@ const ShoppingListPage: React.FC = () => {
                     <SelectItem value="COUNT">Count</SelectItem>
                     <SelectItem value="LB">lb (Pounds)</SelectItem>
                     <SelectItem value="OZ">oz (Ounces)</SelectItem>
+                    <SelectItem value="GALLON">Gallon</SelectItem>
                     <SelectItem value="PKG">Package</SelectItem>
                     <SelectItem value="ROLL">Rolls</SelectItem>
                     <SelectItem value="BOX">Box</SelectItem>
@@ -2248,6 +2249,7 @@ const ShoppingListPage: React.FC = () => {
                         <SelectItem value="COUNT">Count</SelectItem>
                         <SelectItem value="LB">lb (Pounds)</SelectItem>
                         <SelectItem value="OZ">oz (Ounces)</SelectItem>
+                        <SelectItem value="GALLON">Gallon</SelectItem>
                         <SelectItem value="PKG">Package</SelectItem>
                         <SelectItem value="ROLL">Rolls</SelectItem>
                         <SelectItem value="BOX">Box</SelectItem>
