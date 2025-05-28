@@ -495,10 +495,10 @@ export class ProductCategorizerService {
     }
     
     return {
-      originalQuantity: quantity,
+      originalQuantity: Math.round(quantity),
       originalUnit: unit,
-      normalizedQuantity,
-      suggestedQuantity,
+      normalizedQuantity: Math.round(normalizedQuantity),
+      suggestedQuantity: Math.round(suggestedQuantity),
       suggestedUnit,
       conversionReason
     };

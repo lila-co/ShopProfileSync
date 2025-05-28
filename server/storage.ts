@@ -1368,7 +1368,8 @@ export class DatabaseStorage implements IStorage {
         throw new Error("Invalid quantity value");
       }
 
-      processedUpdates.quantity = quantityValue;
+      // Ensure quantity is always an integer for database storage
+      processedUpdates.quantity = Math.round(quantityValue);
     }
 
     const [updatedItem] = await db

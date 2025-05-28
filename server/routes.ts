@@ -905,7 +905,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           daysUntilPurchase: 0,
           isSelected: true
         },
-        { 
+        { <previous_generation>
           productName: 'Apples', 
           quantity: 1, 
           unit: 'BAG',
@@ -2055,7 +2055,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
 
         const price = manualDeal ? manualDeal.salePrice : 250 + Math.floor(Math.random() * 350);
-        
+
         return {
           id: item.id,
           productName: item.productName,
