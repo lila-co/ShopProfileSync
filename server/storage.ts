@@ -506,7 +506,7 @@ export class MemStorage implements IStorage {
     const newPurchase: Purchase = { ...purchase, id };
     this.purchases.set(id, newPurchase);
     return newPurchase;
-  }
+    }
 
   async createPurchaseFromReceipt(receiptData: any): Promise<Purchase> {
     // For demo purposes, create a purchase with the extracted receipt data
@@ -658,6 +658,7 @@ export class MemStorage implements IStorage {
   }
 
   async updateShoppingListItem(id: number, updates: Partial<ShoppingListItem>): Promise<ShoppingListItem> {
+    try {
     const item = this.shoppingListItems.get(id);
     if (!item) {
       throw new Error("Shopping list item not found");
@@ -673,6 +674,10 @@ export class MemStorage implements IStorage {
     }
 
     return updatedItem;
+    } catch (error) {
+      console.error('Error updating shopping list item:', error);
+      throw error;
+    }
   }
 
   async deleteShoppingListItem(id: number): Promise<void> {
@@ -1136,41 +1141,71 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
+    try {
+      const [user] = await db.select().from(users).where(eq(users.id, id));
+      return user || undefined;
+    } catch (error) {
+      console.error("Error getting user:", error);
+      throw error;
+    }
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user || undefined;
+    try {
+      const [user] = await db.select().from(users).where(eq(users.username, username));
+      return user || undefined;
+    } catch (error) {
+      console.error("Error getting user by username:", error);
+      throw error;
+    }
   }
 
   async createUser(userData: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(userData).returning();
-    return user;
+    try {
+      const [user] = await db.insert(users).values(userData).returning();
+      return user;
+    } catch (error) {
+      console.error("Error creating user:", error);
+      throw error;
+    }
   }
 
   async updateUser(userData: Partial<User>): Promise<User> {
     if (!userData.id) throw new Error("User ID is required for update");
 
-    const [updatedUser] = await db
-      .update(users)
-      .set(userData)
-      .where(eq(users.id, userData.id))
-      .returning();
+    try {
+      const [updatedUser] = await db
+        .update(users)
+        .set(userData)
+        .where(eq(users.id, userData.id))
+        .returning();
 
-    if (!updatedUser) throw new Error("User not found");
-    return updatedUser;
+      if (!updatedUser) throw new Error("User not found");
+      return updatedUser;
+    } catch (error) {
+      console.error("Error updating user:", error);
+      throw error;
+    }
   }
 
   // Retailer methods
   async getRetailers(): Promise<Retailer[]> {
-    return db.select().from(retailers);
+    try {
+      return db.select().from(retailers);
+    } catch (error) {
+      console.error("Error getting retailers:", error);
+      throw error;
+    }
   }
 
   async getRetailer(id: number): Promise<Retailer | undefined> {
-    const [retailer] = await db.select().from(retailers).where(eq(retailers.id, id));
-    return retailer || undefined;
+    try {
+      const [retailer] = await db.select().from(retailers).where(eq(retailers.id, id));
+      return retailer || undefined;
+    } catch (error) {
+      console.error("Error getting retailer:", error);
+      throw error;
+    }
   }
 
   async createRetailer(retailerData: {
@@ -1178,157 +1213,242 @@ export class DatabaseStorage implements IStorage {
     logoColor: string;
     isActive: boolean;
   }): Promise<Retailer> {
-    const [retailer] = await db.insert(retailers).values(retailerData).returning();
-    return retailer;
+    try {
+      const [retailer] = await db.insert(retailers).values(retailerData).returning();
+      return retailer;
+    } catch (error) {
+      console.error("Error creating retailer:", error);
+      throw error;
+    }
   }
 
   // Retailer Account methods
   async getRetailerAccounts(): Promise<RetailerAccount[]> {
-    return db.select().from(retailerAccounts);
+    try {
+      return db.select().from(retailerAccounts);
+    } catch (error) {
+      console.error("Error getting retailer accounts:", error);
+      throw error;
+    }
   }
 
   async getRetailerAccount(id: number): Promise<RetailerAccount | undefined> {
-    const [account] = await db.select().from(retailerAccounts).where(eq(retailerAccounts.id, id));
-    return account || undefined;
+    try {
+      const [account] = await db.select().from(retailerAccounts).where(eq(retailerAccounts.id, id));
+      return account || undefined;
+    } catch (error) {
+      console.error("Error getting retailer account:", error);
+      throw error;
+    }
   }
 
   async createRetailerAccount(accountData: InsertRetailerAccount): Promise<RetailerAccount> {
-    const [account] = await db.insert(retailerAccounts).values(accountData).returning();
-    return account;
+    try {
+      const [account] = await db.insert(retailerAccounts).values(accountData).returning();
+      return account;
+    } catch (error) {
+      console.error("Error creating retailer account:", error);
+      throw error;
+    }
   }
 
   // Product methods
   async getProducts(): Promise<Product[]> {
-    const allProducts = await db.select().from(products);
+    try {
+      const allProducts = await db.select().from(products);
 
-    if (allProducts.length === 0) {
-      // Add some default products if none exist
-      await this.createProduct({
-        name: "Milk (Gallon)",
-        category: "Dairy",
-        subcategory: null,
-        defaultUnit: "gallon",
-        restockFrequency: "weekly",
-        isNameBrand: false,
-        isOrganic: false
-      });
+      if (allProducts.length === 0) {
+        // Add some default products if none exist
+        await this.createProduct({
+          name: "Milk (Gallon)",
+          category: "Dairy",
+          subcategory: null,
+          defaultUnit: "gallon",
+          restockFrequency: "weekly",
+          isNameBrand: false,
+          isOrganic: false
+        });
 
-      await this.createProduct({
-        name: "Eggs (Dozen)",
-        category: "Dairy",
-        subcategory: null,
-        defaultUnit: "dozen",
-        restockFrequency: "weekly",
-        isNameBrand: false,
-        isOrganic: false
-      });
+        await this.createProduct({
+          name: "Eggs (Dozen)",
+          category: "Dairy",
+          subcategory: null,
+          defaultUnit: "dozen",
+          restockFrequency: "weekly",
+          isNameBrand: false,
+          isOrganic: false
+        });
 
-      await this.createProduct({
-        name: "Bananas",
-        category: "Produce",
-        subcategory: "Fruits",
-        defaultUnit: "bunch",
-        restockFrequency: "weekly",
-        isNameBrand: false,
-        isOrganic: false
-      });
+        await this.createProduct({
+          name: "Bananas",
+          category: "Produce",
+          subcategory: "Fruits",
+          defaultUnit: "bunch",
+          restockFrequency: "weekly",
+          isNameBrand: false,
+          isOrganic: false
+        });
 
-      return this.getProducts();
+        return this.getProducts();
+      }
+
+      return allProducts;
+    } catch (error) {
+      console.error("Error getting products:", error);
+      throw error;
     }
-
-    return allProducts;
   }
 
   async getProduct(id: number): Promise<Product | undefined> {
-    const [product] = await db.select().from(products).where(eq(products.id, id));
-    return product || undefined;
+    try {
+      const [product] = await db.select().from(products).where(eq(products.id, id));
+      return product || undefined;
+    } catch (error) {
+      console.error("Error getting product:", error);
+      throw error;
+    }
   }
 
   async createProduct(productData: InsertProduct): Promise<Product> {
-    const [product] = await db.insert(products).values(productData).returning();
-    return product;
+    try {
+      const [product] = await db.insert(products).values(productData).returning();
+      return product;
+    } catch (error) {
+      console.error("Error creating product:", error);
+      throw error;
+    }
   }
 
   // Purchase methods
   async getPurchases(): Promise<Purchase[]> {
-    return db.select().from(purchases);
+    try {
+      return db.select().from(purchases);
+    } catch (error) {
+      console.error("Error getting purchases:", error);
+      throw error;
+    }
   }
 
   async getPurchase(id: number): Promise<Purchase | undefined> {
-    const [purchase] = await db.select().from(purchases).where(eq(purchases.id, id));
-    return purchase || undefined;
+    try {
+      const [purchase] = await db.select().from(purchases).where(eq(purchases.id, id));
+      return purchase || undefined;
+    } catch (error) {
+      console.error("Error getting purchase:", error);
+      throw error;
+    }
   }
 
   async createPurchase(purchaseData: InsertPurchase): Promise<Purchase> {
-    const [purchase] = await db.insert(purchases).values(purchaseData).returning();
-    return purchase;
+    try {
+      const [purchase] = await db.insert(purchases).values(purchaseData).returning();
+      return purchase;
+    } catch (error) {
+      console.error("Error creating purchase:", error);
+      throw error;
+    }
   }
 
   async createPurchaseFromReceipt(receiptData: any): Promise<Purchase> {
     // In a real implementation, this would parse receipt data and create a purchase
     // For now, use demo data
-    const purchase = await this.createPurchase({
-      userId: 1,
-      retailerId: 1,
-      purchaseDate: new Date(),
-      totalAmount: 2500,
-      receiptData: receiptData,
-      receiptImageUrl: null
-    });
+    try {
+      const purchase = await this.createPurchase({
+        userId: 1,
+        retailerId: 1,
+        purchaseDate: new Date(),
+        totalAmount: 2500,
+        receiptData: receiptData,
+        receiptImageUrl: null
+      });
 
-    return purchase;
+      return purchase;
+    } catch (error) {
+      console.error("Error creating purchase from receipt:", error);
+      throw error;
+    }
   }
 
   // Purchase Item methods
   async getPurchaseItems(purchaseId: number): Promise<PurchaseItem[]> {
-    return db.select().from(purchaseItems).where(eq(purchaseItems.purchaseId, purchaseId));
+    try {
+      return db.select().from(purchaseItems).where(eq(purchaseItems.purchaseId, purchaseId));
+    } catch (error) {
+      console.error("Error getting purchase items:", error);
+      throw error;
+    }
   }
 
   async createPurchaseItem(itemData: InsertPurchaseItem): Promise<PurchaseItem> {
-    const [item] = await db.insert(purchaseItems).values(itemData).returning();
-    return item;
+    try {
+      const [item] = await db.insert(purchaseItems).values(itemData).returning();
+      return item;
+    } catch (error) {
+      console.error("Error creating purchase item:", error);
+      throw error;
+    }
   }
 
   // Shopping List methods
   async getShoppingLists(): Promise<ShoppingList[]> {
-    const lists = await db.select().from(shoppingLists);
+    try {
+      const lists = await db.select().from(shoppingLists);
 
-    if (lists.length === 0) {
-      // Create a default shopping list if none exists
-      const newList = await this.createShoppingList({
-        name: "My Shopping List",
-        userId: 1,
-        isDefault: true
-      });
+      if (lists.length === 0) {
+        // Create a default shopping list if none exists
+        const newList = await this.createShoppingList({
+          name: "My Shopping List",
+          userId: 1,
+          isDefault: true
+        });
 
-      return [newList];
+        return [newList];
+      }
+
+      return lists;
+    } catch (error) {
+      console.error("Error getting shopping lists:", error);
+      throw error;
     }
-
-    return lists;
   }
 
   async getShoppingList(id: number): Promise<ShoppingList | undefined> {
-    const [list] = await db.select().from(shoppingLists).where(eq(shoppingLists.id, id));
+    try {
+      const [list] = await db.select().from(shoppingLists).where(eq(shoppingLists.id, id));
 
-    if (list) {
-      // Fetch items for the list
-      const items = await this.getShoppingListItems(id);
-      return { ...list, items };
+      if (list) {
+        // Fetch items for the list
+        const items = await this.getShoppingListItems(id);
+        return { ...list, items };
+      }
+
+      return undefined;
+    } catch (error) {
+      console.error("Error getting shopping list:", error);
+      throw error;
     }
-
-    return undefined;
   }
 
   async createShoppingList(listData: InsertShoppingList): Promise<ShoppingList> {
-    const [list] = await db.insert(shoppingLists).values(listData).returning();
+    try {
+      const [list] = await db.insert(shoppingLists).values(listData).returning();
 
-    // Initialize with empty items array
-    return { ...list, items: [] };
+      // Initialize with empty items array
+      return { ...list, items: [] };
+    } catch (error) {
+      console.error("Error creating shopping list:", error);
+      throw error;
+    }
   }
 
   // Shopping List Item methods
   async getShoppingListItems(listId: number): Promise<ShoppingListItem[]> {
-    return db.select().from(shoppingListItems).where(eq(shoppingListItems.shoppingListId, listId));
+    try {
+      return db.select().from(shoppingListItems).where(eq(shoppingListItems.shoppingListId, listId));
+    } catch (error) {
+      console.error("Error getting shopping list items:", error);
+      throw error;
+    }
   }
 
   async addShoppingListItem(itemData: Partial<ShoppingListItem>): Promise<ShoppingListItem> {
@@ -1342,17 +1462,22 @@ export class DatabaseStorage implements IStorage {
       quantity = 1;
     }
 
-    const [item] = await db.insert(shoppingListItems).values({
-      ...itemData,
-      quantity,
-      isCompleted: false,
-      dueDate: null,
-      productId: null,
-      suggestedRetailerId: null,
-      suggestedPrice: null
-    } as any).returning();
+    try {
+      const [item] = await db.insert(shoppingListItems).values({
+        ...itemData,
+        quantity,
+        isCompleted: false,
+        dueDate: null,
+        productId: null,
+        suggestedRetailerId: null,
+        suggestedPrice: null
+      } as any).returning();
 
-    return item;
+      return item;
+    } catch (error) {
+      console.error("Error adding shopping list item:", error);
+      throw error;
+    }
   }
 
   async updateShoppingListItem(id: number, updates: Partial<ShoppingListItem>): Promise<ShoppingListItem> {
@@ -1372,76 +1497,104 @@ export class DatabaseStorage implements IStorage {
       processedUpdates.quantity = Math.round(quantityValue);
     }
 
+    try {
     const [updatedItem] = await db
       .update(shoppingListItems)
       .set(processedUpdates)
       .where(eq(shoppingListItems.id, id))
       .returning();
 
-    if (!updatedItem) throw new Error("Shopping list item not found");
+    if (!updatedItem) {
+      throw new Error("Shopping list item not found");
+    }
+
     return updatedItem;
+    } catch (error) {
+      console.error("Error updating shopping list item:", error);
+      throw error;
+    }
   }
 
   async deleteShoppingListItem(id: number): Promise<void> {
-    await db.delete(shoppingListItems).where(eq(shoppingListItems.id, id));
+    try {
+      await db.delete(shoppingListItems).where(eq(shoppingListItems.id, id));
+    } catch (error) {
+      console.error("Error deleting shopping list item:", error);
+      throw error;
+    }
   }
 
   // Deal methods
   async getDeals(retailerId?: number, category?: string): Promise<StoreDeal[]> {
-    let query = db.select().from(storeDeals);
+    try {
+      let query = db.select().from(storeDeals);
 
-    // Filter out expired deals
-    const now = new Date();
-    query = query.where(gte(storeDeals.endDate, now));
+      // Filter out expired deals
+      const now = new Date();
+      query = query.where(gte(storeDeals.endDate, now));
 
-    if (retailerId) {
-      query = query.where(eq(storeDeals.retailerId, retailerId));
+      if (retailerId) {
+        query = query.where(eq(storeDeals.retailerId, retailerId));
+      }
+
+      if (category) {
+        query = query.where(eq(storeDeals.category, category));
+      }
+
+      return query;
+    } catch (error) {
+      console.error("Error getting deals:", error);
+      throw error;
     }
-
-    if (category) {
-      query = query.where(eq(storeDeals.category, category));
-    }
-
-    return query;
   }
 
   async getDealsSummary(): Promise<any[]> {
-    const deals = await this.getDeals();
-    const retailers = await this.getRetailers();
+    try {
+      const deals = await this.getDeals();
+      const retailers = await this.getRetailers();
 
-    // Group deals by retailer
-    const dealsByRetailer = {};
+      // Group deals by retailer
+      const dealsByRetailer = {};
 
-    retailers.forEach(retailer => {
-      dealsByRetailer[retailer.id] = {
-        retailerId: retailer.id,
-        retailerName: retailer.name,
-        dealCount: 0,
-        totalSavings: 0
-      };
-    });
+      retailers.forEach(retailer => {
+        dealsByRetailer[retailer.id] = {
+          retailerId: retailer.id,
+          retailerName: retailer.name,
+          dealCount: 0,
+          totalSavings: 0
+        };
+      });
 
-    deals.forEach(deal => {
-      if (dealsByRetailer[deal.retailerId]) {
-        dealsByRetailer[deal.retailerId].dealCount += 1;
-        dealsByRetailer[deal.retailerId].totalSavings += deal.regularPrice - deal.salePrice;
-      }
-    });
+      deals.forEach(deal => {
+        if (dealsByRetailer[deal.retailerId]) {
+          dealsByRetailer[deal.retailerId].dealCount += 1;
+          dealsByRetailer[deal.retailerId].totalSavings += deal.regularPrice - deal.salePrice;
+        }
+      });
 
-    return Object.values(dealsByRetailer);
+      return Object.values(dealsByRetailer);
+    } catch (error) {
+      console.error("Error getting deals summary:", error);
+      throw error;
+    }
   }
 
   async getDealCategories(): Promise<string[]> {
-    const deals = await this.getDeals();
-    const categories = new Set<string>();
+    try {
+      const deals = await this.getDeals();
+      const categories = new Set<string>();
 
-    deals.forEach(deal => {
-      if (deal.category) {
-        categories.add(deal.category);
-      }
-    });
+      deals.forEach(deal => {
+        if (deal.category) {
+          categories.add(deal.category);
+        }
+      });
 
-    return Array.from(categories);
+      return Array.from(categories);
+    } catch (error) {
+      console.error("Error getting deal categories:", error);
+      throw error;
+    }
   }
 
   async createDeal(dealData: {
@@ -1454,108 +1607,143 @@ export class DatabaseStorage implements IStorage {
     startDate: Date;
     endDate: Date;
   }): Promise<StoreDeal> {
-    const [deal] = await db.insert(storeDeals).values(dealData).returning();
-    return deal;
+    try {
+      const [deal] = await db.insert(storeDeals).values(dealData).returning();
+      return deal;
+    } catch (error) {
+      console.error("Error creating deal:", error);
+      throw error;
+    }
   }
 
   async getWeeklyCirculars(retailerId?: number): Promise<WeeklyCircular[]> {
-    let query = db.select().from(weeklyCirculars);
+    try {
+      let query = db.select().from(weeklyCirculars);
 
-    if (retailerId) {
-      query = query.where(eq(weeklyCirculars.retailerId, retailerId));
+      if (retailerId) {
+        query = query.where(eq(weeklyCirculars.retailerId, retailerId));
+      }
+
+      // Get active circulars by default (where end date is in the future)
+      query = query.where(
+        and(
+          eq(weeklyCirculars.isActive, true),
+          gte(weeklyCirculars.endDate, new Date())
+        )
+      );
+
+      return query;
+    } catch (error) {
+      console.error("Error getting weekly circulars:", error);
+      throw error;
     }
-
-    // Get active circulars by default (where end date is in the future)
-    query = query.where(
-      and(
-        eq(weeklyCirculars.isActive, true),
-        gte(weeklyCirculars.endDate, new Date())
-      )
-    );
-
-    return query;
   }
 
   async getWeeklyCircular(id: number): Promise<WeeklyCircular | undefined> {
-    const [circular] = await db.select().from(weeklyCirculars).where(eq(weeklyCirculars.id, id));
-    return circular;
+    try {
+      const [circular] = await db.select().from(weeklyCirculars).where(eq(weeklyCirculars.id, id));
+      return circular;
+    } catch (error) {
+      console.error("Error getting weekly circular:", error);
+      throw error;
+    }
   }
 
   async createWeeklyCircular(circularData: InsertWeeklyCircular): Promise<WeeklyCircular> {
-    const [circular] = await db.insert(weeklyCirculars).values(circularData).returning();
-    return circular;
+    try {
+      const [circular] = await db.insert(weeklyCirculars).values(circularData).returning();
+      return circular;
+    } catch (error) {
+      console.error("Error creating weekly circular:", error);
+      throw error;
+    }
   }
 
   async getDealsFromCircular(circularId: number): Promise<StoreDeal[]> {
-    return db.select().from(storeDeals).where(eq(storeDeals.circularId, circularId));
+    try {
+      return db.select().from(storeDeals).where(eq(storeDeals.circularId, circularId));
+    } catch (error) {
+      console.error("Error getting deals from circular:", error);
+      throw error;
+    }
   }
 
   // Recommendation methods
   async getRecommendations(): Promise<Recommendation[]> {
-    // Get default user
-    const user = await this.getDefaultUser();
+    try {
+      // Get default user
+      const user = await this.getDefaultUser();
 
-    const result = await db
-      .select()
-      .from(recommendations)
-      .where(eq(recommendations.userId, user.id));
-
-    if (result.length === 0) {
-      console.log("Generating recommendations for user:", user.id);
-
-      // Create demo recommendations
-      await this.createRecommendation({
-        userId: user.id,
-        productName: "Bananas",
-        productId: null,
-        recommendedDate: new Date(),
-        daysUntilPurchase: 2,
-        suggestedRetailerId: 1,
-        suggestedPrice: 349,
-        savings: 50,
-        reason: "Based on your weekly purchase pattern"
-      });
-
-      await this.createRecommendation({
-        userId: user.id,
-        productName: "Paper Towels",
-        productId: null,
-        recommendedDate: new Date(),
-        daysUntilPurchase: 3,
-        suggestedRetailerId: 2,
-        suggestedPrice: 649,
-        savings: 150,
-        reason: "You typically buy this every 2 weeks"
-      });
-
-      await this.createRecommendation({
-        userId: user.id,
-        productName: "Milk (Gallon)",
-        productId: null,
-        recommendedDate: new Date(),
-        daysUntilPurchase: 1,
-        suggestedRetailerId: 1,
-        suggestedPrice: 349,
-        savings: 40,
-        reason: "You're almost out based on purchase history"
-      });
-
-      return db
+      const result = await db
         .select()
         .from(recommendations)
         .where(eq(recommendations.userId, user.id));
-    }
 
-    return result;
+      if (result.length === 0) {
+        console.log("Generating recommendations for user:", user.id);
+
+        // Create demo recommendations
+        await this.createRecommendation({
+          userId: user.id,
+          productName: "Bananas",
+          productId: null,
+          recommendedDate: new Date(),
+          daysUntilPurchase: 2,
+          suggestedRetailerId: 1,
+          suggestedPrice: 349,
+          savings: 50,
+          reason: "Based on your weekly purchase pattern"
+        });
+
+        await this.createRecommendation({
+          userId: user.id,
+          productName: "Paper Towels",
+          productId: null,
+          recommendedDate: new Date(),
+          daysUntilPurchase: 3,
+          suggestedRetailerId: 2,
+          suggestedPrice: 649,
+          savings: 150,
+          reason: "You typically buy this every 2 weeks"
+        });
+
+        await this.createRecommendation({
+          userId: user.id,
+          productName: "Milk (Gallon)",
+          productId: null,
+          recommendedDate: new Date(),
+          daysUntilPurchase: 1,
+          suggestedRetailerId: 1,
+          suggestedPrice: 349,
+          savings: 40,
+          reason: "You're almost out based on purchase history"
+        });
+
+        return db
+          .select()
+          .from(recommendations)
+          .where(eq(recommendations.userId, user.id));
+      }
+
+      return result;
+    } catch (error) {
+      console.error("Error getting recommendations:", error);
+      throw error;
+    }
   }
 
   async createRecommendation(recommendationData: InsertRecommendation): Promise<Recommendation> {
-    const [recommendation] = await db
-      .insert(recommendations)
-      .values(recommendationData)
-      .returning();
+    try {
+      const [recommendation] = await db
+        .insert(recommendations)
+        .values(recommendationData)
+        .returning();
 
-    return recommendation;
+      return recommendation;
+    } catch (error) {
+      console.error("Error creating recommendation:", error);
+      throw error;
+    }
   }
 
   // Insights methods
@@ -1643,166 +1831,271 @@ export class DatabaseStorage implements IStorage {
 
   // Purchase Anomaly methods
   async getPurchaseAnomalies(): Promise<PurchaseAnomaly[]> {
-    const anomalies = await db.select().from(purchaseAnomalies);
-    return anomalies;
+    try {
+      const anomalies = await db.select().from(purchaseAnomalies);
+      return anomalies;
+    } catch (error) {
+      console.error("Error getting purchase anomalies:", error);
+      throw error;
+    }
   }
 
   async getPurchaseAnomaly(id: number): Promise<PurchaseAnomaly | undefined> {
-    const [anomaly] = await db
-      .select()
-      .from(purchaseAnomalies)
-      .where(eq(purchaseAnomalies.id, id));
-    return anomaly;
+    try {
+      const [anomaly] = await db
+        .select()
+        .from(purchaseAnomalies)
+        .where(eq(purchaseAnomalies.id, id));
+      return anomaly;
+    } catch (error) {
+      console.error("Error getting purchase anomaly:", error);
+      throw error;
+    }
   }
 
   async createPurchaseAnomaly(anomalyData: InsertPurchaseAnomaly): Promise<PurchaseAnomaly> {
-    const [anomaly] = await db
-      .insert(purchaseAnomalies)
-      .values(anomalyData)
-      .returning();
-    return anomaly;
+    try {
+      const [anomaly] = await db
+        .insert(purchaseAnomalies)
+        .values(anomalyData)
+        .returning();
+      return anomaly;
+    } catch (error) {
+      console.error("Error creating purchase anomaly:", error);
+      throw error;
+    }
   }
 
   async updatePurchaseAnomaly(id: number, updates: Partial<PurchaseAnomaly>): Promise<PurchaseAnomaly> {
-    const [updatedAnomaly] = await db
-      .update(purchaseAnomalies)
-      .set(updates)
-      .where(eq(purchaseAnomalies.id, id))
-      .returning();
+    try {
+      const [updatedAnomaly] = await db
+        .update(purchaseAnomalies)
+        .set(updates)
+        .where(eq(purchaseAnomalies.id, id))
+        .returning();
 
-    if (!updatedAnomaly) {
-      throw new Error(`Purchase anomaly with id ${id} not found`);
+      if (!updatedAnomaly) {
+        throw new Error(`Purchase anomaly with id ${id} not found`);
+      }
+
+      return updatedAnomaly;
+    } catch (error) {
+      console.error("Error updating purchase anomaly:", error);
+      throw error;
     }
-
-    return updatedAnomaly;
   }
 
   async deletePurchaseAnomaly(id: number): Promise<void> {
-    await db
-      .delete(purchaseAnomalies)
-      .where(eq(purchaseAnomalies.id, id));
+    try {
+      await db
+        .delete(purchaseAnomalies)
+        .where(eq(purchaseAnomalies.id, id));
+    } catch (error) {
+      console.error("Error deleting purchase anomaly:", error);
+      throw error;
+    }
   }
 
   // Affiliate Partner methods
   async getAffiliatePartners(): Promise<AffiliatePartner[]> {
-    return db.select().from(affiliatePartners);
+    try {
+      return db.select().from(affiliatePartners);
+    } catch (error) {
+      console.error("Error getting affiliate partners:", error);
+      throw error;
+    }
   }
 
   async getAffiliatePartner(id: number): Promise<AffiliatePartner | undefined> {
-    const [partner] = await db.select().from(affiliatePartners).where(eq(affiliatePartners.id, id));
-    return partner || undefined;
+    try {
+      const [partner] = await db.select().from(affiliatePartners).where(eq(affiliatePartners.id, id));
+      return partner || undefined;
+    } catch (error) {
+      console.error("Error getting affiliate partner:", error);
+      throw error;
+    }
   }
 
   async createAffiliatePartner(partnerData: InsertAffiliatePartner): Promise<AffiliatePartner> {
-    const [partner] = await db.insert(affiliatePartners).values(partnerData).returning();
-    return partner;
+    try {
+      const [partner] = await db.insert(affiliatePartners).values(partnerData).returning();
+      return partner;
+    } catch (error) {
+      console.error("Error creating affiliate partner:", error);
+      throw error;
+    }
   }
 
   async updateAffiliatePartner(id: number, updates: Partial<AffiliatePartner>): Promise<AffiliatePartner> {
-    const [partner] = await db
-      .update(affiliatePartners)
-      .set(updates)
-      .where(eq(affiliatePartners.id, id))
-      .returning();
-    if (!partner) throw new Error("Affiliate partner not found");
-    return partner;
+    try {
+      const [partner] = await db
+        .update(affiliatePartners)
+        .set(updates)
+        .where(eq(affiliatePartners.id, id))
+        .returning();
+      if (!partner) throw new Error("Affiliate partner not found");
+      return partner;
+    } catch (error) {
+      console.error("Error updating affiliate partner:", error);
+      throw error;
+    }
   }
 
   async deleteAffiliatePartner(id: number): Promise<void> {
-    await db.delete(affiliatePartners).where(eq(affiliatePartners.id, id));
+    try {
+      await db.delete(affiliatePartners).where(eq(affiliatePartners.id, id));
+    } catch (error) {
+      console.error("Error deleting affiliate partner:", error);
+      throw error;
+    }
   }
 
   // Affiliate Product methods
   async getAffiliateProducts(partnerId?: number, category?: string): Promise<AffiliateProduct[]> {
-    let query = db.select().from(affiliateProducts);
+    try {
+      let query = db.select().from(affiliateProducts);
 
-    if (partnerId) {
-      query = query.where(eq(affiliateProducts.partnerId, partnerId));
+      if (partnerId) {
+        query = query.where(eq(affiliateProducts.partnerId, partnerId));
+      }
+
+      if (category) {
+        query = query.where(eq(affiliateProducts.category, category));
+      }
+
+      return query;
+    } catch (error) {
+      console.error("Error getting affiliate products:", error);
+      throw error;
     }
-
-    if (category) {
-      query = query.where(eq(affiliateProducts.category, category));
-    }
-
-    return query;
   }
 
   async getAffiliateProduct(id: number): Promise<AffiliateProduct | undefined> {
-    const [product] = await db.select().from(affiliateProducts).where(eq(affiliateProducts.id, id));
-    return product || undefined;
+    try {
+      const [product] = await db.select().from(affiliateProducts).where(eq(affiliateProducts.id, id));
+      return product || undefined;
+    } catch (error) {
+      console.error("Error getting affiliate product:", error);
+      throw error;
+    }
   }
 
   async getFeaturedAffiliateProducts(): Promise<AffiliateProduct[]> {
-    return db.select().from(affiliateProducts).where(eq(affiliateProducts.isFeatured, true));
+    try {
+      return db.select().from(affiliateProducts).where(eq(affiliateProducts.isFeatured, true));
+    } catch (error) {
+      console.error("Error getting featured affiliate products:", error);
+      throw error;
+    }
   }
 
   async createAffiliateProduct(productData: InsertAffiliateProduct): Promise<AffiliateProduct> {
-    const [product] = await db.insert(affiliateProducts).values(productData).returning();
-    return product;
+    try {
+      const [product] = await db.insert(affiliateProducts).values(productData).returning();
+      return product;
+    } catch (error) {
+      console.error("Error creating affiliate product:", error);
+      throw error;
+    }
   }
 
   async updateAffiliateProduct(id: number, updates: Partial<AffiliateProduct>): Promise<AffiliateProduct> {
-    const [product] = await db
-      .update(affiliateProducts)
-      .set(updates)
-      .where(eq(affiliateProducts.id, id))
-      .returning();
-    if (!product) throw new Error("Affiliate product not found");
-    return product;
+    try {
+      const [product] = await db
+        .update(affiliateProducts)
+        .set(updates)
+        .where(eq(affiliateProducts.id, id))
+        .returning();
+      if (!product) throw new Error("Affiliate product not found");
+      return product;
+    } catch (error) {
+      console.error("Error updating affiliate product:", error);
+      throw error;
+    }
   }
 
   async deleteAffiliateProduct(id: number): Promise<void> {
-    await db.delete(affiliateProducts).where(eq(affiliateProducts.id, id));
+    try {
+      await db.delete(affiliateProducts).where(eq(affiliateProducts.id, id));
+    } catch (error) {
+      console.error("Error deleting affiliate product:", error);
+      throw error;
+    }
   }
 
   // Affiliate Click methods
   async recordAffiliateClick(clickData: InsertAffiliateClick): Promise<AffiliateClick> {
-    const [click] = await db.insert(affiliateClicks).values(clickData).returning();
-    return click;
+    try {
+      const [click] = await db.insert(affiliateClicks).values(clickData).returning();
+      return click;
+    } catch (error) {
+      console.error("Error recording affiliate click:", error);
+      throw error;
+    }
   }
 
   async getAffiliateClicks(userId?: number, productId?: number): Promise<AffiliateClick[]> {
-    let query = db.select().from(affiliateClicks);
+    try {
+      let query = db.select().from(affiliateClicks);
 
-    if (userId) {
-      query = query.where(eq(affiliateClicks.userId, userId));
+      if (userId) {
+        query = query.where(eq(affiliateClicks.userId, userId));
+      }
+
+      if (productId) {
+        query = query.where(eq(affiliateClicks.productId, productId));
+      }
+
+      return query;
+    } catch (error) {
+      console.error("Error getting affiliate clicks:", error);
+      throw error;
     }
-
-    if (productId) {
-      query = query.where(eq(affiliateClicks.productId, productId));
-    }
-
-    return query;
   }
 
   // Affiliate Conversion methods
   async recordAffiliateConversion(conversionData: InsertAffiliateConversion): Promise<AffiliateConversion> {
-    const [conversion] = await db.insert(affiliateConversions).values(conversionData).returning();
-    return conversion;
+    try {
+      const [conversion] = await db.insert(affiliateConversions).values(conversionData).returning();
+      return conversion;
+    } catch (error) {
+      console.error("Error recording affiliate conversion:", error);
+      throw error;
+    }
   }
 
   async getAffiliateConversions(userId?: number, status?: string): Promise<AffiliateConversion[]> {
-    let query = db.select().from(affiliateConversions);
+    try {
+      let query = db.select().from(affiliateConversions);
 
-    if (userId) {
-      query = query.where(eq(affiliateConversions.userId, userId));
+      if (userId) {
+        query = query.where(eq(affiliateConversions.userId, userId));
+      }
+
+      if (status) {
+        query = query.where(eq(affiliateConversions.status, status));
+      }
+
+      return query;
+    } catch (error) {
+      console.error("Error getting affiliate conversions:", error);
+      throw error;
     }
-
-    if (status) {
-      query = query.where(eq(affiliateConversions.status, status));
-    }
-
-    return query;
   }
 
   async updateAffiliateConversionStatus(id: number, status: string): Promise<AffiliateConversion> {
-    const [conversion] = await db
-      .update(affiliateConversions)
-      .set({ status })
-      .where(eq(affiliateConversions.id, id))
-      .returning();
-    if (!conversion) throw new Error("Affiliate conversion not found");
-    return conversion;
+    try {
+      const [conversion] = await db
+        .update(affiliateConversions)
+        .set({ status })
+        .where(eq(affiliateConversions.id, id))
+        .returning();
+      if (!conversion) throw new Error("Affiliate conversion not found");
+      return conversion;
+    } catch (error) {
+      console.error("Error updating affiliate conversion status:", error);
+      throw error;
+    }
   }
 }
 
