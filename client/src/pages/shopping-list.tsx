@@ -1,2 +1,0 @@
-Analysis: This code modifies the ShoppingListPage component to add a recipe preview dialog before the shopping plan modal. It introduces a new dialog, state variables for recipe preview items, and functions to handle toggling item selection and adding selected items to the shopping list. It replaces the indicated section with the new dialog code.
-</tool_code>
