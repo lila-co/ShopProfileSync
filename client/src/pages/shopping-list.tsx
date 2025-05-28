@@ -910,7 +910,7 @@ const ShoppingListPage: React.FC = () => {
         const sortedAisleGroups = Object.values(aisleGroups).sort((a: any, b: any) => a.order - b.order);
 
         // Calculate route optimization
-        const totalAisles = sortedAisleroups.length;
+        const totalAisles = sortedAisleGroups.length;
         const estimatedTime = Math.max(15, totalAisles * 3 + store.items.length * 0.5);
 
         return {
@@ -1978,9 +1978,7 @@ const ShoppingListPage: React.FC = () => {
                 Based on your usual purchases and current needs, we recommend adding these items to your shopping list:
               </p>
 
-              
-<div className="space-y-2">
-              {Array.isArray(generatedItems) && generatedItems.map((item, index) => (
+              {(generatedItems || []).map((item, index) => (
                 <div key={index} className="flex items-center p-2 border rounded-lg">
                   <input
                     type="checkbox"

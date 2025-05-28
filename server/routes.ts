@@ -918,18 +918,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Return the recommendations for preview
       res.json({
         userId,
-        items: allRecommendedItems || [],
+        items: allRecommendedItems,
         totalSavings: allRecommendedItems.reduce((sum, item) => sum + (item.savings || 0), 0)
       });
     } catch (error) {
-      console.error('Error in shopping list preview:', error);
-      // Return a safe response even on error
-      res.json({
-        userId,
-        items: [],
-        totalSavings: 0,
-        error: 'Failed to generate preview'
-      });
+      handleError(res, error);
     }
   });
 
@@ -937,42 +930,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/shopping-lists/recipe/preview', async (req: Request, res: Response) => {
     try {
       const { recipeUrl, servings } = req.body;
-      if (!recipeUrl || !recipeUrl.trim()) {
-        return res.status(400).json({ 
-          message: 'Recipe URL is required',
-          items: []
-        });
+      if (!recipeUrl) {
+        return res.status(400).json({ message: 'Recipe URL is required' });
       }
 
       // Extract ingredients for preview
-      const extractedIngredients = await extractRecipeIngredients(recipeUrl.trim(), servings || 4);
-      
-      // Ensure we have a valid array
-      if (!Array.isArray(extractedIngredients)) {
-        return res.json({ 
-          items: [],
-          message: 'No ingredients found in recipe'
-        });
-      }
+      const extractedIngredients = await extractRecipeIngredients(recipeUrl, servings || 4);
       
       // Format ingredients for preview
       const previewItems = extractedIngredients.map(ingredient => ({
-        productName: ingredient.name || 'Unknown ingredient',
-        quantity: ingredient.quantity || 1,
+        productName: ingredient.name,
+        quantity: ingredient.quantity,
         unit: ingredient.unit || 'COUNT',
         isSelected: true
       }));
 
-      res.json({ 
-        items: previewItems,
-        totalItems: previewItems.length
-      });
+      res.json({ items: previewItems });
     } catch (error) {
-      console.error('Recipe preview error:', error);
-      res.json({ 
-        items: [],
-        error: 'Failed to extract recipe ingredients'
-      });
+      handleError(res, error);
     }
   });
 
@@ -1831,8 +1806,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               behavior: "Premium product willingness",
               segmentA: { segment: "Health-Conscious Urban", willingness: "High (78%)" },
               segmentB: { segment: "Budget-Conscious Family", willingness: "Low (23%)" },
-              implication: "Targeted marketing needed for premium products"
-            }
+              implication: "Targeted marketing needed for premium products"            }
           ]
         }
       };
