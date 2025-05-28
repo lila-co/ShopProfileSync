@@ -111,8 +111,11 @@ const ShoppingListPage: React.FC = () => {
       return response.json();
     },
     onSuccess: (data) => {
+      // Safely handle the items array
+      const items = data.items || data.generatedItems || [];
+      
       // Add estimated savings to each item
-      const enhancedItems = data.items.map((item: any) => ({
+      const enhancedItems = items.map((item: any) => ({
         ...item,
         isSelected: true,
       }));
@@ -134,14 +137,16 @@ const ShoppingListPage: React.FC = () => {
     mutationFn: async () => {
       const response = await apiRequest('POST', '/api/shopping-lists/preview', {});
       const data = await response.json();
-      setGeneratedItems(data.items || []);
+      const items = data.items || data.generatedItems || [];
+      setGeneratedItems(items);
       setGenerateDialogOpen(true);
       return data;
     },
     onSuccess: (data) => {
+      const itemCount = data.items?.length || data.generatedItems?.length || 0;
       toast({
         title: "Shopping List Preview Generated",
-        description: `Found ${data.items?.length || 0} recommended items`
+        description: `Found ${itemCount} recommended items`
       });
     },
     onError: (error: any) => {
@@ -195,7 +200,12 @@ const ShoppingListPage: React.FC = () => {
       return response.json();
     },
     onSuccess: (data) => {
-      setRecipePreviewItems(data.items || []);
+      const items = data.items || data.ingredients || [];
+      const processedItems = items.map((item: any) => ({
+        ...item,
+        isSelected: true
+      }));
+      setRecipePreviewItems(processedItems);
       setRecipeDialogOpen(false);
       setRecipePreviewDialogOpen(true);
     },
@@ -278,8 +288,9 @@ const ShoppingListPage: React.FC = () => {
       return extractedData;
     },
     onSuccess: (data) => {
-      if (data.items && Array.isArray(data.items)) {
-        const processedItems = data.items.map((item: any) => ({
+      const items = data?.items || data?.extractedItems || [];
+      if (items && Array.isArray(items) && items.length > 0) {
+        const processedItems = items.map((item: any) => ({
           productName: item.productName || item.name || item,
           quantity: item.quantity || 1,
           unit: item.unit || 'COUNT',
