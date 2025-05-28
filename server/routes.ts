@@ -926,6 +926,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Preview recipe ingredients without adding to shopping list
+  app.post('/api/shopping-lists/recipe-preview', async (req: Request, res: Response) => {
+    try {
+      const { recipeUrl, servings } = req.body;
+      if (!recipeUrl) {
+        return res.status(400).json({ message: 'Recipe URL is required' });
+      }
+
+      // In a real app, we would scrape the recipe URL to extract ingredients
+      // For demo purposes, simulate recipe extraction
+      const extractedIngredients = await extractRecipeIngredients(recipeUrl, servings);
+
+      // Add isSelected flag for preview
+      const ingredientsWithSelection = extractedIngredients.map(ingredient => ({
+        ...ingredient,
+        isSelected: true
+      }));
+
+      res.json({
+        recipeUrl,
+        servings,
+        ingredients: ingredientsWithSelection
+      });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
   // Import recipe and add ingredients to shopping list
   app.post('/api/shopping-lists/recipe', async (req: Request, res: Response) => {
     try {
