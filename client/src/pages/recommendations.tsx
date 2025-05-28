@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Header from '@/components/layout/Header';
@@ -27,31 +26,27 @@ const RecommendationsPage: React.FC = () => {
 
   // Add items to shopping list mutation
   const addToShoppingListMutation = useMutation({
-    mutationFn: async () => {
-      const selectedItemsToAdd = enhancedRecommendations.filter(item => selectedItems.has(item.id));
-      
-      for (const item of selectedItemsToAdd) {
-        await apiRequest('POST', '/api/shopping-list/items', {
-          productName: item.productName,
-          quantity: 1,
-          unit: 'COUNT'
-        });
-      }
-      
-      return selectedItemsToAdd;
+    mutationFn: async (item: Recommendation) => {
+      await apiRequest('POST', '/api/shopping-list/items', {
+        productName: item.productName,
+        quantity: 1,
+        unit: 'COUNT'
+      });
+
+      return item;
     },
-    onSuccess: (addedItems) => {
+    onSuccess: (addedItem) => {
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
       setSelectedItems(new Set()); // Clear selections after adding
       toast({
-        title: "Items Added",
-        description: `${addedItems.length} items added to your shopping list`
+        title: "Item Added",
+        description: `${addedItem.productName} added to your shopping list`
       });
     },
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to add items to shopping list",
+        description: "Failed to add item to shopping list",
         variant: "destructive"
       });
     }
@@ -158,7 +153,7 @@ const RecommendationsPage: React.FC = () => {
       });
       return;
     }
-    
+
     addToShoppingListMutation.mutate();
   };
 
@@ -179,7 +174,7 @@ const RecommendationsPage: React.FC = () => {
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
       <Header user={user} />
-      
+
       <main className="flex-1 overflow-y-auto">
         <div className="p-4 pb-20">
           {/* Header */}
@@ -263,7 +258,7 @@ const RecommendationsPage: React.FC = () => {
                             </Badge>
                           </div>
                         </div>
-                        
+
                         <div className="space-y-2">
                           <div className="flex items-center text-sm text-gray-600">
                             <MapPin className="h-3 w-3 mr-1" />
@@ -275,7 +270,7 @@ const RecommendationsPage: React.FC = () => {
                           </div>
                           <p className="text-sm text-gray-600">{item.reason}</p>
                         </div>
-                        
+
                         <div className="mt-3 flex items-center justify-between">
                           <div className="flex items-center">
                             <Percent className="h-4 w-4 text-green-600 mr-1" />
@@ -316,9 +311,17 @@ const RecommendationsPage: React.FC = () => {
                         <span className="font-bold text-primary">
                           ${(item.salePrice / 100).toFixed(2)}
                         </span>
-                        <Button size="sm" onClick={() => toggleItemSelection(item.id)}>
-                          <Plus className="h-4 w-4 mr-1" />
-                          Add
+                        <Button 
+                          size="sm" 
+                          onClick={() => {
+                            const itemToAdd = enhancedRecommendations.find(r => r.id === item.id);
+                            if (itemToAdd) {
+                              addToShoppingListMutation.mutate(itemToAdd);
+                            }
+                          }}
+                          disabled={addToShoppingListMutation.isPending}
+                        >
+                          {addToShoppingListMutation.isPending ? "Adding..." : "Add to List"}
                         </Button>
                       </div>
                     </CardContent>
@@ -340,8 +343,17 @@ const RecommendationsPage: React.FC = () => {
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">{item.retailer}</span>
-                        <Button size="sm" onClick={() => toggleItemSelection(item.id)}>
-                          Select
+                        <Button 
+                          size="sm" 
+                          onClick={() => {
+                            const itemToAdd = enhancedRecommendations.find(r => r.id === item.id);
+                            if (itemToAdd) {
+                              addToShoppingListMutation.mutate(itemToAdd);
+                            }
+                          }}
+                          disabled={addToShoppingListMutation.isPending}
+                        >
+                          {addToShoppingListMutation.isPending ? "Adding..." : "Add to List"}
                         </Button>
                       </div>
                     </CardContent>
@@ -361,8 +373,17 @@ const RecommendationsPage: React.FC = () => {
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">{item.retailer}</span>
-                        <Button size="sm" onClick={() => toggleItemSelection(item.id)}>
-                          Select
+                        <Button 
+                          size="sm" 
+                          onClick={() => {
+                            const itemToAdd = enhancedRecommendations.find(r => r.id === item.id);
+                            if (itemToAdd) {
+                              addToShoppingListMutation.mutate(itemToAdd);
+                            }
+                          }}
+                          disabled={addToShoppingListMutation.isPending}
+                        >
+                          {addToShoppingListMutation.isPending ? "Adding..." : "Add to List"}
                         </Button>
                       </div>
                     </CardContent>
@@ -372,7 +393,7 @@ const RecommendationsPage: React.FC = () => {
           </Tabs>
         </div>
       </main>
-      
+
       <BottomNavigation activeTab="home" />
     </div>
   );
