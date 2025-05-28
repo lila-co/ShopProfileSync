@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { ZodError } from "zod";
 import { parseReceiptImage } from "./services/receiptParser";
-import { generateRecommendations, analyzePurchasePatterns, extractRecipeIngredients } from "./services/recommendationEngine";
+import { generateRecommendations, analyzePurchasePatterns, extractRecipeIngredients, generatePersonalizedSuggestions } from "./services/recommendationEngine";
 import { getRetailerAPI } from "./services/retailerIntegration";
 import OpenAI from "openai";
 import { productCategorizer, ProductCategory, QuantityNormalization } from './services/productCategorizer';
@@ -331,14 +331,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Items array is required' });
       }
 
-      // Process each item through the categorizer
-      const categorizedItems = items.map(item => {
+      const results = items.map((item: any) => {
         const { productName, quantity, unit } = item;
 
-        if (!productName) {
-          throw new Error('Product name is required for each item');
-        }
-
+        // Use the product categorizer service
         const category = productCategorizer.categorizeProduct(productName);
         const normalized = productCategorizer.normalizeQuantity(productName, quantity || 1, unit || 'COUNT');
         const icon = productCategorizer.getCategoryIcon(category.category);
@@ -351,7 +347,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       });
 
-      res.json(categorizedItems);
+      // Filter to only include items that have meaningful changes
+      const filteredResults = results.filter((item: any) => {
+        const hasNameChange = item.category.normalizedName && 
+          item.category.normalizedName !== item.productName;
+
+        const hasQuantityChange = item.normalized.suggestedQuantity !== item.normalized.originalQuantity;
+
+        const hasUnitChange = item.normalized.suggestedUnit !== item.normalized.originalUnit;
+
+        const hasOptimizationReason = item.normalized.conversionReason && 
+          item.normalized.conversionReason !== 'No conversion needed';
+
+        return hasNameChange || hasQuantityChange || hasUnitChange || hasOptimizationReason;
+      });
+
+      res.json(filteredResults);
     } catch (error) {
       handleError(res, error);
     }
@@ -794,136 +805,147 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Generate shopping list preview (separate endpoint for previewing items)
+  // Generate shopping list preview with personalized recommendations
   app.post('/api/shopping-lists/preview', async (req: Request, res: Response) => {
     try {
-      const userId = 1; // For demo purposes, use default user
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
+      const userId = req.body.userId || 1; // Default to user 1 for demo
 
-      // For demo purposes, provide a rich set of realistic shopping recommendations
-      // with personalized insights and deal information
-      const recommendedItems = [
-        { 
-          productName: 'Milk', 
-          quantity: 1, 
+      // Get user preferences
+      const user = await storage.getUser(userId);
+      const userPrefersBulk = user?.buyInBulk || false;
+      const userPrioritizesCost = user?.prioritizeCostSavings || false;
+
+      // Mock deal data with bulk vs standard options for demonstration
+      const availableDeals = [
+        // Soda Water Example (as mentioned in the query)
+        {
+          productName: 'Sparkling Water',
+          retailerName: 'Costco',
+          salePrice: 3000, // $30.00
+          quantity: 36,
+          unit: 'CANS',
+          savings: 500
+        },
+        {
+          productName: 'Sparkling Water',
+          retailerName: 'Target', 
+          salePrice: 1500, // $15.00
+          quantity: 24,
+          unit: 'CANS',
+          savings: 300
+        },
+        // Milk examples
+        {
+          productName: 'Milk',
+          retailerName: 'Costco',
+          salePrice: 899, // $8.99 for 2 gallons
+          quantity: 2,
           unit: 'GALLON',
-          suggestedRetailerId: 1,
-          suggestedPrice: 359,
-          savings: 40,
-          reason: "You typically buy milk weekly. On sale at Walmart today!",
-          daysUntilPurchase: 2,
-          isSelected: true
+          savings: 200
         },
-        { 
+        {
+          productName: 'Milk',
+          retailerName: 'Walmart',
+          salePrice: 359, // $3.59 per gallon
+          quantity: 1,
+          unit: 'GALLON', 
+          savings: 40
+        },
+        // Eggs
+        {
+          productName: 'Eggs',
+          retailerName: 'Costco',
+          salePrice: 899, // $8.99 for 24 count
+          quantity: 24,
+          unit: 'COUNT',
+          savings: 150
+        },
+        {
           productName: 'Eggs', 
-          quantity: 1, 
-          unit: 'DOZEN',
-          suggestedRetailerId: 2,
-          suggestedPrice: 249,
-          savings: 50,
-          reason: "You're running low based on your purchase pattern",
-          daysUntilPurchase: 3,
-          isSelected: true
-        },
-        { 
-          productName: 'Bread', 
-          quantity: 1, 
-          unit: 'LOAF',
-          suggestedRetailerId: 3,
-          suggestedPrice: 229,
-          savings: 30,
-          reason: "You buy this every 5 days on average",
-          daysUntilPurchase: 1,
-          isSelected: true
-        },
-        { 
-          productName: 'Bananas', 
-          quantity: 1, 
-          unit: 'BUNCH',
-          suggestedRetailerId: 1,
-          suggestedPrice: 129,
-          savings: 20,
-          reason: "Currently on special at Walmart",
-          daysUntilPurchase: 4,
-          isSelected: true
-        },
+          retailerName: 'Target',
+          salePrice: 249, // $2.49 per dozen
+          quantity: 12,
+          unit: 'COUNT',
+          savings: 50
+        }
+      ];
+
+      // Analyze deals considering user preferences
+      const analyzedDeals = analyzeBulkVsUnitPricing(availableDeals, userPrefersBulk);
+
+      // Convert to recommendation format
+      const recommendedItems = analyzedDeals.map(deal => ({
+        productName: deal.productName,
+        quantity: deal.quantity,
+        unit: deal.unit,
+        suggestedRetailerId: 1, // Mock Retailer ID
+        suggestedPrice: deal.salePrice,
+        savings: deal.savings,
+        reason: `Best deal based on ${userPrefersBulk ? 'bulk preference' : 'unit price'} at ${deal.retailerName}`,
+        daysUntilPurchase: 2, // Mock value
+        isSelected: true
+      }));
+
+      // Additional hardcoded items
+      const additionalItems = [
         { 
           productName: 'Ground Coffee', 
           quantity: 1, 
-          unit: 'BAG',
-          suggestedRetailerId: 3,
-          suggestedPrice: 899,
-          savings: 200,
-          reason: "Running low based on your 2-week purchase cycle",
-          daysUntilPurchase: 0,
+          unit: 'LB',
+          suggestedRetailerId: 2,
+          suggestedPrice: 1299,
+          savings: 100,
+          reason: "Premium coffee on sale at Target",
+          daysUntilPurchase: 5,
           isSelected: true
         },
         { 
           productName: 'Chicken Breast', 
           quantity: 2, 
           unit: 'LB',
-          suggestedRetailerId: 2,
-          suggestedPrice: 599,
-          savings: 100,
-          reason: "25% off this week at Target",
-          daysUntilPurchase: 1,
-          isSelected: true
-        },
-        { 
-          productName: 'Yogurt', 
-          quantity: 6, 
-          unit: 'CAN',
-          suggestedRetailerId: 3,
-          suggestedPrice: 149,
-          savings: 30,
-          reason: "Buy 5 get 1 free this week at Kroger",
-          daysUntilPurchase: 2,
-          isSelected: true
-        },
-        { 
-          productName: 'Pasta', 
-          quantity: 2, 
-          unit: 'BOX',
           suggestedRetailerId: 1,
-          suggestedPrice: 129,
-          savings: 0,
-          reason: "Based on your monthly pasta purchase",
-          daysUntilPurchase: 0,
-          isSelected: true
-        },
-        { 
-          productName: 'Pasta Sauce', 
-          quantity: 1, 
-          unit: 'JAR',
-          suggestedRetailerId: 1,
-          suggestedPrice: 329,
-          savings: 0,
-          reason: "Pairs with pasta in your cart",
-          daysUntilPurchase: 0,
-          isSelected: true
-        },
-        { 
-          productName: 'Apples', 
-          quantity: 1, 
-          unit: 'BAG',
-          suggestedRetailerId: 2,
-          suggestedPrice: 459,
-          savings: 40,
-          reason: "Fresh seasonal Honeycrisp apples on sale",
-          daysUntilPurchase: 3,
+          suggestedPrice: 699,
+          savings: 80,
+          reason: "Protein staple - family pack sale at Walmart",
+          daysUntilPurchase: 6,
           isSelected: true
         }
       ];
 
+      // Combine analyzed deals with additional items
+      const allRecommendedItems = [...recommendedItems, ...additionalItems];
+
       // Return the recommendations for preview
       res.json({
         userId,
-        items: recommendedItems,
-        totalSavings: recommendedItems.reduce((sum, item) => sum + (item.savings || 0), 0)
+        items: allRecommendedItems,
+        totalSavings: allRecommendedItems.reduce((sum, item) => sum + (item.savings || 0), 0)
       });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Preview recipe ingredients before importing
+  app.post('/api/shopping-lists/recipe/preview', async (req: Request, res: Response) => {
+    try {
+      const { recipeUrl, servings } = req.body;
+      if (!recipeUrl) {
+        return res.status(400).json({ message: 'Recipe URL is required' });
+      }
+
+      // Extract ingredients for preview
+      const extractedIngredients = await extractRecipeIngredients(recipeUrl, servings || 4);
+      
+      // Format ingredients for preview
+      const previewItems = extractedIngredients.map(ingredient => ({
+        productName: ingredient.name,
+        quantity: ingredient.quantity,
+        unit: ingredient.unit || 'COUNT',
+        isSelected: true
+      }));
+
+      res.json({ items: previewItems });
     } catch (error) {
       handleError(res, error);
     }
@@ -932,22 +954,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Import recipe and add ingredients to shopping list
   app.post('/api/shopping-lists/recipe', async (req: Request, res: Response) => {
     try {
-      const { recipeUrl, shoppingListId, servings } = req.body;
-      if (!recipeUrl) {
-        return res.status(400).json({ message: 'Recipe URL is required' });
+      const { recipeUrl, shoppingListId, servings, items } = req.body;
+      
+      let ingredientsToAdd = [];
+      
+      if (items) {
+        // If items are provided (from preview), use those
+        ingredientsToAdd = items.filter((item: any) => item.isSelected);
+      } else {
+        // If no items provided, extract from URL (backward compatibility)
+        if (!recipeUrl) {
+          return res.status(400).json({ message: 'Recipe URL or items are required' });
+        }
+        const extractedIngredients = await extractRecipeIngredients(recipeUrl, servings);
+        ingredientsToAdd = extractedIngredients.map(ingredient => ({
+          productName: ingredient.name,
+          quantity: ingredient.quantity,
+          unit: ingredient.unit || 'COUNT'
+        }));
       }
-
-      // In a real app, we would scrape the recipe URL to extract ingredients
-      // For demo purposes, simulate recipe extraction
-      const extractedIngredients = await extractRecipeIngredients(recipeUrl, servings);
 
       // Add each ingredient to the shopping list
       const addedItems = [];
-      for (const ingredient of extractedIngredients) {
+      for (const ingredient of ingredientsToAdd) {
         const newItem = await storage.addShoppingListItem({
           shoppingListId: shoppingListId || 1, // Default to first list if not specified
-          productName: ingredient.name,
-          quantity: ingredient.quantity
+          productName: ingredient.productName,
+          quantity: ingredient.quantity,
+          unit: ingredient.unit
         });
         addedItems.push(newItem);
       }
@@ -1772,8 +1806,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               behavior: "Premium product willingness",
               segmentA: { segment: "Health-Conscious Urban", willingness: "High (78%)" },
               segmentB: { segment: "Budget-Conscious Family", willingness: "Low (23%)" },
-              implication: "Targeted marketing needed for premium products"
-            }
+              implication: "Targeted marketing needed for premium products"            }
           ]
         }
       };
@@ -1932,29 +1965,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ retailerId: null, retailerName: null, items: [], totalCost: 0, availabilityRate: 0 });
       }
 
-      // Return demo data for Kroger as the best single store option
-      const storeItems = items.map(item => ({
-        id: item.id,
-        productName: item.productName,
-        quantity: item.quantity,
-        unit: item.unit,
-        price: 250 + Math.floor(Math.random() * 300), // $2.50-$5.50 range
-        isAvailable: true
-      }));
+      // Get all retailers to find the best single store option
+      const retailers = await storage.getRetailers();
+      const allDeals = await storage.getDeals();
 
-      const totalCost = storeItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      // Evaluate each retailer for single store optimization
+      const retailerScores = retailers.map(retailer => {
+        let availableItems = 0;
+        let totalCost = 0;
+        let dealCount = 0;
+
+        const storeItems = items.map(item => {
+          // Check for deals at this retailer
+          const deal = allDeals.find(d => 
+            d.retailerId === retailer.id && 
+            (d.productName.toLowerCase().includes(item.productName.toLowerCase()) ||
+             item.productName.toLowerCase().includes(d.productName.toLowerCase())) &&
+            new Date(d.endDate) > new Date()
+          );
+
+          // Simulate availability based on retailer type
+          const isAvailable = Math.random() > 0.15; // 85% base availability
+          if (isAvailable) availableItems++;
+
+          // Use deal price if available, otherwise simulate pricing
+          let price;
+          if (deal) {
+            price = deal.salePrice;
+            dealCount++;
+          } else {
+            // Different retailers have different price ranges
+            const basePrice = retailer.name === "Walmart" ? 200 : 
+                            retailer.name === "Target" ? 280 : 
+                            retailer.name === "Kroger" ? 250 : 260;
+            price = basePrice + Math.floor(Math.random() * 200);
+          }
+
+          if (isAvailable) {
+            totalCost += price * item.quantity;
+          }
+
+          return {
+            id: item.id,
+            productName: item.productName,
+            quantity: item.quantity,
+            unit: item.unit,
+            price,
+            isAvailable,
+            substituteAvailable: !isAvailable ? Math.random() > 0.3 : false,
+            dealInfo: deal ? {
+              isDeal: true,
+              savings: deal.regularPrice - deal.salePrice,
+              source: deal.dealSource || 'manual_upload'
+            } : null
+          };
+        });
+
+        // Calculate score: availability + deals - cost impact
+        const availabilityRate = availableItems / items.length;
+        const dealBonus = dealCount * 0.1; // Bonus for having deals
+        const costPenalty = totalCost / 10000; // Small penalty for higher cost
+        const score = availabilityRate + dealBonus - costPenalty;
+
+        return {
+          retailer,
+          storeItems,
+          totalCost,
+          availabilityRate,
+          availableItems,
+          dealCount,
+          score
+        };
+      });
+
+      // Find the best retailer based on score
+      const bestOption = retailerScores.reduce((best, current) => 
+        current.score > best.score ? current : best
+      );
 
       res.json({
-        retailerId: 3,
-        retailerName: "Kroger",
-        items: storeItems,
-        totalCost,
-        availabilityRate: 0.87,
-        availableItems: items.length,
+        retailerId: bestOption.retailer.id,
+        retailerName: bestOption.retailer.name,
+        items: bestOption.storeItems,
+        totalCost: bestOption.totalCost,
+        availabilityRate: bestOption.availabilityRate,
+        availableItems: bestOption.availableItems,
         totalItems: items.length,
-        address: "123 Main St, San Francisco, CA 94105",
+        address: `123 Main St, San Francisco, CA 94105`, // Mock address
         planType: "Single Store",
-        storeCount: 1
+        storeCount: 1,
+        missingItems: bestOption.storeItems.filter(item => !item.isAvailable).length,
+        estimatedTime: 35, // Single store is faster
+        dealCount: bestOption.dealCount
       });
     } catch (error) {
       handleError(res, error);
@@ -1972,59 +2074,125 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ stores: [], totalCost: 0, totalSavings: 0 });
       }
 
-      // Demo data: Split items between Kroger (cheaper produce) and Walmart (cheaper packaged goods)
-      const krogerItems = [];
-      const walmartItems = [];
+      // Get all retailers and deals
+      const retailers = await storage.getRetailers();
+      const allDeals = await storage.getDeals();
 
-      // Split items between stores for best value
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        const itemData = {
-          id: item.id,
-          productName: item.productName,
-          quantity: item.quantity,
-          unit: item.unit,
-          price: 200 + Math.floor(Math.random() * 250), // Lower prices for best value
-          totalPrice: 0
-        };
+      // Best value optimization rule: Find the cheapest price for EACH item across ALL stores
+      const storeItemMap = new Map();
 
-        itemData.totalPrice = itemData.price * itemData.quantity;
+      // For each item, find the best price across all retailers
+      for (const item of items) {
+        let bestPrice = Infinity;
+        let bestRetailer = null;
+        let bestDeal = null;
 
-        // Alternate between stores or use product type logic
-        if (i % 2 === 0 || item.productName.toLowerCase().includes('produce') || 
-            item.productName.toLowerCase().includes('fruit') || 
-            item.productName.toLowerCase().includes('vegetable')) {
-          krogerItems.push(itemData);
-        } else {
-          walmartItems.push(itemData);
+        // Check price at each retailer
+        for (const retailer of retailers) {
+          // Check for deals at this retailer
+          const deal = allDeals.find(d => 
+            d.retailerId === retailer.id && 
+            (d.productName.toLowerCase().includes(item.productName.toLowerCase()) ||
+             item.productName.toLowerCase().includes(d.productName.toLowerCase())) &&
+            new Date(d.endDate) > new Date()
+          );
+
+          let price;
+          if (deal) {
+            price = deal.salePrice;
+          } else {
+            // Simulate different price strategies by retailer
+            const itemName = item.productName.toLowerCase();
+            let basePrice = 200; // Default base price
+
+            // Walmart - generally lowest on packaged goods
+            if (retailer.name === "Walmart") {
+              if (itemName.includes('cola') || itemName.includes('coffee') || 
+                  itemName.includes('pasta') || itemName.includes('sauce') ||
+                  itemName.includes('paper') || itemName.includes('snack')) {
+                basePrice = 180; // 10% cheaper on these items
+              } else {
+                basePrice = 220; // Slightly higher on fresh items
+              }
+            }
+            // Kroger - competitive on fresh items
+            else if (retailer.name === "Kroger") {
+              if (itemName.includes('milk') || itemName.includes('bread') || 
+                  itemName.includes('banana') || itemName.includes('chicken') ||
+                  itemName.includes('produce') || itemName.includes('meat')) {
+                basePrice = 190; // Competitive on fresh
+              } else {
+                basePrice = 230;
+              }
+            }
+            // Target - balanced pricing, premium feel
+            else if (retailer.name === "Target") {
+              basePrice = 240; // Generally higher but good quality
+            }
+            // Other retailers
+            else {
+              basePrice = 210 + Math.floor(Math.random() * 40); // Random variation
+            }
+
+            price = basePrice + Math.floor(Math.random() * 100);
+          }
+
+          // Track the best price for this item
+          if (price < bestPrice) {
+            bestPrice = price;
+            bestRetailer = retailer;
+            bestDeal = deal;
+          }
+        }
+
+        // Add item to the best retailer's list
+        if (bestRetailer) {
+          if (!storeItemMap.has(bestRetailer.id)) {
+            storeItemMap.set(bestRetailer.id, {
+              retailerId: bestRetailer.id,
+              retailerName: bestRetailer.name,
+              items: [],
+              subtotal: 0,
+              address: `${100 + bestRetailer.id} Main St, San Francisco, CA 94105`
+            });
+          }
+
+          const itemData = {
+            id: item.id,
+            productName: item.productName,
+            quantity: item.quantity,
+            unit: item.unit,
+            price: bestPrice,
+            totalPrice: bestPrice * item.quantity,
+            dealInfo: bestDeal ? {
+              isDeal: true,
+              savings: bestDeal.regularPrice - bestDeal.salePrice,
+              source: bestDeal.dealSource || 'manual_upload'
+            } : null
+          };
+
+          const store = storeItemMap.get(bestRetailer.id);
+          store.items.push(itemData);
+          store.subtotal += itemData.totalPrice;
         }
       }
 
-      const krogerSubtotal = krogerItems.reduce((sum, item) => sum + item.totalPrice, 0);
-      const walmartSubtotal = walmartItems.reduce((sum, item) => sum + item.totalPrice, 0);
-      const totalCost = krogerSubtotal + walmartSubtotal;
+      // Convert map to array and calculate totals
+      const stores = Array.from(storeItemMap.values());
+      const totalCost = stores.reduce((sum, store) => sum + store.subtotal, 0);
+
+      // Calculate savings compared to single store (estimate based on price spread)
+      const singleStoreCost = totalCost * 1.15; // Assume 15% more expensive at single store
+      const savings = singleStoreCost - totalCost;
 
       res.json({
-        stores: [
-          {
-            retailerId: 3,
-            retailerName: "Kroger",
-            items: krogerItems,
-            subtotal: krogerSubtotal,
-            address: "123 Main St, San Francisco, CA 94105"
-          },
-          {
-            retailerId: 1,
-            retailerName: "Walmart",
-            items: walmartItems,
-            subtotal: walmartSubtotal,
-            address: "789 Oak Ave, San Francisco, CA 94103"
-          }
-        ],
+        stores,
         totalCost,
-        savings: 850, // $8.50 savings
+        savings: Math.round(savings),
         planType: "Best Value Multi-Store",
-        storeCount: 2
+        storeCount: stores.length,
+        estimatedTime: Math.max(45, stores.length * 20), // Time increases with store count
+        savingsPercentage: Math.round((savings / singleStoreCost) * 100)
       });
     } catch (error) {
       handleError(res, error);
@@ -2042,54 +2210,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ stores: [], totalCost: 0, estimatedTime: 0 });
       }
 
-      // Demo data: Target as balanced option (good prices, convenient)
-      // Check for manual deals for each item
+      // Get all retailers and deals
+      const retailers = await storage.getRetailers();
       const allDeals = await storage.getDeals();
-      const targetItems = items.map(item => {
-        // Find manual deal at Target
-        const manualDeal = allDeals.find(deal => 
-          deal.retailerId === 2 && // Target
-          (deal.productName.toLowerCase().includes(item.productName.toLowerCase()) ||
-           item.productName.toLowerCase().includes(deal.productName.toLowerCase())) &&
-          new Date(deal.endDate) > new Date()
-        );
 
-        const price = manualDeal ? manualDeal.salePrice : 250 + Math.floor(Math.random() * 350);
+      // Balanced optimization: Find best compromise between price, availability, and convenience
+      const retailerOptions = retailers.map(retailer => {
+        // Calculate availability rate based on retailer type
+        let baseAvailability = 0.85; // Default 85%
+        if (retailer.name === "Target") baseAvailability = 0.92;
+        else if (retailer.name === "Kroger") baseAvailability = 0.87;
+        else if (retailer.name === "Walmart") baseAvailability = 0.89;
+
+        const availableItemCount = Math.floor(items.length * baseAvailability);
+        
+        const storeItems = items.map((item, index) => {
+          // Find deals at this retailer
+          const deal = allDeals.find(d => 
+            d.retailerId === retailer.id && 
+            (d.productName.toLowerCase().includes(item.productName.toLowerCase()) ||
+             item.productName.toLowerCase().includes(d.productName.toLowerCase())) &&
+            new Date(d.endDate) > new Date()
+          );
+
+          // Balanced pricing strategy
+          let basePrice = 250; // Default reasonable price
+          if (retailer.name === "Walmart") basePrice = 230; // Slightly cheaper
+          else if (retailer.name === "Target") basePrice = 270; // Slight premium
+          else if (retailer.name === "Kroger") basePrice = 260; // Mid-range
+
+          const price = deal ? deal.salePrice : basePrice + Math.floor(Math.random() * 150);
+          const isAvailable = index < availableItemCount;
+
+          return {
+            id: item.id,
+            productName: item.productName,
+            quantity: item.quantity,
+            unit: item.unit,
+            price,
+            totalPrice: isAvailable ? price * item.quantity : 0,
+            isAvailable,
+            dealInfo: deal ? {
+              isDeal: true,
+              source: deal.dealSource || 'manual_upload',
+              savings: deal.regularPrice - deal.salePrice
+            } : null
+          };
+        });
+
+        const availableItems = storeItems.filter(item => item.isAvailable);
+        const totalCost = availableItems.reduce((sum, item) => sum + item.totalPrice, 0);
+        const dealCount = storeItems.filter(item => item.dealInfo?.isDeal).length;
+        
+        // Calculate balanced score: availability + deal bonus - cost penalty
+        const availabilityScore = baseAvailability * 0.4;
+        const dealScore = (dealCount / items.length) * 0.3;
+        const costScore = (1 - (totalCost / (items.length * 400))) * 0.3; // Normalize cost
+        const balancedScore = availabilityScore + dealScore + costScore;
 
         return {
-          id: item.id,
-          productName: item.productName,
-          quantity: item.quantity,
-          unit: item.unit,
-          price,
-          totalPrice: 0,
-          dealInfo: manualDeal ? {
-            isDeal: true,
-            source: manualDeal.dealSource || 'manual_upload',
-            savings: manualDeal.regularPrice - manualDeal.salePrice
-          } : null
+          retailer,
+          storeItems,
+          totalCost,
+          availabilityRate: baseAvailability,
+          availableItems: availableItemCount,
+          dealCount,
+          balancedScore
         };
       });
 
-      targetItems.forEach(item => {
-        item.totalPrice = item.price * item.quantity;
-      });
+      // Select the retailer with the best balanced score
+      const bestOption = retailerOptions.reduce((best, current) => 
+        current.balancedScore > best.balancedScore ? current : best
+      );
 
-      const totalCost = targetItems.reduce((sum, item) => sum + item.totalPrice, 0);
+      // Calculate savings compared to premium store
+      const premiumStoreCost = bestOption.totalCost * 1.12;
+      const savings = premiumStoreCost - bestOption.totalCost;
 
       res.json({
         stores: [{
-          retailerId: 2,
-          retailerName: "Target",
-          items: targetItems,
-          subtotal: totalCost,
-          address: "456 Market St, San Francisco, CA 94102"
+          retailerId: bestOption.retailer.id,
+          retailerName: bestOption.retailer.name,
+          items: bestOption.storeItems,
+          subtotal: bestOption.totalCost,
+          address: `${100 + bestOption.retailer.id} Main St, San Francisco, CA 94105`
         }],
-        totalCost,
-        estimatedTime: 35, // 35 minutes estimated
+        totalCost: bestOption.totalCost,
+        estimatedTime: 40, // Balanced time
         storeCount: 1,
         planType: "Balanced",
-        savings: 320 // $3.20 savings
+        savings: Math.round(savings),
+        availabilityRate: bestOption.availabilityRate,
+        availableItems: bestOption.availableItems,
+        totalItems: items.length,
+        missingItems: items.length - bestOption.availableItems,
+        dealCount: bestOption.dealCount
       });
     } catch (error) {
       handleError(res, error);
@@ -2641,6 +2857,166 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Error triggering data collection:', error);
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Name normalization
+  const normalizeProductName = (productName: string) => {
+      const words = productName.split(" ");
+      const capitalizedWords = words.map(word => {
+          return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      });
+      return capitalizedWords.join(" ");
+  }
+
+  app.post('/api/shopping-list/items', async (req: Request, res: Response) => {
+    try {
+      const { productName, quantity, unit, shoppingListId } = req.body;
+
+      // Validate quantity to ensure it's a number and not NaN
+      const validQuantity = Number(quantity);
+      if (isNaN(validQuantity)) {
+        return res.status(400).json({ message: 'Invalid quantity. Please provide a valid number.' });
+      }
+
+      // If no shoppingListId provided, use the default list
+      let targetListId = shoppingListId;
+      if (!targetListId) {
+        const lists = await storage.getShoppingLists();
+        const defaultList = lists.find(list => list.isDefault) || lists[0];
+        if (!defaultList) {
+          return res.status(400).json({ message: 'No shopping list available' });
+        }
+        targetListId = defaultList.id;
+      }
+
+      // Get existing items to check for duplicates
+      const existingItems = await storage.getShoppingListItems(targetListId);
+
+      // Common item names and alternate spellings/misspellings
+      const commonItemCorrections: Record<string, string[]> = {
+        'banana': ['banan', 'bananna', 'banannas', 'bannana', 'banannas'],
+        'apple': ['appl', 'apples', 'aple'],
+        'milk': ['millk', 'milks', 'mlik'],
+        'bread': ['bred', 'breads', 'loaf'],
+        'egg': ['eggs', 'egss'],
+        'potato': ['potatos', 'potatoe', 'potatoes'],
+        'tomato': ['tomatos', 'tomatoe', 'tomatoes'],
+        'cheese': ['chese', 'cheez', 'chees'],
+        'chicken': ['chickn', 'checken', 'chiken'],
+        'cereal': ['ceereal', 'cereals', 'cerel']
+      };
+
+      // Normalize the product name to lowercase for matching
+      let normalizedName = productName ? productName.toLowerCase().trim() : '';
+
+      // Apply name normalization
+      let normalizedProductName = normalizeProductName(productName);
+
+      // Check if this is likely a duplicate with a slightly different spelling
+      let correctedName = normalizedName;
+      let isDuplicate = false;
+      let existingItem = null;
+
+      // First check for exact matches or plurals
+      existingItem = existingItems.find(item =>
+        item.productName.toLowerCase() === normalizedName ||
+        item.productName.toLowerCase() + 's' === normalizedName ||
+        item.productName.toLowerCase() === normalizedName + 's'
+      );
+
+      if (existingItem) {
+        isDuplicate = true;
+      } else {
+        // Look for corrections in common items dictionary
+        for (const [correct, variations] of Object.entries(commonItemCorrections)) {
+          if (normalizedName === correct || variations.includes(normalizedName)) {
+            correctedName = correct;
+
+            // Check if the corrected name exists in the list
+            existingItem = existingItems.find(item =>
+              item.productName.toLowerCase() === correctedName ||
+              item.productName.toLowerCase().includes(correctedName)
+            );
+
+            if (existingItem) {
+              isDuplicate = true;
+            }
+            break;
+          }
+        }
+
+        // If no match in dictionary, use fuzzy matching for other items
+        if (!isDuplicate) {
+          for (const item of existingItems) {
+            const itemName = item.productName.toLowerCase();
+
+            // Check for contained substrings (e.g., "tomato" and "roma tomato")
+            if (itemName.includes(normalizedName) || normalizedName.includes(itemName)) {
+              existingItem = item;
+              isDuplicate = true;
+              break;
+            }
+
+            // Simple Levenshtein-like check for similar spellings
+            // If names are very close to each other
+            if (itemName.length > 3 && normalizedName.length > 3) {
+              // Check if first 3 chars match and length is similar
+              if (itemName.substring(0, 3) === normalizedName.substring(0, 3) &&
+                  Math.abs(itemName.length - normalizedName.length) <= 2) {
+                existingItem = item;
+                isDuplicate = true;
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      let result;
+
+      if (isDuplicate && existingItem) {
+        // Update the quantity of the existing item instead of adding a new one
+        const updatedItem = await storage.updateShoppingListItem(existingItem.id, {
+          quantity: existingItem.quantity + validQuantity,
+          // Keep the existing unit or update to the new one if specified
+          unit: unit || existingItem.unit || 'COUNT'
+        });
+
+        // Add information about the merge for the client
+        result = {
+          ...updatedItem,
+          merged: true,
+          originalName: productName,
+          message: `Combined with existing "${existingItem.productName}" item`
+        };
+      } else {
+        // If it's a corrected common item, use the corrected name
+        let nameToUse = normalizedProductName;
+        if (correctedName !== normalizedName && Object.keys(commonItemCorrections).includes(correctedName)) {
+          // Capitalize first letter of corrected name
+          nameToUse = correctedName.charAt(0).toUpperCase() + correctedName.slice(1);
+        }
+
+        // Add as new item with the specified unit (or default to COUNT)
+        const newItem = await storage.addShoppingListItem({
+          shoppingListId: targetListId,
+          productName: nameToUse,
+          quantity: validQuantity,
+          unit: unit || 'COUNT'
+        });
+
+        result = {
+          ...newItem,
+          merged: false,
+          corrected: nameToUse !== productName,
+          originalName: productName
+        };
+      }
+
+      res.json(result);
+    } catch (error) {
+      handleError(res, error);
     }
   });
 

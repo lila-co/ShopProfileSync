@@ -95,6 +95,107 @@ function getMockRecipeIngredients(servings: number = 4): RecipeIngredient[] {
   ];
 }
 
+// Function to analyze bulk vs unit pricing deals
+export function analyzeBulkVsUnitPricing(deals: any[], userPrefersBulk: boolean = false): any[] {
+  const dealAnalysis = deals.map(deal => {
+    // Calculate unit price for comparison
+    const unitPrice = deal.salePrice / (deal.quantity || 1);
+    
+    // Determine if this is a bulk deal (quantity > 12 or specifically bulk retailers)
+    const isBulkDeal = deal.quantity > 12 || deal.retailerName?.toLowerCase().includes('costco') || 
+                       deal.retailerName?.toLowerCase().includes('sam') || 
+                       deal.retailerName?.toLowerCase().includes('bj');
+    
+    return {
+      ...deal,
+      unitPrice,
+      isBulkDeal,
+      dealType: isBulkDeal ? 'bulk' : 'standard'
+    };
+  });
+  
+  // Group by product name to find the best deals
+  const productGroups = dealAnalysis.reduce((groups, deal) => {
+    const key = deal.productName.toLowerCase();
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(deal);
+    return groups;
+  }, {} as Record<string, any[]>);
+  
+  // Analyze each product group for best value
+  const recommendations = [];
+  
+  for (const [productName, productDeals] of Object.entries(productGroups)) {
+    if (productDeals.length < 2) continue; // Need at least 2 options to compare
+    
+    // Sort by unit price (best value first)
+    const sortedDeals = productDeals.sort((a, b) => a.unitPrice - b.unitPrice);
+    const bestUnitPriceDeal = sortedDeals[0];
+    const bulkDeals = sortedDeals.filter(deal => deal.isBulkDeal);
+    const standardDeals = sortedDeals.filter(deal => !deal.isBulkDeal);
+    
+    if (bulkDeals.length > 0 && standardDeals.length > 0) {
+      const bestBulkDeal = bulkDeals[0];
+      const bestStandardDeal = standardDeals[0];
+      
+      // Calculate savings comparison
+      const bulkSavingsPerUnit = bestBulkDeal.unitPrice;
+      const standardSavingsPerUnit = bestStandardDeal.unitPrice;
+      const unitPriceDifference = ((standardSavingsPerUnit - bulkSavingsPerUnit) / standardSavingsPerUnit) * 100;
+      
+      let recommendedDeal;
+      let dealComparison;
+      
+      if (userPrefersBulk && unitPriceDifference > -20) {
+        // User prefers bulk and the unit price difference isn't too significant (less than 20% worse)
+        recommendedDeal = bestBulkDeal;
+        dealComparison = {
+          type: 'bulk_preference',
+          message: `Bulk option recommended (${bestBulkDeal.retailerName}): $${(bulkSavingsPerUnit).toFixed(2)}/unit vs $${(standardSavingsPerUnit).toFixed(2)}/unit at ${bestStandardDeal.retailerName}`,
+          alternativeOption: bestStandardDeal,
+          unitPriceDifference: Math.abs(unitPriceDifference).toFixed(1)
+        };
+      } else if (bestUnitPriceDeal.isBulkDeal) {
+        // Bulk deal is actually the best unit price
+        recommendedDeal = bestUnitPriceDeal;
+        dealComparison = {
+          type: 'bulk_is_best_value',
+          message: `Best value is bulk purchase at ${bestUnitPriceDeal.retailerName}: $${(bulkSavingsPerUnit).toFixed(2)}/unit`,
+          savings: ((standardSavingsPerUnit - bulkSavingsPerUnit) * (bestStandardDeal.quantity || 1)).toFixed(2)
+        };
+      } else {
+        // Standard deal is better value, especially important if user normally buys bulk
+        recommendedDeal = bestStandardDeal;
+        dealComparison = {
+          type: 'standard_better_value',
+          message: `⚠️ Better deal at ${bestStandardDeal.retailerName}: $${(standardSavingsPerUnit).toFixed(2)}/unit vs bulk at ${bestBulkDeal.retailerName}: $${(bulkSavingsPerUnit).toFixed(2)}/unit`,
+          bulkAlternative: bestBulkDeal,
+          potentialSavings: ((bulkSavingsPerUnit - standardSavingsPerUnit) * (bestStandardDeal.quantity || 1)).toFixed(2),
+          unitPriceDifference: unitPriceDifference.toFixed(1)
+        };
+      }
+      
+      recommendations.push({
+        ...recommendedDeal,
+        dealComparison,
+        hasAlternatives: true
+      });
+    } else {
+      // Only one type of deal available
+      recommendations.push({
+        ...bestUnitPriceDeal,
+        dealComparison: {
+          type: 'single_option',
+          message: `Best available option at ${bestUnitPriceDeal.retailerName}`
+        },
+        hasAlternatives: false
+      });
+    }
+  }
+  
+  return recommendations;
+}
+
 // Function to generate personalized suggestions based on user profile
 export async function generatePersonalizedSuggestions(user: User): Promise<any[]> {
   console.log(`Generating personalized suggestions for user with household type: ${user.householdType}`);

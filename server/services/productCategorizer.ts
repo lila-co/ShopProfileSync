@@ -308,11 +308,14 @@ export class ProductCategorizerService {
       };
     }
     
+    const productNormalizedName = this.normalizeProductName(productName);
+    
     const finalCategory = {
       ...bestMatch,
       confidence: Math.max(bestSimilarity, bestMatch.confidence * 0.8),
       typicalRetailNames: this.generateRetailNames(productName),
-      brandVariations: this.generateBrandVariations(productName, bestMatch)
+      brandVariations: this.generateBrandVariations(productName, bestMatch),
+      normalizedName: productNormalizedName
     };
     
     return finalCategory;
@@ -437,11 +440,253 @@ export class ProductCategorizerService {
     return name
       .trim()
       .toLowerCase()
-      .replace(/\b(organic|fresh|premium|store brand|great value)\b/gi, '')
+      // Only remove store brand prefixes, not descriptive words
+      .replace(/\b(great value|market pantry|good & gather|kroger brand|simple truth|store brand)\b/gi, '')
+      .replace(/\b(premium|select|choice)\b/gi, '') // Remove generic quality descriptors
+      // Remove size indicators but preserve product type descriptors
+      .replace(/\b\d+(\.\d+)?\s*(oz|lb|g|kg|ml|l|count|ct|pk|pack|gallon|quart|pint)\b/gi, '')
       .trim()
       .replace(/\s+/g, ' ')
       .split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }
+
+  // Normalize product names with proper brand capitalization and standardization
+  public normalizeProductName(productName: string): string {
+    const name = productName.trim();
+    const lowerName = name.toLowerCase();
+    
+    // Brand name mappings for proper capitalization
+    const brandMappings: Record<string, string> = {
+      'coca cola': 'Coca Cola',
+      'pepsi': 'Pepsi',
+      'dr pepper': 'Dr Pepper',
+      'mountain dew': 'Mountain Dew',
+      'kraft': 'Kraft',
+      'heinz': 'Heinz',
+      'campbell': 'Campbell\'s',
+      'kellogg': 'Kellogg\'s',
+      'general mills': 'General Mills',
+      'quaker': 'Quaker',
+      'tide': 'Tide',
+      'dawn': 'Dawn',
+      'bounty': 'Bounty',
+      'charmin': 'Charmin',
+      'kleenex': 'Kleenex',
+      'lysol': 'Lysol',
+      'clorox': 'Clorox',
+      'oreo': 'Oreo',
+      'cheerios': 'Cheerios',
+      'frosted flakes': 'Frosted Flakes',
+      'lucky charms': 'Lucky Charms',
+      'honey nut cheerios': 'Honey Nut Cheerios',
+      'doritos': 'Doritos',
+      'cheetos': 'Cheetos',
+      'lay\'s': 'Lay\'s',
+      'pringles': 'Pringles',
+      'ritz': 'Ritz',
+      'philadelphia': 'Philadelphia',
+      'velveeta': 'Velveeta',
+      'oscar mayer': 'Oscar Mayer',
+      'tyson': 'Tyson',
+      'perdue': 'Perdue',
+      'spam': 'SPAM',
+      'hunts': 'Hunt\'s',
+      'del monte': 'Del Monte',
+      'green giant': 'Green Giant',
+      'birds eye': 'Birds Eye',
+      'stouffers': 'Stouffer\'s',
+      'lean cuisine': 'Lean Cuisine',
+      'hot pockets': 'Hot Pockets',
+      'eggo': 'Eggo',
+      'pillsbury': 'Pillsbury',
+      'duncan hines': 'Duncan Hines',
+      'betty crocker': 'Betty Crocker',
+      'aunt jemima': 'Aunt Jemima',
+      'mrs butterworth': 'Mrs. Butterworth\'s',
+      'log cabin': 'Log Cabin',
+      'skippy': 'Skippy',
+      'jif': 'Jif',
+      'planters': 'Planters',
+      'welch\'s': 'Welch\'s',
+      'tropicana': 'Tropicana',
+      'minute maid': 'Minute Maid',
+      'ocean spray': 'Ocean Spray',
+      'gatorade': 'Gatorade',
+      'powerade': 'Powerade',
+      'red bull': 'Red Bull',
+      'monster': 'Monster',
+      'starbucks': 'Starbucks',
+      'folgers': 'Folgers',
+      'maxwell house': 'Maxwell House',
+      'nescafe': 'Nescafé',
+      'lipton': 'Lipton',
+      'celestial seasonings': 'Celestial Seasonings'
+    };
+
+    // Specific product combinations that should be preserved
+    const productCombinations: Record<string, string> = {
+      'pasta sauce': 'Pasta Sauce',
+      'marinara sauce': 'Marinara Sauce',
+      'tomato sauce': 'Tomato Sauce',
+      'chicken breast': 'Chicken Breast',
+      'chicken thigh': 'Chicken Thigh',
+      'chicken wing': 'Chicken Wings',
+      'ground beef': 'Ground Beef',
+      'ground turkey': 'Ground Turkey',
+      'ground chicken': 'Ground Chicken',
+      'pork chop': 'Pork Chops',
+      'beef steak': 'Beef Steak',
+      'salmon fillet': 'Salmon Fillet',
+      'tuna steak': 'Tuna Steak',
+      'olive oil': 'Olive Oil',
+      'vegetable oil': 'Vegetable Oil',
+      'coconut oil': 'Coconut Oil',
+      'canola oil': 'Canola Oil',
+      'bell pepper': 'Bell Pepper',
+      'sweet potato': 'Sweet Potato',
+      'green bean': 'Green Beans',
+      'black bean': 'Black Beans',
+      'kidney bean': 'Kidney Beans',
+      'pinto bean': 'Pinto Beans',
+      'lima bean': 'Lima Beans',
+      'paper towel': 'Paper Towels',
+      'toilet paper': 'Toilet Paper',
+      'dish soap': 'Dish Soap',
+      'hand soap': 'Hand Soap',
+      'laundry detergent': 'Laundry Detergent',
+      'fabric softener': 'Fabric Softener',
+      'all purpose cleaner': 'All-Purpose Cleaner',
+      'glass cleaner': 'Glass Cleaner',
+      'bathroom cleaner': 'Bathroom Cleaner',
+      'floor cleaner': 'Floor Cleaner',
+      'chicken noodle soup': 'Chicken Noodle Soup',
+      'tomato soup': 'Tomato Soup',
+      'vegetable soup': 'Vegetable Soup',
+      'cream cheese': 'Cream Cheese',
+      'sour cream': 'Sour Cream',
+      'cottage cheese': 'Cottage Cheese',
+      'greek yogurt': 'Greek Yogurt',
+      'vanilla yogurt': 'Vanilla Yogurt',
+      'strawberry yogurt': 'Strawberry Yogurt',
+      'whole milk': 'Whole Milk',
+      'skim milk': 'Skim Milk',
+      '2% milk': '2% Milk',
+      '1% milk': '1% Milk',
+      'almond milk': 'Almond Milk',
+      'soy milk': 'Soy Milk',
+      'oat milk': 'Oat Milk',
+      'coconut milk': 'Coconut Milk',
+      'sandwich bread': 'Sandwich Bread',
+      'wheat bread': 'Wheat Bread',
+      'white bread': 'White Bread',
+      'sourdough bread': 'Sourdough Bread',
+      'rye bread': 'Rye Bread',
+      'garlic powder': 'Garlic Powder',
+      'onion powder': 'Onion Powder',
+      'black pepper': 'Black Pepper',
+      'white pepper': 'White Pepper',
+      'red pepper': 'Red Pepper',
+      'ground coffee': 'Ground Coffee',
+      'coffee bean': 'Coffee Beans',
+      'instant coffee': 'Instant Coffee',
+      'green tea': 'Green Tea',
+      'black tea': 'Black Tea',
+      'herbal tea': 'Herbal Tea',
+      'ice cream': 'Ice Cream',
+      'frozen pizza': 'Frozen Pizza',
+      'frozen vegetable': 'Frozen Vegetables',
+      'frozen fruit': 'Frozen Fruit',
+      'canned corn': 'Canned Corn',
+      'canned bean': 'Canned Beans',
+      'canned tomato': 'Canned Tomatoes',
+      'diced tomato': 'Diced Tomatoes',
+      'crushed tomato': 'Crushed Tomatoes',
+      'half gallon milk': 'Half Gallon Milk',
+      'gallon milk': 'Gallon Milk'
+    };
+
+    // Simple product standardizations (for single words only)
+    const singleWordProducts: Record<string, string> = {
+      'milk': 'Milk',
+      'bread': 'Bread',
+      'eggs': 'Eggs',
+      'butter': 'Butter',
+      'cheese': 'Cheese',
+      'yogurt': 'Yogurt',
+      'chicken': 'Chicken',
+      'beef': 'Beef',
+      'pork': 'Pork',
+      'fish': 'Fish',
+      'salmon': 'Salmon',
+      'tuna': 'Tuna',
+      'pasta': 'Pasta',
+      'rice': 'Rice',
+      'flour': 'Flour',
+      'sugar': 'Sugar',
+      'salt': 'Salt',
+      'pepper': 'Black Pepper',
+      'tomatoes': 'Tomatoes',
+      'onions': 'Onions',
+      'potatoes': 'Potatoes',
+      'carrots': 'Carrots',
+      'bananas': 'Bananas',
+      'apples': 'Apples',
+      'oranges': 'Oranges',
+      'strawberries': 'Strawberries',
+      'blueberries': 'Blueberries',
+      'lettuce': 'Lettuce',
+      'spinach': 'Spinach',
+      'broccoli': 'Broccoli',
+      'garlic': 'Garlic',
+      'ginger': 'Ginger',
+      'basil': 'Fresh Basil',
+      'cilantro': 'Fresh Cilantro',
+      'parsley': 'Fresh Parsley',
+      'shampoo': 'Shampoo',
+      'conditioner': 'Conditioner',
+      'toothpaste': 'Toothpaste',
+      'deodorant': 'Deodorant'
+    };
+    
+    // First check for exact brand matches
+    for (const [key, value] of Object.entries(brandMappings)) {
+      if (lowerName.includes(key)) {
+        return value;
+      }
+    }
+    
+    // Then check for specific product combinations (preserves important descriptors)
+    for (const [key, value] of Object.entries(productCombinations)) {
+      if (lowerName.includes(key)) {
+        return value;
+      }
+    }
+    
+    // Check for single word products only if it's an exact match or standalone word
+    const words = lowerName.split(/\s+/);
+    if (words.length === 1) {
+      const singleWord = singleWordProducts[words[0]];
+      if (singleWord) {
+        return singleWord;
+      }
+    }
+    
+    // Default: Clean capitalization while preserving all descriptive words
+    return name.split(' ')
+      .map(word => {
+        // Preserve common abbreviations and measurements
+        if (/^\d+(\.\d+)?(oz|lb|g|kg|ml|l|ct|pk)$/i.test(word)) {
+          return word.toUpperCase();
+        }
+        // Preserve parenthetical information
+        if (word.startsWith('(') && word.endsWith(')')) {
+          return word;
+        }
+        // Standard capitalization
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      })
       .join(' ');
   }
 
@@ -458,47 +703,257 @@ export class ProductCategorizerService {
     let suggestedQuantity = quantity;
     let conversionReason = 'No conversion needed';
     
-    // Smart quantity suggestions based on category and typical purchase patterns
-    if (category.category === 'Produce' && unit === 'COUNT' && suggestedUnit === 'LB') {
-      // Convert count to weight for produce
-      const avgWeights: Record<string, number> = {
-        'banana': 0.3,
-        'apple': 0.4,
-        'orange': 0.5,
-        'potato': 0.3,
-        'onion': 0.25
-      };
+    const name = productName.toLowerCase();
+    
+    // Enhanced quantity optimization based on common retail packaging and shopping patterns
+    
+    // Produce optimization with seasonal and practical considerations
+    if (category.category === 'Produce') {
+      if (name.includes('banana')) {
+        if (quantity < 2 && unit === 'LB') {
+          suggestedQuantity = 2;
+          conversionReason = 'AI suggests 2 lbs bananas - typical bunch size for households';
+        } else if (quantity > 5 && unit === 'LB') {
+          suggestedQuantity = 3;
+          conversionReason = 'AI suggests 3 lbs bananas - optimal before spoilage';
+        }
+      } else if (name.includes('apple')) {
+        if (quantity < 2 && unit === 'LB') {
+          suggestedQuantity = 3;
+          conversionReason = 'AI suggests 3 lbs apples - typical bag size';
+        }
+      } else if (name.includes('strawberr')) {
+        if (quantity !== 1 && unit === 'LB') {
+          suggestedQuantity = 1;
+          conversionReason = 'AI suggests 1 lb strawberries - standard container size';
+        }
+      } else if (name.includes('onion')) {
+        if (quantity < 2 && unit === 'LB') {
+          suggestedQuantity = 3;
+          conversionReason = 'AI suggests 3 lbs onions - typical mesh bag size';
+        }
+      } else if (name.includes('potato')) {
+        if (quantity < 3 && unit === 'LB') {
+          suggestedQuantity = 5;
+          conversionReason = 'AI suggests 5 lbs potatoes - standard bag size';
+        }
+      } else if (name.includes('tomato')) {
+        if (quantity > 2 && unit === 'LB') {
+          suggestedQuantity = 2;
+          conversionReason = 'AI suggests 2 lbs tomatoes - optimal freshness amount';
+        }
+      } else if (name.includes('bell pepper') || name.includes('pepper')) {
+        if (quantity > 3 && unit === 'LB') {
+          suggestedQuantity = 2;
+          conversionReason = 'AI suggests 2 lbs peppers - optimal usage before spoilage';
+        }
+      }
       
-      const name = productName.toLowerCase();
-      const avgWeight = Object.keys(avgWeights).find(key => name.includes(key));
-      
-      if (avgWeight) {
-        suggestedQuantity = Math.round((quantity * avgWeights[avgWeight]) * 100) / 100;
-        conversionReason = `Converted ${quantity} items to ${suggestedQuantity} lbs (typical weight)`;
+      // Generic produce count to weight conversion
+      if (unit === 'COUNT' && suggestedUnit === 'LB') {
+        const avgWeights: Record<string, number> = {
+          'banana': 0.3, 'apple': 0.4, 'orange': 0.5, 'potato': 0.3,
+          'onion': 0.25, 'tomato': 0.3, 'pepper': 0.2, 'garlic': 0.1
+        };
+        
+        const avgWeight = Object.keys(avgWeights).find(key => name.includes(key));
+        if (avgWeight && quantity <= 10) {
+          suggestedQuantity = Math.round((quantity * avgWeights[avgWeight]) * 4) / 4; // Round to quarter pounds
+          conversionReason = `AI suggests ${suggestedQuantity} lbs instead of ${quantity} items (typical weight)`;
+        }
       }
     }
     
-    // Suggest typical retail quantities
+    // Dairy & Eggs optimization for retail packaging
     if (category.category === 'Dairy & Eggs') {
-      if (productName.toLowerCase().includes('milk') && quantity === 1) {
-        conversionReason = 'Milk typically sold in gallons/half-gallons';
-      } else if (productName.toLowerCase().includes('egg') && quantity < 6) {
-        suggestedQuantity = 12; // Suggest dozen
-        conversionReason = 'Eggs typically sold by the dozen';
+      if (name.includes('milk')) {
+        if (quantity === 1 && unit === 'COUNT') {
+          conversionReason = 'AI suggests: Consider if you need half-gallon or gallon size';
+        } else if (quantity > 2 && unit === 'COUNT') {
+          suggestedQuantity = 2;
+          conversionReason = 'AI suggests 2 gallons milk maximum for freshness';
+        }
+      } else if (name.includes('egg')) {
+        if (quantity < 12 && unit === 'COUNT') {
+          suggestedQuantity = 12;
+          conversionReason = `AI suggests 12 eggs (1 dozen) instead of ${quantity} - standard packaging`;
+        } else if (quantity > 12 && quantity < 18 && unit === 'COUNT') {
+          suggestedQuantity = 18;
+          conversionReason = 'AI suggests 18 eggs (1.5 dozen) - next common size';
+        } else if (quantity > 18 && quantity < 24 && unit === 'COUNT') {
+          suggestedQuantity = 24;
+          conversionReason = 'AI suggests 24 eggs (2 dozen) - family pack size';
+        }
+      } else if (name.includes('yogurt')) {
+        if (quantity === 1 && unit === 'COUNT') {
+          if (name.includes('32 oz') || name.includes('large')) {
+            suggestedQuantity = 1;
+            conversionReason = 'AI confirms: Large container is appropriate';
+          } else {
+            suggestedQuantity = 4;
+            conversionReason = 'AI suggests 4-pack individual yogurts for variety';
+          }
+        } else if (quantity > 8 && unit === 'COUNT') {
+          suggestedQuantity = 6;
+          conversionReason = 'AI suggests 6-pack yogurt for optimal consumption';
+        }
+      } else if (name.includes('cheese')) {
+        if (quantity > 2 && unit === 'COUNT') {
+          suggestedQuantity = 2;
+          conversionReason = 'AI suggests 2 packages cheese for freshness';
+        }
       }
     }
     
-    if (category.category === 'Meat & Seafood' && unit === 'COUNT') {
-      // Suggest weight for meat products
-      suggestedQuantity = 1;
-      conversionReason = 'Meat typically sold by weight (lbs)';
+    // Meat & Seafood optimization for practical cooking portions
+    if (category.category === 'Meat & Seafood') {
+      if (name.includes('chicken breast') || name.includes('chicken thigh')) {
+        if (quantity < 2 && unit === 'LB') {
+          suggestedQuantity = 2;
+          conversionReason = 'AI suggests 2 lbs chicken - family meal portions';
+        } else if (quantity > 5 && unit === 'LB') {
+          suggestedQuantity = 4;
+          conversionReason = 'AI suggests 4 lbs chicken - optimal for meal planning';
+        }
+      } else if (name.includes('ground beef') || name.includes('ground turkey')) {
+        if (quantity < 1 && unit === 'LB') {
+          suggestedQuantity = 1;
+          conversionReason = 'AI suggests 1 lb ground meat - standard package size';
+        } else if (quantity > 3 && unit === 'LB') {
+          suggestedQuantity = 2;
+          conversionReason = 'AI suggests 2 lbs ground meat - practical portion';
+        }
+      } else if (name.includes('fish') || name.includes('salmon')) {
+        if (quantity > 2 && unit === 'LB') {
+          suggestedQuantity = 1.5;
+          conversionReason = 'AI suggests 1.5 lbs fish - optimal freshness';
+        }
+      }
+      
+      // Convert COUNT to LB for meat products
+      if (unit === 'COUNT' && suggestedUnit === 'LB') {
+        suggestedQuantity = Math.max(1, quantity);
+        conversionReason = `AI suggests ${suggestedQuantity} lbs - meat typically sold by weight`;
+      }
+    }
+    
+    // Pantry & Canned Goods optimization for bulk efficiency
+    if (category.category === 'Pantry & Canned Goods') {
+      if (name.includes('pasta') && !name.includes('sauce')) {
+        if (quantity === 1 && unit === 'COUNT') {
+          suggestedQuantity = 2;
+          conversionReason = 'AI suggests 2 boxes pasta for multiple meals';
+        } else if (quantity > 8 && unit === 'COUNT') {
+          suggestedQuantity = 6;
+          conversionReason = 'AI suggests 6 boxes pasta - reasonable pantry stock';
+        }
+      } else if (name.includes('rice')) {
+        if (quantity < 2 && unit === 'COUNT') {
+          suggestedQuantity = 2;
+          conversionReason = 'AI suggests 2 bags rice for cost efficiency';
+        } else if (quantity > 3 && unit === 'COUNT') {
+          suggestedQuantity = 3;
+          conversionReason = 'AI suggests 3 bags rice maximum for storage';
+        }
+      } else if (name.includes('can') || name.includes('tomato sauce') || name.includes('marinara')) {
+        if (quantity === 1 && unit === 'COUNT') {
+          suggestedQuantity = 3;
+          conversionReason = 'AI suggests 3 cans for cooking flexibility';
+        } else if (quantity > 6 && unit === 'COUNT') {
+          suggestedQuantity = 6;
+          conversionReason = 'AI suggests 6 cans maximum for pantry management';
+        }
+      } else if (name.includes('olive oil') || name.includes('cooking oil')) {
+        if (quantity > 2 && unit === 'COUNT') {
+          suggestedQuantity = 2;
+          conversionReason = 'AI suggests 2 bottles oil - long shelf life product';
+        }
+      } else if (name.includes('coffee')) {
+        if (quantity < 2 && unit === 'LB') {
+          suggestedQuantity = 2;
+          conversionReason = 'AI suggests 2 lbs coffee for regular consumption';
+        }
+      }
+    }
+    
+    // Household Items optimization for bulk purchasing
+    if (category.category === 'Household Items') {
+      if (name.includes('paper towel')) {
+        if (quantity < 6 && unit === 'COUNT') {
+          suggestedQuantity = 6;
+          conversionReason = 'AI suggests 6-pack paper towels for better value';
+        } else if (quantity > 12 && unit === 'COUNT') {
+          suggestedQuantity = 12;
+          conversionReason = 'AI suggests 12-pack paper towels - optimal storage';
+        }
+      } else if (name.includes('toilet paper')) {
+        if (quantity < 12 && unit === 'COUNT') {
+          suggestedQuantity = 12;
+          conversionReason = 'AI suggests 12-pack toilet paper for household efficiency';
+        } else if (quantity > 24 && unit === 'COUNT') {
+          suggestedQuantity = 24;
+          conversionReason = 'AI suggests 24-pack toilet paper - bulk maximum';
+        }
+      }
+    }
+    
+    // Bakery optimization
+    if (category.category === 'Bakery') {
+      if (name.includes('bread')) {
+        if (quantity > 2 && unit === 'COUNT') {
+          suggestedQuantity = 2;
+          conversionReason = 'AI suggests 2 loaves bread maximum for freshness';
+        }
+      }
+    }
+    
+    // Personal Care optimization
+    if (category.category === 'Personal Care') {
+      if (name.includes('shampoo') || name.includes('conditioner')) {
+        if (quantity > 2 && unit === 'COUNT') {
+          suggestedQuantity = 2;
+          conversionReason = 'AI suggests 2 bottles - adequate supply without waste';
+        }
+      }
+    }
+    
+    // Spices and seasonings special handling
+    if (name.includes('garlic powder') || name.includes('salt') || name.includes('pepper') || name.includes('spice')) {
+      if (quantity > 1 && unit === 'COUNT') {
+        suggestedQuantity = 1;
+        conversionReason = 'AI suggests 1 container - spices have long shelf life';
+      }
+    }
+    
+    // Unit optimization suggestions
+    if (unit !== suggestedUnit && suggestedQuantity === quantity) {
+      conversionReason = `AI suggests ${suggestedUnit} instead of ${unit} for better shopping accuracy`;
+    }
+    
+    // Round suggested quantities appropriately
+    if (suggestedUnit === 'LB') {
+      suggestedQuantity = Math.round(suggestedQuantity * 4) / 4; // Round to quarter pounds
+    } else {
+      suggestedQuantity = Math.round(suggestedQuantity);
+    }
+    
+    // Ensure we don't suggest 0 quantity
+    if (suggestedQuantity <= 0) {
+      suggestedQuantity = unit === 'LB' ? 0.5 : 1;
+      conversionReason = `AI corrects to minimum practical quantity: ${suggestedQuantity} ${suggestedUnit}`;
+    }
+    
+    // Don't suggest changes if the difference is minimal for practical purposes
+    if (Math.abs(suggestedQuantity - quantity) < 0.25 && unit === suggestedUnit) {
+      suggestedQuantity = quantity;
+      conversionReason = 'No conversion needed';
     }
     
     return {
-      originalQuantity: Math.round(quantity),
+      originalQuantity: Math.round(quantity * 100) / 100,
       originalUnit: unit,
-      normalizedQuantity: Math.round(normalizedQuantity),
-      suggestedQuantity: Math.round(suggestedQuantity),
+      normalizedQuantity: Math.round(normalizedQuantity * 100) / 100,
+      suggestedQuantity: Math.round(suggestedQuantity * 100) / 100,
       suggestedUnit,
       conversionReason
     };

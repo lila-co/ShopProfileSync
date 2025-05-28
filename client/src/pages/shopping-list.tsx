@@ -70,6 +70,10 @@ const ShoppingListPage: React.FC = () => {
   const [recipeDialogOpen, setRecipeDialogOpen] = useState(false);
   const [recipeUrl, setRecipeUrl] = useState('');
   const [servings, setServings] = useState('4');
+  
+  // Recipe preview state
+  const [recipePreviewDialogOpen, setRecipePreviewDialogOpen] = useState(false);
+  const [recipePreviewItems, setRecipePreviewItems] = useState<any[]>([]);
 
   // Tab state
   const [activeTab, setActiveTab] = useState('items');
@@ -181,23 +185,49 @@ const ShoppingListPage: React.FC = () => {
     }
   });
 
+  // Preview recipe ingredients
+  const previewRecipeMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/shopping-lists/recipe/preview', {
+        recipeUrl,
+        servings: parseInt(servings)
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setRecipePreviewItems(data.items || []);
+      setRecipeDialogOpen(false);
+      setRecipePreviewDialogOpen(true);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to preview recipe ingredients",
+        variant: "destructive"
+      });
+    }
+  });
+
   // Import recipe ingredients
   const importRecipeMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (selectedItems?: any[]) => {
       const defaultList = shoppingLists?.[0];
       if (!defaultList) throw new Error("No shopping list found");
 
       const response = await apiRequest('POST', '/api/shopping-lists/recipe', {
         recipeUrl,
         shoppingListId: defaultList.id,
-        servings: parseInt(servings)
+        servings: parseInt(servings),
+        items: selectedItems
       });
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      setRecipePreviewDialogOpen(false);
       setRecipeDialogOpen(false);
       setRecipeUrl('');
+      setRecipePreviewItems([]);
       toast({
         title: "Recipe Imported",
         description: "Ingredients have been added to your shopping list"
@@ -460,13 +490,29 @@ const ShoppingListPage: React.FC = () => {
         const response = await apiRequest('POST', '/api/products/categorize-batch', {
           items: items.map(item => ({
             productName: item.productName,
-            quantity: item.quantity,
+            quantity: Math.max(1, Math.round(Number(item.quantity) || 1)),
             unit: item.unit || 'COUNT'
           }))
         });
 
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+        }
+
         const categorizedItems = await response.json();
-        return categorizedItems;
+
+        // Validate and clean the response data
+        const cleanedItems = categorizedItems.map((item: any) => ({
+          ...item,
+          normalized: {
+            ...item.normalized,
+            originalQuantity: Math.max(1, Math.round(Number(item.normalized.originalQuantity) || 1)),
+            suggestedQuantity: Math.max(1, Math.round(Number(item.normalized.suggestedQuantity) || 1)),
+            normalizedQuantity: Math.max(1, Math.round(Number(item.normalized.normalizedQuantity) || 1))
+          }
+        }));
+
+        return cleanedItems;
       } catch (error) {
         console.error('Categorization failed:', error);
 
@@ -479,13 +525,15 @@ const ShoppingListPage: React.FC = () => {
             confidence: 0.30,
             suggestedQuantityType: 'COUNT',
             typicalRetailNames: [item.productName],
-            brandVariations: ['Generic']
+            brandVariations: ['Generic'],
+            normalizedName: null // Ensure normalizedName is present
           },
           normalized: {
-            originalQuantity: Number(item.quantity) || 1,
+            originalQuantity: Math.max(1, Math.round(Number(item.quantity) || 1)),
             originalUnit: item.unit || 'COUNT',
-            suggestedQuantity: Number(item.quantity) || 1,
+            suggestedQuantity: Math.max(1, Math.round(Number(item.quantity) || 1)),
             suggestedUnit: item.unit || 'COUNT',
+            normalizedQuantity: Math.max(1, Math.round(Number(item.quantity) || 1)),
             conversionReason: 'Categorization service unavailable'
           },
           icon: '🥫'
@@ -495,7 +543,13 @@ const ShoppingListPage: React.FC = () => {
       }
     },
     onSuccess: (data) => {
-      setCategorizedItems(data);
+      // Filter out items that don't have suggested changes
+      const filteredItems = data.filter(item =>
+        item.category.normalizedName !== null || // Filter to only show meaningful changes
+        item.normalized.conversionReason !== 'No conversion needed' &&
+        item.normalized.conversionReason !== 'Categorization service unavailable'
+      );
+      setCategorizedItems(filteredItems);
       setShowCategorization(true);
       toast({
         title: "AI Categorization Complete",
@@ -503,6 +557,7 @@ const ShoppingListPage: React.FC = () => {
       });
     },
     onError: (error: any) => {
+      setIsCategorizingItems(false);
       toast({
         title: "Error",
         description: "Failed to categorize items: " + error.message,
@@ -517,28 +572,63 @@ const ShoppingListPage: React.FC = () => {
       const defaultList = shoppingLists?.[0];
       if (!defaultList) throw new Error("No shopping list found");
 
+      const items = defaultList.items || [];
+
       // Update items with optimized quantities and units based on AI insights
       const updatePromises = categorizedItems.map(async (categorizedItem) => {
         const originalItem = items.find(item => item.productName === categorizedItem.productName);
-        if (!originalItem) return;
+        if (!originalItem) return null;
 
-        // Only update if there's a meaningful change suggested
-        const shouldUpdate = 
-          categorizedItem.normalized.suggestedQuantity !== categorizedItem.normalized.originalQuantity ||
-          categorizedItem.normalized.suggestedUnit !== categorizedItem.normalized.originalUnit;
+        // Check if there are meaningful changes to apply
+        const currentQuantity = Number(originalItem.quantity) || 1;
+        const currentUnit = originalItem.unit || 'COUNT';
+        const suggestedQuantity = Math.max(1, Math.round(Number(categorizedItem.normalized.suggestedQuantity) || currentQuantity));
+        const suggestedUnit = categorizedItem.normalized.suggestedUnit || currentUnit;
+
+        // Only update if there's a meaningful change suggested OR if the AI provided optimization insights
+        const hasQuantityChange = suggestedQuantity !== currentQuantity;
+        const hasUnitChange = suggestedUnit !== currentUnit;
+        const hasOptimizationReason = categorizedItem.normalized.conversionReason && 
+          categorizedItem.normalized.conversionReason !== 'No conversion needed' &&
+          categorizedItem.normalized.conversionReason !== 'Categorization service unavailable';
+
+        const shouldUpdate = hasQuantityChange || hasUnitChange || hasOptimizationReason || categorizedItem.category.normalizedName;
+
+        console.log('Update check for', originalItem.productName, {
+          currentQuantity,
+          suggestedQuantity,
+          currentUnit,
+          suggestedUnit,
+          hasQuantityChange,
+          hasUnitChange,
+          hasOptimizationReason,
+          shouldUpdate,
+          conversionReason: categorizedItem.normalized.conversionReason
+        });
 
         if (shouldUpdate) {
+          // Ensure we're sending valid integer quantities, not confidence values
+          const suggestedQuantity = Math.max(1, Math.round(Number(categorizedItem.normalized.suggestedQuantity)));
+
+          // Use normalized name if available and different from original
+          const updatedProductName = categorizedItem.category.normalizedName && 
+            categorizedItem.category.normalizedName !== originalItem.productName 
+            ? categorizedItem.category.normalizedName 
+            : originalItem.productName;
+
           const response = await apiRequest('PATCH', `/api/shopping-list/items/${originalItem.id}`, {
-            productName: originalItem.productName,
-            quantity: Number(categorizedItem.normalized.suggestedQuantity),
-            unit: categorizedItem.normalized.suggestedUnit
+            productName: updatedProductName,
+            quantity: suggestedQuantity,
+            unit: categorizedItem.normalized.suggestedUnit || 'COUNT'
           });
           return response.json();
         }
+        return null;
       });
 
-      await Promise.all(updatePromises.filter(Boolean));
-      return categorizedItems.length;
+      const results = await Promise.all(updatePromises);
+      const updatedCount = results.filter(result => result !== null).length;
+      return updatedCount;
     },
     onSuccess: (count) => {
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
@@ -707,6 +797,13 @@ const ShoppingListPage: React.FC = () => {
     setUploadedItems(updatedItems);
   };
 
+  // Handle toggling recipe preview item selection
+  const handleToggleRecipeItem = (index: number) => {
+    const updatedItems = [...recipePreviewItems];
+    updatedItems[index].isSelected = !updatedItems[index].isSelected;
+    setRecipePreviewItems(updatedItems);
+  };
+
   // Handle viewing shopping plan
   const handleViewShoppingPlan = (plan: any, title: string) => {
     console.log('Opening shopping plan:', { plan, title, planType: plan?.planType }); // Debug log
@@ -768,6 +865,8 @@ const ShoppingListPage: React.FC = () => {
         return 'Personal Care';
       } else if (name.includes('towel') || name.includes('cleaner') || name.includes('detergent')) {
         return 'Household';
+      } else if (name.includes('Pantry')) {
+        return 'Pantry';
       } else {
         return 'Pantry';
       }
@@ -873,118 +972,103 @@ const ShoppingListPage: React.FC = () => {
     if (!selectedPlan) return '';
 
     const currentDate = new Date().toLocaleDateString();
-    let content = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Shopping Plan - ${selectedPlan.planType}</title>
-        <style>
-          body { font-family: Arial, sans-serif; margin: 20px; }
-          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 10px; }
-          .store-section { margin-bottom: 30px; page-break-inside: avoid; }
-          .store-header { background-color: #f5f5f5; padding: 10px; font-weight: bold; font-size: 18px; }
-          .item-list { margin: 10px 0; }
-          .item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dotted #ccc; }
-          .item-checkbox { display: inline-block; width: 15px; height: 15px; border: 2px solid #333; margin-right: 10px; vertical-align: middle; }
-          .item-text { flex: 1; }
-          .item-price { font-weight: bold; }
-          .summary { margin-top: 30px; border-top: 2px solid #000; padding-top: 10px; }
-          .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }
-          .note { margin-top: 20px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #007bff; }
-          @media print { 
-            body { margin: 0; }
-            .mobile-shopping-item { display: none !important; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>Shopping Plan - ${selectedPlan.planType}</h1>
-          <p>Generated on ${currentDate}</p>
-        </div>
-    `;
+
+    // Build HTML content using string concatenation to avoid template literal issues
+    let content = '<!DOCTYPE html>\n<html>\n<head>\n';
+    content += '<title>Shopping Plan - ' + (selectedPlan.planType || 'Shopping List') + '</title>\n';
+    content += '<style>\n';
+    content += 'body { font-family: Arial, sans-serif; margin: 20px; }\n';
+    content += '.header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 10px; }\n';
+    content += '.store-section { margin-bottom: 30px; page-break-inside: avoid; }\n';
+    content += '.store-header { background-color: #f5f5f5; padding: 10px; font-weight: bold; font-size: 18px; }\n';
+    content += '.item-list { margin: 10px 0; }\n';
+    content += '.item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dotted #ccc; }\n';
+    content += '.item-checkbox { display: inline-block; width: 15px; height: 15px; border: 2px solid #333; margin-right: 10px; vertical-align: middle; }\n';
+    content += '.item-text { flex: 1; }\n';
+    content += '.item-price { font-weight: bold; }\n';
+    content += '.summary { margin-top: 30px; border-top: 2px solid #000; padding-top: 10px; }\n';
+    content += '.footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }\n';
+    content += '.note { margin-top: 20px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #007bff; }\n';
+    content += '@media print { body { margin: 0; } .mobile-shopping-item { display: none !important; } }\n';
+    content += '</style>\n</head>\n<body>\n';
+
+    // Header section
+    content += '<div class="header">\n';
+    content += '<h1>Shopping Plan - ' + (selectedPlan.planType || 'Shopping List') + '</h1>\n';
+    content += '<p>Generated on ' + currentDate + '</p>\n';
+    content += '</div>\n';
 
     if (selectedPlan.stores) {
       selectedPlan.stores.forEach((store: any) => {
-        content += `
-          <div class="store-section">
-            <div class="store-header">
-              ${store.retailerName}
-              ${store.address ? `<br><small style="font-weight: normal;">${store.address}</small>` : ''}
-            </div>
-            <div class="item-list">
-        `;
+        content += '<div class="store-section">\n';
+        content += '<div class="store-header">\n';
+        content += store.retailerName;
+        if (store.address) {
+          content += '<br><small style="font-weight: normal;">' + store.address + '</small>';
+        }
+        content += '\n</div>\n<div class="item-list">\n';
 
-        store.items.forEach((item: any) => {
-          content += `
-            <div class="item">
-              <div class="item-text">
-                <span class="item-checkbox"></span>
-                ${item.productName} (Qty: ${item.quantity})
-              </div>
-              <span class="item-price">$${(item.price / 100).toFixed(2)}</span>
-            </div>
-          `;
-        });
+        if (store.items && store.items.length > 0) {
+          store.items.forEach((item: any) => {
+            content += '<div class="item">\n';
+            content += '<div class="item-text">\n';
+            content += '<span class="item-checkbox"></span>\n';
+            content += item.productName + ' (Qty: ' + item.quantity + ')\n';
+            content += '</div>\n';
+            content += '<span class="item-price">$' + (item.price / 100).toFixed(2) + '</span>\n';
+            content += '</div>\n';
+          });
+        }
 
-        content += `
-            </div>
-            <div style="text-align: right; font-weight: bold; margin-top: 10px;">
-              Store Total: $${(store.subtotal / 100).toFixed(2)}
-            </div>
-          </div>
-        `;
+        content += '</div>\n';
+        content += '<div style="text-align: right; font-weight: bold; margin-top: 10px;">\n';
+        content += 'Store Total: $' + ((store.subtotal || store.totalCost || 0) / 100).toFixed(2) + '\n';
+        content += '</div>\n</div>\n';
       });
     } else if (selectedPlan.items) {
-      content += `
-        <div class="store-section">
-          <div class="store-header">${selectedPlan.retailerName || 'Shopping List'}</div>
-          <div class="item-list">
-      `;
+      content += '<div class="store-section">\n';
+      content += '<div class="store-header">' + (selectedPlan.retailerName || 'Shopping List') + '</div>\n';
+      content += '<div class="item-list">\n';
 
       selectedPlan.items.forEach((item: any) => {
-        content += `
-          <div class="item">
-            <div class="item-text">
-              <span class="item-checkbox"></span>
-              ${item.productName} (Qty: ${item.quantity})
-            </div>
-            <span class="item-price">$${(item.price / 100).toFixed(2)}</span>
-          </div>
-        `;
+        content += '<div class="item">\n';
+        content += '<div class="item-text">\n';
+        content += '<span class="item-checkbox"></span>\n';
+        content += item.productName + ' (Qty: ' + item.quantity + ')\n';
+        content += '</div>\n';
+        content += '<span class="item-price">$' + (item.price / 100).toFixed(2) + '</span>\n';
+        content += '</div>\n';
       });
 
-      content += `
-          </div>
-        </div>
-      `;
+      content += '</div>\n</div>\n';
     }
 
-    content += `
-        <div class="summary">
-          <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold;">
-            <span>Total Cost:</span>
-            <span>$${(selectedPlan.totalCost / 100).toFixed(2)}</span>
-          </div>
-          ${selectedPlan.savings > 0 ? `
-            <div style="display: flex; justify-content: space-between; color: green;">
-              <span>Total Savings:</span>
-              <span>$${(selectedPlan.savings / 100).toFixed(2)}</span>
-            </div>
-          ` : ''}
-        </div>
+    // Summary section
+    content += '<div class="summary">\n';
+    content += '<div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold;">\n';
+    content += '<span>Total Cost:</span>\n';
+    content += '<span>$' + (selectedPlan.totalCost / 100).toFixed(2) + '</span>\n';
+    content += '</div>\n';
 
-        <div class="note">
-          <h4 style="margin-top: 0;">📱 Mobile Shopping Tip:</h4>
-          <p style="margin-bottom: 0;">Access your shopping list on your mobile device to check off items as you shop. Changes sync in real-time!</p>
-        </div>
+    if (selectedPlan.savings && selectedPlan.savings > 0) {
+      content += '<div style="display: flex; justify-content: space-between; color: green;">\n';
+      content += '<span>Total Savings:</span>\n';
+      content += '<span>$' + (selectedPlan.savings / 100).toFixed(2) + '</span>\n';
+      content += '</div>\n';
+    }
+    content += '</div>\n';
 
-        <div class="footer">
-          <p>Happy Shopping! 🛒</p>
-        </div>
-      </body>
-      </html>
-    `;
+    // Note section
+    content += '<div class="note">\n';
+    content += '<h4 style="margin-top: 0;">📱 Mobile Shopping Tip:</h4>\n';
+    content += '<p style="margin-bottom: 0;">Access your shopping list on your mobile device to check off items as you shop. Changes sync in real-time!</p>\n';
+    content += '</div>\n';
+
+    // Footer
+    content += '<div class="footer">\n';
+    content += '<p>Happy Shopping! 🛒</p>\n';
+    content += '</div>\n';
+    content += '</body>\n</html>';
 
     return content;
   };
@@ -1186,7 +1270,8 @@ const ShoppingListPage: React.FC = () => {
           </TabsList>
 
           <TabsContent value="items" className="pt-4">
-            <div className="space-y-3 mb-4 sm:mb-6">
+
+<div className="space-y-3">
               {items.length === 0 ? (
                 <Card>
                   <CardContent className="p-4 sm:p-6 text-center text-gray-500">
@@ -1196,69 +1281,174 @@ const ShoppingListPage: React.FC = () => {
                   </CardContent>
                 </Card>
               ) : (
-                items.map((item) => (
-                  <Card key={item.id} className={item.isCompleted ? "opacity-60" : ""}>
-                    <CardContent className="p-3">
-                      <div className="flex justify-between items-start sm:items-center">
-                        <div className="flex items-start sm:items-center flex-1">
-                          <input
-                            type="checkbox"
-                            checked={item.isCompleted}
-                            onChange={() => handleToggleItem(item.id, item.isCompleted)}
-                            className="h-5 w-5 text-primary rounded mr-3 mt-1 sm:mt-0"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex flex-wrap sm:flex-nowrap sm:items-center gap-1 sm:gap-2">
-                              <span className={`font-medium break-words ${item.isCompleted ? "line-through text-gray-500" : "text-gray-800"}`}>
-                                {getCategoryIcon('Pantry & Canned Goods')} {item.productName}
-                              </span>
-                              <span className="text-sm bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full whitespace-nowrap">
-                                Qty: {item.quantity} {item.unit && (
-                                  <span className="text-xs text-gray-500">
-                                    {item.unit === "LB" ? "lbs" : 
-                                     item.unit === "OZ" ? "oz" : 
-                                     item.unit === "PKG" ? "pkg" : 
-                                     item.unit === "BOX" ? "box" : 
-                                     item.unit === "CAN" ? "can" : 
-                                     item.unit === "BOTTLE" ? "bottle" : 
-                                     item.unit === "JAR" ? "jar" : 
-                                     item.unit === "BUNCH" ? "bunch" : 
-                                     item.unit === "ROLL" ? "roll" : ""}
-                                  </span>
-                                )}
-                              </span>
-                            </div>
-                            {item.suggestedRetailerId && item.suggestedPrice && (
-                              <div className="flex items-center text-xs text-gray-500 mt-1">
-                                <span>
-                                  Best price: ${(item.suggestedPrice / 100).toFixed(2)} at Retailer #{item.suggestedRetailerId}
-                                </span>
-                              </div>
-                            )}
+                (() => {
+                  // Group items by category for display
+                  const getCategoryFromName = (productName: string) => {
+                    const name = productName.toLowerCase();
+                    if (/\b(banana|apple|orange|grape|strawberr|tomato|onion|carrot|potato|lettuce|spinach)\w*/i.test(name)) return 'Produce';
+                    if (/\b(milk|cheese|yogurt|egg|butter|cream)\w*/i.test(name)) return 'Dairy & Eggs';
+                    if (/\b(beef|chicken|pork|turkey|fish|meat|salmon|shrimp)\w*/i.test(name)) return 'Meat & Seafood';
+                    if (/\b(bread|loaf|roll|bagel|muffin|cake)\w*/i.test(name)) return 'Bakery';
+                    if (/\b(rice|pasta|bean|sauce|soup|cereal|flour|sugar|salt)\w*/i.test(name)) return 'Pantry & Canned Goods';
+                    if (/\b(frozen|ice cream|pizza)\w*/i.test(name)) return 'Frozen Foods';
+                    if (/\b(shampoo|soap|toothpaste|deodorant|lotion)\w*/i.test(name)) return 'Personal Care';
+                    if (/\b(cleaner|detergent|towel|tissue|toilet paper)\w*/i.test(name)) return 'Household Items';
+                    return 'Other';
+                  };
+
+                  const getCategoryIcon = (category: string) => {
+                    switch (category) {
+                      case 'Produce': return '🍎';
+                      case 'Dairy & Eggs': return '🥛';
+                      case 'Meat & Seafood': return '🥩';
+                      case 'Bakery': return '🍞';
+                      case 'Pantry & Canned Goods': return '🥫';
+                      case 'Frozen Foods': return '❄️';
+                      case 'Personal Care': return '🧼';
+                      case 'Household Items': return '🏠';
+                      default: return '🛒';
+                    }
+                  };
+
+                  // Separate completed and incomplete items
+                  const incompleteItems = items.filter(item => !item.isCompleted);
+                  const completedItems = items.filter(item => item.isCompleted);
+
+                  // Group incomplete items by category
+                  const incompleteGrouped: { [key: string]: ShoppingListItem[] } = {};
+                  incompleteItems.forEach(item => {
+                    const category = getCategoryFromName(item.productName);
+                    if (!incompleteGrouped[category]) {
+                      incompleteGrouped[category] = [];
+                    }
+                    incompleteGrouped[category].push(item);
+                  });
+
+                  return (
+                    <>
+                      {/* Incomplete items grouped by category */}
+                      {Object.entries(incompleteGrouped).map(([category, categoryItems]) => (
+                        <div key={'incomplete-' + category} className="space-y-2">
+                          <div className="flex items-center space-x-2 mt-4 mb-2">
+                            <span className="text-lg">{getCategoryIcon(category)}</span>
+                            <h4 className="font-semibold text-gray-700">{category}</h4>
+                            <div className="flex-1 h-px bg-gray-200"></div>
+                            <span className="text-xs text-gray-500">{categoryItems.length} items</span>
+                          </div>
+                          {categoryItems.map((item: ShoppingListItem) => (
+                            <Card key={item.id} className="ml-2">
+                              <CardContent className="p-3">
+                                <div className="flex justify-between items-center">
+                                  <div className="flex items-center flex-1">
+                                    <input
+                                      type="checkbox"
+                                      checked={item.isCompleted}
+                                      onChange={() => handleToggleItem(item.id, item.isCompleted)}
+                                      className="h-5 w-5 text-primary rounded mr-3"
+                                    />
+                                    <div className="flex-1">
+                                      <div className="flex items-center">
+                                        <span className="font-medium text-gray-800">
+                                          {item.productName}
+                                        </span>
+                                        <span className="ml-2 text-sm bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
+                                          Qty: {item.quantity} {item.unit && item.unit !== "COUNT" && (
+                                            <span className="text-xs text-gray-500">{item.unit.toLowerCase()}</span>
+                                          )}
+                                        </span>
+                                      </div>
+                                      {item.suggestedRetailerId && item.suggestedPrice && (
+                                        <div className="flex items-center text-xs text-gray-500 mt-1">
+                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/>
+                                            <path d="M3 9V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4"/>
+                                          </svg>
+                                          <span>
+                                            Best price: ${(item.suggestedPrice / 100).toFixed(2)} at Retailer #{item.suggestedRetailerId}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex space-x-2">
+                                    <button
+                                      onClick={() => handleEditItem(item)}
+                                      className="text-gray-400 hover:text-blue-500"
+                                      aria-label="Edit item"
+                                      title="Edit item"
+                                    >
+                                      <Pencil className="h-5 w-5" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteItem(item.id)}
+                                      className="text-gray-400 hover:text-red-500"
+                                      aria-label="Delete item"
+                                      title="Delete item"
+                                    >
+                                      <Trash2 className="h-5 w-5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      ))}
+
+                      {/* Completed items section */}
+                      {completedItems.length > 0 && (
+                        <div className="mt-6">
+                          <div className="flex items-center space-x-2 mb-3">
+                            <Check className="h-5 w-5 text-green-600" />
+                            <h4 className="font-semibold text-gray-700">Completed</h4>
+                            <div className="flex-1 h-px bg-gray-200"></div>
+                            <span className="text-xs text-gray-500">{completedItems.length} items</span>
+                          </div>
+                          <div className="space-y-2">
+                            {completedItems.map((item: ShoppingListItem) => (
+                              <Card key={item.id} className="opacity-60 ml-2">
+                                <CardContent className="p-3">
+                                  <div className="flex justify-between items-center">
+                                    <div className="flex items-center flex-1">
+                                      <input
+                                        type="checkbox"
+                                        checked={item.isCompleted}
+                                        onChange={() => handleToggleItem(item.id, item.isCompleted)}
+                                        className="h-5 w-5 text-primary rounded mr-3"
+                                      />
+                                      <div className="flex-1">
+                                        <div className="flex items-center">
+                                          <span className="font-medium line-through text-gray-500">
+                                            {item.productName}
+                                          </span>
+                                          <span className="ml-2 text-sm bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
+                                            Qty: {item.quantity} {item.unit && item.unit !== "COUNT" && (
+                                              <span className="text-xs text-gray-500">{item.unit.toLowerCase()}</span>
+                                            )}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="flex space-x-2">
+                                      <button
+                                        onClick={() => handleDeleteItem(item.id)}
+                                        className="text-gray-400 hover:text-red-500"
+                                        aria-label="Delete item"
+                                        title="Delete item"
+                                      >
+                                        <Trash2 className="h-5 w-5" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
                           </div>
                         </div>
-                        <div className="flex space-x-1 sm:space-x-2 ml-2 shrink-0">
-                          <button
-                            onClick={() => handleEditItem(item)}
-                            className="text-gray-400 hover:text-blue-500 p-1"
-                            aria-label="Edit item"
-                            title="Edit item"
-                          >
-                            <Pencil className="h-4 w-4 sm:h-5 sm:w-5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteItem(item.id)}
-                            className="text-gray-400 hover:text-red-500 p-1"
-                            aria-label="Delete item"
-                            title="Delete item"
-                          >
-                            <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
-                          </button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
+                      )}
+                    </>
+                  );
+                })()
               )}
             </div>
 
@@ -1298,7 +1488,7 @@ const ShoppingListPage: React.FC = () => {
                   onValueChange={setNewItemUnit}
                   disabled={autoDetectUnit}
                 >
-                  <SelectTrigger className={`flex-1 ${autoDetectUnit ? 'opacity-60' : ''}`}>
+                  <SelectTrigger className={'flex-1 ' + (autoDetectUnit ? 'opacity-60' : '')}>
                     <SelectValue placeholder="Unit" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1369,7 +1559,10 @@ const ShoppingListPage: React.FC = () => {
                             <div>
                               <h4 className="font-medium text-base sm:text-lg">Kroger</h4>
                               <p className="text-xs sm:text-sm text-gray-500">
-                                14 out of {items.length} items • $45.35 total
+                                {singleStoreOptimization.data ? 
+                                  `${singleStoreOptimization.data.availableItems || items.length} out of ${items.length} items • $${(singleStoreOptimization.data.totalCost / 100).toFixed(2)} total` :
+                                  `${Math.floor(items.length * 0.87)} out of ${items.length} items • Est. $${(items.length * 2.85).toFixed(2)} total`
+                                }
                               </p>
                               <p className="text-xs text-blue-600">123 Main St, San Francisco, CA 94105</p>
                             </div>
@@ -1424,7 +1617,7 @@ const ShoppingListPage: React.FC = () => {
                       <div className="border border-green-200 rounded-lg sm:rounded-xl overflow-hidden">
                         <div className="bg-green-50 dark:bg-green-900/10 px-3 sm:px-4 py-2 sm:py-3 border-b border-green-200">
                           <div className="font-medium text-sm sm:text-base text-green-700 dark:text-green-300">
-                            Best Value Option (Save $8.50)
+                            Best Value Option {bestValueOptimization.data ? `(Save $${(bestValueOptimization.data.savings / 100).toFixed(2)})` : '(Save Est. $8.50)'}
                           </div>
                         </div>
                         <div className="p-3 sm:p-4">
@@ -1433,9 +1626,17 @@ const ShoppingListPage: React.FC = () => {
                               <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                             </div>
                             <div>
-                              <h4 className="font-medium text-base sm:text-lg">Kroger + Walmart</h4>
+                              <h4 className="font-medium text-base sm:text-lg">
+                                {bestValueOptimization.data ? 
+                                  bestValueOptimization.data.stores?.map((s: any) => s.retailerName).join(' + ') :
+                                  'Kroger + Walmart'
+                                }
+                              </h4>
                               <p className="text-xs sm:text-sm text-gray-500">
-                                All items • $36.85 total
+                                {bestValueOptimization.data ? 
+                                  `All ${items.length} items • $${(bestValueOptimization.data.totalCost / 100).toFixed(2)} total` :
+                                  `All ${items.length} items • Est. $${(items.length * 2.15).toFixed(2)} total`
+                                }
                               </p>
                             </div>
                           </div>
@@ -1484,7 +1685,9 @@ const ShoppingListPage: React.FC = () => {
                       {/* Balanced Option */}
                       <div className="border rounded-lg sm:rounded-xl overflow-hidden">
                         <div className="bg-gray-50 dark:bg-gray-800 px-3 sm:px-4 py-2 sm:py-3 border-b">
-                          <div className="font-medium text-sm sm:text-base">Balanced Option</div>
+                          <div className="font-medium text-sm sm:text-base">
+                            Balanced Option {balancedOptimization.data ? `(Save $${(balancedOptimization.data.savings / 100).toFixed(2)})` : '(Save Est. $3.20)'}
+                          </div>
                         </div>
                         <div className="p-3 sm:p-4">
                           <div className="flex items-center mb-3 sm:mb-4">
@@ -1494,7 +1697,10 @@ const ShoppingListPage: React.FC = () => {
                             <div>
                               <h4 className="font-medium text-base sm:text-lg">Target</h4>
                               <p className="text-xs sm:text-sm text-gray-500">
-                                15 out of {items.length} items • $42.15 total
+                                {balancedOptimization.data ? 
+                                  `${balancedOptimization.data.stores?.[0]?.items?.length || items.length} out of ${items.length} items • $${(balancedOptimization.data.totalCost / 100).toFixed(2)} total` :
+                                  `${Math.floor(items.length * 0.92)} out of ${items.length} items • Est. $${(items.length * 2.65).toFixed(2)} total`
+                                }
                               </p>
                               <p className="text-xs text-gray-600">456 Market St, San Francisco, CA 94102</p>
                             </div>
@@ -1508,6 +1714,11 @@ const ShoppingListPage: React.FC = () => {
                                   <span>${(item.price / 100).toFixed(2)}</span>
                                 </div>
                               ))}
+                              {(balancedOptimization.data.stores?.[0]?.items?.length || 0) > 3 && (
+                                <div className="text-xs text-gray-500">
+                                  +{(balancedOptimization.data.stores?.[0]?.items?.length || 0) - 3} more items
+                                </div>
+                              )}
                               <Button 
                                 size="sm" 
                                 variant="default" 
@@ -1548,7 +1759,7 @@ const ShoppingListPage: React.FC = () => {
                         <Button 
                           className="w-full h-auto p-4 flex flex-col items-center space-y-2"
                           onClick={() => {
-                            navigate(`/shopping-route?listId=${selectedList.id}&mode=online`);
+                            navigate('/shopping-route?listId=' + selectedList.id + '&mode=online');
                           }}
                         >
                           <ShoppingCart className="h-6 w-6" />
@@ -1562,10 +1773,11 @@ const ShoppingListPage: React.FC = () => {
                           variant="outline"
                           className="w-full h-auto p-4 flex flex-col items-center space-y-2"
                           onClick={() => {
-                            navigate(`/shopping-route?listId=${selectedList.id}&mode=delivery`);
+                            navigate('/shopping-route?listId=' + selectedList.id + '&mode=delivery');
                           }}
                         >
                           <StoreIcon className="h-6 w-6" />
+
                           <div className="text-center">
                             <div className="font-medium">Order for Delivery/Pickup</div>
                             <div className="text-xs text-gray-500">Place orders for pickup or delivery</div>
@@ -1808,6 +2020,29 @@ const ShoppingListPage: React.FC = () => {
                       {item.reason && (
                         <div className="mt-1 text-xs text-gray-500">
                           {item.reason}
+                        </div>
+                      )}
+                      
+                      {item.dealComparison && (
+                        <div className="mt-2 p-2 bg-blue-50 rounded-md border-l-2 border-blue-400">
+                          <div className="text-xs font-medium text-blue-800 mb-1">
+                            {item.dealComparison.type === 'standard_better_value' && '💡 Deal Alert'}
+                            {item.dealComparison.type === 'bulk_preference' && '📦 Bulk Option'}  
+                            {item.dealComparison.type === 'bulk_is_best_value' && '💰 Best Value'}
+                          </div>
+                          <div className="text-xs text-blue-700">
+                            {item.dealComparison.message}
+                          </div>
+                          {item.dealComparison.potentialSavings && (
+                            <div className="text-xs text-green-600 font-medium mt-1">
+                              Save ${item.dealComparison.potentialSavings} vs bulk option
+                            </div>
+                          )}
+                          {item.dealComparison.unitPriceDifference && (
+                            <div className="text-xs text-gray-600">
+                              Unit price difference: {item.dealComparison.unitPriceDifference}%
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -2078,10 +2313,74 @@ const ShoppingListPage: React.FC = () => {
               Cancel
             </Button>
             <Button 
-              onClick={() => importRecipeMutation.mutate()} 
-              disabled={!recipeUrl || importRecipeMutation.isPending}
+              onClick={() => previewRecipeMutation.mutate()} 
+              disabled={!recipeUrl || previewRecipeMutation.isPending}
             >
-              {importRecipeMutation.isPending ? 'Importing...' : 'Import'}
+              {previewRecipeMutation.isPending ? 'Loading...' : 'Preview Recipe'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Recipe Preview Dialog */}
+      <Dialog open={recipePreviewDialogOpen} onOpenChange={setRecipePreviewDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Recipe Ingredients Preview</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto py-4">
+            <p className="text-sm text-gray-500 mb-4">
+              Preview of ingredients that will be added to your shopping list from this recipe:
+            </p>
+
+            <div className="space-y-2">
+              {recipePreviewItems.map((item, index) => (
+                <div key={index} className="flex items-center p-2 border rounded-lg">
+                  <input
+                    type="checkbox"
+                    checked={item.isSelected}
+                    onChange={() => handleToggleRecipeItem(index)}
+                    className="h-5 w-5 text-primary rounded mr-3"
+                  />
+                  <div className="flex-1">
+                    <div className="flex flex-col sm:flex-row sm:justify-between">
+                      <div>
+                        <p className="font-medium">{item.productName}</p>
+                        <div className="flex items-center text-sm">
+                          <span className="text-gray-500">
+                            {item.quantity} {item.unit === "LB" ? "lbs" : 
+                              item.unit === "OZ" ? "oz" : 
+                              item.unit === "PKG" ? "pkg" : 
+                              item.unit === "BOX" ? "box" : 
+                              item.unit === "CAN" ? "can" : 
+                              item.unit === "BOTTLE" ? "bottle" :
+                              item.unit === "JAR" ? "jar" : 
+                              item.unit === "BUNCH" ? "bunch" : 
+                              item.unit === "ROLL" ? "roll" : ""}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <DialogFooter className="flex justify-between">
+            <Button 
+              variant="outline" 
+              onClick={() => setRecipePreviewDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                const selectedItems = recipePreviewItems.filter(item => item.isSelected);
+                importRecipeMutation.mutate(selectedItems);
+              }}
+              disabled={importRecipeMutation.isPending || recipePreviewItems.filter(item => item.isSelected).length === 0}
+              className="bg-primary"
+            >
+              {importRecipeMutation.isPending ? 'Adding...' : `Add ${recipePreviewItems.filter(item => item.isSelected).length} Items`}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2097,62 +2396,82 @@ const ShoppingListPage: React.FC = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="grid gap-4">
-              {categorizedItems.map((item, index) => (
-                <Card key={index} className="border border-gray-200">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center">
-                        <span className="text-2xl mr-3">{item.icon}</span>
+            {categorizedItems.length === 0 ? (
+              <div className="text-center p-4">
+                <p className="text-gray-600">No items with suggested changes.</p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {categorizedItems.map((item, index) => (
+                  <Card key={index} className="border border-gray-200">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center">
+                          <span className="text-2xl mr-3">{item.icon}</span>
+                          <div>
+                            <h4 className="font-semibold text-lg">
+                              {item.category.normalizedName && item.category.normalizedName !== item.productName ? (
+                                <div>
+                                  <span className="text-green-600">{item.category.normalizedName}</span>
+                                  <div className="text-sm text-gray-500 line-through">was: {item.productName}</div>
+                                </div>
+                              ) : (
+                                item.productName
+                              )}
+                            </h4>
+                            <p className="text-sm text-gray-600">
+                              {item.category.category} • {item.category.aisle} • Confidence: {Math.round(item.category.confidence * 100)}%
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-medium text-green-600">
+                            Suggested: {item.normalized.suggestedQuantity} {item.normalized.suggestedUnit}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Original: {item.normalized.originalQuantity} {item.normalized.originalUnit}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
                         <div>
-                          <h4 className="font-semibold text-lg">{item.productName}</h4>
-                          <p className="text-sm text-gray-600">
-                            {item.category.category} • {item.category.aisle} • Confidence: {Math.round(item.category.confidence * 100)}%
-                          </p>
+                          <h5 className="text-sm font-medium text-gray-700 mb-1">AI Optimizations</h5>
+                          {item.category.normalizedName && item.category.normalizedName !== item.productName && (
+                            <p className="text-xs text-blue-600 mb-1">
+                              Name standardization: "{item.productName}" → "{item.category.normalizedName}"
+                            </p>
+                          )}
+                          <p className="text-xs text-gray-600">{item.normalized.conversionReason}</p>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-medium text-green-600">
-                          Suggested: {item.normalized.suggestedQuantity} {item.normalized.suggestedUnit}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          Original: {item.normalized.originalQuantity} {item.normalized.originalUnit}
-                        </div>
-                      </div>
-                    </div>
 
-                    <div className="space-y-3">
-                      <div>
-                        <h5 className="text-sm font-medium text-gray-700 mb-1">Quantity Optimization</h5>
-                        <p className="text-xs text-gray-600">{item.normalized.conversionReason}</p>
-                      </div>
+                        <div>
+                          <h5 className="text-sm font-medium text-gray-700 mb-1">Typical Retail Names</h5>
+                          <div className="flex flex-wrap gap-1">
+                            {item.category.typicalRetailNames.slice(0, 3).map((name, idx) => (
+                              <span key={idx} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                {name}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
 
-                      <div>
-                        <h5 className="text-sm font-medium text-gray-700 mb-1">Typical Retail Names</h5>
-                        <div className="flex flex-wrap gap-1">
-                          {item.category.typicalRetailNames.slice(0, 3).map((name, idx) => (
-                            <span key={idx} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                              {name}
-                            </span>
-                          ))}
+                        <div>
+                          <h5 className="text-sm font-medium text-gray-700 mb-1">Brand Variations</h5>
+                          <div className="flex flex-wrap gap-1">
+                            {item.category.brandVariations.slice(0, 3).map((brand, idx) => (
+                              <span key={idx} className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                                {brand}
+                              </span>
+                            ))}
+                          </div>
                         </div>
                       </div>
-
-                      <div>
-                        <h5 className="text-sm font-medium text-gray-700 mb-1">Brand Variations</h5>
-                        <div className="flex flex-wrap gap-1">
-                          {item.category.brandVariations.slice(0, 3).map((brand, idx) => (
-                            <span key={idx} className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
-                              {brand}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCategorization(false)}>
@@ -2385,9 +2704,9 @@ const ShoppingListPage: React.FC = () => {
                       <Button
                         onClick={() => {
                           setShowShoppingPlan(false);
-                          // Passthe selected plan data to the route page
+                          // Pass the selected plan data to the route page
                           const planData = encodeURIComponent(JSON.stringify(selectedPlan));
-                          navigate(`/shopping-route?listId=${defaultList?.id}&mode=instore&planData=${planData}`);
+                          navigate('/shopping-route?listId=' + defaultList?.id + '&mode=instore&planData=' + planData);
                         }}
                         variant="outline"
                         className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
