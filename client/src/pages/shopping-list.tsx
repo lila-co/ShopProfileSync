@@ -936,100 +936,103 @@ bread')) shelfLocation = 'End Cap';
     if (!selectedPlan) return '';
 
     const currentDate = new Date().toLocaleDateString();
-    let content = `<!DOCTYPE html>
-<html>
-<head>
-  <title>Shopping Plan - ${selectedPlan.planType}</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 10px; }
-    .store-section { margin-bottom: 30px; page-break-inside: avoid; }
-    .store-header { background-color: #f5f5f5; padding: 10px; font-weight: bold; font-size: 18px; }
-    .item-list { margin: 10px 0; }
-    .item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dotted #ccc; }
-    .item-checkbox { display: inline-block; width: 15px; height: 15px; border: 2px solid #333; margin-right: 10px; vertical-align: middle; }
-    .item-text { flex: 1; }
-    .item-price { font-weight: bold; }
-    .summary { margin-top: 30px; border-top: 2px solid #000; padding-top: 10px; }
-    .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }
-    .note { margin-top: 20px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #007bff; }
-    @media print { 
-      body { margin: 0; }
-      .mobile-shopping-item { display: none !important; }
-    }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>Shopping Plan - ${selectedPlan.planType}</h1>
-    <p>Generated on ${currentDate}</p>
-  </div>`;
+    
+    // Build HTML content using string concatenation to avoid template literal issues
+    let content = '<!DOCTYPE html>\n<html>\n<head>\n';
+    content += '<title>Shopping Plan - ' + (selectedPlan.planType || 'Shopping List') + '</title>\n';
+    content += '<style>\n';
+    content += 'body { font-family: Arial, sans-serif; margin: 20px; }\n';
+    content += '.header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 10px; }\n';
+    content += '.store-section { margin-bottom: 30px; page-break-inside: avoid; }\n';
+    content += '.store-header { background-color: #f5f5f5; padding: 10px; font-weight: bold; font-size: 18px; }\n';
+    content += '.item-list { margin: 10px 0; }\n';
+    content += '.item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dotted #ccc; }\n';
+    content += '.item-checkbox { display: inline-block; width: 15px; height: 15px; border: 2px solid #333; margin-right: 10px; vertical-align: middle; }\n';
+    content += '.item-text { flex: 1; }\n';
+    content += '.item-price { font-weight: bold; }\n';
+    content += '.summary { margin-top: 30px; border-top: 2px solid #000; padding-top: 10px; }\n';
+    content += '.footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }\n';
+    content += '.note { margin-top: 20px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #007bff; }\n';
+    content += '@media print { body { margin: 0; } .mobile-shopping-item { display: none !important; } }\n';
+    content += '</style>\n</head>\n<body>\n';
+    
+    // Header section
+    content += '<div class="header">\n';
+    content += '<h1>Shopping Plan - ' + (selectedPlan.planType || 'Shopping List') + '</h1>\n';
+    content += '<p>Generated on ' + currentDate + '</p>\n';
+    content += '</div>\n';
 
     if (selectedPlan.stores) {
       selectedPlan.stores.forEach((store: any) => {
-        content += `<div class="store-section">
-  <div class="store-header">
-    ${store.retailerName}
-    ${store.address ? `<br><small style="font-weight: normal;">${store.address}</small>` : ''}
-  </div>
-  <div class="item-list">`;
+        content += '<div class="store-section">\n';
+        content += '<div class="store-header">\n';
+        content += store.retailerName;
+        if (store.address) {
+          content += '<br><small style="font-weight: normal;">' + store.address + '</small>';
+        }
+        content += '\n</div>\n<div class="item-list">\n';
 
-        store.items.forEach((item: any) => {
-          content += `<div class="item">
-  <div class="item-text">
-    <span class="item-checkbox"></span>
-    ${item.productName} (Qty: ${item.quantity})
-  </div>
-  <span class="item-price">$${(item.price / 100).toFixed(2)}</span>
-</div>`;
-        });
+        if (store.items && store.items.length > 0) {
+          store.items.forEach((item: any) => {
+            content += '<div class="item">\n';
+            content += '<div class="item-text">\n';
+            content += '<span class="item-checkbox"></span>\n';
+            content += item.productName + ' (Qty: ' + item.quantity + ')\n';
+            content += '</div>\n';
+            content += '<span class="item-price">$' + (item.price / 100).toFixed(2) + '</span>\n';
+            content += '</div>\n';
+          });
+        }
 
-        content += `</div>
-  <div style="text-align: right; font-weight: bold; margin-top: 10px;">
-    Store Total: $${(store.subtotal / 100).toFixed(2)}
-  </div>
-</div>`;
+        content += '</div>\n';
+        content += '<div style="text-align: right; font-weight: bold; margin-top: 10px;">\n';
+        content += 'Store Total: $' + ((store.subtotal || store.totalCost || 0) / 100).toFixed(2) + '\n';
+        content += '</div>\n</div>\n';
       });
     } else if (selectedPlan.items) {
-      content += `<div class="store-section">
-  <div class="store-header">${selectedPlan.retailerName || 'Shopping List'}</div>
-  <div class="item-list">`;
+      content += '<div class="store-section">\n';
+      content += '<div class="store-header">' + (selectedPlan.retailerName || 'Shopping List') + '</div>\n';
+      content += '<div class="item-list">\n';
 
       selectedPlan.items.forEach((item: any) => {
-        content += `<div class="item">
-  <div class="item-text">
-    <span class="item-checkbox"></span>
-    ${item.productName} (Qty: ${item.quantity})
-  </div>
-  <span class="item-price">$${(item.price / 100).toFixed(2)}</span>
-</div>`;
+        content += '<div class="item">\n';
+        content += '<div class="item-text">\n';
+        content += '<span class="item-checkbox"></span>\n';
+        content += item.productName + ' (Qty: ' + item.quantity + ')\n';
+        content += '</div>\n';
+        content += '<span class="item-price">$' + (item.price / 100).toFixed(2) + '</span>\n';
+        content += '</div>\n';
       });
 
-      content += `</div>
-</div>`;
+      content += '</div>\n</div>\n';
     }
 
-    content += `<div class="summary">
-  <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold;">
-    <span>Total Cost:</span>
-    <span>$${(selectedPlan.totalCost / 100).toFixed(2)}</span>
-  </div>
-  ${selectedPlan.savings > 0 ? `<div style="display: flex; justify-content: space-between; color: green;">
-    <span>Total Savings:</span>
-    <span>$${(selectedPlan.savings / 100).toFixed(2)}</span>
-  </div>` : ''}
-</div>
+    // Summary section
+    content += '<div class="summary">\n';
+    content += '<div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold;">\n';
+    content += '<span>Total Cost:</span>\n';
+    content += '<span>$' + (selectedPlan.totalCost / 100).toFixed(2) + '</span>\n';
+    content += '</div>\n';
+    
+    if (selectedPlan.savings && selectedPlan.savings > 0) {
+      content += '<div style="display: flex; justify-content: space-between; color: green;">\n';
+      content += '<span>Total Savings:</span>\n';
+      content += '<span>$' + (selectedPlan.savings / 100).toFixed(2) + '</span>\n';
+      content += '</div>\n';
+    }
+    content += '</div>\n';
 
-<div class="note">
-  <h4 style="margin-top: 0;">📱 Mobile Shopping Tip:</h4>
-  <p style="margin-bottom: 0;">Access your shopping list on your mobile device to check off items as you shop. Changes sync in real-time!</p>
-</div>
+    // Note section
+    content += '<div class="note">\n';
+    content += '<h4 style="margin-top: 0;">📱 Mobile Shopping Tip:</h4>\n';
+    content += '<p style="margin-bottom: 0;">Access your shopping list on your mobile device to check off items as you shop. Changes sync in real-time!</p>\n';
+    content += '</div>\n';
 
-<div class="footer">
-  <p>Happy Shopping! 🛒</p>
-</div>
-</body>
-</html>`;
+    // Footer
+    content += '<div class="footer">\n';
+    content += '<p>Happy Shopping! 🛒</p>\n';
+    content += '</div>\n';
+    content += '</body>\n</html>';
 
     return content;
   };
