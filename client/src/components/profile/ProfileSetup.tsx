@@ -49,13 +49,13 @@ const ProfileSetup: React.FC = () => {
   React.useEffect(() => {
     if (user) {
       form.reset({
-        householdType: user.householdType || '',
-        householdSize: user.householdSize?.toString() || '',
-        preferNameBrand: user.preferNameBrand || false,
-        preferOrganic: user.preferOrganic || false,
-        buyInBulk: user.buyInBulk || false,
-        prioritizeCostSavings: user.prioritizeCostSavings || false,
-        shoppingRadius: user.shoppingRadius || 5,
+        householdType: user?.householdType || '',
+        householdSize: user?.householdSize?.toString() || '',
+        preferNameBrand: user?.preferNameBrand || false,
+        preferOrganic: user?.preferOrganic || false,
+        buyInBulk: user?.buyInBulk || false,
+        prioritizeCostSavings: user?.prioritizeCostSavings || false,
+        shoppingRadius: user?.shoppingRadius || 5,
       });
     }
   }, [user, form]);
@@ -193,7 +193,7 @@ const ProfileSetup: React.FC = () => {
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Shopping Radius: {form.watch("shoppingRadius")} miles
+              Shopping Radius: {form.watch("shoppingRadius") || 5} miles
             </label>
             <div className="relative">
               <input 
