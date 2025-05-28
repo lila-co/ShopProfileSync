@@ -13,29 +13,51 @@ async function runMigration() {
   try {
     console.log('Connected to database');
     
-    // Add GALLON to unit_type enum if it doesn't exist
-    try {
-      await client`ALTER TYPE unit_type ADD VALUE 'GALLON';`;
-      console.log('Successfully added GALLON to unit_type enum');
-    } catch (error) {
-      if (error.message.includes('already exists')) {
-        console.log('GALLON already exists in unit_type enum');
-      } else {
-        console.error('Error adding GALLON:', error);
+    // Get current enum values from the database
+    const currentEnumValues = await client`
+      SELECT enumlabel as value 
+      FROM pg_enum 
+      WHERE enumtypid = (
+        SELECT oid FROM pg_type WHERE typname = 'unit_type'
+      )
+    `;
+    
+    const existingValues = new Set(currentEnumValues.map(row => row.value));
+    console.log('Current enum values:', Array.from(existingValues));
+    
+    // Define all possible unit types that the application might use
+    const allPossibleUnits = [
+      'COUNT', 'LB', 'OZ', 'G', 'KG', 'PKG', 'ROLL', 'BOX', 'CAN', 
+      'BOTTLE', 'JAR', 'BUNCH', 'GALLON', 'LOAF', 'DOZEN', 'PINT', 
+      'QUART', 'CUP', 'TSP', 'TBSP', 'ML', 'L', 'SLICE', 'PACK',
+      'BAG', 'CONTAINER', 'PIECE', 'UNIT', 'SERVING'
+    ];
+    
+    // Find missing values
+    const missingValues = allPossibleUnits.filter(unit => !existingValues.has(unit));
+    
+    if (missingValues.length === 0) {
+      console.log('All unit types are already present in the database');
+      return;
+    }
+    
+    console.log('Missing enum values:', missingValues);
+    
+    // Add each missing value
+    for (const unit of missingValues) {
+      try {
+        await client`ALTER TYPE unit_type ADD VALUE ${unit};`;
+        console.log(`✓ Successfully added ${unit} to unit_type enum`);
+      } catch (error) {
+        if (error.message.includes('already exists')) {
+          console.log(`ℹ ${unit} already exists in unit_type enum`);
+        } else {
+          console.error(`✗ Error adding ${unit}:`, error.message);
+        }
       }
     }
     
-    // Add LOAF to unit_type enum if it doesn't exist
-    try {
-      await client`ALTER TYPE unit_type ADD VALUE 'LOAF';`;
-      console.log('Successfully added LOAF to unit_type enum');
-    } catch (error) {
-      if (error.message.includes('already exists')) {
-        console.log('LOAF already exists in unit_type enum');
-      } else {
-        console.error('Error adding LOAF:', error);
-      }
-    }
+    console.log('Migration completed successfully!');
     
   } catch (error) {
     console.error('Migration failed:', error);

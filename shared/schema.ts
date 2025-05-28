@@ -102,7 +102,8 @@ export const shoppingLists = pgTable("shopping_lists", {
 
 // Product Unit Enum
 export const unitEnum = pgEnum('unit_type', [
-  'COUNT', 'LB', 'OZ', 'G', 'KG', 'PKG', 'ROLL', 'BOX', 'CAN', 'BOTTLE', 'JAR', 'BUNCH', 'GALLON', 'LOAF'
+  'COUNT', 'LB', 'OZ', 'G', 'KG', 'PKG', 'ROLL', 'BOX', 'CAN', 'BOTTLE', 'JAR', 'BUNCH', 'GALLON', 'LOAF', 
+  'DOZEN', 'PINT', 'QUART', 'CUP', 'TSP', 'TBSP', 'ML', 'L', 'SLICE', 'PACK', 'BAG', 'CONTAINER', 'PIECE', 'UNIT', 'SERVING'
 ]);
 
 // Shopping List Item Schema
