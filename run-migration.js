@@ -46,7 +46,7 @@ async function runMigration() {
     // Add each missing value
     for (const unit of missingValues) {
       try {
-        await client`ALTER TYPE unit_type ADD VALUE ${unit};`;
+        await client.unsafe(`ALTER TYPE unit_type ADD VALUE '${unit}';`);
         console.log(`✓ Successfully added ${unit} to unit_type enum`);
       } catch (error) {
         if (error.message.includes('already exists')) {
