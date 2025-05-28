@@ -503,7 +503,6 @@ export class MemStorage implements IStorage {
 
   async createPurchase(purchase: InsertPurchase): Promise<Purchase> {
     const id = this.purchaseIdCounter++;
-    ```tool_code
     const newPurchase: Purchase = { ...purchase, id };
     this.purchases.set(id, newPurchase);
     return newPurchase;
@@ -1112,6 +1111,7 @@ export class MemStorage implements IStorage {
 }
 
 // Database implementation of the storage interface
+
 export class DatabaseStorage implements IStorage {
   // User methods
   async getDefaultUser(): Promise<User> {
