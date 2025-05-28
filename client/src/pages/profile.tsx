@@ -437,60 +437,62 @@ const ProfilePage: React.FC = () => {
           </TabsContent>
         </Tabs>
 
-        {/* Account Management Sections - Outside of tabs */}
-        <div className="mt-8 space-y-4">
-          <Separator className="my-6" />
-          
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold text-gray-800">Account Management</h2>
-            <p className="text-sm text-gray-600">Manage your connections and payment options</p>
+        {/* Account Management Sections - Only show when on main profile view */}
+        {activeTab === 'profile' && (
+          <div className="mt-8 space-y-4">
+            <Separator className="my-6" />
+            
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold text-gray-800">Account Management</h2>
+              <p className="text-sm text-gray-600">Manage your connections and payment options</p>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Store className="w-5 h-5 mr-2 text-purple-600" />
+                  Connected Stores
+                </CardTitle>
+                <CardDescription>Manage your linked retailer accounts</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <RetailerLinking />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <CreditCard className="w-5 h-5 mr-2 text-blue-600" />
+                  Payment Methods
+                </CardTitle>
+                <CardDescription>Manage cards and payment preferences</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="outline" className="w-full">
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Add Payment Method
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <MapPin className="w-5 h-5 mr-2 text-green-600" />
+                  Delivery Addresses
+                </CardTitle>
+                <CardDescription>Manage your delivery locations</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="outline" className="w-full">
+                  <MapPin className="w-4 h-4 mr-2" />
+                  Add New Address
+                </Button>
+              </CardContent>
+            </Card>
           </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Store className="w-5 h-5 mr-2 text-purple-600" />
-                Connected Stores
-              </CardTitle>
-              <CardDescription>Manage your linked retailer accounts</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <RetailerLinking />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <CreditCard className="w-5 h-5 mr-2 text-blue-600" />
-                Payment Methods
-              </CardTitle>
-              <CardDescription>Manage cards and payment preferences</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button variant="outline" className="w-full">
-                <CreditCard className="w-4 h-4 mr-2" />
-                Add Payment Method
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <MapPin className="w-5 h-5 mr-2 text-green-600" />
-                Delivery Addresses
-              </CardTitle>
-              <CardDescription>Manage your delivery locations</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button variant="outline" className="w-full">
-                <MapPin className="w-4 h-4 mr-2" />
-                Add New Address
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+        )}
       </main>
 
       <BottomNavigation activeTab="profile" />
