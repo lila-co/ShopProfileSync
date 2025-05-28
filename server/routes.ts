@@ -1928,25 +1928,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ retailerId: null, retailerName: null, items: [], totalCost: 0, availabilityRate: 0 });
       }
 
-      // Return demo data for Kroger as the best single store option - ensure ALL items are included
+      // Return demo data for Kroger as the best single store option
       const storeItems = items.map(item => ({
         id: item.id,
         productName: item.productName,
         quantity: item.quantity,
         unit: item.unit,
         price: 250 + Math.floor(Math.random() * 300), // $2.50-$5.50 range
-        isAvailable: true,
-        totalPrice: (250 + Math.floor(Math.random() * 300)) * item.quantity
+        isAvailable: true
       }));
 
-      const totalCost = storeItems.reduce((sum, item) => sum + item.totalPrice, 0);
+      const totalCost = storeItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
       res.json({
         retailerId: 3,
         retailerName: "Kroger",
         items: storeItems,
         totalCost,
-        availabilityRate: 1.0, // All items available
+        availabilityRate: 0.87,
         availableItems: items.length,
         totalItems: items.length,
         address: "123 Main St, San Francisco, CA 94105",
@@ -2040,7 +2039,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Demo data: Target as balanced option (good prices, convenient)
-      // Check for manual deals for each item - ensure ALL items are included
+      // Check for manual deals for each item
       const allDeals = await storage.getDeals();
       const targetItems = items.map(item => {
         // Find manual deal at Target
@@ -2052,7 +2051,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
 
         const price = manualDeal ? manualDeal.salePrice : 250 + Math.floor(Math.random() * 350);
-        const totalPrice = price * item.quantity;
 
         return {
           id: item.id,
@@ -2060,13 +2058,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           quantity: item.quantity,
           unit: item.unit,
           price,
-          totalPrice,
+          totalPrice: 0,
           dealInfo: manualDeal ? {
             isDeal: true,
             source: manualDeal.dealSource || 'manual_upload',
             savings: manualDeal.regularPrice - manualDeal.salePrice
           } : null
         };
+      });
+
+      targetItems.forEach(item => {
+        item.totalPrice = item.price * item.quantity;
       });
 
       const totalCost = targetItems.reduce((sum, item) => sum + item.totalPrice, 0);
@@ -2083,9 +2085,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         estimatedTime: 35, // 35 minutes estimated
         storeCount: 1,
         planType: "Balanced",
-        savings: 320, // $3.20 savings
-        totalItems: items.length,
-        availableItems: items.length
+        savings: 320 // $3.20 savings
       });
     } catch (error) {
       handleError(res, error);

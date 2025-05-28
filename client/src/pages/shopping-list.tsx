@@ -1528,10 +1528,8 @@ const ShoppingListPage: React.FC = () => {
                             </div>
                           </div>
                           {singleStoreOptimization.data ? (
-                            <div className="space-y-2">
-                              <div className="text-sm font-medium text-gray-600">
-                                Items Available: {singleStoreOptimization.data.items?.length || 0} of {items.length}
-                              </div>
+                            <div className="space-y-2 mb-3">
+                              <div className="text-xs font-medium text-gray-600">Items Available:</div>
                               {singleStoreOptimization.data.items?.slice(0, 3).map((item: any, index: number) => (
                                 <div key={index} className="flex justify-between text-xs">
                                   <span>{item.productName} (Qty: {item.quantity})</span>
@@ -1540,7 +1538,7 @@ const ShoppingListPage: React.FC = () => {
                               ))}
                               {singleStoreOptimization.data.items?.length > 3 && (
                                 <div className="text-xs text-gray-500">
-                                  ... and {singleStoreOptimization.data.items.length - 3} more items
+                                  +{singleStoreOptimization.data.items.length - 3} more items
                                 </div>
                               )}
                               <Button 
@@ -1552,7 +1550,7 @@ const ShoppingListPage: React.FC = () => {
                                   planType: "Single Store"
                                 }, "Single Store - Kroger")}
                               >
-                                <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                                 View Full Shopping Plan
                               </Button>
                             </div>
@@ -1583,7 +1581,8 @@ const ShoppingListPage: React.FC = () => {
                           </div>
                         </div>
                         <div className="p-3 sm:p-4">
-                          <div className="flex items-center mb-3 sm:mb-4">                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green100 flex items-center justify-center mr-3 sm:mr-4 shrink-0">
+                          <div className="flex items-center mb-3 sm:mb-4">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green100 flex items-center justify-center mr-3 sm:mr-4 shrink-0">
                               <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                             </div>
                             <div>
@@ -1594,23 +1593,15 @@ const ShoppingListPage: React.FC = () => {
                             </div>
                           </div>
                           {bestValueOptimization.data ? (
-                            <div className="space-y-2">
-                              <div className="text-sm font-medium text-gray-600">
-                                Multi-Store Shopping: {bestValueOptimization.data.stores?.reduce((total: number, store: any) => total + (store.items?.length || 0), 0) || 0} of {items.length} items
-                              </div>
-                              {bestValueOptimization.data.stores?.slice(0, 2).map((store: any, index: number) => (
-                                <div key={index} className="text-xs">
-                                  <div className="font-medium">{store.retailerName}</div>
-                                  <div className="text-gray-500">
-                                    {store.items?.length || 0} items - ${(store.subtotal / 100).toFixed(2)}
+                            <div className="space-y-2 mb-3">
+                              {bestValueOptimization.data.stores?.map((store: any, index: number) => (
+                                <div key={index} className="border rounded p-2">
+                                  <div className="font-medium text-xs text-gray-700">{store.retailerName}</div>
+                                  <div className="text-xs text-gray-500">
+                                    {store.items.length} items • ${(store.subtotal / 100).toFixed(2)}
                                   </div>
                                 </div>
                               ))}
-                              {bestValueOptimization.data.stores?.length > 2 && (
-                                <div className="text-xs text-gray-500">
-                                  ... and {bestValueOptimization.data.stores.length - 2} more stores
-                                </div>
-                              )}
                               <Button 
                                 size="sm" 
                                 variant="default" 
@@ -1662,21 +1653,14 @@ const ShoppingListPage: React.FC = () => {
                             </div>
                           </div>
                           {balancedOptimization.data ? (
-                            <div className="space-y-2">
-                              <div className="text-sm font-medium text-gray-600">
-                                Items Available: {balancedOptimization.data.stores?.[0]?.items?.length || 0} of {items.length}
-                              </div>
+                            <div className="space-y-2 mb-3">
+                              <div className="text-xs font-medium text-gray-600">Items Available:</div>
                               {balancedOptimization.data.stores?.[0]?.items?.slice(0, 3).map((item: any, index: number) => (
                                 <div key={index} className="flex justify-between text-xs">
                                   <span>{item.productName} (Qty: {item.quantity})</span>
                                   <span>${(item.price / 100).toFixed(2)}</span>
                                 </div>
                               ))}
-                              {balancedOptimization.data.stores?.[0]?.items?.length > 3 && (
-                                <div className="text-xs text-gray-500">
-                                  ... and {balancedOptimization.data.stores[0].items.length - 3} more items
-                                </div>
-                              )}
                               <Button 
                                 size="sm" 
                                 variant="default" 
@@ -1980,7 +1964,7 @@ const ShoppingListPage: React.FC = () => {
                           {item.reason}
                         </div>
                       )}
-
+                      
                       {item.dealComparison && (
                         <div className="mt-2 p-2 bg-blue-50 rounded-md border-l-2 border-blue-400">
                           <div className="text-xs font-medium text-blue-800 mb-1">
@@ -2002,7 +1986,7 @@ const ShoppingListPage: React.FC = () => {
                             </div>
                           )}
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 ))}
