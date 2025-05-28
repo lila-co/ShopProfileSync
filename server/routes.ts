@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { ZodError } from "zod";
 import { parseReceiptImage } from "./services/receiptParser";
-import { generateRecommendations, analyzePurchasePatterns, extractRecipeIngredients } from "./services/recommendationEngine";
+import { generateRecommendations, analyzePurchasePatterns, extractRecipeIngredients, generatePersonalizedSuggestions } from "./services/recommendationEngine";
 import { getRetailerAPI } from "./services/retailerIntegration";
 import OpenAI from "openai";
 import { productCategorizer, ProductCategory, QuantityNormalization } from './services/productCategorizer';
@@ -805,135 +805,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Generate shopping list preview (separate endpoint for previewing items)
+  // Generate shopping list preview with personalized recommendations
   app.post('/api/shopping-lists/preview', async (req: Request, res: Response) => {
     try {
-      const userId = 1; // For demo purposes, use default user
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
+      const userId = req.body.userId || 1; // Default to user 1 for demo
 
-      // For demo purposes, provide a rich set of realistic shopping recommendations
-      // with personalized insights and deal information
-      const recommendedItems = [
-        { 
-          productName: 'Milk', 
-          quantity: 1, 
+      // Get user preferences
+      const user = await storage.getUser(userId);
+      const userPrefersBulk = user?.buyInBulk || false;
+      const userPrioritizesCost = user?.prioritizeCostSavings || false;
+
+      // Mock deal data with bulk vs standard options for demonstration
+      const availableDeals = [
+        // Soda Water Example (as mentioned in the query)
+        {
+          productName: 'Sparkling Water',
+          retailerName: 'Costco',
+          salePrice: 3000, // $30.00
+          quantity: 36,
+          unit: 'CANS',
+          savings: 500
+        },
+        {
+          productName: 'Sparkling Water',
+          retailerName: 'Target', 
+          salePrice: 1500, // $15.00
+          quantity: 24,
+          unit: 'CANS',
+          savings: 300
+        },
+        // Milk examples
+        {
+          productName: 'Milk',
+          retailerName: 'Costco',
+          salePrice: 899, // $8.99 for 2 gallons
+          quantity: 2,
           unit: 'GALLON',
-          suggestedRetailerId: 1,
-          suggestedPrice: 359,
-          savings: 40,
-          reason: "You typically buy milk weekly. On sale at Walmart today!",
-          daysUntilPurchase: 2,
-          isSelected: true
+          savings: 200
         },
-        { 
+        {
+          productName: 'Milk',
+          retailerName: 'Walmart',
+          salePrice: 359, // $3.59 per gallon
+          quantity: 1,
+          unit: 'GALLON', 
+          savings: 40
+        },
+        // Eggs
+        {
+          productName: 'Eggs',
+          retailerName: 'Costco',
+          salePrice: 899, // $8.99 for 24 count
+          quantity: 24,
+          unit: 'COUNT',
+          savings: 150
+        },
+        {
           productName: 'Eggs', 
-          quantity: 1, 
-          unit: 'DOZEN',
-          suggestedRetailerId: 2,
-          suggestedPrice: 249,
-          savings: 50,
-          reason: "You're running low based on your purchase pattern",
-          daysUntilPurchase: 3,
-          isSelected: true
-        },
-        { 
-          productName: 'Bread', 
-          quantity: 1, 
-          unit: 'LOAF',
-          suggestedRetailerId: 3,
-          suggestedPrice: 229,
-          savings: 30,
-          reason: "You buy this every 5 days on average",
-          daysUntilPurchase: 1,
-          isSelected: true
-        },
-        { 
-          productName: 'Bananas', 
-          quantity: 1, 
-          unit: 'BUNCH',
-          suggestedRetailerId: 1,
-          suggestedPrice: 129,
-          savings: 20,
-          reason: "Currently on special at Walmart",
-          daysUntilPurchase: 4,
-          isSelected: true
-        },
+          retailerName: 'Target',
+          salePrice: 249, // $2.49 per dozen
+          quantity: 12,
+          unit: 'COUNT',
+          savings: 50
+        }
+      ];
+
+      // Analyze deals considering user preferences
+      const analyzedDeals = analyzeBulkVsUnitPricing(availableDeals, userPrefersBulk);
+
+      // Convert to recommendation format
+      const recommendedItems = analyzedDeals.map(deal => ({
+        productName: deal.productName,
+        quantity: deal.quantity,
+        unit: deal.unit,
+        suggestedRetailerId: 1, // Mock Retailer ID
+        suggestedPrice: deal.salePrice,
+        savings: deal.savings,
+        reason: `Best deal based on ${userPrefersBulk ? 'bulk preference' : 'unit price'} at ${deal.retailerName}`,
+        daysUntilPurchase: 2, // Mock value
+        isSelected: true
+      }));
+
+      // Additional hardcoded items
+      const additionalItems = [
         { 
           productName: 'Ground Coffee', 
           quantity: 1, 
-          unit: 'BAG',
-          suggestedRetailerId: 3,
-          suggestedPrice: 899,
-          savings: 200,
-          reason: "Running low based on your 2-week purchase cycle",
-          daysUntilPurchase: 0,
+          unit: 'LB',
+          suggestedRetailerId: 2,
+          suggestedPrice: 1299,
+          savings: 100,
+          reason: "Premium coffee on sale at Target",
+          daysUntilPurchase: 5,
           isSelected: true
         },
         { 
           productName: 'Chicken Breast', 
           quantity: 2, 
           unit: 'LB',
-          suggestedRetailerId: 2,
-          suggestedPrice: 599,
-          savings: 100,
-          reason: "25% off this week at Target",
-          daysUntilPurchase: 1,
-          isSelected: true
-        },
-        { 
-          productName: 'Yogurt', 
-          quantity: 6, 
-          unit: 'CAN',
-          suggestedRetailerId: 3,
-          suggestedPrice: 149,
-          savings: 30,
-          reason: "Buy 5 get 1 free this week at Kroger",
-          daysUntilPurchase: 2,
-          isSelected: true
-        },
-        { 
-          productName: 'Pasta', 
-          quantity: 2, 
-          unit: 'BOX',
           suggestedRetailerId: 1,
-          suggestedPrice: 129,
-          savings: 0,
-          reason: "Based on your monthly pasta purchase",
-          daysUntilPurchase: 0,
-          isSelected: true
-        },
-        { 
-          productName: 'Pasta Sauce', 
-          quantity: 1, 
-          unit: 'JAR',
-          suggestedRetailerId: 1,
-          suggestedPrice: 329,
-          savings: 0,
-          reason: "Pairs with pasta in your cart",
-          daysUntilPurchase: 0,
-          isSelected: true
-        },
-        { 
-          productName: 'Apples', 
-          quantity: 1, 
-          unit: 'BAG',
-          suggestedRetailerId: 2,
-          suggestedPrice: 459,
-          savings: 40,
-          reason: "Fresh seasonal Honeycrisp apples on sale",
-          daysUntilPurchase: 3,
+          suggestedPrice: 699,
+          savings: 80,
+          reason: "Protein staple - family pack sale at Walmart",
+          daysUntilPurchase: 6,
           isSelected: true
         }
       ];
 
+      // Combine analyzed deals with additional items
+      const allRecommendedItems = [...recommendedItems, ...additionalItems];
+
       // Return the recommendations for preview
       res.json({
         userId,
-        items: recommendedItems,
-        totalSavings: recommendedItems.reduce((sum, item) => sum + (item.savings || 0), 0)
+        items: allRecommendedItems,
+        totalSavings: allRecommendedItems.reduce((sum, item) => sum + (item.savings || 0), 0)
       });
     } catch (error) {
       handleError(res, error);
@@ -1789,6 +1775,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       res.json(similarProfileAnalysis);
+    }```javascript
     } catch (error) {
       console.error('Error in similar profiles endpoint:', error);
       res.status(500).json({ 

@@ -1964,6 +1964,29 @@ const ShoppingListPage: React.FC = () => {
                           {item.reason}
                         </div>
                       )}
+                      
+                      {item.dealComparison && (
+                        <div className="mt-2 p-2 bg-blue-50 rounded-md border-l-2 border-blue-400">
+                          <div className="text-xs font-medium text-blue-800 mb-1">
+                            {item.dealComparison.type === 'standard_better_value' && '💡 Deal Alert'}
+                            {item.dealComparison.type === 'bulk_preference' && '📦 Bulk Option'}  
+                            {item.dealComparison.type === 'bulk_is_best_value' && '💰 Best Value'}
+                          </div>
+                          <div className="text-xs text-blue-700">
+                            {item.dealComparison.message}
+                          </div>
+                          {item.dealComparison.potentialSavings && (
+                            <div className="text-xs text-green-600 font-medium mt-1">
+                              Save ${item.dealComparison.potentialSavings} vs bulk option
+                            </div>
+                          )}
+                          {item.dealComparison.unitPriceDifference && (
+                            <div className="text-xs text-gray-600">
+                              Unit price difference: {item.dealComparison.unitPriceDifference}%
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
