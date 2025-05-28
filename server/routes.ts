@@ -903,7 +903,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           savings: 0,
           reason: "Based on your monthly pasta purchase",
           daysUntilPurchase: 0,
-<newline>          isSelected: true
+          isSelected: true
         },
         { 
           productName: 'Pasta Sauce', 
