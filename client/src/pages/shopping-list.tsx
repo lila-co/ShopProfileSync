@@ -1292,7 +1292,7 @@ bread')) shelfLocation = 'End Cap';
                     <>
                       {/* Incomplete items grouped by category */}
                       {Object.entries(incompleteGrouped).map(([category, categoryItems]) => (
-                        <div key={`incomplete-${category}`} className="space-y-2">
+                        <div key={'incomplete-' + category} className="space-y-2">
                           <div className="flex items-center space-x-2 mt-4 mb-2">
                             <span className="text-lg">{getCategoryIcon(category)}</span>
                             <h4 className="font-semibold text-gray-700">{category}</h4>
