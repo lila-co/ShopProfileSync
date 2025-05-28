@@ -15,6 +15,10 @@ export const anomalyTypeEnum = pgEnum('anomaly_type', [
   'VACATION', 'SEASONAL', 'HOLIDAY', 'SICKNESS', 'GUESTS', 'OTHER'
 ]);
 
+export const userRoleEnum = pgEnum('user_role', [
+  'owner', 'admin', 'employee', 'test_user', 'customer'
+]);
+
 // User Schema
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -23,6 +27,8 @@ export const users = pgTable("users", {
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   email: text("email").notNull().unique(),
+  role: userRoleEnum("role").default("customer"),
+  isAdmin: boolean("is_admin").default(false),
   householdType: text("household_type"),
   householdSize: integer("household_size"),
   preferNameBrand: boolean("prefer_name_brand").default(false),

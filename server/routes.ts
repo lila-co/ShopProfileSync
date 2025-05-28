@@ -139,8 +139,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User profile routes
   app.get('/api/user/profile', async (req: Request, res: Response) => {
     try {
-      // For demo purposes, we'll return a mock user since we don't have auth
-      const user = await storage.getDefaultUser();
+      // Check if there's a session user ID, otherwise use default
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
       res.json(user);
     } catch (error) {
       handleError(res, error);
@@ -149,20 +156,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/user/profile', async (req: Request, res: Response) => {
     try {
-      // Get the default user ID for demo purposes
-      const defaultUser = await storage.getDefaultUser();
+      // Get the current user ID from headers or use default
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
 
-      // Add the ID to the request body
       const userData = {
         ...req.body,
-        id: defaultUser.id
+        id: userId
       };
 
-      // Simple update via defaultUser to avoid ID issues
       const updatedUser = await storage.updateUser(userData);
       res.json(updatedUser);
     } catch (error) {
       console.error('Profile update error:', error);
+      handleError(res, error);
+    }
+  });
+
+  // Role switching endpoint
+  app.post('/api/user/switch-role', async (req: Request, res: Response) => {
+    try {
+      const { targetRole } = req.body;
+      const currentUserId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+
+      if (!targetRole) {
+        return res.status(400).json({ message: 'Target role is required' });
+      }
+
+      const targetUser = await storage.switchUserRole(currentUserId, targetRole);
+      res.json(targetUser);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Get all users (admin only)
+  app.get('/api/admin/users', async (req: Request, res: Response) => {
+    try {
+      const currentUserId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+      
+      const currentUser = await storage.getUser(currentUserId);
+      if (!currentUser || (currentUser.role !== 'owner' && currentUser.role !== 'admin')) {
+        return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+      }
+
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
       handleError(res, error);
     }
   });

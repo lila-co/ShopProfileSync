@@ -17,8 +17,8 @@ const AdminProfilePage: React.FC = () => {
     queryKey: ['/api/user/profile'],
   });
 
-  // Check if user has admin privileges (you can implement your own logic here)
-  const isAdmin = user?.role === 'admin' || user?.username === 'admin' || user?.isAdmin;
+  // Check if user has admin privileges
+  const isAdmin = user?.role === 'owner' || user?.role === 'admin' || user?.username === 'admin' || user?.isAdmin;
 
   if (!isAdmin) {
     return (

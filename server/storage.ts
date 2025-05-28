@@ -118,6 +118,10 @@ export interface IStorage {
   recordAffiliateConversion(conversion: InsertAffiliateConversion): Promise<AffiliateConversion>;
   getAffiliateConversions(userId?: number, status?: string): Promise<AffiliateConversion[]>;
   updateAffiliateConversionStatus(id: number, status: string): Promise<AffiliateConversion>;
+
+  // Role switching methods
+  switchUserRole(currentUserId: number, targetRole: string): Promise<User>;
+  getAllUsers(): Promise<User[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -193,8 +197,28 @@ export class MemStorage implements IStorage {
       buyInBulk: true,
       prioritizeCostSavings: true,
       shoppingRadius: 10,
+      role: 'owner'
     };
     this.users.set(defaultUser.id, defaultUser);
+
+        // Create test user
+    const testUser: User = {
+      id: this.userIdCounter++,
+      username: "testuser",
+      password: "hashed_password",
+      firstName: "Test",
+      lastName: "User",
+      email: "test.user@example.com",
+      householdType: "SINGLE",
+      householdSize: 1,
+      preferNameBrand: false,
+      preferOrganic: true,
+      buyInBulk: false,
+      prioritizeCostSavings: false,
+      shoppingRadius: 5,
+      role: 'test_user'
+    };
+    this.users.set(testUser.id, testUser);
 
     // Create retailers
     const retailers = [
@@ -426,6 +450,37 @@ export class MemStorage implements IStorage {
     const updatedUser = { ...user, ...userData };
     this.users.set(userId, updatedUser);
     return updatedUser;
+  }
+
+  async switchUserRole(currentUserId: number, targetRole: string): Promise<User> {
+    const currentUser = this.users.get(currentUserId);
+    if (!currentUser) {
+      throw new Error('Current user not found');
+    }
+
+    // Only owner can switch roles
+    if (currentUser.role !== 'owner') {
+      throw new Error('Only the owner can switch user roles');
+    }
+
+    // Find the target user based on role
+    let targetUser: User | undefined;
+
+    if (targetRole === 'test_user') {
+      targetUser = Array.from(this.users.values()).find(u => u.role === 'test_user');
+    } else if (targetRole === 'owner') {
+      targetUser = Array.from(this.users.values()).find(u => u.role === 'owner');
+    }
+
+    if (!targetUser) {
+      throw new Error(`No user found with role: ${targetRole}`);
+    }
+
+    return targetUser;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
   }
 
   // Retailer methods
