@@ -910,7 +910,7 @@ const ShoppingListPage: React.FC = () => {
         const sortedAisleGroups = Object.values(aisleGroups).sort((a: any, b: any) => a.order - b.order);
 
         // Calculate route optimization
-        const totalAisles = sortedAisleroups.length;
+        const totalAisles = sortedAisleGroups.length;
         const estimatedTime = Math.max(15, totalAisles * 3 + store.items.length * 0.5);
 
         return {
@@ -2386,7 +2386,7 @@ const ShoppingListPage: React.FC = () => {
               {importRecipeMutation.isPending ? 'Adding...' : `Add ${recipePreviewItems.filter(item => item.isSelected).length} Items`}
             </Button>
           </DialogFooter>
-        </DialogContent>
+        </Dialog>
       </Dialog>
 
       {/* AI Categorization Results Dialog */}
