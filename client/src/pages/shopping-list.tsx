@@ -828,6 +828,8 @@ const ShoppingListPage: React.FC = () => {
         return 'Personal Care';
       } else if (name.includes('towel') || name.includes('cleaner') || name.includes('detergent')) {
         return 'Household';
+      } else if (name.includes('Pantry')) {
+        return 'Pantry';
       } else {
         return 'Pantry';
       }
@@ -904,7 +906,8 @@ const ShoppingListPage: React.FC = () => {
         let shelfLocation = '';
         const name = item.productName.toLowerCase();
         if (name.includes('milk')) shelfLocation = 'Cooler Section';
-        else if (name.includes('bread')) shelfLocation = 'End Cap';
+        else if (```text
+bread')) shelfLocation = 'End Cap';
         else if (name.includes('banana')) shelfLocation = 'Front Display';
 
         aisleGroups[aisleInfo.aisle].items.push({
@@ -1246,7 +1249,8 @@ const ShoppingListPage: React.FC = () => {
           </TabsList>
 
           <TabsContent value="items" className="pt-4">
-            <div className="space-y-3 mb-4 sm:mb-6">
+            
+<div className="space-y-3">
               {items.length === 0 ? (
                 <Card>
                   <CardContent className="p-4 sm:p-6 text-center text-gray-500">
@@ -1256,69 +1260,174 @@ const ShoppingListPage: React.FC = () => {
                   </CardContent>
                 </Card>
               ) : (
-                items.map((item) => (
-                  <Card key={item.id} className={item.isCompleted ? "opacity-60" : ""}>
-                    <CardContent className="p-3">
-                      <div className="flex justify-between items-start sm:items-center">
-                        <div className="flex items-start sm:items-center flex-1">
-                          <input
-                            type="checkbox"
-                            checked={item.isCompleted}
-                            onChange={() => handleToggleItem(item.id, item.isCompleted)}
-                            className="h-5 w-5 text-primary rounded mr-3 mt-1 sm:mt-0"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex flex-wrap sm:flex-nowrap sm:items-center gap-1 sm:gap-2">
-                              <span className={`font-medium break-words ${item.isCompleted ? "line-through text-gray-500" : "text-gray-800"}`}>
-                                {getCategoryIcon('Pantry & Canned Goods')} {item.productName}
-                              </span>
-                              <span className="text-sm bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full whitespace-nowrap">
-                                Qty: {item.quantity} {item.unit && (
-                                  <span className="text-xs text-gray-500">
-                                    {item.unit === "LB" ? "lbs" : 
-                                     item.unit === "OZ" ? "oz" : 
-                                     item.unit === "PKG" ? "pkg" : 
-                                     item.unit === "BOX" ? "box" : 
-                                     item.unit === "CAN" ? "can" : 
-                                     item.unit === "BOTTLE" ? "bottle" : 
-                                     item.unit === "JAR" ? "jar" : 
-                                     item.unit === "BUNCH" ? "bunch" : 
-                                     item.unit === "ROLL" ? "roll" : ""}
-                                  </span>
-                                )}
-                              </span>
-                            </div>
-                            {item.suggestedRetailerId && item.suggestedPrice && (
-                              <div className="flex items-center text-xs text-gray-500 mt-1">
-                                <span>
-                                  Best price: ${(item.suggestedPrice / 100).toFixed(2)} at Retailer #{item.suggestedRetailerId}
-                                </span>
-                              </div>
-                            )}
+                (() => {
+                  // Group items by category for display
+                  const getCategoryFromName = (productName: string) => {
+                    const name = productName.toLowerCase();
+                    if (/\b(banana|apple|orange|grape|strawberr|tomato|onion|carrot|potato|lettuce|spinach)\w*/i.test(name)) return 'Produce';
+                    if (/\b(milk|cheese|yogurt|egg|butter|cream)\w*/i.test(name)) return 'Dairy & Eggs';
+                    if (/\b(beef|chicken|pork|turkey|fish|meat|salmon|shrimp)\w*/i.test(name)) return 'Meat & Seafood';
+                    if (/\b(bread|loaf|roll|bagel|muffin|cake)\w*/i.test(name)) return 'Bakery';
+                    if (/\b(rice|pasta|bean|sauce|soup|cereal|flour|sugar|salt)\w*/i.test(name)) return 'Pantry & Canned Goods';
+                    if (/\b(frozen|ice cream|pizza)\w*/i.test(name)) return 'Frozen Foods';
+                    if (/\b(shampoo|soap|toothpaste|deodorant|lotion)\w*/i.test(name)) return 'Personal Care';
+                    if (/\b(cleaner|detergent|towel|tissue|toilet paper)\w*/i.test(name)) return 'Household Items';
+                    return 'Other';
+                  };
+
+                  const getCategoryIcon = (category: string) => {
+                    switch (category) {
+                      case 'Produce': return '🍎';
+                      case 'Dairy & Eggs': return '🥛';
+                      case 'Meat & Seafood': return '🥩';
+                      case 'Bakery': return '🍞';
+                      case 'Pantry & Canned Goods': return '🥫';
+                      case 'Frozen Foods': return '❄️';
+                      case 'Personal Care': return '🧼';
+                      case 'Household Items': return '🏠';
+                      default: return '🛒';
+                    }
+                  };
+
+                  // Separate completed and incomplete items
+                  const incompleteItems = items.filter(item => !item.isCompleted);
+                  const completedItems = items.filter(item => item.isCompleted);
+
+                  // Group incomplete items by category
+                  const incompleteGrouped: { [key: string]: ShoppingListItem[] } = {};
+                  incompleteItems.forEach(item => {
+                    const category = getCategoryFromName(item.productName);
+                    if (!incompleteGrouped[category]) {
+                      incompleteGrouped[category] = [];
+                    }
+                    incompleteGrouped[category].push(item);
+                  });
+
+                  return (
+                    <>
+                      {/* Incomplete items grouped by category */}
+                      {Object.entries(incompleteGrouped).map(([category, categoryItems]) => (
+                        <div key={`incomplete-${category}`} className="space-y-2">
+                          <div className="flex items-center space-x-2 mt-4 mb-2">
+                            <span className="text-lg">{getCategoryIcon(category)}</span>
+                            <h4 className="font-semibold text-gray-700">{category}</h4>
+                            <div className="flex-1 h-px bg-gray-200"></div>
+                            <span className="text-xs text-gray-500">{categoryItems.length} items</span>
+                          </div>
+                          {categoryItems.map((item: ShoppingListItem) => (
+                            <Card key={item.id} className="ml-2">
+                              <CardContent className="p-3">
+                                <div className="flex justify-between items-center">
+                                  <div className="flex items-center flex-1">
+                                    <input
+                                      type="checkbox"
+                                      checked={item.isCompleted}
+                                      onChange={() => handleToggleItem(item.id, item.isCompleted)}
+                                      className="h-5 w-5 text-primary rounded mr-3"
+                                    />
+                                    <div className="flex-1">
+                                      <div className="flex items-center">
+                                        <span className="font-medium text-gray-800">
+                                          {item.productName}
+                                        </span>
+                                        <span className="ml-2 text-sm bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
+                                          Qty: {item.quantity} {item.unit && item.unit !== "COUNT" && (
+                                            <span className="text-xs text-gray-500">{item.unit.toLowerCase()}</span>
+                                          )}
+                                        </span>
+                                      </div>
+                                      {item.suggestedRetailerId && item.suggestedPrice && (
+                                        <div className="flex items-center text-xs text-gray-500 mt-1">
+                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/>
+                                            <path d="M3 9V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4"/>
+                                          </svg>
+                                          <span>
+                                            Best price: ${(item.suggestedPrice / 100).toFixed(2)} at Retailer #{item.suggestedRetailerId}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex space-x-2">
+                                    <button
+                                      onClick={() => handleEditItem(item)}
+                                      className="text-gray-400 hover:text-blue-500"
+                                      aria-label="Edit item"
+                                      title="Edit item"
+                                    >
+                                      <Pencil className="h-5 w-5" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteItem(item.id)}
+                                      className="text-gray-400 hover:text-red-500"
+                                      aria-label="Delete item"
+                                      title="Delete item"
+                                    >
+                                      <Trash2 className="h-5 w-5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      ))}
+
+                      {/* Completed items section */}
+                      {completedItems.length > 0 && (
+                        <div className="mt-6">
+                          <div className="flex items-center space-x-2 mb-3">
+                            <Check className="h-5 w-5 text-green-600" />
+                            <h4 className="font-semibold text-gray-700">Completed</h4>
+                            <div className="flex-1 h-px bg-gray-200"></div>
+                            <span className="text-xs text-gray-500">{completedItems.length} items</span>
+                          </div>
+                          <div className="space-y-2">
+                            {completedItems.map((item: ShoppingListItem) => (
+                              <Card key={item.id} className="opacity-60 ml-2">
+                                <CardContent className="p-3">
+                                  <div className="flex justify-between items-center">
+                                    <div className="flex items-center flex-1">
+                                      <input
+                                        type="checkbox"
+                                        checked={item.isCompleted}
+                                        onChange={() => handleToggleItem(item.id, item.isCompleted)}
+                                        className="h-5 w-5 text-primary rounded mr-3"
+                                      />
+                                      <div className="flex-1">
+                                        <div className="flex items-center">
+                                          <span className="font-medium line-through text-gray-500">
+                                            {item.productName}
+                                          </span>
+                                          <span className="ml-2 text-sm bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
+                                            Qty: {item.quantity} {item.unit && item.unit !== "COUNT" && (
+                                              <span className="text-xs text-gray-500">{item.unit.toLowerCase()}</span>
+                                            )}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="flex space-x-2">
+                                      <button
+                                        onClick={() => handleDeleteItem(item.id)}
+                                        className="text-gray-400 hover:text-red-500"
+                                        aria-label="Delete item"
+                                        title="Delete item"
+                                      >
+                                        <Trash2 className="h-5 w-5" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
                           </div>
                         </div>
-                        <div className="flex space-x-1 sm:space-x-2 ml-2 shrink-0">
-                          <button
-                            onClick={() => handleEditItem(item)}
-                            className="text-gray-400 hover:text-blue-500 p-1"
-                            aria-label="Edit item"
-                            title="Edit item"
-                          >
-                            <Pencil className="h-4 w-4 sm:h-5 sm:w-5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteItem(item.id)}
-                            className="text-gray-400 hover:text-red-500 p-1"
-                            aria-label="Delete item"
-                            title="Delete item"
-                          >
-                            <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
-                          </button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
+                      )}
+                    </>
+                  );
+                })()
               )}
             </div>
 
@@ -1515,7 +1624,7 @@ const ShoppingListPage: React.FC = () => {
                                 className="w-full text-xs sm:text-sm mt-2"
                                 onClick={() => handleViewShoppingPlan({
                                   ...bestValueOptimization.data,
-                                  planType: "Best Value Multi-Store"
+                                  planType: ""Best Value Multi-Store"
                                 }, "Best Value - Multi-Store")}
                               >
                                 <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
@@ -2292,6 +2401,7 @@ const ShoppingListPage: React.FC = () => {
                 <>
                   {/* Total Cost Section */}
                   <div className="bg-primary/5 rounded-lg p-3 sm:p-4 border border-primary/20">
+```text
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                       <h3 className="font-bold text-primary text-base sm:text-lg">Total Cost</h3>
                       <div className="text-left sm:text-right">
