@@ -504,7 +504,8 @@ export class MemStorage implements IStorage {
   async createPurchase(purchase: InsertPurchase): Promise<Purchase> {
     const id = this.purchaseIdCounter++;
     const newPurchase: Purchase = { ...purchase, id };
-    this.purchases.set(id, newPurchase);    return newPurchase;
+    this.purchases.set(id, newPurchase);
+    return newPurchase;
   }
 
   async createPurchaseFromReceipt(receiptData: any): Promise<Purchase> {
@@ -940,6 +941,161 @@ export class MemStorage implements IStorage {
     return Math.floor(Math.random() * 45) + 5;
   }
 
+  // Cleanup methods
+  async cleanupExpiredCirculars(): Promise<number> {
+    const now = new Date();
+    let cleanedCount = 0;
+
+    // Clean up expired circulars from memory
+    for (const [id, circular] of this.weeklyCirculars.entries()) {
+      if (circular.isActive && new Date(circular.endDate) < now) {
+        circular.isActive = false;
+        cleanedCount++;
+      }
+    }
+
+    // Clean up expired deals
+    for (const [id, deal] of this.storeDeals.entries()) {
+      if (new Date(deal.endDate) < now) {
+        this.storeDeals.delete(id);
+      }
+    }
+
+    console.log(`Cleaned up ${cleanedCount} expired circulars from memory`);
+    return cleanedCount;
+  }
+
+  // Affiliate Partner methods
+  async getAffiliatePartners(): Promise<AffiliatePartner[]> {
+    return Array.from(this.affiliatePartners.values());
+  }
+
+  async getAffiliatePartner(id: number): Promise<AffiliatePartner | undefined> {
+    return this.affiliatePartners.get(id);
+  }
+
+  async createAffiliatePartner(partner: InsertAffiliatePartner): Promise<AffiliatePartner> {
+    const id = this.affiliatePartnerIdCounter++;
+    const newPartner: AffiliatePartner = { ...partner, id };
+    this.affiliatePartners.set(id, newPartner);
+    return newPartner;
+  }
+
+  async updateAffiliatePartner(id: number, updates: Partial<AffiliatePartner>): Promise<AffiliatePartner> {
+    const partner = this.affiliatePartners.get(id);
+    if (!partner) throw new Error("Affiliate partner not found");
+    
+    const updatedPartner = { ...partner, ...updates };
+    this.affiliatePartners.set(id, updatedPartner);
+    return updatedPartner;
+  }
+
+  async deleteAffiliatePartner(id: number): Promise<void> {
+    if (!this.affiliatePartners.has(id)) {
+      throw new Error("Affiliate partner not found");
+    }
+    this.affiliatePartners.delete(id);
+  }
+
+  // Affiliate Product methods
+  async getAffiliateProducts(partnerId?: number, category?: string): Promise<AffiliateProduct[]> {
+    let products = Array.from(this.affiliateProducts.values());
+
+    if (partnerId) {
+      products = products.filter(product => product.partnerId === partnerId);
+    }
+
+    if (category) {
+      products = products.filter(product => product.category === category);
+    }
+
+    return products;
+  }
+
+  async getAffiliateProduct(id: number): Promise<AffiliateProduct | undefined> {
+    return this.affiliateProducts.get(id);
+  }
+
+  async getFeaturedAffiliateProducts(): Promise<AffiliateProduct[]> {
+    return Array.from(this.affiliateProducts.values()).filter(product => product.isFeatured);
+  }
+
+  async createAffiliateProduct(product: InsertAffiliateProduct): Promise<AffiliateProduct> {
+    const id = this.affiliateProductIdCounter++;
+    const newProduct: AffiliateProduct = { ...product, id };
+    this.affiliateProducts.set(id, newProduct);
+    return newProduct;
+  }
+
+  async updateAffiliateProduct(id: number, updates: Partial<AffiliateProduct>): Promise<AffiliateProduct> {
+    const product = this.affiliateProducts.get(id);
+    if (!product) throw new Error("Affiliate product not found");
+    
+    const updatedProduct = { ...product, ...updates };
+    this.affiliateProducts.set(id, updatedProduct);
+    return updatedProduct;
+  }
+
+  async deleteAffiliateProduct(id: number): Promise<void> {
+    if (!this.affiliateProducts.has(id)) {
+      throw new Error("Affiliate product not found");
+    }
+    this.affiliateProducts.delete(id);
+  }
+
+  // Affiliate Click methods
+  async recordAffiliateClick(click: InsertAffiliateClick): Promise<AffiliateClick> {
+    const id = this.affiliateClickIdCounter++;
+    const newClick: AffiliateClick = { ...click, id };
+    this.affiliateClicks.set(id, newClick);
+    return newClick;
+  }
+
+  async getAffiliateClicks(userId?: number, productId?: number): Promise<AffiliateClick[]> {
+    let clicks = Array.from(this.affiliateClicks.values());
+
+    if (userId) {
+      clicks = clicks.filter(click => click.userId === userId);
+    }
+
+    if (productId) {
+      clicks = clicks.filter(click => click.productId === productId);
+    }
+
+    return clicks;
+  }
+
+  // Affiliate Conversion methods
+  async recordAffiliateConversion(conversion: InsertAffiliateConversion): Promise<AffiliateConversion> {
+    const id = this.affiliateConversionIdCounter++;
+    const newConversion: AffiliateConversion = { ...conversion, id };
+    this.affiliateConversions.set(id, newConversion);
+    return newConversion;
+  }
+
+  async getAffiliateConversions(userId?: number, status?: string): Promise<AffiliateConversion[]> {
+    let conversions = Array.from(this.affiliateConversions.values());
+
+    if (userId) {
+      conversions = conversions.filter(conversion => conversion.userId === userId);
+    }
+
+    if (status) {
+      conversions = conversions.filter(conversion => conversion.status === status);
+    }
+
+    return conversions;
+  }
+
+  async updateAffiliateConversionStatus(id: number, status: string): Promise<AffiliateConversion> {
+    const conversion = this.affiliateConversions.get(id);
+    if (!conversion) throw new Error("Affiliate conversion not found");
+    
+    const updatedConversion = { ...conversion, status };
+    this.affiliateConversions.set(id, updatedConversion);
+    return updatedConversion;
+  }
+
   async addRetailer(retailerData: { name: string; logoColor: string }): Promise<Retailer> {
     const newRetailer: Retailer = {
       id: this.retailerIdCounter++,
@@ -1009,6 +1165,11 @@ export class DatabaseStorage implements IStorage {
   // Retailer methods
   async getRetailers(): Promise<Retailer[]> {
     return db.select().from(retailers);
+  }
+
+  async getRetailer(id: number): Promise<Retailer | undefined> {
+    const [retailer] = await db.select().from(retailers).where(eq(retailers.id, id));
+    return retailer || undefined;
   }
 
   async createRetailer(retailerData: {
@@ -1518,6 +1679,128 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(purchaseAnomalies)
       .where(eq(purchaseAnomalies.id, id));
+  }
+
+  // Affiliate Partner methods
+  async getAffiliatePartners(): Promise<AffiliatePartner[]> {
+    return db.select().from(affiliatePartners);
+  }
+
+  async getAffiliatePartner(id: number): Promise<AffiliatePartner | undefined> {
+    const [partner] = await db.select().from(affiliatePartners).where(eq(affiliatePartners.id, id));
+    return partner || undefined;
+  }
+
+  async createAffiliatePartner(partnerData: InsertAffiliatePartner): Promise<AffiliatePartner> {
+    const [partner] = await db.insert(affiliatePartners).values(partnerData).returning();
+    return partner;
+  }
+
+  async updateAffiliatePartner(id: number, updates: Partial<AffiliatePartner>): Promise<AffiliatePartner> {
+    const [partner] = await db
+      .update(affiliatePartners)
+      .set(updates)
+      .where(eq(affiliatePartners.id, id))
+      .returning();
+    if (!partner) throw new Error("Affiliate partner not found");
+    return partner;
+  }
+
+  async deleteAffiliatePartner(id: number): Promise<void> {
+    await db.delete(affiliatePartners).where(eq(affiliatePartners.id, id));
+  }
+
+  // Affiliate Product methods
+  async getAffiliateProducts(partnerId?: number, category?: string): Promise<AffiliateProduct[]> {
+    let query = db.select().from(affiliateProducts);
+    
+    if (partnerId) {
+      query = query.where(eq(affiliateProducts.partnerId, partnerId));
+    }
+    
+    if (category) {
+      query = query.where(eq(affiliateProducts.category, category));
+    }
+    
+    return query;
+  }
+
+  async getAffiliateProduct(id: number): Promise<AffiliateProduct | undefined> {
+    const [product] = await db.select().from(affiliateProducts).where(eq(affiliateProducts.id, id));
+    return product || undefined;
+  }
+
+  async getFeaturedAffiliateProducts(): Promise<AffiliateProduct[]> {
+    return db.select().from(affiliateProducts).where(eq(affiliateProducts.isFeatured, true));
+  }
+
+  async createAffiliateProduct(productData: InsertAffiliateProduct): Promise<AffiliateProduct> {
+    const [product] = await db.insert(affiliateProducts).values(productData).returning();
+    return product;
+  }
+
+  async updateAffiliateProduct(id: number, updates: Partial<AffiliateProduct>): Promise<AffiliateProduct> {
+    const [product] = await db
+      .update(affiliateProducts)
+      .set(updates)
+      .where(eq(affiliateProducts.id, id))
+      .returning();
+    if (!product) throw new Error("Affiliate product not found");
+    return product;
+  }
+
+  async deleteAffiliateProduct(id: number): Promise<void> {
+    await db.delete(affiliateProducts).where(eq(affiliateProducts.id, id));
+  }
+
+  // Affiliate Click methods
+  async recordAffiliateClick(clickData: InsertAffiliateClick): Promise<AffiliateClick> {
+    const [click] = await db.insert(affiliateClicks).values(clickData).returning();
+    return click;
+  }
+
+  async getAffiliateClicks(userId?: number, productId?: number): Promise<AffiliateClick[]> {
+    let query = db.select().from(affiliateClicks);
+    
+    if (userId) {
+      query = query.where(eq(affiliateClicks.userId, userId));
+    }
+    
+    if (productId) {
+      query = query.where(eq(affiliateClicks.productId, productId));
+    }
+    
+    return query;
+  }
+
+  // Affiliate Conversion methods
+  async recordAffiliateConversion(conversionData: InsertAffiliateConversion): Promise<AffiliateConversion> {
+    const [conversion] = await db.insert(affiliateConversions).values(conversionData).returning();
+    return conversion;
+  }
+
+  async getAffiliateConversions(userId?: number, status?: string): Promise<AffiliateConversion[]> {
+    let query = db.select().from(affiliateConversions);
+    
+    if (userId) {
+      query = query.where(eq(affiliateConversions.userId, userId));
+    }
+    
+    if (status) {
+      query = query.where(eq(affiliateConversions.status, status));
+    }
+    
+    return query;
+  }
+
+  async updateAffiliateConversionStatus(id: number, status: string): Promise<AffiliateConversion> {
+    const [conversion] = await db
+      .update(affiliateConversions)
+      .set({ status })
+      .where(eq(affiliateConversions.id, id))
+      .returning();
+    if (!conversion) throw new Error("Affiliate conversion not found");
+    return conversion;
   }
 }
 
