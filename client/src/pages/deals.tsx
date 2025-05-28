@@ -43,7 +43,11 @@ interface Deal {
 }
 
 const DealsView: React.FC = () => {
-  const [selectedRetailer, setSelectedRetailer] = React.useState<string>('all');
+  // Get retailer from URL query parameter
+  const urlParams = new URLSearchParams(window.location.search);
+  const retailerFromUrl = urlParams.get('retailer');
+  
+  const [selectedRetailer, setSelectedRetailer] = React.useState<string>(retailerFromUrl || 'all');
   const [selectedCategory, setSelectedCategory] = React.useState<string>('all');
   const queryClient = useQueryClient();
   const { toast } = useToast()
