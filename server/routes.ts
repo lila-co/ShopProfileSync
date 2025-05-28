@@ -900,8 +900,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isSelected: true
         },
         {
-```
-      productName: 'Chicken Breast', 
+          productName: 'Chicken Breast', 
           quantity: 2, 
           unit: 'LB',
           suggestedRetailerId: 1,
