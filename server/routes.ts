@@ -1775,7 +1775,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       res.json(similarProfileAnalysis);
-    }```javascript
     } catch (error) {
       console.error('Error in similar profiles endpoint:', error);
       res.status(500).json({ 
