@@ -2583,13 +2583,6 @@ const ShoppingListPage: React.FC = () => {
                       <p className="text-xs sm:text-sm">Please try generating the shopping plan again.</p>
                     </div>
                   )}
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      <ShoppingCart className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                      <p className="mb-2 text-sm sm:text-base">No shopping plan data available</p>
-                      <p className="text-xs sm:text-sm">Please try generating the shopping plan again.</p>
-                    </div>
-                  )}
 
                   {/* Mobile Action Buttons */}
                   <div className="sticky bottom-0 bg-white border-t border-gray-200 pt-4 mt-6 -mx-4 -mb-4 px-4 pb-4">
