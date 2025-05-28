@@ -1180,20 +1180,19 @@ const ShoppingListPage: React.FC = () => {
                 <ShoppingCart className="h-8 w-8 sm:h-10 sm:w-10 text-primary mb-3 sm:mb-4" />
                 <h3 className="text-sm sm:text-base font-semibold mb-3 sm:mb-4">Generate List</h3>
                 <Button 
-                  className="w-full bg-primary hover:bg-primary/90"
-                  size="sm"
+                  className="w-full bg-primary hover:bg-primary/90 h-10 sm:h-11"
                   onClick={() => previewGenerateMutation.mutate()}
                   disabled={previewGenerateMutation.isPending}
                 >
                   {previewGenerateMutation.isPending ? (
                     <>
-                      <Loader2 className="animate-spin h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-                      <span className="text-xs sm:text-sm">Generating...</span>
+                      <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                      <span className="text-sm font-medium">Generating...</span>
                     </>
                   ) : (
                     <>
-                      <ListChecks className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-                      <span className="text-xs sm:text-sm">Generate</span>
+                      <ListChecks className="h-4 w-4 mr-2" />
+                      <span className="text-sm font-medium">Generate</span>
                     </>
                   )}
                 </Button>
@@ -1207,12 +1206,11 @@ const ShoppingListPage: React.FC = () => {
                 <FileText className="h-8 w-8 sm:h-10 sm:w-10 text-blue-600 mb-3 sm:mb-4" />
                 <h3 className="text-sm sm:text-base font-semibold mb-3 sm:mb-4">Upload List</h3>
                 <Button 
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                  size="sm"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white h-10 sm:h-11"
                   onClick={() => setUploadDialogOpen(true)}
                 >
-                  <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-                  <span className="text-xs sm:text-sm">Upload</span>
+                  <Plus className="h-4 w-4 mr-2" />
+                  <span className="text-sm font-medium">Upload</span>
                 </Button>
               </div>
             </CardContent>
@@ -1224,12 +1222,11 @@ const ShoppingListPage: React.FC = () => {
                 <FileText className="h-8 w-8 sm:h-10 sm:w-10 text-green-600 mb-3 sm:mb-4" />
                 <h3 className="text-sm sm:text-base font-semibold mb-3 sm:mb-4">Import Recipe</h3>
                 <Button 
-                  className="w-full bg-green-600 hover:bg-green-700 text-white"
-                  size="sm"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white h-10 sm:h-11"
                   onClick={() => setRecipeDialogOpen(true)}
                 >
-                  <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-                  <span className="text-xs sm:text-sm">Recipe</span>
+                  <Plus className="h-4 w-4 mr-2" />
+                  <span className="text-sm font-medium">Recipe</span>
                 </Button>
               </div>
             </CardContent>
