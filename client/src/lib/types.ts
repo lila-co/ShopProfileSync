@@ -2,16 +2,19 @@
 export interface User {
   id: number;
   username: string;
+  password?: string;
   firstName: string;
   lastName: string;
   email: string;
+  role?: string;
+  isAdmin?: boolean;
   householdType?: string;
   householdSize?: number;
-  preferNameBrand: boolean;
-  preferOrganic: boolean;
-  buyInBulk: boolean;
-  prioritizeCostSavings: boolean;
-  shoppingRadius: number;
+  preferNameBrand?: boolean;
+  preferOrganic?: boolean;
+  buyInBulk?: boolean;
+  prioritizeCostSavings?: boolean;
+  shoppingRadius?: number;
 }
 
 export interface Retailer {
