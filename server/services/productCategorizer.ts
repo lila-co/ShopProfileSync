@@ -440,7 +440,11 @@ export class ProductCategorizerService {
     return name
       .trim()
       .toLowerCase()
-      .replace(/\b(organic|fresh|premium|store brand|great value)\b/gi, '')
+      // Only remove store brand prefixes, not descriptive words
+      .replace(/\b(great value|market pantry|good & gather|kroger brand|simple truth|store brand)\b/gi, '')
+      .replace(/\b(premium|select|choice)\b/gi, '') // Remove generic quality descriptors
+      // Remove size indicators but preserve product type descriptors
+      .replace(/\b\d+(\.\d+)?\s*(oz|lb|g|kg|ml|l|count|ct|pk|pack|gallon|quart|pint)\b/gi, '')
       .trim()
       .replace(/\s+/g, ' ')
       .split(' ')
@@ -451,6 +455,7 @@ export class ProductCategorizerService {
   // Normalize product names with proper brand capitalization and standardization
   public normalizeProductName(productName: string): string {
     const name = productName.trim();
+    const lowerName = name.toLowerCase();
     
     // Brand name mappings for proper capitalization
     const brandMappings: Record<string, string> = {
@@ -520,8 +525,90 @@ export class ProductCategorizerService {
       'celestial seasonings': 'Celestial Seasonings'
     };
 
-    // Product type standardizations
-    const productStandardizations: Record<string, string> = {
+    // Specific product combinations that should be preserved
+    const productCombinations: Record<string, string> = {
+      'pasta sauce': 'Pasta Sauce',
+      'marinara sauce': 'Marinara Sauce',
+      'tomato sauce': 'Tomato Sauce',
+      'chicken breast': 'Chicken Breast',
+      'chicken thigh': 'Chicken Thigh',
+      'chicken wing': 'Chicken Wings',
+      'ground beef': 'Ground Beef',
+      'ground turkey': 'Ground Turkey',
+      'ground chicken': 'Ground Chicken',
+      'pork chop': 'Pork Chops',
+      'beef steak': 'Beef Steak',
+      'salmon fillet': 'Salmon Fillet',
+      'tuna steak': 'Tuna Steak',
+      'olive oil': 'Olive Oil',
+      'vegetable oil': 'Vegetable Oil',
+      'coconut oil': 'Coconut Oil',
+      'canola oil': 'Canola Oil',
+      'bell pepper': 'Bell Pepper',
+      'sweet potato': 'Sweet Potato',
+      'green bean': 'Green Beans',
+      'black bean': 'Black Beans',
+      'kidney bean': 'Kidney Beans',
+      'pinto bean': 'Pinto Beans',
+      'lima bean': 'Lima Beans',
+      'paper towel': 'Paper Towels',
+      'toilet paper': 'Toilet Paper',
+      'dish soap': 'Dish Soap',
+      'hand soap': 'Hand Soap',
+      'laundry detergent': 'Laundry Detergent',
+      'fabric softener': 'Fabric Softener',
+      'all purpose cleaner': 'All-Purpose Cleaner',
+      'glass cleaner': 'Glass Cleaner',
+      'bathroom cleaner': 'Bathroom Cleaner',
+      'floor cleaner': 'Floor Cleaner',
+      'chicken noodle soup': 'Chicken Noodle Soup',
+      'tomato soup': 'Tomato Soup',
+      'vegetable soup': 'Vegetable Soup',
+      'cream cheese': 'Cream Cheese',
+      'sour cream': 'Sour Cream',
+      'cottage cheese': 'Cottage Cheese',
+      'greek yogurt': 'Greek Yogurt',
+      'vanilla yogurt': 'Vanilla Yogurt',
+      'strawberry yogurt': 'Strawberry Yogurt',
+      'whole milk': 'Whole Milk',
+      'skim milk': 'Skim Milk',
+      '2% milk': '2% Milk',
+      '1% milk': '1% Milk',
+      'almond milk': 'Almond Milk',
+      'soy milk': 'Soy Milk',
+      'oat milk': 'Oat Milk',
+      'coconut milk': 'Coconut Milk',
+      'sandwich bread': 'Sandwich Bread',
+      'wheat bread': 'Wheat Bread',
+      'white bread': 'White Bread',
+      'sourdough bread': 'Sourdough Bread',
+      'rye bread': 'Rye Bread',
+      'garlic powder': 'Garlic Powder',
+      'onion powder': 'Onion Powder',
+      'black pepper': 'Black Pepper',
+      'white pepper': 'White Pepper',
+      'red pepper': 'Red Pepper',
+      'ground coffee': 'Ground Coffee',
+      'coffee bean': 'Coffee Beans',
+      'instant coffee': 'Instant Coffee',
+      'green tea': 'Green Tea',
+      'black tea': 'Black Tea',
+      'herbal tea': 'Herbal Tea',
+      'ice cream': 'Ice Cream',
+      'frozen pizza': 'Frozen Pizza',
+      'frozen vegetable': 'Frozen Vegetables',
+      'frozen fruit': 'Frozen Fruit',
+      'canned corn': 'Canned Corn',
+      'canned bean': 'Canned Beans',
+      'canned tomato': 'Canned Tomatoes',
+      'diced tomato': 'Diced Tomatoes',
+      'crushed tomato': 'Crushed Tomatoes',
+      'half gallon milk': 'Half Gallon Milk',
+      'gallon milk': 'Gallon Milk'
+    };
+
+    // Simple product standardizations (for single words only)
+    const singleWordProducts: Record<string, string> = {
       'milk': 'Milk',
       'bread': 'Bread',
       'eggs': 'Eggs',
@@ -540,8 +627,6 @@ export class ProductCategorizerService {
       'sugar': 'Sugar',
       'salt': 'Salt',
       'pepper': 'Black Pepper',
-      'olive oil': 'Olive Oil',
-      'vegetable oil': 'Vegetable Oil',
       'tomatoes': 'Tomatoes',
       'onions': 'Onions',
       'potatoes': 'Potatoes',
@@ -554,41 +639,54 @@ export class ProductCategorizerService {
       'lettuce': 'Lettuce',
       'spinach': 'Spinach',
       'broccoli': 'Broccoli',
-      'bell pepper': 'Bell Pepper',
       'garlic': 'Garlic',
       'ginger': 'Ginger',
       'basil': 'Fresh Basil',
       'cilantro': 'Fresh Cilantro',
       'parsley': 'Fresh Parsley',
-      'paper towels': 'Paper Towels',
-      'toilet paper': 'Toilet Paper',
-      'dish soap': 'Dish Soap',
-      'laundry detergent': 'Laundry Detergent',
       'shampoo': 'Shampoo',
       'conditioner': 'Conditioner',
       'toothpaste': 'Toothpaste',
       'deodorant': 'Deodorant'
     };
-
-    const lowerName = name.toLowerCase();
     
-    // Check for exact brand matches first
+    // First check for exact brand matches
     for (const [key, value] of Object.entries(brandMappings)) {
       if (lowerName.includes(key)) {
         return value;
       }
     }
     
-    // Check for product standardizations
-    for (const [key, value] of Object.entries(productStandardizations)) {
-      if (lowerName === key || lowerName.includes(key)) {
+    // Then check for specific product combinations (preserves important descriptors)
+    for (const [key, value] of Object.entries(productCombinations)) {
+      if (lowerName.includes(key)) {
         return value;
       }
     }
     
-    // Default capitalization for unmatched items
+    // Check for single word products only if it's an exact match or standalone word
+    const words = lowerName.split(/\s+/);
+    if (words.length === 1) {
+      const singleWord = singleWordProducts[words[0]];
+      if (singleWord) {
+        return singleWord;
+      }
+    }
+    
+    // Default: Clean capitalization while preserving all descriptive words
     return name.split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .map(word => {
+        // Preserve common abbreviations and measurements
+        if (/^\d+(\.\d+)?(oz|lb|g|kg|ml|l|ct|pk)$/i.test(word)) {
+          return word.toUpperCase();
+        }
+        // Preserve parenthetical information
+        if (word.startsWith('(') && word.endsWith(')')) {
+          return word;
+        }
+        // Standard capitalization
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      })
       .join(' ');
   }
 
