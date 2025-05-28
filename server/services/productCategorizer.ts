@@ -308,14 +308,14 @@ export class ProductCategorizerService {
       };
     }
     
-    const normalizedName = this.normalizeProductName(productName);
+    const productNormalizedName = this.normalizeProductName(productName);
     
     const finalCategory = {
       ...bestMatch,
       confidence: Math.max(bestSimilarity, bestMatch.confidence * 0.8),
       typicalRetailNames: this.generateRetailNames(productName),
       brandVariations: this.generateBrandVariations(productName, bestMatch),
-      normalizedName: normalizedName
+      normalizedName: productNormalizedName
     };
     
     return finalCategory;
