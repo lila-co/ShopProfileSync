@@ -926,25 +926,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Import recipe and add ingredients to shopping list
-  app.post('/api/shopping-lists/recipe', async (req: Request, res: Response) => {
+  // Preview recipe ingredients before importing
+  app.post('/api/shopping-lists/recipe/preview', async (req: Request, res: Response) => {
     try {
-      const { recipeUrl, shoppingListId, servings } = req.body;
+      const { recipeUrl, servings } = req.body;
       if (!recipeUrl) {
         return res.status(400).json({ message: 'Recipe URL is required' });
       }
 
-      // In a real app, we would scrape the recipe URL to extract ingredients
-      // For demo purposes, simulate recipe extraction
-      const extractedIngredients = await extractRecipeIngredients(recipeUrl, servings);
+      // Extract ingredients for preview
+      const extractedIngredients = await extractRecipeIngredients(recipeUrl, servings || 4);
+      
+      // Format ingredients for preview
+      const previewItems = extractedIngredients.map(ingredient => ({
+        productName: ingredient.name,
+        quantity: ingredient.quantity,
+        unit: ingredient.unit || 'COUNT',
+        isSelected: true
+      }));
+
+      res.json({ items: previewItems });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Import recipe and add ingredients to shopping list
+  app.post('/api/shopping-lists/recipe', async (req: Request, res: Response) => {
+    try {
+      const { recipeUrl, shoppingListId, servings, items } = req.body;
+      
+      let ingredientsToAdd = [];
+      
+      if (items) {
+        // If items are provided (from preview), use those
+        ingredientsToAdd = items.filter((item: any) => item.isSelected);
+      } else {
+        // If no items provided, extract from URL (backward compatibility)
+        if (!recipeUrl) {
+          return res.status(400).json({ message: 'Recipe URL or items are required' });
+        }
+        const extractedIngredients = await extractRecipeIngredients(recipeUrl, servings);
+        ingredientsToAdd = extractedIngredients.map(ingredient => ({
+          productName: ingredient.name,
+          quantity: ingredient.quantity,
+          unit: ingredient.unit || 'COUNT'
+        }));
+      }
 
       // Add each ingredient to the shopping list
       const addedItems = [];
-      for (const ingredient of extractedIngredients) {
+      for (const ingredient of ingredientsToAdd) {
         const newItem = await storage.addShoppingListItem({
           shoppingListId: shoppingListId || 1, // Default to first list if not specified
-          productName: ingredient.name,
-          quantity: ingredient.quantity
+          productName: ingredient.productName,
+          quantity: ingredient.quantity,
+          unit: ingredient.unit
         });
         addedItems.push(newItem);
       }

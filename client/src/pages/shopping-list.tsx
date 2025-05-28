@@ -70,6 +70,10 @@ const ShoppingListPage: React.FC = () => {
   const [recipeDialogOpen, setRecipeDialogOpen] = useState(false);
   const [recipeUrl, setRecipeUrl] = useState('');
   const [servings, setServings] = useState('4');
+  
+  // Recipe preview state
+  const [recipePreviewDialogOpen, setRecipePreviewDialogOpen] = useState(false);
+  const [recipePreviewItems, setRecipePreviewItems] = useState<any[]>([]);
 
   // Tab state
   const [activeTab, setActiveTab] = useState('items');
@@ -181,23 +185,49 @@ const ShoppingListPage: React.FC = () => {
     }
   });
 
+  // Preview recipe ingredients
+  const previewRecipeMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/shopping-lists/recipe/preview', {
+        recipeUrl,
+        servings: parseInt(servings)
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setRecipePreviewItems(data.items || []);
+      setRecipeDialogOpen(false);
+      setRecipePreviewDialogOpen(true);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to preview recipe ingredients",
+        variant: "destructive"
+      });
+    }
+  });
+
   // Import recipe ingredients
   const importRecipeMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (selectedItems?: any[]) => {
       const defaultList = shoppingLists?.[0];
       if (!defaultList) throw new Error("No shopping list found");
 
       const response = await apiRequest('POST', '/api/shopping-lists/recipe', {
         recipeUrl,
         shoppingListId: defaultList.id,
-        servings: parseInt(servings)
+        servings: parseInt(servings),
+        items: selectedItems
       });
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      setRecipePreviewDialogOpen(false);
       setRecipeDialogOpen(false);
       setRecipeUrl('');
+      setRecipePreviewItems([]);
       toast({
         title: "Recipe Imported",
         description: "Ingredients have been added to your shopping list"
@@ -765,6 +795,13 @@ const ShoppingListPage: React.FC = () => {
     const updatedItems = [...uploadedItems];
     updatedItems[index].isSelected = !updatedItems[index].isSelected;
     setUploadedItems(updatedItems);
+  };
+
+  // Handle toggling recipe preview item selection
+  const handleToggleRecipeItem = (index: number) => {
+    const updatedItems = [...recipePreviewItems];
+    updatedItems[index].isSelected = !updatedItems[index].isSelected;
+    setRecipePreviewItems(updatedItems);
   };
 
   // Handle viewing shopping plan
@@ -2276,10 +2313,74 @@ const ShoppingListPage: React.FC = () => {
               Cancel
             </Button>
             <Button 
-              onClick={() => importRecipeMutation.mutate()} 
-              disabled={!recipeUrl || importRecipeMutation.isPending}
+              onClick={() => previewRecipeMutation.mutate()} 
+              disabled={!recipeUrl || previewRecipeMutation.isPending}
             >
-              {importRecipeMutation.isPending ? 'Importing...' : 'Import'}
+              {previewRecipeMutation.isPending ? 'Loading...' : 'Preview Recipe'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Recipe Preview Dialog */}
+      <Dialog open={recipePreviewDialogOpen} onOpenChange={setRecipePreviewDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Recipe Ingredients Preview</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto py-4">
+            <p className="text-sm text-gray-500 mb-4">
+              Preview of ingredients that will be added to your shopping list from this recipe:
+            </p>
+
+            <div className="space-y-2">
+              {recipePreviewItems.map((item, index) => (
+                <div key={index} className="flex items-center p-2 border rounded-lg">
+                  <input
+                    type="checkbox"
+                    checked={item.isSelected}
+                    onChange={() => handleToggleRecipeItem(index)}
+                    className="h-5 w-5 text-primary rounded mr-3"
+                  />
+                  <div className="flex-1">
+                    <div className="flex flex-col sm:flex-row sm:justify-between">
+                      <div>
+                        <p className="font-medium">{item.productName}</p>
+                        <div className="flex items-center text-sm">
+                          <span className="text-gray-500">
+                            {item.quantity} {item.unit === "LB" ? "lbs" : 
+                              item.unit === "OZ" ? "oz" : 
+                              item.unit === "PKG" ? "pkg" : 
+                              item.unit === "BOX" ? "box" : 
+                              item.unit === "CAN" ? "can" : 
+                              item.unit === "BOTTLE" ? "bottle" :
+                              item.unit === "JAR" ? "jar" : 
+                              item.unit === "BUNCH" ? "bunch" : 
+                              item.unit === "ROLL" ? "roll" : ""}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <DialogFooter className="flex justify-between">
+            <Button 
+              variant="outline" 
+              onClick={() => setRecipePreviewDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                const selectedItems = recipePreviewItems.filter(item => item.isSelected);
+                importRecipeMutation.mutate(selectedItems);
+              }}
+              disabled={importRecipeMutation.isPending || recipePreviewItems.filter(item => item.isSelected).length === 0}
+              className="bg-primary"
+            >
+              {importRecipeMutation.isPending ? 'Adding...' : `Add ${recipePreviewItems.filter(item => item.isSelected).length} Items`}
             </Button>
           </DialogFooter>
         </DialogContent>
