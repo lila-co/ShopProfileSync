@@ -437,8 +437,15 @@ const ProfilePage: React.FC = () => {
           </TabsContent>
         </Tabs>
 
-        {/* Additional Profile Sections */}
-        <div className="mt-6 space-y-4">
+        {/* Account Management Sections - Outside of tabs */}
+        <div className="mt-8 space-y-4">
+          <Separator className="my-6" />
+          
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-gray-800">Account Management</h2>
+            <p className="text-sm text-gray-600">Manage your connections and payment options</p>
+          </div>
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
