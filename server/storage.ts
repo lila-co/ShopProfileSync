@@ -1439,8 +1439,7 @@ export class DatabaseStorage implements IStorage {
     if (!userData.id) throw new Error("User ID is required for update");
 
     try {
-```python
-      const [updatedUser] = await db
+const [updatedUser] = await db
         .update(users)
         .set(userData)
         .where(eq(users.id, userData.id))
