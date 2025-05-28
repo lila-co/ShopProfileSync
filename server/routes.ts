@@ -1928,39 +1928,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ retailerId: null, retailerName: null, items: [], totalCost: 0, availabilityRate: 0 });
       }
 
-      // Single store optimization rule: Find ONE store that has the most items available
-      // Prioritize convenience over cost but still offer good prices
-      const availabilityRate = 0.87; // Kroger has 87% of items available
-      const availableItemCount = Math.floor(items.length * availabilityRate);
-      
-      // Include ALL items, marking some as unavailable if needed
-      const storeItems = items.map((item, index) => ({
-        id: item.id,
-        productName: item.productName,
-        quantity: item.quantity,
-        unit: item.unit,
-        price: 250 + Math.floor(Math.random() * 300), // $2.50-$5.50 range
-        isAvailable: index < availableItemCount, // First X items are available
-        substituteAvailable: index >= availableItemCount ? Math.random() > 0.3 : false
-      }));
+      // Get all retailers to find the best single store option
+      const retailers = await storage.getRetailers();
+      const allDeals = await storage.getDeals();
 
-      // Calculate cost only for available items
-      const availableItems = storeItems.filter(item => item.isAvailable);
-      const totalCost = availableItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      // Evaluate each retailer for single store optimization
+      const retailerScores = retailers.map(retailer => {
+        let availableItems = 0;
+        let totalCost = 0;
+        let dealCount = 0;
+
+        const storeItems = items.map(item => {
+          // Check for deals at this retailer
+          const deal = allDeals.find(d => 
+            d.retailerId === retailer.id && 
+            (d.productName.toLowerCase().includes(item.productName.toLowerCase()) ||
+             item.productName.toLowerCase().includes(d.productName.toLowerCase())) &&
+            new Date(d.endDate) > new Date()
+          );
+
+          // Simulate availability based on retailer type
+          const isAvailable = Math.random() > 0.15; // 85% base availability
+          if (isAvailable) availableItems++;
+
+          // Use deal price if available, otherwise simulate pricing
+          let price;
+          if (deal) {
+            price = deal.salePrice;
+            dealCount++;
+          } else {
+            // Different retailers have different price ranges
+            const basePrice = retailer.name === "Walmart" ? 200 : 
+                            retailer.name === "Target" ? 280 : 
+                            retailer.name === "Kroger" ? 250 : 260;
+            price = basePrice + Math.floor(Math.random() * 200);
+          }
+
+          if (isAvailable) {
+            totalCost += price * item.quantity;
+          }
+
+          return {
+            id: item.id,
+            productName: item.productName,
+            quantity: item.quantity,
+            unit: item.unit,
+            price,
+            isAvailable,
+            substituteAvailable: !isAvailable ? Math.random() > 0.3 : false,
+            dealInfo: deal ? {
+              isDeal: true,
+              savings: deal.regularPrice - deal.salePrice,
+              source: deal.dealSource || 'manual_upload'
+            } : null
+          };
+        });
+
+        // Calculate score: availability + deals - cost impact
+        const availabilityRate = availableItems / items.length;
+        const dealBonus = dealCount * 0.1; // Bonus for having deals
+        const costPenalty = totalCost / 10000; // Small penalty for higher cost
+        const score = availabilityRate + dealBonus - costPenalty;
+
+        return {
+          retailer,
+          storeItems,
+          totalCost,
+          availabilityRate,
+          availableItems,
+          dealCount,
+          score
+        };
+      });
+
+      // Find the best retailer based on score
+      const bestOption = retailerScores.reduce((best, current) => 
+        current.score > best.score ? current : best
+      );
 
       res.json({
-        retailerId: 3,
-        retailerName: "Kroger",
-        items: storeItems,
-        totalCost,
-        availabilityRate,
-        availableItems: availableItemCount,
+        retailerId: bestOption.retailer.id,
+        retailerName: bestOption.retailer.name,
+        items: bestOption.storeItems,
+        totalCost: bestOption.totalCost,
+        availabilityRate: bestOption.availabilityRate,
+        availableItems: bestOption.availableItems,
         totalItems: items.length,
-        address: "123 Main St, San Francisco, CA 94105",
+        address: `123 Main St, San Francisco, CA 94105`, // Mock address
         planType: "Single Store",
         storeCount: 1,
-        missingItems: storeItems.filter(item => !item.isAvailable).length,
-        estimatedTime: 35 // Single store is faster
+        missingItems: bestOption.storeItems.filter(item => !item.isAvailable).length,
+        estimatedTime: 35, // Single store is faster
+        dealCount: bestOption.dealCount
       });
     } catch (error) {
       handleError(res, error);
@@ -1978,78 +2037,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ stores: [], totalCost: 0, totalSavings: 0 });
       }
 
+      // Get all retailers and deals
+      const retailers = await storage.getRetailers();
+      const allDeals = await storage.getDeals();
+
       // Best value optimization rule: Find the cheapest price for EACH item across ALL stores
-      // This may result in shopping at multiple stores but maximizes savings
-      const krogerItems = [];
-      const walmartItems = [];
+      const storeItemMap = new Map();
 
-      // Intelligently assign each item to the store with the best price for that category
+      // For each item, find the best price across all retailers
       for (const item of items) {
-        const itemName = item.productName.toLowerCase();
-        
-        // Kroger typically better for: produce, dairy, bakery
-        const krogerBetter = itemName.includes('milk') || itemName.includes('bread') || 
-                           itemName.includes('banana') || itemName.includes('apple') || 
-                           itemName.includes('strawberr') || itemName.includes('tomato') ||
-                           itemName.includes('cheese') || itemName.includes('yogurt') ||
-                           itemName.includes('chicken') || itemName.includes('pepper');
+        let bestPrice = Infinity;
+        let bestRetailer = null;
+        let bestDeal = null;
 
-        // Walmart typically better for: packaged goods, household items, beverages
-        const walmartBetter = itemName.includes('cola') || itemName.includes('coffee') ||
-                            itemName.includes('pasta') || itemName.includes('sauce') ||
-                            itemName.includes('paper') || itemName.includes('towel') ||
-                            itemName.includes('snack') || itemName.includes('corn') ||
-                            itemName.includes('oil') || itemName.includes('salt');
+        // Check price at each retailer
+        for (const retailer of retailers) {
+          // Check for deals at this retailer
+          const deal = allDeals.find(d => 
+            d.retailerId === retailer.id && 
+            (d.productName.toLowerCase().includes(item.productName.toLowerCase()) ||
+             item.productName.toLowerCase().includes(d.productName.toLowerCase())) &&
+            new Date(d.endDate) > new Date()
+          );
 
-        const itemData = {
-          id: item.id,
-          productName: item.productName,
-          quantity: item.quantity,
-          unit: item.unit,
-          price: 180 + Math.floor(Math.random() * 220), // $1.80-$4.00 range (lower for best value)
-          totalPrice: 0
-        };
+          let price;
+          if (deal) {
+            price = deal.salePrice;
+          } else {
+            // Simulate different price strategies by retailer
+            const itemName = item.productName.toLowerCase();
+            let basePrice = 200; // Default base price
 
-        itemData.totalPrice = itemData.price * itemData.quantity;
+            // Walmart - generally lowest on packaged goods
+            if (retailer.name === "Walmart") {
+              if (itemName.includes('cola') || itemName.includes('coffee') || 
+                  itemName.includes('pasta') || itemName.includes('sauce') ||
+                  itemName.includes('paper') || itemName.includes('snack')) {
+                basePrice = 180; // 10% cheaper on these items
+              } else {
+                basePrice = 220; // Slightly higher on fresh items
+              }
+            }
+            // Kroger - competitive on fresh items
+            else if (retailer.name === "Kroger") {
+              if (itemName.includes('milk') || itemName.includes('bread') || 
+                  itemName.includes('banana') || itemName.includes('chicken') ||
+                  itemName.includes('produce') || itemName.includes('meat')) {
+                basePrice = 190; // Competitive on fresh
+              } else {
+                basePrice = 230;
+              }
+            }
+            // Target - balanced pricing, premium feel
+            else if (retailer.name === "Target") {
+              basePrice = 240; // Generally higher but good quality
+            }
+            // Other retailers
+            else {
+              basePrice = 210 + Math.floor(Math.random() * 40); // Random variation
+            }
 
-        // Assign to store with better pricing for this category
-        if (krogerBetter || (!walmartBetter && Math.random() > 0.5)) {
-          krogerItems.push(itemData);
-        } else {
-          walmartItems.push(itemData);
+            price = basePrice + Math.floor(Math.random() * 100);
+          }
+
+          // Track the best price for this item
+          if (price < bestPrice) {
+            bestPrice = price;
+            bestRetailer = retailer;
+            bestDeal = deal;
+          }
+        }
+
+        // Add item to the best retailer's list
+        if (bestRetailer) {
+          if (!storeItemMap.has(bestRetailer.id)) {
+            storeItemMap.set(bestRetailer.id, {
+              retailerId: bestRetailer.id,
+              retailerName: bestRetailer.name,
+              items: [],
+              subtotal: 0,
+              address: `${100 + bestRetailer.id} Main St, San Francisco, CA 94105`
+            });
+          }
+
+          const itemData = {
+            id: item.id,
+            productName: item.productName,
+            quantity: item.quantity,
+            unit: item.unit,
+            price: bestPrice,
+            totalPrice: bestPrice * item.quantity,
+            dealInfo: bestDeal ? {
+              isDeal: true,
+              savings: bestDeal.regularPrice - bestDeal.salePrice,
+              source: bestDeal.dealSource || 'manual_upload'
+            } : null
+          };
+
+          const store = storeItemMap.get(bestRetailer.id);
+          store.items.push(itemData);
+          store.subtotal += itemData.totalPrice;
         }
       }
 
-      const krogerSubtotal = krogerItems.reduce((sum, item) => sum + item.totalPrice, 0);
-      const walmartSubtotal = walmartItems.reduce((sum, item) => sum + item.totalPrice, 0);
-      const totalCost = krogerSubtotal + walmartSubtotal;
+      // Convert map to array and calculate totals
+      const stores = Array.from(storeItemMap.values());
+      const totalCost = stores.reduce((sum, store) => sum + store.subtotal, 0);
 
-      // Calculate savings compared to single store (estimate 15-25% savings)
-      const singleStoreCost = totalCost * 1.2; // Assume 20% more expensive at single store
+      // Calculate savings compared to single store (estimate based on price spread)
+      const singleStoreCost = totalCost * 1.15; // Assume 15% more expensive at single store
       const savings = singleStoreCost - totalCost;
 
       res.json({
-        stores: [
-          {
-            retailerId: 3,
-            retailerName: "Kroger",
-            items: krogerItems,
-            subtotal: krogerSubtotal,
-            address: "123 Main St, San Francisco, CA 94105"
-          },
-          {
-            retailerId: 1,
-            retailerName: "Walmart",
-            items: walmartItems,
-            subtotal: walmartSubtotal,
-            address: "789 Oak Ave, San Francisco, CA 94103"
-          }
-        ].filter(store => store.items.length > 0), // Only include stores with items
+        stores,
         totalCost,
         savings: Math.round(savings),
         planType: "Best Value Multi-Store",
-        storeCount: 2,
-        estimatedTime: 65, // Multi-store takes longer
+        storeCount: stores.length,
+        estimatedTime: Math.max(45, stores.length * 20), // Time increases with store count
         savingsPercentage: Math.round((savings / singleStoreCost) * 100)
       });
     } catch (error) {
@@ -2068,67 +2173,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ stores: [], totalCost: 0, estimatedTime: 0 });
       }
 
-      // Balanced optimization rule: Find a good compromise between price and convenience
-      // Usually a single store with decent prices and good availability
-      const availabilityRate = 0.92; // Target has 92% availability (better than Kroger)
-      const availableItemCount = Math.floor(items.length * availabilityRate);
-      
-      // Check for manual deals for each item
+      // Get all retailers and deals
+      const retailers = await storage.getRetailers();
       const allDeals = await storage.getDeals();
-      const targetItems = items.map((item, index) => {
-        // Find manual deal at Target
-        const manualDeal = allDeals.find(deal => 
-          deal.retailerId === 2 && // Target
-          (deal.productName.toLowerCase().includes(item.productName.toLowerCase()) ||
-           item.productName.toLowerCase().includes(deal.productName.toLowerCase())) &&
-          new Date(deal.endDate) > new Date()
-        );
 
-        // Balanced pricing: not the cheapest, but reasonable
-        const basePrice = 220 + Math.floor(Math.random() * 280); // $2.20-$5.00 range
-        const price = manualDeal ? manualDeal.salePrice : basePrice;
-        const isAvailable = index < availableItemCount;
+      // Balanced optimization: Find best compromise between price, availability, and convenience
+      const retailerOptions = retailers.map(retailer => {
+        // Calculate availability rate based on retailer type
+        let baseAvailability = 0.85; // Default 85%
+        if (retailer.name === "Target") baseAvailability = 0.92;
+        else if (retailer.name === "Kroger") baseAvailability = 0.87;
+        else if (retailer.name === "Walmart") baseAvailability = 0.89;
+
+        const availableItemCount = Math.floor(items.length * baseAvailability);
+        
+        const storeItems = items.map((item, index) => {
+          // Find deals at this retailer
+          const deal = allDeals.find(d => 
+            d.retailerId === retailer.id && 
+            (d.productName.toLowerCase().includes(item.productName.toLowerCase()) ||
+             item.productName.toLowerCase().includes(d.productName.toLowerCase())) &&
+            new Date(d.endDate) > new Date()
+          );
+
+          // Balanced pricing strategy
+          let basePrice = 250; // Default reasonable price
+          if (retailer.name === "Walmart") basePrice = 230; // Slightly cheaper
+          else if (retailer.name === "Target") basePrice = 270; // Slight premium
+          else if (retailer.name === "Kroger") basePrice = 260; // Mid-range
+
+          const price = deal ? deal.salePrice : basePrice + Math.floor(Math.random() * 150);
+          const isAvailable = index < availableItemCount;
+
+          return {
+            id: item.id,
+            productName: item.productName,
+            quantity: item.quantity,
+            unit: item.unit,
+            price,
+            totalPrice: isAvailable ? price * item.quantity : 0,
+            isAvailable,
+            dealInfo: deal ? {
+              isDeal: true,
+              source: deal.dealSource || 'manual_upload',
+              savings: deal.regularPrice - deal.salePrice
+            } : null
+          };
+        });
+
+        const availableItems = storeItems.filter(item => item.isAvailable);
+        const totalCost = availableItems.reduce((sum, item) => sum + item.totalPrice, 0);
+        const dealCount = storeItems.filter(item => item.dealInfo?.isDeal).length;
+        
+        // Calculate balanced score: availability + deal bonus - cost penalty
+        const availabilityScore = baseAvailability * 0.4;
+        const dealScore = (dealCount / items.length) * 0.3;
+        const costScore = (1 - (totalCost / (items.length * 400))) * 0.3; // Normalize cost
+        const balancedScore = availabilityScore + dealScore + costScore;
 
         return {
-          id: item.id,
-          productName: item.productName,
-          quantity: item.quantity,
-          unit: item.unit,
-          price,
-          totalPrice: isAvailable ? price * item.quantity : 0,
-          isAvailable,
-          dealInfo: manualDeal ? {
-            isDeal: true,
-            source: manualDeal.dealSource || 'manual_upload',
-            savings: manualDeal.regularPrice - manualDeal.salePrice
-          } : null
+          retailer,
+          storeItems,
+          totalCost,
+          availabilityRate: baseAvailability,
+          availableItems: availableItemCount,
+          dealCount,
+          balancedScore
         };
       });
 
-      const availableItems = targetItems.filter(item => item.isAvailable);
-      const totalCost = availableItems.reduce((sum, item) => sum + item.totalPrice, 0);
-      
+      // Select the retailer with the best balanced score
+      const bestOption = retailerOptions.reduce((best, current) => 
+        current.balancedScore > best.balancedScore ? current : best
+      );
+
       // Calculate savings compared to premium store
-      const premiumStoreCost = totalCost * 1.12; // Assume 12% more at premium store
-      const savings = premiumStoreCost - totalCost;
+      const premiumStoreCost = bestOption.totalCost * 1.12;
+      const savings = premiumStoreCost - bestOption.totalCost;
 
       res.json({
         stores: [{
-          retailerId: 2,
-          retailerName: "Target",
-          items: targetItems,
-          subtotal: totalCost,
-          address: "456 Market St, San Francisco, CA 94102"
+          retailerId: bestOption.retailer.id,
+          retailerName: bestOption.retailer.name,
+          items: bestOption.storeItems,
+          subtotal: bestOption.totalCost,
+          address: `${100 + bestOption.retailer.id} Main St, San Francisco, CA 94105`
         }],
-        totalCost,
+        totalCost: bestOption.totalCost,
         estimatedTime: 40, // Balanced time
         storeCount: 1,
         planType: "Balanced",
         savings: Math.round(savings),
-        availabilityRate,
-        availableItems: availableItemCount,
+        availabilityRate: bestOption.availabilityRate,
+        availableItems: bestOption.availableItems,
         totalItems: items.length,
-        missingItems: items.length - availableItemCount
+        missingItems: items.length - bestOption.availableItems,
+        dealCount: bestOption.dealCount
       });
     } catch (error) {
       handleError(res, error);
