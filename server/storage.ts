@@ -685,21 +685,22 @@ export class MemStorage implements IStorage {
   async getDeals(retailerId?: number, category?: string): Promise<StoreDeal[]> {
     let deals = Array.from(this.storeDeals.values());
 
-    // Filter by retailer if specified
+    // Filter out expired deals
+    const now = new Date();
+    deals = deals.filter(deal => new Date(deal.endDate) > now);
+
     if (retailerId) {
       deals = deals.filter(deal => deal.retailerId === retailerId);
     }
 
-    // Filter by category if specified
     if (category) {
       deals = deals.filter(deal => deal.category === category);
     }
 
-    // Add retailer data
-    return Promise.all(deals.map(async deal => {
-      const retailer = await this.getRetailer(deal.retailerId);
-      return { ...deal, retailer };
-    }));
+    // Sort by upload date (newest first) so manual uploads take priority
+    deals.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+
+    return deals;
   }
 
   async getDealsSummary(): Promise<any[]> {
@@ -1226,6 +1227,10 @@ export class DatabaseStorage implements IStorage {
   async getDeals(retailerId?: number, category?: string): Promise<StoreDeal[]> {
     let query = db.select().from(storeDeals);
 
+    // Filter out expired deals
+    const now = new Date();
+    query = query.where(gte(storeDeals.endDate, now));
+
     if (retailerId) {
       query = query.where(eq(storeDeals.retailerId, retailerId));
     }
@@ -1234,51 +1239,7 @@ export class DatabaseStorage implements IStorage {
       query = query.where(eq(storeDeals.category, category));
     }
 
-    const deals = await query;
-
-    if (deals.length === 0) {
-      // Add some default deals if none exist
-      const retailers = await this.getRetailers();
-
-      if (retailers.length > 0) {
-        await this.createDeal({
-          retailerId: retailers[0].id,
-          productName: "Milk (Gallon)",
-          category: "Dairy",
-          regularPrice: 389,
-          salePrice: 349,
-          startDate: new Date(),
-          endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-          imageUrl: "https://example.com/milk.jpg"
-        });
-
-        await this.createDeal({
-          retailerId: retailers[0].id,
-          productName: "Eggs (Dozen)",
-          category: "Dairy",
-          regularPrice: 299,
-          salePrice: 249,
-          startDate: new Date(),
-          endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
-          imageUrl: "https://example.com/eggs.jpg"
-        });
-
-        await this.createDeal({
-          retailerId: retailers[1].id,
-          productName: "Paper Towels",
-          category: "Household",
-          regularPrice: 799,
-          salePrice: 649,
-          startDate: new Date(),
-          endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days from now
-          imageUrl: "https://example.com/papertowels.jpg"
-        });
-      }
-
-      return this.getDeals(retailerId, category);
-    }
-
-    return deals;
+    return query;
   }
 
   async getDealsSummary(): Promise<any[]> {
@@ -1482,7 +1443,7 @@ export class DatabaseStorage implements IStorage {
     try {
       // Delete expired circulars
       const expiredCirculars = await db
-        .select()
+        .select()```tool_code
         .from(weeklyCirculars)
         .where(
           and(

@@ -167,7 +167,7 @@ export class DataOptimizer {
   }
 
   /**
-   * Get shopping list with optimized pricing
+   * Get shopping list with optimized pricing including manual circular deals
    */
   async getOptimizedShoppingList(shoppingListId: number): Promise<any> {
     const listItems = await storage.getShoppingListItems(shoppingListId);
@@ -175,24 +175,68 @@ export class DataOptimizer {
     
     const optimizedItems = await Promise.all(
       listItems.map(async (item) => {
-        // Get prices from all retailers
-        const pricePromises = retailers.map(async (retailer) => ({
-          retailerId: retailer.id,
-          retailerName: retailer.name,
-          price: await this.getOptimizedPrice(retailer.id, item.productName)
-        }));
+        // Get all deals for this product from database (includes manual uploads)
+        const allDeals = await storage.getDeals();
+        const productDeals = allDeals.filter(deal => 
+          deal.productName.toLowerCase().includes(item.productName.toLowerCase()) ||
+          item.productName.toLowerCase().includes(deal.productName.toLowerCase())
+        );
+
+        // Get prices from all retailers, considering both API prices and manual deals
+        const pricePromises = retailers.map(async (retailer) => {
+          // Check if there's a manual deal for this product at this retailer
+          const manualDeal = productDeals.find(deal => 
+            deal.retailerId === retailer.id && 
+            new Date(deal.endDate) > new Date() // Deal is still active
+          );
+
+          let price = null;
+          let dealInfo = null;
+
+          if (manualDeal) {
+            // Use the manual deal price
+            price = manualDeal.salePrice;
+            dealInfo = {
+              isDeal: true,
+              regularPrice: manualDeal.regularPrice,
+              savings: manualDeal.regularPrice - manualDeal.salePrice,
+              source: manualDeal.dealSource || 'manual_upload'
+            };
+          } else {
+            // Fall back to API price
+            price = await this.getOptimizedPrice(retailer.id, item.productName);
+          }
+
+          return {
+            retailerId: retailer.id,
+            retailerName: retailer.name,
+            price,
+            dealInfo
+          };
+        });
         
         const prices = await Promise.all(pricePromises);
         const availablePrices = prices.filter(p => p.price !== null);
         
-        // Find best price
-        const bestPrice = availablePrices.reduce((min, current) => 
-          current.price! < min.price! ? current : min, availablePrices[0]);
+        // Find best price, prioritizing deals from manual uploads
+        const bestPrice = availablePrices.reduce((min, current) => {
+          // If current has a deal and min doesn't, prefer current
+          if (current.dealInfo?.isDeal && !min.dealInfo?.isDeal) {
+            return current;
+          }
+          // If min has a deal and current doesn't, prefer min
+          if (min.dealInfo?.isDeal && !current.dealInfo?.isDeal) {
+            return min;
+          }
+          // Otherwise, compare prices
+          return current.price! < min.price! ? current : min;
+        }, availablePrices[0]);
         
         return {
           ...item,
           availablePrices,
-          bestPrice: bestPrice || null
+          bestPrice: bestPrice || null,
+          hasManualDeals: productDeals.length > 0
         };
       })
     );

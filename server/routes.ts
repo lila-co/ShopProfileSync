@@ -2043,14 +2043,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Demo data: Target as balanced option (good prices, convenient)
-      const targetItems = items.map(item => ({
-        id: item.id,
-        productName: item.productName,
-        quantity: item.quantity,
-        unit: item.unit,
-        price: 250 + Math.floor(Math.random() * 350), // Slightly higher prices but convenient
-        totalPrice: 0
-      }));
+      // Check for manual deals for each item
+      const allDeals = await storage.getDeals();
+      const targetItems = items.map(item => {
+        // Find manual deal at Target
+        const manualDeal = allDeals.find(deal => 
+          deal.retailerId === 2 && // Target
+          (deal.productName.toLowerCase().includes(item.productName.toLowerCase()) ||
+           item.productName.toLowerCase().includes(deal.productName.toLowerCase())) &&
+          new Date(deal.endDate) > new Date()
+        );
+
+        const price = manualDeal ? manualDeal.salePrice : 250 + Math.floor(Math.random() * 350);
+        
+        return {
+          id: item.id,
+          productName: item.productName,
+          quantity: item.quantity,
+          unit: item.unit,
+          price,
+          totalPrice: 0,
+          dealInfo: manualDeal ? {
+            isDeal: true,
+            source: manualDeal.dealSource || 'manual_upload',
+            savings: manualDeal.regularPrice - manualDeal.salePrice
+          } : null
+        };
+      });
 
       targetItems.forEach(item => {
         item.totalPrice = item.price * item.quantity;
@@ -2104,10 +2123,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate cost at each retailer
       const retailerCosts = retailers.map(retailer => {
         const itemsAtRetailer = items.map(item => {
-          // Find best price for this item at this retailer
+          // Find best price for this item at this retailer (includes manual uploads)
           const deal = allDeals.find(d => 
             d.retailerId === retailer.id && 
-            d.productName.toLowerCase() === item.productName.toLowerCase()
+            (d.productName.toLowerCase() === item.productName.toLowerCase() ||
+             d.productName.toLowerCase().includes(item.productName.toLowerCase()) ||
+             item.productName.toLowerCase().includes(d.productName.toLowerCase())) &&
+            new Date(d.endDate) > new Date() // Deal is still active
           );
 
           // Check for bulk deals
@@ -2211,15 +2233,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       items.forEach(item => {
         let bestPrice = Number.MAX_VALUE;
         let bestRetailer = null;
+        let bestDeal = null;
 
         retailers.forEach(retailer => {
-          // Find deal for this item at this retailer
+          // Find deal for this item at this retailer (includes manual uploads)
           const deal = allDeals.find(d => 
             d.retailerId === retailer.id && 
-            d.productName.toLowerCase() === item.productName.toLowerCase()
+            (d.productName.toLowerCase() === item.productName.toLowerCase() ||
+             d.productName.toLowerCase().includes(item.productName.toLowerCase()) ||
+             item.productName.toLowerCase().includes(d.productName.toLowerCase())) &&
+            new Date(d.endDate) > new Date() // Deal is still active
           );
 
-          // Calculate price
+          // Calculate price - prioritize manual deals
           const price = deal ? deal.salePrice : Math.floor(Math.random() * 800) + 200;
 
           if (price < bestPrice) {
