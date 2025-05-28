@@ -1702,7 +1702,7 @@ bread')) shelfLocation = 'End Cap';
                         <Button 
                           className="w-full h-auto p-4 flex flex-col items-center space-y-2"
                           onClick={() => {
-                            navigate(`/shopping-route?listId=${selectedList.id}&mode=online`);
+                            navigate('/shopping-route?listId=' + selectedList.id + '&mode=online');
                           }}
                         >
                           <ShoppingCart className="h-6 w-6" />
@@ -1716,7 +1716,7 @@ bread')) shelfLocation = 'End Cap';
                           variant="outline"
                           className="w-full h-auto p-4 flex flex-col items-center space-y-2"
                           onClick={() => {
-                            navigate(`/shopping-route?listId=${selectedList.id}&mode=delivery`);
+                            navigate('/shopping-route?listId=' + selectedList.id + '&mode=delivery');
                           }}
                         >
                           <StoreIcon className="h-6 w-6" />```text
@@ -2561,9 +2561,9 @@ bread')) shelfLocation = 'End Cap';
                       <Button
                         onClick={() => {
                           setShowShoppingPlan(false);
-                          // Passthe selected plan data to the route page
+                          // Pass the selected plan data to the route page
                           const planData = encodeURIComponent(JSON.stringify(selectedPlan));
-                          navigate(`/shopping-route?listId=${defaultList?.id}&mode=instore&planData=${planData}`);
+                          navigate('/shopping-route?listId=' + defaultList?.id + '&mode=instore&planData=' + planData);
                         }}
                         variant="outline"
                         className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
