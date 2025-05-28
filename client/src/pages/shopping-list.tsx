@@ -2386,8 +2386,8 @@ const ShoppingListPage: React.FC = () => {
               {importRecipeMutation.isPending ? 'Adding...' : `Add ${recipePreviewItems.filter(item => item.isSelected).length} Items`}
             </Button>
           </DialogFooter>
-        
-      
+        </DialogContent>
+      </Dialog>
 
       {/* AI Categorization Results Dialog */}
       <Dialog open={showCategorization} onOpenChange={setShowCategorization}>
@@ -2495,7 +2495,7 @@ const ShoppingListPage: React.FC = () => {
             </Button>
           </DialogFooter>
         </DialogContent>
-      
+      </Dialog>
 
       {/* Shopping Plan Modal */}
         <Dialog open={showShoppingPlan} onOpenChange={(open) => {
@@ -2736,11 +2736,11 @@ const ShoppingListPage: React.FC = () => {
               )}
             </div>
           </DialogContent>
-        
+        </Dialog>
       </main>
 
       <BottomNavigation activeTab="lists" />
-    
+    </div>
   );
 };
 
