@@ -1608,7 +1608,7 @@ const ShoppingListPage: React.FC = () => {
                                 className="w-full text-xs sm:text-sm mt-2"
                                 onClick={() => handleViewShoppingPlan({
                                   ...bestValueOptimization.data,
-                                  planType: ""Best Value Multi-Store"
+                                  planType: "Best Value Multi-Store"
                                 }, "Best Value - Multi-Store")}
                               >
                                 <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
