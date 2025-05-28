@@ -1,5 +1,5 @@
 
-import React, { startTransition } from 'react';
+import React from 'react';
 import { useParams } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/layout/Header';
@@ -22,11 +22,21 @@ const RetailerDetailsPage: React.FC = () => {
 
   const { data: retailer, isLoading, error } = useQuery<Retailer>({
     queryKey: [`/api/retailers/${retailerId}`],
-    enabled: !!retailerId,
+    enabled: !!retailerId && retailerId > 0,
     retry: 1,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
     suspense: false,
     refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    queryFn: async () => {
+      const response = await fetch(`/api/retailers/${retailerId}`, {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch retailer');
+      }
+      return response.json();
+    }
   });
 
   if (isLoading) {

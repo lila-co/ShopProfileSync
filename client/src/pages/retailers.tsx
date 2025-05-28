@@ -35,11 +35,15 @@ const RetailersPage: React.FC = () => {
   const { data: retailers, isLoading } = useQuery<Retailer[]>({
     queryKey: ['/api/retailers'],
     suspense: false,
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: connectedAccounts } = useQuery<RetailerAccount[]>({
     queryKey: ['/api/user/retailer-accounts'],
     suspense: false,
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000,
   });
 
   const addStoreMutation = useMutation({
@@ -71,9 +75,10 @@ const RetailersPage: React.FC = () => {
   };
 
   const handleRetailerClick = (retailerId: number) => {
-    startTransition(() => {
+    // Use setTimeout to avoid blocking the main thread
+    setTimeout(() => {
       navigate(`/retailers/${retailerId}`);
-    });
+    }, 0);
   };
 
   const handleAddStore = () => {
