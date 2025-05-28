@@ -91,6 +91,24 @@ const ProfileSetup: React.FC = () => {
     updateProfileMutation.mutate(values);
   };
   
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-lg">
+        <div className="mb-4">
+          <h2 className="text-lg font-bold text-center">Complete Your Profile</h2>
+        </div>
+        <div className="space-y-4">
+          {Array(5).fill(0).map((_, index) => (
+            <div key={index} className="space-y-1">
+              <div className="h-4 bg-gray-200 rounded animate-pulse w-24"></div>
+              <div className="h-10 bg-gray-200 rounded animate-pulse w-full"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-lg">
       <div className="mb-4">
@@ -101,18 +119,8 @@ const ProfileSetup: React.FC = () => {
         Help us personalize your shopping recommendations by providing some information about your household.
       </p>
       
-      {isLoading ? (
-        // Skeleton loading
-        <div className="space-y-4">
-          {Array(5).fill(0).map((_, index) => (
-            <div key={index} className="space-y-1">
-              <div className="h-4 bg-gray-200 rounded animate-pulse w-24"></div>
-              <div className="h-10 bg-gray-200 rounded animate-pulse w-full"></div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+      <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+        
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Household Type</label>
             <select 
@@ -214,14 +222,13 @@ const ProfileSetup: React.FC = () => {
           </div>
           
           <button 
-            type="submit" 
-            className="w-full py-3 bg-primary text-white rounded-lg font-medium mt-6"
-            disabled={updateProfileMutation.isPending}
-          >
-            {updateProfileMutation.isPending ? 'Saving...' : 'Save Profile'}
-          </button>
-        </form>
-      )}
+          type="submit" 
+          className="w-full py-3 bg-primary text-white rounded-lg font-medium mt-6"
+          disabled={updateProfileMutation.isPending}
+        >
+          {updateProfileMutation.isPending ? 'Saving...' : 'Save Profile'}
+        </button>
+      </form>
     </div>
   );
 };
