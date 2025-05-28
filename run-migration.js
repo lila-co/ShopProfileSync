@@ -1,17 +1,20 @@
 
-const { Client } = require('pg');
+import postgres from 'postgres';
 
 async function runMigration() {
-  const client = new Client({
-    connectionString: process.env.DATABASE_URL
+  const connectionString = process.env.DATABASE_URL || "postgres://localhost:5432/shopping_app";
+  
+  const client = postgres(connectionString, {
+    max: 1,
+    idle_timeout: 20,
+    connect_timeout: 10,
   });
 
   try {
-    await client.connect();
     console.log('Connected to database');
     
     // Add GALLON to unit_type enum
-    await client.query("ALTER TYPE unit_type ADD VALUE 'GALLON';");
+    await client`ALTER TYPE unit_type ADD VALUE 'GALLON';`;
     console.log('Successfully added GALLON to unit_type enum');
     
   } catch (error) {
