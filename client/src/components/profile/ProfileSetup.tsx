@@ -58,7 +58,7 @@ const ProfileSetup: React.FC = () => {
         shoppingRadius: user?.shoppingRadius || 5,
       });
     }
-  }, [user, form]);
+  }, [user]);
   
   // Handle form submission
   const updateProfileMutation = useMutation({
@@ -201,7 +201,7 @@ const ProfileSetup: React.FC = () => {
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Shopping Radius: {form.watch("shoppingRadius") || 5} miles
+              Shopping Radius: {form.watch("shoppingRadius") ?? 5} miles
             </label>
             <div className="relative">
               <input 
