@@ -70,7 +70,7 @@ const ShoppingListPage: React.FC = () => {
   const [recipeDialogOpen, setRecipeDialogOpen] = useState(false);
   const [recipeUrl, setRecipeUrl] = useState('');
   const [servings, setServings] = useState('4');
-  
+
   // Recipe preview state
   const [recipePreviewDialogOpen, setRecipePreviewDialogOpen] = useState(false);
   const [recipePreviewItems, setRecipePreviewItems] = useState<any[]>([]);
@@ -2022,7 +2022,7 @@ const ShoppingListPage: React.FC = () => {
                           {item.reason}
                         </div>
                       )}
-                      
+
                       {item.dealComparison && (
                         <div className="mt-2 p-2 bg-blue-50 rounded-md border-l-2 border-blue-400">
                           <div className="text-xs font-medium text-blue-800 mb-1">
@@ -2510,7 +2510,7 @@ const ShoppingListPage: React.FC = () => {
                     onClick={handlePrintShoppingPlan}
                     className="text-xs sm:text-sm"
                   >
-                    <Printer className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    <Printer className="h-3 w-3 sm:h-4 w-4 mr-1 sm:mr-2" />
                     Print
                   </Button>
                   <Button
