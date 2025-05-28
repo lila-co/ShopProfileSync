@@ -905,7 +905,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           daysUntilPurchase: 0,
           isSelected: true
         },
-        { <previous_generation>
+        { 
           productName: 'Apples', 
           quantity: 1, 
           unit: 'BAG',
