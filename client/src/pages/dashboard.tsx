@@ -138,19 +138,19 @@ const Dashboard: React.FC = () => {
             </div>
           </section>
 
-          {/* Quick Link to Shopping Lists */}
+          {/* Quick Link to Shopping List */}
           <section className="mb-6">
             <div className="bg-primary/5 rounded-xl p-4 border border-primary/20">
               <div className="flex justify-between items-center">
                 <div>
-                  <h3 className="font-bold text-primary mb-1">Shopping Lists</h3>
-                  <p className="text-sm text-gray-600">Manage your shopping lists and optimize your trips</p>
+                  <h3 className="font-bold text-primary mb-1">Shopping List</h3>
+                  <p className="text-sm text-gray-600">Manage your shopping list and optimize your trips</p>
                 </div>
                 <a 
                   href="/shopping-list"
                   className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90"
                 >
-                  View Lists
+                  View List
                 </a>
               </div>
             </div>
