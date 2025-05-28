@@ -13,20 +13,32 @@ async function runMigration() {
   try {
     console.log('Connected to database');
     
-    // Add GALLON to unit_type enum
-    await client`ALTER TYPE unit_type ADD VALUE 'GALLON';`;
-    console.log('Successfully added GALLON to unit_type enum');
+    // Add GALLON to unit_type enum if it doesn't exist
+    try {
+      await client`ALTER TYPE unit_type ADD VALUE 'GALLON';`;
+      console.log('Successfully added GALLON to unit_type enum');
+    } catch (error) {
+      if (error.message.includes('already exists')) {
+        console.log('GALLON already exists in unit_type enum');
+      } else {
+        console.error('Error adding GALLON:', error);
+      }
+    }
     
-    // Add LOAF to unit_type enum
-    await client`ALTER TYPE unit_type ADD VALUE 'LOAF';`;
-    console.log('Successfully added LOAF to unit_type enum');
+    // Add LOAF to unit_type enum if it doesn't exist
+    try {
+      await client`ALTER TYPE unit_type ADD VALUE 'LOAF';`;
+      console.log('Successfully added LOAF to unit_type enum');
+    } catch (error) {
+      if (error.message.includes('already exists')) {
+        console.log('LOAF already exists in unit_type enum');
+      } else {
+        console.error('Error adding LOAF:', error);
+      }
+    }
     
   } catch (error) {
-    if (error.message.includes('already exists')) {
-      console.log('GALLON already exists in unit_type enum');
-    } else {
-      console.error('Migration failed:', error);
-    }
+    console.error('Migration failed:', error);
   } finally {
     await client.end();
   }
