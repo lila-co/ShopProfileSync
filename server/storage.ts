@@ -1330,7 +1330,7 @@ export class DatabaseStorage implements IStorage {
     return Array.from(categories);
   }
 
-  async createDeal(deal: {
+  async createDeal(dealData: {
     retailerId: number;
     productName: string;
     category: string;
@@ -1340,7 +1340,7 @@ export class DatabaseStorage implements IStorage {
     startDate: Date;
     endDate: Date;
   }): Promise<StoreDeal> {
-    const [deal] = await db.insert(storeDeals).values(deal).returning();
+    const [deal] = await db.insert(storeDeals).values(dealData).returning();
     return deal;
   }
 
