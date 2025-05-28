@@ -308,11 +308,14 @@ export class ProductCategorizerService {
       };
     }
     
+    const normalizedName = this.normalizeProductName(productName);
+    
     const finalCategory = {
       ...bestMatch,
       confidence: Math.max(bestSimilarity, bestMatch.confidence * 0.8),
       typicalRetailNames: this.generateRetailNames(productName),
-      brandVariations: this.generateBrandVariations(productName, bestMatch)
+      brandVariations: this.generateBrandVariations(productName, bestMatch),
+      normalizedName: normalizedName
     };
     
     return finalCategory;
@@ -442,6 +445,150 @@ export class ProductCategorizerService {
       .replace(/\s+/g, ' ')
       .split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }
+
+  // Normalize product names with proper brand capitalization and standardization
+  public normalizeProductName(productName: string): string {
+    const name = productName.trim();
+    
+    // Brand name mappings for proper capitalization
+    const brandMappings: Record<string, string> = {
+      'coca cola': 'Coca Cola',
+      'pepsi': 'Pepsi',
+      'dr pepper': 'Dr Pepper',
+      'mountain dew': 'Mountain Dew',
+      'kraft': 'Kraft',
+      'heinz': 'Heinz',
+      'campbell': 'Campbell\'s',
+      'kellogg': 'Kellogg\'s',
+      'general mills': 'General Mills',
+      'quaker': 'Quaker',
+      'tide': 'Tide',
+      'dawn': 'Dawn',
+      'bounty': 'Bounty',
+      'charmin': 'Charmin',
+      'kleenex': 'Kleenex',
+      'lysol': 'Lysol',
+      'clorox': 'Clorox',
+      'oreo': 'Oreo',
+      'cheerios': 'Cheerios',
+      'frosted flakes': 'Frosted Flakes',
+      'lucky charms': 'Lucky Charms',
+      'honey nut cheerios': 'Honey Nut Cheerios',
+      'doritos': 'Doritos',
+      'cheetos': 'Cheetos',
+      'lay\'s': 'Lay\'s',
+      'pringles': 'Pringles',
+      'ritz': 'Ritz',
+      'philadelphia': 'Philadelphia',
+      'velveeta': 'Velveeta',
+      'oscar mayer': 'Oscar Mayer',
+      'tyson': 'Tyson',
+      'perdue': 'Perdue',
+      'spam': 'SPAM',
+      'hunts': 'Hunt\'s',
+      'del monte': 'Del Monte',
+      'green giant': 'Green Giant',
+      'birds eye': 'Birds Eye',
+      'stouffers': 'Stouffer\'s',
+      'lean cuisine': 'Lean Cuisine',
+      'hot pockets': 'Hot Pockets',
+      'eggo': 'Eggo',
+      'pillsbury': 'Pillsbury',
+      'duncan hines': 'Duncan Hines',
+      'betty crocker': 'Betty Crocker',
+      'aunt jemima': 'Aunt Jemima',
+      'mrs butterworth': 'Mrs. Butterworth\'s',
+      'log cabin': 'Log Cabin',
+      'skippy': 'Skippy',
+      'jif': 'Jif',
+      'planters': 'Planters',
+      'welch\'s': 'Welch\'s',
+      'tropicana': 'Tropicana',
+      'minute maid': 'Minute Maid',
+      'ocean spray': 'Ocean Spray',
+      'gatorade': 'Gatorade',
+      'powerade': 'Powerade',
+      'red bull': 'Red Bull',
+      'monster': 'Monster',
+      'starbucks': 'Starbucks',
+      'folgers': 'Folgers',
+      'maxwell house': 'Maxwell House',
+      'nescafe': 'Nescafé',
+      'lipton': 'Lipton',
+      'celestial seasonings': 'Celestial Seasonings'
+    };
+
+    // Product type standardizations
+    const productStandardizations: Record<string, string> = {
+      'milk': 'Milk',
+      'bread': 'Bread',
+      'eggs': 'Eggs',
+      'butter': 'Butter',
+      'cheese': 'Cheese',
+      'yogurt': 'Yogurt',
+      'chicken': 'Chicken',
+      'beef': 'Beef',
+      'pork': 'Pork',
+      'fish': 'Fish',
+      'salmon': 'Salmon',
+      'tuna': 'Tuna',
+      'pasta': 'Pasta',
+      'rice': 'Rice',
+      'flour': 'Flour',
+      'sugar': 'Sugar',
+      'salt': 'Salt',
+      'pepper': 'Black Pepper',
+      'olive oil': 'Olive Oil',
+      'vegetable oil': 'Vegetable Oil',
+      'tomatoes': 'Tomatoes',
+      'onions': 'Onions',
+      'potatoes': 'Potatoes',
+      'carrots': 'Carrots',
+      'bananas': 'Bananas',
+      'apples': 'Apples',
+      'oranges': 'Oranges',
+      'strawberries': 'Strawberries',
+      'blueberries': 'Blueberries',
+      'lettuce': 'Lettuce',
+      'spinach': 'Spinach',
+      'broccoli': 'Broccoli',
+      'bell pepper': 'Bell Pepper',
+      'garlic': 'Garlic',
+      'ginger': 'Ginger',
+      'basil': 'Fresh Basil',
+      'cilantro': 'Fresh Cilantro',
+      'parsley': 'Fresh Parsley',
+      'paper towels': 'Paper Towels',
+      'toilet paper': 'Toilet Paper',
+      'dish soap': 'Dish Soap',
+      'laundry detergent': 'Laundry Detergent',
+      'shampoo': 'Shampoo',
+      'conditioner': 'Conditioner',
+      'toothpaste': 'Toothpaste',
+      'deodorant': 'Deodorant'
+    };
+
+    const lowerName = name.toLowerCase();
+    
+    // Check for exact brand matches first
+    for (const [key, value] of Object.entries(brandMappings)) {
+      if (lowerName.includes(key)) {
+        return value;
+      }
+    }
+    
+    // Check for product standardizations
+    for (const [key, value] of Object.entries(productStandardizations)) {
+      if (lowerName === key || lowerName.includes(key)) {
+        return value;
+      }
+    }
+    
+    // Default capitalization for unmatched items
+    return name.split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(' ');
   }
 

@@ -331,14 +331,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Items array is required' });
       }
 
-      // Process each item through the categorizer
-      const categorizedItems = items.map(item => {
+      const results = items.map((item: any) => {
         const { productName, quantity, unit } = item;
 
-        if (!productName) {
-          throw new Error('Product name is required for each item');
-        }
-
+        // Use the product categorizer service
         const category = productCategorizer.categorizeProduct(productName);
         const normalized = productCategorizer.normalizeQuantity(productName, quantity || 1, unit || 'COUNT');
         const icon = productCategorizer.getCategoryIcon(category.category);
@@ -351,7 +347,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       });
 
-      res.json(categorizedItems);
+      // Filter to only include items that have meaningful changes
+      const filteredResults = results.filter((item: any) => {
+        const hasNameChange = item.category.normalizedName && 
+          item.category.normalizedName !== item.productName;
+
+        const hasQuantityChange = item.normalized.suggestedQuantity !== item.normalized.originalQuantity;
+
+        const hasUnitChange = item.normalized.suggestedUnit !== item.normalized.originalUnit;
+
+        const hasOptimizationReason = item.normalized.conversionReason && 
+          item.normalized.conversionReason !== 'No conversion needed';
+
+        return hasNameChange || hasQuantityChange || hasUnitChange || hasOptimizationReason;
+      });
+
+      res.json(filteredResults);
     } catch (error) {
       handleError(res, error);
     }
@@ -892,7 +903,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           savings: 0,
           reason: "Based on your monthly pasta purchase",
           daysUntilPurchase: 0,
-          isSelected: true
+<newline>          isSelected: true
         },
         { 
           productName: 'Pasta Sauce', 
@@ -1772,8 +1783,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               behavior: "Premium product willingness",
               segmentA: { segment: "Health-Conscious Urban", willingness: "High (78%)" },
               segmentB: { segment: "Budget-Conscious Family", willingness: "Low (23%)" },
-              implication: "Targeted marketing needed for premium products"
-            }
+              implication: "Targeted marketing needed for premium products"            }
           ]
         }
       };
@@ -2641,6 +2651,166 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Error triggering data collection:', error);
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Name normalization
+  const normalizeProductName = (productName: string) => {
+      const words = productName.split(" ");
+      const capitalizedWords = words.map(word => {
+          return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      });
+      return capitalizedWords.join(" ");
+  }
+
+  app.post('/api/shopping-list/items', async (req: Request, res: Response) => {
+    try {
+      const { productName, quantity, unit, shoppingListId } = req.body;
+
+      // Validate quantity to ensure it's a number and not NaN
+      const validQuantity = Number(quantity);
+      if (isNaN(validQuantity)) {
+        return res.status(400).json({ message: 'Invalid quantity. Please provide a valid number.' });
+      }
+
+      // If no shoppingListId provided, use the default list
+      let targetListId = shoppingListId;
+      if (!targetListId) {
+        const lists = await storage.getShoppingLists();
+        const defaultList = lists.find(list => list.isDefault) || lists[0];
+        if (!defaultList) {
+          return res.status(400).json({ message: 'No shopping list available' });
+        }
+        targetListId = defaultList.id;
+      }
+
+      // Get existing items to check for duplicates
+      const existingItems = await storage.getShoppingListItems(targetListId);
+
+      // Common item names and alternate spellings/misspellings
+      const commonItemCorrections: Record<string, string[]> = {
+        'banana': ['banan', 'bananna', 'banannas', 'bannana', 'banannas'],
+        'apple': ['appl', 'apples', 'aple'],
+        'milk': ['millk', 'milks', 'mlik'],
+        'bread': ['bred', 'breads', 'loaf'],
+        'egg': ['eggs', 'egss'],
+        'potato': ['potatos', 'potatoe', 'potatoes'],
+        'tomato': ['tomatos', 'tomatoe', 'tomatoes'],
+        'cheese': ['chese', 'cheez', 'chees'],
+        'chicken': ['chickn', 'checken', 'chiken'],
+        'cereal': ['ceereal', 'cereals', 'cerel']
+      };
+
+      // Normalize the product name to lowercase for matching
+      let normalizedName = productName ? productName.toLowerCase().trim() : '';
+
+      // Apply name normalization
+      let normalizedProductName = normalizeProductName(productName);
+
+      // Check if this is likely a duplicate with a slightly different spelling
+      let correctedName = normalizedName;
+      let isDuplicate = false;
+      let existingItem = null;
+
+      // First check for exact matches or plurals
+      existingItem = existingItems.find(item =>
+        item.productName.toLowerCase() === normalizedName ||
+        item.productName.toLowerCase() + 's' === normalizedName ||
+        item.productName.toLowerCase() === normalizedName + 's'
+      );
+
+      if (existingItem) {
+        isDuplicate = true;
+      } else {
+        // Look for corrections in common items dictionary
+        for (const [correct, variations] of Object.entries(commonItemCorrections)) {
+          if (normalizedName === correct || variations.includes(normalizedName)) {
+            correctedName = correct;
+
+            // Check if the corrected name exists in the list
+            existingItem = existingItems.find(item =>
+              item.productName.toLowerCase() === correctedName ||
+              item.productName.toLowerCase().includes(correctedName)
+            );
+
+            if (existingItem) {
+              isDuplicate = true;
+            }
+            break;
+          }
+        }
+
+        // If no match in dictionary, use fuzzy matching for other items
+        if (!isDuplicate) {
+          for (const item of existingItems) {
+            const itemName = item.productName.toLowerCase();
+
+            // Check for contained substrings (e.g., "tomato" and "roma tomato")
+            if (itemName.includes(normalizedName) || normalizedName.includes(itemName)) {
+              existingItem = item;
+              isDuplicate = true;
+              break;
+            }
+
+            // Simple Levenshtein-like check for similar spellings
+            // If names are very close to each other
+            if (itemName.length > 3 && normalizedName.length > 3) {
+              // Check if first 3 chars match and length is similar
+              if (itemName.substring(0, 3) === normalizedName.substring(0, 3) &&
+                  Math.abs(itemName.length - normalizedName.length) <= 2) {
+                existingItem = item;
+                isDuplicate = true;
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      let result;
+
+      if (isDuplicate && existingItem) {
+        // Update the quantity of the existing item instead of adding a new one
+        const updatedItem = await storage.updateShoppingListItem(existingItem.id, {
+          quantity: existingItem.quantity + validQuantity,
+          // Keep the existing unit or update to the new one if specified
+          unit: unit || existingItem.unit || 'COUNT'
+        });
+
+        // Add information about the merge for the client
+        result = {
+          ...updatedItem,
+          merged: true,
+          originalName: productName,
+          message: `Combined with existing "${existingItem.productName}" item`
+        };
+      } else {
+        // If it's a corrected common item, use the corrected name
+        let nameToUse = normalizedProductName;
+        if (correctedName !== normalizedName && Object.keys(commonItemCorrections).includes(correctedName)) {
+          // Capitalize first letter of corrected name
+          nameToUse = correctedName.charAt(0).toUpperCase() + correctedName.slice(1);
+        }
+
+        // Add as new item with the specified unit (or default to COUNT)
+        const newItem = await storage.addShoppingListItem({
+          shoppingListId: targetListId,
+          productName: nameToUse,
+          quantity: validQuantity,
+          unit: unit || 'COUNT'
+        });
+
+        result = {
+          ...newItem,
+          merged: false,
+          corrected: nameToUse !== productName,
+          originalName: productName
+        };
+      }
+
+      res.json(result);
+    } catch (error) {
+      handleError(res, error);
     }
   });
 

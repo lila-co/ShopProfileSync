@@ -470,7 +470,7 @@ const ShoppingListPage: React.FC = () => {
         }
 
         const categorizedItems = await response.json();
-        
+
         // Validate and clean the response data
         const cleanedItems = categorizedItems.map((item: any) => ({
           ...item,
@@ -495,7 +495,8 @@ const ShoppingListPage: React.FC = () => {
             confidence: 0.30,
             suggestedQuantityType: 'COUNT',
             typicalRetailNames: [item.productName],
-            brandVariations: ['Generic']
+            brandVariations: ['Generic'],
+            normalizedName: null // Ensure normalizedName is present
           },
           normalized: {
             originalQuantity: Math.max(1, Math.round(Number(item.quantity) || 1)),
@@ -512,7 +513,13 @@ const ShoppingListPage: React.FC = () => {
       }
     },
     onSuccess: (data) => {
-      setCategorizedItems(data);
+      // Filter out items that don't have suggested changes
+      const filteredItems = data.filter(item =>
+        item.category.normalizedName !== null || // Filter to only show meaningful changes
+        item.normalized.conversionReason !== 'No conversion needed' &&
+        item.normalized.conversionReason !== 'Categorization service unavailable'
+      );
+      setCategorizedItems(filteredItems);
       setShowCategorization(true);
       toast({
         title: "AI Categorization Complete",
@@ -535,6 +542,8 @@ const ShoppingListPage: React.FC = () => {
       const defaultList = shoppingLists?.[0];
       if (!defaultList) throw new Error("No shopping list found");
 
+      const items = defaultList.items || [];
+
       // Update items with optimized quantities and units based on AI insights
       const updatePromises = categorizedItems.map(async (categorizedItem) => {
         const originalItem = items.find(item => item.productName === categorizedItem.productName);
@@ -553,7 +562,7 @@ const ShoppingListPage: React.FC = () => {
           categorizedItem.normalized.conversionReason !== 'No conversion needed' &&
           categorizedItem.normalized.conversionReason !== 'Categorization service unavailable';
 
-        const shouldUpdate = hasQuantityChange || hasUnitChange || hasOptimizationReason;
+        const shouldUpdate = hasQuantityChange || hasUnitChange || hasOptimizationReason || categorizedItem.category.normalizedName;
 
         console.log('Update check for', originalItem.productName, {
           currentQuantity,
@@ -568,10 +577,19 @@ const ShoppingListPage: React.FC = () => {
         });
 
         if (shouldUpdate) {
+          // Ensure we're sending valid integer quantities, not confidence values
+          const suggestedQuantity = Math.max(1, Math.round(Number(categorizedItem.normalized.suggestedQuantity)));
+
+          // Use normalized name if available and different from original
+          const updatedProductName = categorizedItem.category.normalizedName && 
+            categorizedItem.category.normalizedName !== originalItem.productName 
+            ? categorizedItem.category.normalizedName 
+            : originalItem.productName;
+
           const response = await apiRequest('PATCH', `/api/shopping-list/items/${originalItem.id}`, {
-            productName: originalItem.productName,
+            productName: updatedProductName,
             quantity: suggestedQuantity,
-            unit: suggestedUnit
+            unit: categorizedItem.normalized.suggestedUnit || 'COUNT'
           });
           return response.json();
         }
@@ -1607,7 +1625,8 @@ const ShoppingListPage: React.FC = () => {
                             navigate(`/shopping-route?listId=${selectedList.id}&mode=delivery`);
                           }}
                         >
-                          <StoreIcon className="h-6 w-6" />
+                          <StoreIcon className="h-6 w-6" />```text
+
                           <div className="text-center">
                             <div className="font-medium">Order for Delivery/Pickup</div>
                             <div className="text-xs text-gray-500">Place orders for pickup or delivery</div>
@@ -2139,62 +2158,82 @@ const ShoppingListPage: React.FC = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="grid gap-4">
-              {categorizedItems.map((item, index) => (
-                <Card key={index} className="border border-gray-200">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center">
-                        <span className="text-2xl mr-3">{item.icon}</span>
+            {categorizedItems.length === 0 ? (
+              <div className="text-center p-4">
+                <p className="text-gray-600">No items with suggested changes.</p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {categorizedItems.map((item, index) => (
+                  <Card key={index} className="border border-gray-200">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center">
+                          <span className="text-2xl mr-3">{item.icon}</span>
+                          <div>
+                            <h4 className="font-semibold text-lg">
+                              {item.category.normalizedName && item.category.normalizedName !== item.productName ? (
+                                <div>
+                                  <span className="text-green-600">{item.category.normalizedName}</span>
+                                  <div className="text-sm text-gray-500 line-through">was: {item.productName}</div>
+                                </div>
+                              ) : (
+                                item.productName
+                              )}
+                            </h4>
+                            <p className="text-sm text-gray-600">
+                              {item.category.category} • {item.category.aisle} • Confidence: {Math.round(item.category.confidence * 100)}%
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-medium text-green-600">
+                            Suggested: {item.normalized.suggestedQuantity} {item.normalized.suggestedUnit}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Original: {item.normalized.originalQuantity} {item.normalized.originalUnit}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
                         <div>
-                          <h4 className="font-semibold text-lg">{item.productName}</h4>
-                          <p className="text-sm text-gray-600">
-                            {item.category.category} • {item.category.aisle} • Confidence: {Math.round(item.category.confidence * 100)}%
-                          </p>
+                          <h5 className="text-sm font-medium text-gray-700 mb-1">AI Optimizations</h5>
+                          {item.category.normalizedName && item.category.normalizedName !== item.productName && (
+                            <p className="text-xs text-blue-600 mb-1">
+                              Name standardization: "{item.productName}" → "{item.category.normalizedName}"
+                            </p>
+                          )}
+                          <p className="text-xs text-gray-600">{item.normalized.conversionReason}</p>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-medium text-green-600">
-                          Suggested: {item.normalized.suggestedQuantity} {item.normalized.suggestedUnit}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          Original: {item.normalized.originalQuantity} {item.normalized.originalUnit}
-                        </div>
-                      </div>
-                    </div>
 
-                    <div className="space-y-3">
-                      <div>
-                        <h5 className="text-sm font-medium text-gray-700 mb-1">Quantity Optimization</h5>
-                        <p className="text-xs text-gray-600">{item.normalized.conversionReason}</p>
-                      </div>
+                        <div>
+                          <h5 className="text-sm font-medium text-gray-700 mb-1">Typical Retail Names</h5>
+                          <div className="flex flex-wrap gap-1">
+                            {item.category.typicalRetailNames.slice(0, 3).map((name, idx) => (
+                              <span key={idx} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                {name}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
 
-                      <div>
-                        <h5 className="text-sm font-medium text-gray-700 mb-1">Typical Retail Names</h5>
-                        <div className="flex flex-wrap gap-1">
-                          {item.category.typicalRetailNames.slice(0, 3).map((name, idx) => (
-                            <span key={idx} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                              {name}
-                            </span>
-                          ))}
+                        <div>
+                          <h5 className="text-sm font-medium text-gray-700 mb-1">Brand Variations</h5>
+                          <div className="flex flex-wrap gap-1">
+                            {item.category.brandVariations.slice(0, 3).map((brand, idx) => (
+                              <span key={idx} className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                                {brand}
+                              </span>
+                            ))}
+                          </div>
                         </div>
                       </div>
-
-                      <div>
-                        <h5 className="text-sm font-medium text-gray-700 mb-1">Brand Variations</h5>
-                        <div className="flex flex-wrap gap-1">
-                          {item.category.brandVariations.slice(0, 3).map((brand, idx) => (
-                            <span key={idx} className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
-                              {brand}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCategorization(false)}>
