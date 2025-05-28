@@ -1174,75 +1174,62 @@ const ShoppingListPage: React.FC = () => {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
-          <Card className="border border-gray-200 h-full">
-            <CardContent className="p-4 sm:p-5 h-full">
-              <div className="flex flex-col items-center text-center h-full">
-                <ShoppingCart className="h-8 w-8 sm:h-10 sm:w-10 text-primary mb-3 sm:mb-4 flex-shrink-0" />
-                <h3 className="text-sm sm:text-base font-semibold mb-2">Generate List</h3>
-                <p className="text-xs sm:text-sm text-gray-600 mb-4 flex-grow">
-                  Based on your purchase patterns
-                </p>
+          <Card className="border border-gray-200">
+            <CardContent className="p-4 sm:p-5">
+              <div className="flex flex-col items-center text-center">
+                <ShoppingCart className="h-8 w-8 sm:h-10 sm:w-10 text-primary mb-3 sm:mb-4" />
+                <h3 className="text-sm sm:text-base font-semibold mb-3 sm:mb-4">Generate List</h3>
                 <Button 
-                  className="w-full bg-primary hover:bg-primary/90 mt-auto"
+                  className="w-full bg-primary hover:bg-primary/90"
                   size="sm"
                   onClick={() => previewGenerateMutation.mutate()}
                   disabled={previewGenerateMutation.isPending}
                 >
                   {previewGenerateMutation.isPending ? (
-                    <span className="flex items-center text-xs sm:text-sm">
-                      <Loader2 className="animate-spin -ml-1 mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                      Generating...
-                    </span>
+                    <>
+                      <Loader2 className="animate-spin h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                      <span className="text-xs sm:text-sm">Generating...</span>
+                    </>
                   ) : (
-                    <span className="flex items-center text-xs sm:text-sm">
-                      <ListChecks className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                      Generate
-                    </span>
+                    <>
+                      <ListChecks className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                      <span className="text-xs sm:text-sm">Generate</span>
+                    </>
                   )}
                 </Button>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border border-gray-200 h-full">
-            <CardContent className="p-4 sm:p-5 h-full">
-              <div className="flex flex-col items-center text-center h-full">
-                <FileText className="h-8 w-8 sm:h-10 sm:w-10 text-blue-600 mb-3 sm:mb-4 flex-shrink-0" />
-                <h3 className="text-sm sm:text-base font-semibold mb-2">Upload List</h3>
-                <p className="text-xs sm:text-sm text-gray-600 mb-4 flex-grow">
-                  Import from file or photo
-                </p>
+          <Card className="border border-gray-200">
+            <CardContent className="p-4 sm:p-5">
+              <div className="flex flex-col items-center text-center">
+                <FileText className="h-8 w-8 sm:h-10 sm:w-10 text-blue-600 mb-3 sm:mb-4" />
+                <h3 className="text-sm sm:text-base font-semibold mb-3 sm:mb-4">Upload List</h3>
                 <Button 
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-auto"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                   size="sm"
                   onClick={() => setUploadDialogOpen(true)}
                 >
-                  <span className="flex items-center text-xs sm:text-sm">
-                    <Plus className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                    Upload
-                  </span>
+                  <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                  <span className="text-xs sm:text-sm">Upload</span>
                 </Button>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border border-gray-200 h-full">
-            <CardContent className="p-4 sm:p-5 h-full">
-              <div className="flex flex-col items-center text-center h-full">
-                <FileText className="h-8 w-8 sm:h-10 sm:w-10 text-green-600 mb-3 sm:mb-4 flex-shrink-0" />
-                <h3 className="text-sm sm:text-base font-semibold mb-2">Import Recipe</h3>
-                <p className="text-xs sm:text-sm text-gray-600 mb-4 flex-grow">
-                  Add ingredients from recipe URL
-                </p>
+          <Card className="border border-gray-200">
+            <CardContent className="p-4 sm:p-5">
+              <div className="flex flex-col items-center text-center">
+                <FileText className="h-8 w-8 sm:h-10 sm:w-10 text-green-600 mb-3 sm:mb-4" />
+                <h3 className="text-sm sm:text-base font-semibold mb-3 sm:mb-4">Import Recipe</h3>
                 <Button 
-                  className="w-full bg-green-600 hover:bg-green-700 text-white mt-auto"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white"
                   size="sm"
                   onClick={() => setRecipeDialogOpen(true)}
                 >
-                  <span className="flex items-center text-xs sm:text-sm">
-                    <Plus className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                    Recipe
-                  </span>
+                  <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                  <span className="text-xs sm:text-sm">Recipe</span>
                 </Button>
               </div>
             </CardContent>
