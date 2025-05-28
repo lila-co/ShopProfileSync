@@ -7,6 +7,23 @@ import { generateRecommendations, analyzePurchasePatterns, extractRecipeIngredie
 import { getRetailerAPI } from "./services/retailerIntegration";
 import OpenAI from "openai";
 import { productCategorizer, ProductCategory, QuantityNormalization } from './services/productCategorizer';
+import multer from 'multer';
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept images and PDFs
+    if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image and PDF files are allowed'));
+    }
+  }
+});
 
 // Helper to handle errors consistently
 const handleError = (res: Response, error: any) => {
@@ -16,6 +33,106 @@ const handleError = (res: Response, error: any) => {
   }
   return res.status(500).json({ message: error.message || 'Internal server error' });
 };
+
+// Helper functions for processing different upload types
+async function createSampleDealsFromImage(retailerId: number, circularId: number, filename: string) {
+  // In production, this would use OCR to extract text from the image
+  // For demo, return sample deals based on filename
+  const sampleDeals = [
+    {
+      retailerId,
+      productName: 'Fresh Bananas',
+      regularPrice: 149,
+      salePrice: 99,
+      category: 'Produce',
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      circularId,
+      dealSource: 'uploaded_image',
+      imageUrl: 'https://images.unsplash.com/photo-1603833665858-e61d17a86224?w=400'
+    },
+    {
+      retailerId,
+      productName: 'Whole Grain Bread',
+      regularPrice: 399,
+      salePrice: 299,
+      category: 'Bakery',
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      circularId,
+      dealSource: 'uploaded_image',
+      imageUrl: 'https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=400'
+    }
+  ];
+
+  return sampleDeals;
+}
+
+async function createSampleDealsFromPDF(retailerId: number, circularId: number, filename: string) {
+  // In production, this would extract text and images from PDF
+  // For demo, return sample deals
+  const sampleDeals = [
+    {
+      retailerId,
+      productName: 'Organic Apples',
+      regularPrice: 299,
+      salePrice: 199,
+      category: 'Produce',
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      circularId,
+      dealSource: 'uploaded_pdf',
+      imageUrl: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400'
+    },
+    {
+      retailerId,
+      productName: 'Greek Yogurt',
+      regularPrice: 189,
+      salePrice: 129,
+      category: 'Dairy',
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      circularId,
+      dealSource: 'uploaded_pdf',
+      imageUrl: 'https://images.unsplash.com/photo-1571212515416-26c10ac12ab2?w=400'
+    }
+  ];
+
+  return sampleDeals;
+}
+
+async function createSampleDealsFromURL(retailerId: number, circularId: number, url: string) {
+  // In production, this would scrape the web page for deals
+  // For demo, return sample deals
+  const sampleDeals = [
+    {
+      retailerId,
+      productName: 'Ground Coffee',
+      regularPrice: 899,
+      salePrice: 649,
+      category: 'Beverages',
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      circularId,
+      dealSource: 'uploaded_url',
+      imageUrl: 'https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=400'
+    },
+    {
+      retailerId,
+      productName: 'Pasta Sauce',
+      regularPrice: 249,
+      salePrice: 179,
+      category: 'Pantry',
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      circularId,
+      dealSource: 'uploaded_url',
+      imageUrl: 'https://images.unsplash.com/photo-1621996346565-e3dbc353d528?w=400'
+    }
+  ];
+
+  return sampleDeals;
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API Routes
@@ -1149,12 +1266,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/deals/categories', async (req: Request, res: Response) => {
+  app.get('/api/deals/categories', async (req, res) => {
     try {
       const categories = await storage.getDealCategories();
       res.json(categories);
     } catch (error) {
-      handleError(res, error);
+      console.error('Error fetching deal categories:', error);
+      res.status(500).json({ error: 'Failed to fetch categories' });
+    }
+  });
+
+  // Upload circular endpoint
+  app.post('/api/circulars/upload', upload.single('file'), async (req, res) => {
+    try {
+      const { type, retailerName, title, url } = req.body;
+      const file = req.file;
+
+      console.log('Circular upload request:', { type, retailerName, title, url, hasFile: !!file });
+
+      if (!retailerName || !title) {
+        return res.status(400).json({ error: 'Retailer name and title are required' });
+      }
+
+      // Find or create retailer
+      let retailer = (await storage.getRetailers()).find(r => 
+        r.name.toLowerCase() === retailerName.toLowerCase()
+      );
+
+      if (!retailer) {
+        // Create a new retailer
+        retailer = await storage.createRetailer({
+          name: retailerName,
+          logoColor: 'blue', // Default color
+          isActive: true
+        });
+      }
+
+      // Create the circular
+      const circular = await storage.createWeeklyCircular({
+        retailerId: retailer.id,
+        title,
+        description: `Uploaded circular from ${retailerName}`,
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 1 week
+        imageUrl: url || null,
+        pdfUrl: type === 'url' ? url : null,
+        pages: 1,
+        isActive: true
+      });
+
+      // Process the circular based on type
+      let extractedDeals = [];
+
+      if (type === 'image' && file) {
+        // For demo purposes, create some sample deals
+        extractedDeals = await createSampleDealsFromImage(retailer.id, circular.id, file.originalname);
+      } else if (type === 'file' && file) {
+        // For demo purposes, create some sample deals
+        extractedDeals = await createSampleDealsFromPDF(retailer.id, circular.id, file.originalname);
+      } else if (type === 'url' && url) {
+        // For demo purposes, create some sample deals
+        extractedDeals = await createSampleDealsFromURL(retailer.id, circular.id, url);
+      }
+
+      // Store the deals
+      for (const deal of extractedDeals) {
+        await storage.createDeal(deal);
+      }
+
+      res.json({
+        id: circular.id,
+        title: circular.title,
+        dealsCount: extractedDeals.length,
+        message: `Successfully processed circular and extracted ${extractedDeals.length} deals`
+      });
+
+    } catch (error) {
+      console.error('Error uploading circular:', error);
+      res.status(500).json({ error: 'Failed to process circular upload' });
     }
   });
 

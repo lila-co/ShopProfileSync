@@ -6,6 +6,7 @@ import { Plus } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { apiRequest } from '@/lib/queryClient';
 import BottomNavigation from '@/components/layout/BottomNavigation';
+import CircularUploadDialog from '@/components/deals/CircularUploadDialog';
 import {
   Select,
   SelectContent,
@@ -158,7 +159,15 @@ const DealsView: React.FC = () => {
 
   return (
     <div className="container mx-auto py-6">
-      <h1 className="text-2xl font-bold mb-6">Weekly Deals</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Weekly Deals</h1>
+        <CircularUploadDialog>
+          <Button variant="outline" size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            Upload Circular
+          </Button>
+        </CircularUploadDialog>
+      </div>
 
       <div className="flex flex-wrap gap-4 mb-6">
         <Select onValueChange={handleRetailerChange} value={selectedRetailer}>

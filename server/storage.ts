@@ -307,31 +307,31 @@ export class MemStorage implements IStorage {
       { retailerId: 1, productName: "Whole Grain Cereal", regularPrice: 499, salePrice: 399, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Breakfast", circularId: 1, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1544962503-4d9d8eb6c07b?w=400" },
       { retailerId: 1, productName: "Ground Coffee", regularPrice: 899, salePrice: 699, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Beverages", circularId: 1, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1559056961-84608fae629c?w=400" },
       { retailerId: 1, productName: "Frozen Pizza", regularPrice: 599, salePrice: 399, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Frozen Foods", circularId: 1, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400" },
-      
+
       // Target deals
       { retailerId: 2, productName: "Toilet Paper (24 pack)", regularPrice: 1999, salePrice: 1649, startDate: new Date(), endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), category: "Household", circularId: 2, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1584473457406-6240486418e9?w=400" },
       { retailerId: 2, productName: "Paper Towels", regularPrice: 1299, salePrice: 1099, startDate: new Date(), endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), category: "Household", circularId: 2, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1584473457452-00c2f71bdff8?w=400" },
       { retailerId: 2, productName: "Greek Yogurt", regularPrice: 149, salePrice: 99, startDate: new Date(), endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), category: "Dairy", circularId: 2, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1571212515416-26c10ac12ab2?w=400" },
       { retailerId: 2, productName: "Shampoo", regularPrice: 799, salePrice: 599, startDate: new Date(), endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), category: "Personal Care", circularId: 2, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=400" },
-      
+
       // Whole Foods deals
       { retailerId: 3, productName: "Organic Bananas", regularPrice: 199, salePrice: 149, startDate: new Date(), endDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), category: "Produce", circularId: 3, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?w=400" },
       { retailerId: 3, productName: "Chicken Breast", regularPrice: 799, salePrice: 599, startDate: new Date(), endDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), category: "Meat", circularId: 3, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1604503468506-a8da13d82791?w=400" },
       { retailerId: 3, productName: "Organic Apples", regularPrice: 399, salePrice: 349, startDate: new Date(), endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), category: "Produce", circularId: 3, dealSource: "circular", imageUrl: "https://i5.walmartimages.com/asr/cd75f189-77e3-40c4-835f-e3d503240812.7d1b3aa48083b60b2290364e6a0d050d.jpeg" },
       { retailerId: 3, productName: "Organic Pasta", regularPrice: 299, salePrice: 249, startDate: new Date(), endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), category: "Pantry", circularId: 3, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1551462147-37ec24413113?w=400" },
-      
+
       // Kroger deals
       { retailerId: 4, productName: "Eggs (dozen)", regularPrice: 359, salePrice: 299, startDate: new Date(), endDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000), category: "Dairy", circularId: 4, dealSource: "circular", imageUrl: "https://i5.walmartimages.com/asr/20fe5306-1652-449c-a7a3-12fc36b8b7c9.4ccc9f0e21cd39e47dbc30fe29951cd1.jpeg" },
       { retailerId: 4, productName: "Bread", regularPrice: 329, salePrice: 299, startDate: new Date(), endDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000), category: "Bakery", circularId: 4, dealSource: "circular", imageUrl: "https://scene7.samsclub.com/is/image/samsclub/0001111008737_A" },
-      
+
       // Costco deals
       { retailerId: 5, productName: "Bulk Rice (20lb)", regularPrice: 1999, salePrice: 1599, startDate: new Date(), endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), category: "Pantry", circularId: null, dealSource: "manual", imageUrl: "https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=400" },
       { retailerId: 5, productName: "Salmon Fillet (2lb)", regularPrice: 1599, salePrice: 1299, startDate: new Date(), endDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), category: "Seafood", circularId: null, dealSource: "manual", imageUrl: "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=400" },
-      
+
       // Safeway deals
       { retailerId: 6, productName: "Ice Cream", regularPrice: 599, salePrice: 399, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Frozen Foods", circularId: null, dealSource: "manual", imageUrl: "https://images.unsplash.com/photo-1501443762994-82bd5dace89a?w=400" },
       { retailerId: 6, productName: "Vitamin C", regularPrice: 1299, salePrice: 999, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Health & Wellness", circularId: null, dealSource: "manual", imageUrl: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400" },
-      
+
       // Trader Joe's deals
       { retailerId: 7, productName: "Organic Wine", regularPrice: 799, salePrice: 699, startDate: new Date(), endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), category: "Beverages", circularId: null, dealSource: "manual", imageUrl: "https://images.unsplash.com/photo-1510972527921-ce03766a1cf1?w=400" },
       { retailerId: 7, productName: "Trail Mix", regularPrice: 499, salePrice: 399, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Snacks", circularId: null, dealSource: "manual", imageUrl: "https://images.unsplash.com/photo-1609501676725-7186f0544c5a?w=400" },
@@ -1008,50 +1008,14 @@ export class DatabaseStorage implements IStorage {
 
   // Retailer methods
   async getRetailers(): Promise<Retailer[]> {
-    const allRetailers = await db.select().from(retailers);
-
-    if (allRetailers.length === 0) {
-      // Add default retailers if none exist
-      await this.createRetailer({
-        name: "Walmart",
-        logoColor: "blue",
-        apiEndpoint: null,
-        apiKey: null
-      });
-
-      await this.createRetailer({
-        name: "Target",
-        logoColor: "red",
-        apiEndpoint: null,
-        apiKey: null
-      });
-
-      await this.createRetailer({
-        name: "Kroger",
-        logoColor: "blue",
-        apiEndpoint: null,
-        apiKey: null
-      });
-
-      await this.createRetailer({
-        name: "Costco",
-        logoColor: "red",
-        apiEndpoint: null,
-        apiKey: null
-      });
-
-      return this.getRetailers();
-    }
-
-    return allRetailers;
+    return db.select().from(retailers);
   }
 
-  async getRetailer(id: number): Promise<Retailer | undefined> {
-    const [retailer] = await db.select().from(retailers).where(eq(retailers.id, id));
-    return retailer || undefined;
-  }
-
-  async createRetailer(retailerData: InsertRetailer): Promise<Retailer> {
+  async createRetailer(retailerData: {
+    name: string;
+    logoColor: string;
+    isActive: boolean;
+  }): Promise<Retailer> {
     const [retailer] = await db.insert(retailers).values(retailerData).returning();
     return retailer;
   }
