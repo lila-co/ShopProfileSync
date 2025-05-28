@@ -906,8 +906,7 @@ const ShoppingListPage: React.FC = () => {
         let shelfLocation = '';
         const name = item.productName.toLowerCase();
         if (name.includes('milk')) shelfLocation = 'Cooler Section';
-        else if (```text
-bread')) shelfLocation = 'End Cap';
+        else if (name.includes('bread')) shelfLocation = 'End Cap';
         else if (name.includes('banana')) shelfLocation = 'Front Display';
 
         aisleGroups[aisleInfo.aisle].items.push({
@@ -936,7 +935,7 @@ bread')) shelfLocation = 'End Cap';
     if (!selectedPlan) return '';
 
     const currentDate = new Date().toLocaleDateString();
-    
+
     // Build HTML content using string concatenation to avoid template literal issues
     let content = '<!DOCTYPE html>\n<html>\n<head>\n';
     content += '<title>Shopping Plan - ' + (selectedPlan.planType || 'Shopping List') + '</title>\n';
@@ -955,7 +954,7 @@ bread')) shelfLocation = 'End Cap';
     content += '.note { margin-top: 20px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #007bff; }\n';
     content += '@media print { body { margin: 0; } .mobile-shopping-item { display: none !important; } }\n';
     content += '</style>\n</head>\n<body>\n';
-    
+
     // Header section
     content += '<div class="header">\n';
     content += '<h1>Shopping Plan - ' + (selectedPlan.planType || 'Shopping List') + '</h1>\n';
@@ -1013,7 +1012,7 @@ bread')) shelfLocation = 'End Cap';
     content += '<span>Total Cost:</span>\n';
     content += '<span>$' + (selectedPlan.totalCost / 100).toFixed(2) + '</span>\n';
     content += '</div>\n';
-    
+
     if (selectedPlan.savings && selectedPlan.savings > 0) {
       content += '<div style="display: flex; justify-content: space-between; color: green;">\n';
       content += '<span>Total Savings:</span>\n';
@@ -1234,7 +1233,7 @@ bread')) shelfLocation = 'End Cap';
           </TabsList>
 
           <TabsContent value="items" className="pt-4">
-            
+
 <div className="space-y-3">
               {items.length === 0 ? (
                 <Card>
@@ -1583,7 +1582,7 @@ bread')) shelfLocation = 'End Cap';
                         </div>
                         <div className="p-3 sm:p-4">
                           <div className="flex items-center mb-3 sm:mb-4">
-                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-100 flex items-center justify-center mr-3 sm:mr-4 shrink-0">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green100 flex items-center justify-center mr-3 sm:mr-4 shrink-0">
                               <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                             </div>
                             <div>
@@ -1719,7 +1718,7 @@ bread')) shelfLocation = 'End Cap';
                             navigate('/shopping-route?listId=' + selectedList.id + '&mode=delivery');
                           }}
                         >
-                          <StoreIcon className="h-6 w-6" />```text
+                          <StoreIcon className="h-6 w-6" />
 
                           <div className="text-center">
                             <div className="font-medium">Order for Delivery/Pickup</div>
@@ -2386,7 +2385,6 @@ bread')) shelfLocation = 'End Cap';
                 <>
                   {/* Total Cost Section */}
                   <div className="bg-primary/5 rounded-lg p-3 sm:p-4 border border-primary/20">
-```text
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                       <h3 className="font-bold text-primary text-base sm:text-lg">Total Cost</h3>
                       <div className="text-left sm:text-right">
