@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -44,7 +43,7 @@ const CircularUploadDialog: React.FC<CircularUploadDialogProps> = ({ children })
       formData.append('type', data.type);
       formData.append('retailerName', data.retailerName);
       formData.append('title', data.title);
-      
+
       if (data.file) {
         formData.append('file', data.file);
       }
@@ -64,14 +63,16 @@ const CircularUploadDialog: React.FC<CircularUploadDialogProps> = ({ children })
       return response.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/deals'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/deals/summary'] });
       toast({
-        title: "Upload Successful",
-        description: `Circular "${data.title}" has been processed and deals extracted.`
+        title: "Success!",
+        description: `Circular uploaded successfully. Extracted ${data.dealsCount} deals.`,
       });
-      setOpen(false);
       resetForm();
+      setOpen(false);
+
+      // Invalidate deals and retailers queries to refresh the lists
+      queryClient.invalidateQueries({ queryKey: ['/api/deals'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/retailers'] });
     },
     onError: (error: any) => {
       toast({
