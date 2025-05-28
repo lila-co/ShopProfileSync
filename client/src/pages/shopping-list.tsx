@@ -1452,7 +1452,7 @@ bread')) shelfLocation = 'End Cap';
                   onValueChange={setNewItemUnit}
                   disabled={autoDetectUnit}
                 >
-                  <SelectTrigger className={`flex-1 ${autoDetectUnit ? 'opacity-60' : ''}`}>
+                  <SelectTrigger className={'flex-1 ' + (autoDetectUnit ? 'opacity-60' : '')}>
                     <SelectValue placeholder="Unit" />
                   </SelectTrigger>
                   <SelectContent>
