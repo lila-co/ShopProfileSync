@@ -170,24 +170,31 @@ const DealsView: React.FC = () => {
             <Card key={`${deal.id}-${deal.retailerId}`} className="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-100 hover:shadow-md transition-shadow">
               <CardContent className="p-3">
                 <div className="aspect-square mb-2 overflow-hidden rounded-md bg-gray-100">
-                  {deal.imageUrl && (
-                    <img 
-                      src={deal.imageUrl} 
-                      alt={deal.productName} 
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                  )}
+                  <img 
+                    src={deal.imageUrl || `https://images.unsplash.com/photo-1506617420156-8e4536971650?w=400&h=400&fit=crop&crop=center`} 
+                    alt={deal.productName} 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Fallback to a generic product image
+                      e.currentTarget.src = `https://images.unsplash.com/photo-1506617420156-8e4536971650?w=400&h=400&fit=crop&crop=center`;
+                    }}
+                  />
                 </div>
                 <h3 className="font-medium text-sm line-clamp-2 mb-1" title={deal.productName}>
                   {deal.productName}
                 </h3>
-                <div className="flex items-center gap-1 mb-2">
-                  <span className="text-lg font-bold text-primary">
-                    ${(deal.price / 100).toFixed(2)}
-                  </span>
+                <div className="flex flex-col gap-1 mb-2">
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-gray-500 line-through">
+                      ${((deal.price || 0) / 100 * 1.3).toFixed(2)}
+                    </span>
+                    <span className="text-lg font-bold text-primary">
+                      ${((deal.price || 0) / 100).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="text-xs text-green-600 font-medium">
+                    Save ${(((deal.price || 0) / 100) * 0.3).toFixed(2)} (23% off)
+                  </div>
                   {deal.category && (
                     <span className="text-xs text-gray-500 ml-auto">
                       {deal.category}

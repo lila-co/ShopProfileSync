@@ -1258,7 +1258,8 @@ export class DatabaseStorage implements IStorage {
           regularPrice: 389,
           salePrice: 349,
           startDate: new Date(),
-          endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
+          endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+          imageUrl: "https://example.com/milk.jpg"
         });
 
         await this.createDeal({
@@ -1268,7 +1269,8 @@ export class DatabaseStorage implements IStorage {
           regularPrice: 299,
           salePrice: 249,
           startDate: new Date(),
-          endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) // 3 days from now
+          endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
+          imageUrl: "https://example.com/eggs.jpg"
         });
 
         await this.createDeal({
@@ -1278,7 +1280,8 @@ export class DatabaseStorage implements IStorage {
           regularPrice: 799,
           salePrice: 649,
           startDate: new Date(),
-          endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000) // 5 days from now
+          endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days from now
+          imageUrl: "https://example.com/papertowels.jpg"
         });
       }
 
@@ -1327,8 +1330,17 @@ export class DatabaseStorage implements IStorage {
     return Array.from(categories);
   }
 
-  async createDeal(dealData: InsertStoreDeal): Promise<StoreDeal> {
-    const [deal] = await db.insert(storeDeals).values(dealData).returning();
+  async createDeal(deal: {
+    retailerId: number;
+    productName: string;
+    category: string;
+    regularPrice: number;
+    salePrice: number;
+    imageUrl?: string;
+    startDate: Date;
+    endDate: Date;
+  }): Promise<StoreDeal> {
+    const [deal] = await db.insert(storeDeals).values(deal).returning();
     return deal;
   }
 
