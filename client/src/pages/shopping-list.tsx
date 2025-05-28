@@ -460,13 +460,29 @@ const ShoppingListPage: React.FC = () => {
         const response = await apiRequest('POST', '/api/products/categorize-batch', {
           items: items.map(item => ({
             productName: item.productName,
-            quantity: item.quantity,
+            quantity: Math.max(1, Math.round(Number(item.quantity) || 1)),
             unit: item.unit || 'COUNT'
           }))
         });
 
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+        }
+
         const categorizedItems = await response.json();
-        return categorizedItems;
+        
+        // Validate and clean the response data
+        const cleanedItems = categorizedItems.map((item: any) => ({
+          ...item,
+          normalized: {
+            ...item.normalized,
+            originalQuantity: Math.max(1, Math.round(Number(item.normalized.originalQuantity) || 1)),
+            suggestedQuantity: Math.max(1, Math.round(Number(item.normalized.suggestedQuantity) || 1)),
+            normalizedQuantity: Math.max(1, Math.round(Number(item.normalized.normalizedQuantity) || 1))
+          }
+        }));
+
+        return cleanedItems;
       } catch (error) {
         console.error('Categorization failed:', error);
 
@@ -482,10 +498,11 @@ const ShoppingListPage: React.FC = () => {
             brandVariations: ['Generic']
           },
           normalized: {
-            originalQuantity: Number(item.quantity) || 1,
+            originalQuantity: Math.max(1, Math.round(Number(item.quantity) || 1)),
             originalUnit: item.unit || 'COUNT',
-            suggestedQuantity: Number(item.quantity) || 1,
+            suggestedQuantity: Math.max(1, Math.round(Number(item.quantity) || 1)),
             suggestedUnit: item.unit || 'COUNT',
+            normalizedQuantity: Math.max(1, Math.round(Number(item.quantity) || 1)),
             conversionReason: 'Categorization service unavailable'
           },
           icon: '🥫'
@@ -503,6 +520,7 @@ const ShoppingListPage: React.FC = () => {
       });
     },
     onError: (error: any) => {
+      setIsCategorizingItems(false);
       toast({
         title: "Error",
         description: "Failed to categorize items: " + error.message,
@@ -528,17 +546,22 @@ const ShoppingListPage: React.FC = () => {
           categorizedItem.normalized.suggestedUnit !== categorizedItem.normalized.originalUnit;
 
         if (shouldUpdate) {
+          // Ensure we're sending valid integer quantities, not confidence values
+          const suggestedQuantity = Math.max(1, Math.round(Number(categorizedItem.normalized.suggestedQuantity)));
+          
           const response = await apiRequest('PATCH', `/api/shopping-list/items/${originalItem.id}`, {
             productName: originalItem.productName,
-            quantity: Number(categorizedItem.normalized.suggestedQuantity),
-            unit: categorizedItem.normalized.suggestedUnit
+            quantity: suggestedQuantity,
+            unit: categorizedItem.normalized.suggestedUnit || 'COUNT'
           });
           return response.json();
         }
+        return null;
       });
 
-      await Promise.all(updatePromises.filter(Boolean));
-      return categorizedItems.length;
+      const results = await Promise.all(updatePromises);
+      const updatedCount = results.filter(result => result !== null).length;
+      return updatedCount;
     },
     onSuccess: (count) => {
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
