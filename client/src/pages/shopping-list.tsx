@@ -476,15 +476,15 @@ const ShoppingListPage: React.FC = () => {
           category: {
             category: 'Pantry & Canned Goods',
             aisle: 'Aisle 4-6',
-            confidence: 0.3,
+            confidence: 0.30,
             suggestedQuantityType: 'COUNT',
             typicalRetailNames: [item.productName],
             brandVariations: ['Generic']
           },
           normalized: {
-            originalQuantity: item.quantity,
+            originalQuantity: Number(item.quantity) || 1,
             originalUnit: item.unit || 'COUNT',
-            suggestedQuantity: item.quantity,
+            suggestedQuantity: Number(item.quantity) || 1,
             suggestedUnit: item.unit || 'COUNT',
             conversionReason: 'Categorization service unavailable'
           },
@@ -2385,7 +2385,7 @@ const ShoppingListPage: React.FC = () => {
                       <Button
                         onClick={() => {
                           setShowShoppingPlan(false);
-                          // Pass the selected plan data to the route page
+                          // Passthe selected plan data to the route page
                           const planData = encodeURIComponent(JSON.stringify(selectedPlan));
                           navigate(`/shopping-route?listId=${defaultList?.id}&mode=instore&planData=${planData}`);
                         }}
