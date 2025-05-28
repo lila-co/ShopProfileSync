@@ -5,7 +5,7 @@ export interface ProductCategory {
   aisle: string;
   section: string;
   confidence: number;
-  suggestedQuantityType: 'COUNT' | 'LB' | 'OZ' | 'PKG' | 'BOX' | 'CAN' | 'BOTTLE' | 'JAR' | 'BUNCH' | 'ROLL';
+  suggestedQuantityType: 'COUNT' | 'LB' | 'OZ' | 'PKG' | 'BOX' | 'CAN' | 'BOTTLE' | 'JAR' | 'BUNCH' | 'ROLL' | 'GALLON' | 'LOAF' | 'DOZEN';
   typicalRetailNames: string[];
   brandVariations: string[];
 }
