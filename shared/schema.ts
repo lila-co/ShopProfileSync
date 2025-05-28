@@ -15,6 +15,10 @@ export const anomalyTypeEnum = pgEnum('anomaly_type', [
   'VACATION', 'SEASONAL', 'HOLIDAY', 'SICKNESS', 'GUESTS', 'OTHER'
 ]);
 
+export const userRoleEnum = pgEnum('user_role', [
+  'owner', 'admin', 'employee', 'test_user', 'customer'
+]);
+
 // User Schema
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -23,6 +27,8 @@ export const users = pgTable("users", {
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   email: text("email").notNull().unique(),
+  role: userRoleEnum("role").default("customer"),
+  isAdmin: boolean("is_admin").default(false),
   householdType: text("household_type"),
   householdSize: integer("household_size"),
   preferNameBrand: boolean("prefer_name_brand").default(false),
@@ -102,7 +108,8 @@ export const shoppingLists = pgTable("shopping_lists", {
 
 // Product Unit Enum
 export const unitEnum = pgEnum('unit_type', [
-  'COUNT', 'LB', 'OZ', 'G', 'KG', 'PKG', 'ROLL', 'BOX', 'CAN', 'BOTTLE', 'JAR', 'BUNCH'
+  'COUNT', 'LB', 'OZ', 'G', 'KG', 'PKG', 'ROLL', 'BOX', 'CAN', 'BOTTLE', 'JAR', 'BUNCH', 'GALLON', 'LOAF', 
+  'DOZEN', 'PINT', 'QUART', 'CUP', 'TSP', 'TBSP', 'ML', 'L', 'SLICE', 'PACK', 'BAG', 'CONTAINER', 'PIECE', 'UNIT', 'SERVING'
 ]);
 
 // Shopping List Item Schema

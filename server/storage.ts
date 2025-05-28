@@ -1,4 +1,4 @@
-import { eq, and, gte, lt } from "drizzle-orm";
+import { eq, and, gte, lt, ilike, or } from "drizzle-orm";
 import { db } from "./db";
 import { 
   users, retailers, retailerAccounts, products, purchases, purchaseItems,
@@ -118,6 +118,10 @@ export interface IStorage {
   recordAffiliateConversion(conversion: InsertAffiliateConversion): Promise<AffiliateConversion>;
   getAffiliateConversions(userId?: number, status?: string): Promise<AffiliateConversion[]>;
   updateAffiliateConversionStatus(id: number, status: string): Promise<AffiliateConversion>;
+
+  // Role switching methods
+  switchUserRole(currentUserId: number, targetRole: string): Promise<User>;
+  getAllUsers(): Promise<User[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -193,8 +197,28 @@ export class MemStorage implements IStorage {
       buyInBulk: true,
       prioritizeCostSavings: true,
       shoppingRadius: 10,
+      role: 'owner'
     };
     this.users.set(defaultUser.id, defaultUser);
+
+        // Create test user
+    const testUser: User = {
+      id: this.userIdCounter++,
+      username: "testuser",
+      password: "hashed_password",
+      firstName: "Test",
+      lastName: "User",
+      email: "test.user@example.com",
+      householdType: "SINGLE",
+      householdSize: 1,
+      preferNameBrand: false,
+      preferOrganic: true,
+      buyInBulk: false,
+      prioritizeCostSavings: false,
+      shoppingRadius: 5,
+      role: 'test_user'
+    };
+    this.users.set(testUser.id, testUser);
 
     // Create retailers
     const retailers = [
@@ -426,6 +450,37 @@ export class MemStorage implements IStorage {
     const updatedUser = { ...user, ...userData };
     this.users.set(userId, updatedUser);
     return updatedUser;
+  }
+
+  async switchUserRole(currentUserId: number, targetRole: string): Promise<User> {
+    const currentUser = this.users.get(currentUserId);
+    if (!currentUser) {
+      throw new Error('Current user not found');
+    }
+
+    // Only owner can switch roles
+    if (currentUser.role !== 'owner') {
+      throw new Error('Only the owner can switch user roles');
+    }
+
+    // Find the target user based on role
+    let targetUser: User | undefined;
+
+    if (targetRole === 'test_user') {
+      targetUser = Array.from(this.users.values()).find(u => u.role === 'test_user');
+    } else if (targetRole === 'owner') {
+      targetUser = Array.from(this.users.values()).find(u => u.role === 'owner');
+    }
+
+    if (!targetUser) {
+      throw new Error(`No user found with role: ${targetRole}`);
+    }
+
+    return targetUser;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
   }
 
   // Retailer methods
@@ -1113,6 +1168,216 @@ export class MemStorage implements IStorage {
     this.retailers.set(newRetailer.id, newRetailer);
     return newRetailer;
   }
+
+  async createShoppingList(data: any): Promise<ShoppingList> {
+      const id = this.shoppingListIdCounter++;
+      const newList: ShoppingList = {
+          id,
+          userId: data.userId,
+          name: data.name,
+          isDefault: data.isDefault || false,
+          description: data.description || null
+      };
+      this.shoppingLists.set(id, newList);
+      return newList;
+  }
+
+  async updateShoppingList(id: number, data: any): Promise<ShoppingList> {
+      const shoppingList = this.shoppingLists.get(id);
+      if (!shoppingList) {
+          throw new Error("Shopping list not found");
+      }
+
+      const updatedList: ShoppingList = {
+          ...shoppingList,
+          name: data.name || shoppingList.name,
+          isDefault: data.isDefault !== undefined ? data.isDefault : shoppingList.isDefault,
+          description: data.description !== undefined ? data.description : shoppingList.description
+      };
+
+      this.shoppingLists.set(id, updatedList);
+      return updatedList;
+  }
+
+  async deleteShoppingList(id: number): Promise<void> {
+      // Delete shopping list items first
+      for (const [itemId, item] of this.shoppingListItems.entries()) {
+          if (item.shoppingListId === id) {
+              this.shoppingListItems.delete(itemId);
+          }
+      }
+
+      this.shoppingLists.delete(id);
+  }
+
+  async authenticateUser(username: string, password: string): Promise<User | undefined> {
+      for (const user of this.users.values()) {
+          if (user.username === username && user.password === password) {
+              return user;
+          }
+      }
+      return undefined;
+  }
+
+  async searchDeals(filters: any): Promise<StoreDeal[]> {
+      let deals = Array.from(this.storeDeals.values());
+
+      if (filters.retailerId) {
+          deals = deals.filter(deal => deal.retailerId === filters.retailerId);
+      }
+
+      if (filters.category) {
+          deals = deals.filter(deal => deal.category === filters.category);
+      }
+
+      if (filters.maxPrice) {
+          deals = deals.filter(deal => deal.salePrice <= filters.maxPrice);
+      }
+
+      if (filters.limit) {
+          deals = deals.slice(0, filters.limit);
+      }
+
+      if (filters.offset) {
+          deals = deals.slice(filters.offset);
+      }
+
+      return deals;
+  }
+
+  async getUserClaimedDeals(userId: number): Promise<any[]> {
+      // Mock data for demo - in production you'd have a claimed_deals table
+      return [
+          {
+              id: 1,
+              dealId: 1,
+              userId,
+              claimedAt: new Date(),
+              productName: 'Organic Bananas',
+              savings: 50,
+              retailerName: 'Walmart'
+          }
+      ];
+  }
+
+    async searchShoppingLists(query: string, userId: number): Promise<ShoppingList[]> {
+        const results: ShoppingList[] = [];
+        for (const list of this.shoppingLists.values()) {
+            if (list.userId === userId && (list.name.includes(query) || (list.description && list.description.includes(query)))) {
+                results.push(list);
+            }
+        }
+        return results;
+    }
+    
+    async searchPurchases(filters: any): Promise<Purchase[]> {
+        let results = Array.from(this.purchases.values());
+    
+        if (filters.userId) {
+            results = results.filter(purchase => purchase.userId === filters.userId);
+        }
+        if (filters.retailerId) {
+            results = results.filter(purchase => purchase.retailerId === filters.retailerId);
+        }
+        if (filters.startDate) {
+            const startDate = new Date(filters.startDate);
+            results = results.filter(purchase => new Date(purchase.purchaseDate) >= startDate);
+        }
+        if (filters.endDate) {
+            const endDate = new Date(filters.endDate);
+            results = results.filter(purchase => new Date(purchase.purchaseDate) <= endDate);
+        }
+        return results;
+    }
+    
+    async getUserStatistics(userId: number): Promise<any> {
+        // Mock statistics for demo
+        return {
+            totalPurchases: 25,
+            totalSpent: 125000, // $1,250.00
+            averageOrderValue: 5000, // $50.00
+            mostShoppedRetailer: 'Walmart',
+            topCategories: [
+                { category: 'Groceries', amount: 85000, percentage: 68 },
+                { category: 'Household', amount: 25000, percentage: 20 },
+                { category: 'Personal Care', amount: 15000, percentage: 12 }
+            ],
+            monthlyTrend: [
+                { month: 'Jan', amount: 42000 },
+                { month: 'Feb', amount: 38000 },
+                { month: 'Mar', amount: 45000 }
+            ],
+            savingsThisMonth: 1500 // $15.00
+        };
+    }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(u => u.username === username);
+  }
+
+  async createPurchase(data: any): Promise<Purchase> {
+      const id = this.purchaseIdCounter++;
+      const newPurchase: Purchase = {
+          id,
+          userId: data.userId,
+          retailerId: data.retailerId,
+          purchaseDate: data.purchaseDate,
+          totalAmount: data.totalAmount,
+          receiptData: data.receiptData,
+          receiptImageUrl: data.receiptImageUrl || null
+      };
+      this.purchases.set(id, newPurchase);
+      return newPurchase;
+  }
+
+  async updatePurchase(id: number, data: any): Promise<Purchase> {
+      const purchase = this.purchases.get(id);
+      if (!purchase) {
+          throw new Error("Purchase not found");
+      }
+
+      const updatedPurchase: Purchase = {
+          ...purchase,
+          userId: data.userId || purchase.userId,
+          retailerId: data.retailerId || purchase.retailerId,
+          purchaseDate: data.purchaseDate || purchase.purchaseDate,
+          totalAmount: data.totalAmount || purchase.totalAmount,
+          receiptData: data.receiptData || purchase.receiptData,
+          receiptImageUrl: data.receiptImageUrl !== undefined ? data.receiptImageUrl : purchase.receiptImageUrl
+      };
+
+      this.purchases.set(id, updatedPurchase);
+      return updatedPurchase;
+  }
+
+  async deletePurchase(id: number): Promise<void> {
+      this.purchases.delete(id);
+  }
+
+  async updateRetailerAccount(id: number, data: any): Promise<RetailerAccount> {
+      const account = this.retailerAccounts.get(id);
+      if (!account) {
+          throw new Error("Retailer account not found");
+      }
+
+      const updatedAccount: RetailerAccount = {
+          ...account,
+          username: data.username || account.username,
+          password: data.password || account.password,
+          apiKey: data.apiKey || account.apiKey
+      };
+
+      this.retailerAccounts.set(id, updatedAccount);
+      return updatedAccount;
+  }
+
+  async deleteRetailerAccount(id: number): Promise<void> {
+      this.retailerAccounts.delete(id);
+  }
+
+  async getRetailerAccount(id: number): Promise<RetailerAccount | undefined> {
+      return this.retailerAccounts.get(id);
+  }
 }
 
 // Database implementation of the storage interface
@@ -1174,6 +1439,7 @@ export class DatabaseStorage implements IStorage {
     if (!userData.id) throw new Error("User ID is required for update");
 
     try {
+```python
       const [updatedUser] = await db
         .update(users)
         .set(userData)
@@ -1393,19 +1659,6 @@ export class DatabaseStorage implements IStorage {
   async getShoppingLists(): Promise<ShoppingList[]> {
     try {
       const lists = await db.select().from(shoppingLists);
-
-      if (lists.length === 0) {
-        // Create a default shopping list if none exists
-        const newList = await this.createShoppingList({
-          name: "My Shopping List",
-          userId: 1,
-          isDefault: true
-        });
-
-        return [newList];
-      }
-
-      return lists;
     } catch (error) {
       console.error("Error getting shopping lists:", error);
       throw error;
@@ -2096,6 +2349,221 @@ export class DatabaseStorage implements IStorage {
       console.error("Error updating affiliate conversion status:", error);
       throw error;
     }
+  }
+  async getShoppingLists() {
+    return db.select().from(shoppingLists);
+  }
+
+  async createShoppingList(data: any) {
+    const [newList] = await db.insert(shoppingLists).values(data).returning();
+    return newList;
+  }
+
+  async updateShoppingList(id: number, data: any) {
+    const [updatedList] = await db.update(shoppingLists)
+      .set(data)
+      .where(eq(shoppingLists.id, id))
+      .returning();
+    return updatedList;
+  }
+
+  async deleteShoppingList(id: number) {
+    // First delete all items in the list
+    await db.delete(shoppingListItems).where(eq(shoppingListItems.shoppingListId, id));
+    // Then delete the list itself
+    await db.delete(shoppingLists).where(eq(shoppingLists.id, id));
+  }
+
+  async authenticateUser(username: string, password: string) {
+    const [user] = await db.select()
+      .from(users)
+      .where(and(eq(users.username, username), eq(users.password, password)))
+      .limit(1);
+    return user;
+  }
+
+  async getUserByUsername(username: string) {
+    const [user] = await db.select()
+      .from(users)
+      .where(eq(users.username, username))
+      .limit(1);
+    return user;
+  }
+
+  async createUser(data: any) {
+    const [newUser] = await db.insert(users).values(data).returning();
+    return newUser;
+  }
+
+  async getPurchases(userId?: number, limit?: number, offset?: number) {
+    let query = db.select().from(purchases);
+
+    if (userId) {
+      query = query.where(eq(purchases.userId, userId));
+    }
+
+    if (limit) {
+      query = query.limit(limit);
+    }
+
+    if (offset) {
+      query = query.offset(offset);
+    }
+
+    return query;
+  }
+
+  async createPurchase(data: any) {
+    const [newPurchase] = await db.insert(purchases).values(data).returning();
+    return newPurchase;
+  }
+
+  async updatePurchase(id: number, data: any) {
+    const [updatedPurchase] = await db.update(purchases)
+      .set(data)
+      .where(eq(purchases.id, id))
+      .returning();
+    return updatedPurchase;
+  }
+
+  async deletePurchase(id: number) {
+    await db.delete(purchases).where(eq(purchases.id, id));
+  }
+
+  async updateRetailerAccount(id: number, data: any) {
+    const [updatedAccount] = await db.update(retailerAccounts)
+      .set(data)
+      .where(eq(retailerAccounts.id, id))
+      .returning();
+    return updatedAccount;
+  }
+
+  async deleteRetailerAccount(id: number) {
+    await db.delete(retailerAccounts).where(eq(retailerAccounts.id, id));
+  }
+
+  async getRetailerAccount(id: number) {
+    const [account] = await db.select()
+      .from(retailerAccounts)
+      .where(eq(retailerAccounts.id, id))
+      .limit(1);
+    return account;
+  }
+
+  async claimDeal(dealId: number, userId: number) {
+    // In a real app, you'd have a separate table for claimed deals
+    // For now, just return success
+    return {
+      dealId,
+      userId,
+      claimedAt: new Date(),
+      success: true
+    };
+  }
+
+  async searchDeals(filters: any) {
+    let query = db.select().from(storeDeals);
+
+    // Apply filters
+    if (filters.retailerId) {
+      query = query.where(eq(storeDeals.retailerId, filters.retailerId));
+    }
+
+    if (filters.category) {
+      query = query.where(eq(storeDeals.category, filters.category));
+    }
+
+    if (filters.maxPrice) {
+      query = query.where(lte(storeDeals.salePrice, filters.maxPrice));
+    }
+
+    if (filters.limit) {
+      query = query.limit(filters.limit);
+    }
+
+    if (filters.offset) {
+      query = query.offset(filters.offset);
+    }
+
+    return query;
+  }
+
+  async getUserClaimedDeals(userId: number) {
+    // Mock data for demo - in production you'd have a claimed_deals table
+    return [
+      {
+        id: 1,
+        dealId: 1,
+        userId,
+        claimedAt: new Date(),
+        productName: 'Organic Bananas',
+        savings: 50,
+        retailerName: 'Walmart'
+      }
+    ];
+  }
+
+  async searchShoppingLists(query: string, userId: number) {
+    return db.select()
+      .from(shoppingLists)
+      .where(
+        and(
+          eq(shoppingLists.userId, userId),
+          or(
+            ilike(shoppingLists.name, `%${query}%`),
+            ilike(shoppingLists.description, `%${query}%`)
+          )
+        )
+      );
+  }
+
+  async searchPurchases(filters: any) {
+    let query = db.select().from(purchases);
+
+    const conditions = [];
+
+    if (filters.userId) {
+      conditions.push(eq(purchases.userId, filters.userId));
+    }
+
+    if (filters.retailerId) {
+      conditions.push(eq(purchases.retailerId, filters.retailerId));
+    }
+
+    if (filters.startDate) {
+      conditions.push(gte(purchases.purchaseDate, filters.startDate));
+    }
+
+    if (filters.endDate) {
+      conditions.push(lte(purchases.purchaseDate, filters.endDate));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    return query;
+  }
+
+  async getUserStatistics(userId: number) {
+    // Mock statistics for demo
+    return {
+      totalPurchases: 25,
+      totalSpent: 125000, // $1,250.00
+      averageOrderValue: 5000, // $50.00
+      mostShoppedRetailer: 'Walmart',
+      topCategories: [
+        { category: 'Groceries', amount: 85000, percentage: 68 },
+        { category: 'Household', amount: 25000, percentage: 20 },
+        { category: 'Personal Care', amount: 15000, percentage: 12 }
+      ],
+      monthlyTrend: [
+        { month: 'Jan', amount: 42000 },
+        { month: 'Feb', amount: 38000 },
+        { month: 'Mar', amount: 45000 }
+      ],
+      savingsThisMonth: 1500 // $15.00
+    };
   }
 }
 

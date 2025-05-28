@@ -69,16 +69,28 @@ export default function PurchaseAnomalies() {
   // Get all anomalies
   const { data: anomalies = [], isLoading } = useQuery({
     queryKey: ['/api/anomalies'],
-    queryFn: () => apiRequest<PurchaseAnomaly[]>('/api/anomalies')
+    queryFn: async () => {
+      const response = await fetch('/api/anomalies');
+      if (!response.ok) {
+        throw new Error('Failed to fetch anomalies');
+      }
+      return response.json();
+    }
   });
 
   // Create anomaly mutation
   const createAnomalyMutation = useMutation({
-    mutationFn: (anomaly: Partial<PurchaseAnomaly>) => 
-      apiRequest('/api/anomalies', {
+    mutationFn: async (anomaly: Partial<PurchaseAnomaly>) => {
+      const response = await fetch('/api/anomalies', {
         method: 'POST',
-        data: { ...anomaly, affectedCategories: selectedCategories }
-      }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...anomaly, affectedCategories: selectedCategories })
+      });
+      if (!response.ok) {
+        throw new Error('Failed to create anomaly');
+      }
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/anomalies'] });
       queryClient.invalidateQueries({ queryKey: ['/api/recommendations'] });
@@ -110,10 +122,15 @@ export default function PurchaseAnomalies() {
 
   // Delete anomaly mutation
   const deleteAnomalyMutation = useMutation({
-    mutationFn: (id: number) => 
-      apiRequest(`/api/anomalies/${id}`, {
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/anomalies/${id}`, {
         method: 'DELETE'
-      }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete anomaly');
+      }
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/anomalies'] });
       queryClient.invalidateQueries({ queryKey: ['/api/recommendations'] });

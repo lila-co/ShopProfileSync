@@ -1,4 +1,4 @@
-# SavvyCart Scalability Plan
+# SmartCart Scalability Plan
 
 ## Architecture Optimizations
 

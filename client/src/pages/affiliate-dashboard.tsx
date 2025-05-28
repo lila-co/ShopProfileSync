@@ -493,8 +493,8 @@ const AffiliateDashboard: React.FC = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="affiliate-prefix">SavvyCart Affiliate Prefix</Label>
-                    <Input id="affiliate-prefix" defaultValue="savvycart_aff" />
+                    <Label htmlFor="affiliate-prefix">SmartCart Affiliate Prefix</Label>
+                    <Input id="affiliate-prefix" defaultValue="smartcart_aff" />
                     <p className="text-xs text-gray-500">
                       Prefix used in affiliate tracking codes for attribution
                     </p>

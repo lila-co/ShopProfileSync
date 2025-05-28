@@ -174,7 +174,7 @@ const RetailerLinking: React.FC = () => {
     return retailerAccounts?.some(account => account.retailerId === retailerId && account.isConnected);
   };
 
-  if (retailersLoading) {
+  if (retailersLoading || !retailers) {
     return <div>Loading retailers...</div>;
   }
 

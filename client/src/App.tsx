@@ -12,6 +12,7 @@ import InsightsPage from '@/pages/insights';
 import RecommendationsPage from '@/pages/recommendations';
 import InternalAnalytics from '@/pages/internal-analytics';
 import AdminSettings from '@/pages/admin-settings';
+import AdminProfile from '@/pages/admin-profile';
 import AffiliateDashboard from '@/pages/affiliate-dashboard';
 import { queryClient } from '@/lib/queryClient';
 import Shop from '@/pages/shop'; // Import the Shop component
@@ -35,6 +36,7 @@ function App() {
             <Route path="/recommendations" component={RecommendationsPage} />
             <Route path="/internal/analytics" component={InternalAnalytics} />
             <Route path="/admin-settings" component={AdminSettings} />
+            <Route path="/admin-profile" component={AdminProfile} />
             <Route path="/affiliate-dashboard" component={AffiliateDashboard} />
             <Route path="/shop" component={Shop} />
             <Route path="/shopping-route" component={ShoppingRoute} />
