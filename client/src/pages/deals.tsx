@@ -63,6 +63,24 @@ const DealsView: React.FC = () => {
     }
   });
 
+  // Fetch retailers for filter
+  const { data: retailers, isLoading: isLoadingRetailers } = useQuery({
+    queryKey: ['/api/retailers'],
+    queryFn: async () => {
+      const response = await fetch('/api/retailers');
+      return response.json();
+    }
+  });
+
+  // Fetch categories for filter
+  const { data: categories, isLoading: isLoadingCategories } = useQuery({
+    queryKey: ['/api/deals/categories'],
+    queryFn: async () => {
+      const response = await fetch('/api/deals/categories');
+      return response.json();
+    }
+  });
+
   // Add deal to shopping list mutation
   const addDealToListMutation = useMutation({
     mutationFn: async (deal: any) => {
@@ -98,16 +116,22 @@ const DealsView: React.FC = () => {
   };
 
 
-  const retailers = [
+  // Build retailer options
+  const retailerOptions = [
     { label: 'All Retailers', value: 'all' },
-    { label: 'Amazon', value: 'amazon' },
-    { label: 'Walmart', value: 'walmart' },
+    ...(retailers || []).map(retailer => ({
+      label: retailer.name,
+      value: retailer.id.toString()
+    }))
   ];
 
-  const categories = [
+  // Build category options
+  const categoryOptions = [
     { label: 'All Categories', value: 'all' },
-    { label: 'Electronics', value: 'electronics' },
-    { label: 'Home Goods', value: 'home-goods' },
+    ...(categories || []).map(category => ({
+      label: category,
+      value: category
+    }))
   ];
 
 
@@ -142,11 +166,15 @@ const DealsView: React.FC = () => {
             <SelectValue placeholder="Filter by Retailer" />
           </SelectTrigger>
           <SelectContent>
-            {retailers.map((retailer) => (
-              <SelectItem key={retailer.value} value={retailer.value}>
-                {retailer.label}
-              </SelectItem>
-            ))}
+            {isLoadingRetailers ? (
+              <SelectItem value="loading" disabled>Loading retailers...</SelectItem>
+            ) : (
+              retailerOptions.map((retailer) => (
+                <SelectItem key={retailer.value} value={retailer.value}>
+                  {retailer.label}
+                </SelectItem>
+              ))
+            )}
           </SelectContent>
         </Select>
 
@@ -155,11 +183,15 @@ const DealsView: React.FC = () => {
             <SelectValue placeholder="Filter by Category" />
           </SelectTrigger>
           <SelectContent>
-            {categories.map((category) => (
-              <SelectItem key={category.value} value={category.value}>
-                {category.label}
-              </SelectItem>
-            ))}
+            {isLoadingCategories ? (
+              <SelectItem value="loading" disabled>Loading categories...</SelectItem>
+            ) : (
+              categoryOptions.map((category) => (
+                <SelectItem key={category.value} value={category.value}>
+                  {category.label}
+                </SelectItem>
+              ))
+            )}
           </SelectContent>
         </Select>
       </div>
