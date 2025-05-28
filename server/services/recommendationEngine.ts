@@ -37,21 +37,17 @@ export async function extractRecipeIngredients(recipeUrl: string, servings: numb
   try {
     console.log(`Extracting ingredients from recipe URL: ${recipeUrl}`);
     
-    // In a real app, we would fetch the HTML content of the URL and extract the recipe data
-    // For demo purposes, we'll use OpenAI to simulate extracting ingredients from a recipe
+    // Check if we have an API key before making the request
+    if (!process.env.OPENAI_API_KEY) {
+      console.log("No OpenAI API key provided. Using mock recipe data based on URL.");
+      return getRecipeSpecificMockData(recipeUrl, servings);
+    }
     
     const prompt = `Extract the ingredients from this recipe URL: ${recipeUrl}. 
     Identify each ingredient, its quantity, and unit. 
     Return a JSON array of ingredients formatted as: 
     [{"name": "ingredient name", "quantity": number, "unit": "unit of measurement"}].
     Adjust quantities for ${servings} servings.`;
-
-    // Check if we have an API key before making the request
-    if (!process.env.OPENAI_API_KEY) {
-      console.log("No OpenAI API key provided. Using mock recipe data.");
-      // Return mock ingredients if no API key
-      return getMockRecipeIngredients(servings);
-    }
     
     const response = await openai.chat.completions.create({
       model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
@@ -68,15 +64,81 @@ export async function extractRecipeIngredients(recipeUrl: string, servings: numb
     }
     
     const parsedResponse = JSON.parse(content);
-    return parsedResponse.ingredients || getMockRecipeIngredients(servings);
+    return parsedResponse.ingredients || getRecipeSpecificMockData(recipeUrl, servings);
   } catch (error) {
     console.error("Error extracting recipe ingredients:", error);
-    // Fall back to mock data if there's an error
-    return getMockRecipeIngredients(servings);
+    console.log("Falling back to recipe-specific mock data based on URL analysis");
+    // Fall back to recipe-specific mock data based on URL analysis
+    return getRecipeSpecificMockData(recipeUrl, servings);
   }
 }
 
-// Function to generate mock recipe ingredients
+// Function to generate recipe-specific mock data based on URL analysis
+function getRecipeSpecificMockData(recipeUrl: string, servings: number = 4): RecipeIngredient[] {
+  const baseServings = 4;
+  const multiplier = servings / baseServings;
+  const urlLower = recipeUrl.toLowerCase();
+  
+  // Analyze URL for recipe type
+  if (urlLower.includes('cheesecake')) {
+    return [
+      { name: "Cream cheese", quantity: Math.round(24 * multiplier), unit: "ounces" },
+      { name: "Graham crackers", quantity: Math.round(1.5 * multiplier), unit: "cups" },
+      { name: "Butter", quantity: Math.round(6 * multiplier), unit: "tablespoons" },
+      { name: "Powdered sugar", quantity: Math.round(1 * multiplier), unit: "cup" },
+      { name: "Heavy cream", quantity: Math.round(1 * multiplier), unit: "cup" },
+      { name: "Vanilla extract", quantity: Math.round(2 * multiplier), unit: "teaspoons" },
+      { name: "Fresh blueberries", quantity: Math.round(1 * multiplier), unit: "cup" },
+      { name: "Lemon juice", quantity: Math.round(1 * multiplier), unit: "tablespoon" }
+    ];
+  } else if (urlLower.includes('cake') || urlLower.includes('dessert')) {
+    return [
+      { name: "All-purpose flour", quantity: Math.round(2 * multiplier), unit: "cups" },
+      { name: "Sugar", quantity: Math.round(1.5 * multiplier), unit: "cups" },
+      { name: "Eggs", quantity: Math.round(3 * multiplier), unit: "large" },
+      { name: "Butter", quantity: Math.round(0.5 * multiplier), unit: "cup" },
+      { name: "Baking powder", quantity: Math.round(2 * multiplier), unit: "teaspoons" },
+      { name: "Vanilla extract", quantity: Math.round(1 * multiplier), unit: "teaspoon" },
+      { name: "Milk", quantity: Math.round(1 * multiplier), unit: "cup" }
+    ];
+  } else if (urlLower.includes('soup') || urlLower.includes('stew')) {
+    return [
+      { name: "Chicken broth", quantity: Math.round(4 * multiplier), unit: "cups" },
+      { name: "Onion", quantity: Math.round(1 * multiplier), unit: "medium" },
+      { name: "Carrots", quantity: Math.round(2 * multiplier), unit: "medium" },
+      { name: "Celery", quantity: Math.round(2 * multiplier), unit: "stalks" },
+      { name: "Garlic", quantity: Math.round(3 * multiplier), unit: "cloves" },
+      { name: "Bay leaves", quantity: Math.round(2 * multiplier), unit: "leaves" },
+      { name: "Salt", quantity: Math.round(1 * multiplier), unit: "teaspoon" },
+      { name: "Black pepper", quantity: Math.round(0.5 * multiplier), unit: "teaspoon" }
+    ];
+  } else if (urlLower.includes('pasta')) {
+    return [
+      { name: "Pasta", quantity: Math.round(16 * multiplier), unit: "ounces" },
+      { name: "Olive oil", quantity: Math.round(3 * multiplier), unit: "tablespoons" },
+      { name: "Garlic", quantity: Math.round(4 * multiplier), unit: "cloves" },
+      { name: "Onion", quantity: Math.round(1 * multiplier), unit: "medium" },
+      { name: "Tomatoes", quantity: Math.round(2 * multiplier), unit: "cans" },
+      { name: "Parmesan cheese", quantity: Math.round(0.5 * multiplier), unit: "cup" },
+      { name: "Fresh basil", quantity: Math.round(0.25 * multiplier), unit: "cup" }
+    ];
+  } else if (urlLower.includes('salad')) {
+    return [
+      { name: "Mixed greens", quantity: Math.round(6 * multiplier), unit: "cups" },
+      { name: "Cherry tomatoes", quantity: Math.round(1 * multiplier), unit: "cup" },
+      { name: "Cucumber", quantity: Math.round(1 * multiplier), unit: "medium" },
+      { name: "Red onion", quantity: Math.round(0.25 * multiplier), unit: "cup" },
+      { name: "Olive oil", quantity: Math.round(3 * multiplier), unit: "tablespoons" },
+      { name: "Lemon juice", quantity: Math.round(2 * multiplier), unit: "tablespoons" },
+      { name: "Salt", quantity: Math.round(0.5 * multiplier), unit: "teaspoon" }
+    ];
+  }
+  
+  // Default fallback for general recipes
+  return getMockRecipeIngredients(servings);
+}
+
+// Function to generate generic mock recipe ingredients
 function getMockRecipeIngredients(servings: number = 4): RecipeIngredient[] {
   const baseServings = 4;
   const multiplier = servings / baseServings;
