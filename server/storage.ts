@@ -503,6 +503,7 @@ export class MemStorage implements IStorage {
 
   async createPurchase(purchase: InsertPurchase): Promise<Purchase> {
     const id = this.purchaseIdCounter++;
+    ```tool_code
     const newPurchase: Purchase = { ...purchase, id };
     this.purchases.set(id, newPurchase);
     return newPurchase;
@@ -984,7 +985,7 @@ export class MemStorage implements IStorage {
   async updateAffiliatePartner(id: number, updates: Partial<AffiliatePartner>): Promise<AffiliatePartner> {
     const partner = this.affiliatePartners.get(id);
     if (!partner) throw new Error("Affiliate partner not found");
-    
+
     const updatedPartner = { ...partner, ...updates };
     this.affiliatePartners.set(id, updatedPartner);
     return updatedPartner;
@@ -1030,7 +1031,7 @@ export class MemStorage implements IStorage {
   async updateAffiliateProduct(id: number, updates: Partial<AffiliateProduct>): Promise<AffiliateProduct> {
     const product = this.affiliateProducts.get(id);
     if (!product) throw new Error("Affiliate product not found");
-    
+
     const updatedProduct = { ...product, ...updates };
     this.affiliateProducts.set(id, updatedProduct);
     return updatedProduct;
@@ -1090,7 +1091,7 @@ export class MemStorage implements IStorage {
   async updateAffiliateConversionStatus(id: number, status: string): Promise<AffiliateConversion> {
     const conversion = this.affiliateConversions.get(id);
     if (!conversion) throw new Error("Affiliate conversion not found");
-    
+
     const updatedConversion = { ...conversion, status };
     this.affiliateConversions.set(id, updatedConversion);
     return updatedConversion;
@@ -1604,7 +1605,7 @@ export class DatabaseStorage implements IStorage {
     try {
       // Delete expired circulars
       const expiredCirculars = await db
-        .select()```tool_code
+        .select()
         .from(weeklyCirculars)
         .where(
           and(
@@ -1713,15 +1714,15 @@ export class DatabaseStorage implements IStorage {
   // Affiliate Product methods
   async getAffiliateProducts(partnerId?: number, category?: string): Promise<AffiliateProduct[]> {
     let query = db.select().from(affiliateProducts);
-    
+
     if (partnerId) {
       query = query.where(eq(affiliateProducts.partnerId, partnerId));
     }
-    
+
     if (category) {
       query = query.where(eq(affiliateProducts.category, category));
     }
-    
+
     return query;
   }
 
@@ -1761,15 +1762,15 @@ export class DatabaseStorage implements IStorage {
 
   async getAffiliateClicks(userId?: number, productId?: number): Promise<AffiliateClick[]> {
     let query = db.select().from(affiliateClicks);
-    
+
     if (userId) {
       query = query.where(eq(affiliateClicks.userId, userId));
     }
-    
+
     if (productId) {
       query = query.where(eq(affiliateClicks.productId, productId));
     }
-    
+
     return query;
   }
 
@@ -1781,15 +1782,15 @@ export class DatabaseStorage implements IStorage {
 
   async getAffiliateConversions(userId?: number, status?: string): Promise<AffiliateConversion[]> {
     let query = db.select().from(affiliateConversions);
-    
+
     if (userId) {
       query = query.where(eq(affiliateConversions.userId, userId));
     }
-    
+
     if (status) {
       query = query.where(eq(affiliateConversions.status, status));
     }
-    
+
     return query;
   }
 
