@@ -911,6 +911,7 @@ const ShoppingListPage: React.FC = () => {
 
                 // Calculate route optimization
         const totalAisles = sortedAisleGroups.length;
+```text
         const estimatedTime = Math.max(15, totalAisles * 3 + store.items.length * 0.5);
 
         return {
@@ -1590,8 +1591,7 @@ const ShoppingListPage: React.FC = () => {
                                   planType: "Single Store"
                                 }, "Single Store - Kroger")}
                               >
-                                <MapPin className="h-3 w-3 sm:h-4```text
- sm:w-4 mr-1 sm:mr-2" />
+                                <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                                 View Full Shopping Plan
                               </Button>
                             </div>
@@ -1978,7 +1978,6 @@ const ShoppingListPage: React.FC = () => {
               <p className="text-sm text-gray-500 mb-4">
                 Based on your usual purchases and current needs, we recommend adding these items to your shopping list:
               </p>
-
 
 <div className="space-y-2">
               {Array.isArray(generatedItems) && generatedItems.map((item, index) => (
