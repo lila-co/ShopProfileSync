@@ -427,7 +427,61 @@ const ShoppingListComponent: React.FC = () => {
   
   // Get the default shopping list and its items
   const defaultList = shoppingLists?.[0];
-  const items = defaultList?.items ?? [];
+  const rawItems = defaultList?.items ?? [];
+  
+  // Sort items by category first, then alphabetically within category
+  const sortItemsByCategory = (items: ShoppingListItem[]) => {
+    const categoryOrder = [
+      'Produce',
+      'Dairy & Eggs', 
+      'Meat & Seafood',
+      'Bakery',
+      'Pantry & Canned Goods',
+      'Frozen Foods',
+      'Personal Care',
+      'Household Items'
+    ];
+    
+    return items.sort((a, b) => {
+      // Get category for each item based on product name
+      const getCategoryFromName = (productName: string) => {
+        const name = productName.toLowerCase();
+        if (/\b(banana|apple|orange|grape|strawberr|tomato|onion|carrot|potato|lettuce|spinach)\w*/i.test(name)) return 'Produce';
+        if (/\b(milk|cheese|yogurt|egg|butter|cream)\w*/i.test(name)) return 'Dairy & Eggs';
+        if (/\b(beef|chicken|pork|turkey|fish|meat|salmon|shrimp)\w*/i.test(name)) return 'Meat & Seafood';
+        if (/\b(bread|loaf|roll|bagel|muffin|cake)\w*/i.test(name)) return 'Bakery';
+        if (/\b(rice|pasta|bean|sauce|soup|cereal|flour|sugar|salt)\w*/i.test(name)) return 'Pantry & Canned Goods';
+        if (/\b(frozen|ice cream|pizza)\w*/i.test(name)) return 'Frozen Foods';
+        if (/\b(shampoo|soap|toothpaste|deodorant|lotion)\w*/i.test(name)) return 'Personal Care';
+        if (/\b(cleaner|detergent|towel|tissue|toilet paper)\w*/i.test(name)) return 'Household Items';
+        return 'Other';
+      };
+      
+      const categoryA = getCategoryFromName(a.productName);
+      const categoryB = getCategoryFromName(b.productName);
+      
+      // First sort by completion status (incomplete items first)
+      if (a.isCompleted !== b.isCompleted) {
+        return a.isCompleted ? 1 : -1;
+      }
+      
+      // Then sort by category order
+      const orderA = categoryOrder.indexOf(categoryA);
+      const orderB = categoryOrder.indexOf(categoryB);
+      
+      if (orderA !== orderB) {
+        // Put unknown categories at the end
+        if (orderA === -1) return 1;
+        if (orderB === -1) return -1;
+        return orderA - orderB;
+      }
+      
+      // Finally sort alphabetically within the same category
+      return a.productName.localeCompare(b.productName);
+    });
+  };
+  
+  const items = sortItemsByCategory(rawItems);
   
   return (
     <div className="p-4 pb-20">
@@ -668,63 +722,183 @@ const ShoppingListComponent: React.FC = () => {
                 </CardContent>
               </Card>
             ) : (
-              items.map((item: ShoppingListItem) => (
-                <Card key={item.id} className={item.isCompleted ? "opacity-60" : ""}>
-                  <CardContent className="p-3">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center flex-1">
-                        <input
-                          type="checkbox"
-                          checked={item.isCompleted}
-                          onChange={() => handleToggleItem(item.id, item.isCompleted)}
-                          className="h-5 w-5 text-primary rounded mr-3"
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center">
-                            <span className={`font-medium ${item.isCompleted ? "line-through text-gray-500" : "text-gray-800"}`}>
-                              {item.productName}
-                            </span>
-                            <span className="ml-2 text-sm bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
-                              Qty: {item.quantity} {item.unit && item.unit !== "COUNT" && (
-                                <span className="text-xs text-gray-500">{item.unit.toLowerCase()}</span>
-                              )}
-                            </span>
-                          </div>
-                          {item.suggestedRetailerId && item.suggestedPrice && (
-                            <div className="flex items-center text-xs text-gray-500 mt-1">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/>
-                                <path d="M3 9V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4"/>
-                              </svg>
-                              <span>
-                                Best price: ${(item.suggestedPrice / 100).toFixed(2)} at Retailer #{item.suggestedRetailerId}
-                              </span>
-                            </div>
-                          )}
+              (() => {
+                // Group items by category for display
+                const getCategoryFromName = (productName: string) => {
+                  const name = productName.toLowerCase();
+                  if (/\b(banana|apple|orange|grape|strawberr|tomato|onion|carrot|potato|lettuce|spinach)\w*/i.test(name)) return 'Produce';
+                  if (/\b(milk|cheese|yogurt|egg|butter|cream)\w*/i.test(name)) return 'Dairy & Eggs';
+                  if (/\b(beef|chicken|pork|turkey|fish|meat|salmon|shrimp)\w*/i.test(name)) return 'Meat & Seafood';
+                  if (/\b(bread|loaf|roll|bagel|muffin|cake)\w*/i.test(name)) return 'Bakery';
+                  if (/\b(rice|pasta|bean|sauce|soup|cereal|flour|sugar|salt)\w*/i.test(name)) return 'Pantry & Canned Goods';
+                  if (/\b(frozen|ice cream|pizza)\w*/i.test(name)) return 'Frozen Foods';
+                  if (/\b(shampoo|soap|toothpaste|deodorant|lotion)\w*/i.test(name)) return 'Personal Care';
+                  if (/\b(cleaner|detergent|towel|tissue|toilet paper)\w*/i.test(name)) return 'Household Items';
+                  return 'Other';
+                };
+                
+                const getCategoryIcon = (category: string) => {
+                  switch (category) {
+                    case 'Produce': return '🍎';
+                    case 'Dairy & Eggs': return '🥛';
+                    case 'Meat & Seafood': return '🥩';
+                    case 'Bakery': return '🍞';
+                    case 'Pantry & Canned Goods': return '🥫';
+                    case 'Frozen Foods': return '❄️';
+                    case 'Personal Care': return '🧼';
+                    case 'Household Items': return '🏠';
+                    default: return '🛒';
+                  }
+                };
+                
+                // Group items by category while preserving sort order
+                const groupedItems: { [key: string]: ShoppingListItem[] } = {};
+                items.forEach(item => {
+                  const category = getCategoryFromName(item.productName);
+                  if (!groupedItems[category]) {
+                    groupedItems[category] = [];
+                  }
+                  groupedItems[category].push(item);
+                });
+                
+                // Separate completed and incomplete items
+                const incompleteItems = items.filter(item => !item.isCompleted);
+                const completedItems = items.filter(item => item.isCompleted);
+                
+                // Group incomplete items by category
+                const incompleteGrouped: { [key: string]: ShoppingListItem[] } = {};
+                incompleteItems.forEach(item => {
+                  const category = getCategoryFromName(item.productName);
+                  if (!incompleteGrouped[category]) {
+                    incompleteGrouped[category] = [];
+                  }
+                  incompleteGrouped[category].push(item);
+                });
+                
+                return (
+                  <>
+                    {/* Incomplete items grouped by category */}
+                    {Object.entries(incompleteGrouped).map(([category, categoryItems]) => (
+                      <div key={`incomplete-${category}`} className="space-y-2">
+                        <div className="flex items-center space-x-2 mt-4 mb-2">
+                          <span className="text-lg">{getCategoryIcon(category)}</span>
+                          <h4 className="font-semibold text-gray-700">{category}</h4>
+                          <div className="flex-1 h-px bg-gray-200"></div>
+                          <span className="text-xs text-gray-500">{categoryItems.length} items</span>
+                        </div>
+                        <Card key={item.id} className="ml-2">
+                            <CardContent className="p-3">
+                              <div className="flex justify-between items-center">
+                                <div className="flex items-center flex-1">
+                                  <input
+                                    type="checkbox"
+                                    checked={item.isCompleted}
+                                    onChange={() => handleToggleItem(item.id, item.isCompleted)}
+                                    className="h-5 w-5 text-primary rounded mr-3"
+                                  />
+                                  <div className="flex-1">
+                                    <div className="flex items-center">
+                                      <span className="font-medium text-gray-800">
+                                        {item.productName}
+                                      </span>
+                                      <span className="ml-2 text-sm bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
+                                        Qty: {item.quantity} {item.unit && item.unit !== "COUNT" && (
+                                          <span className="text-xs text-gray-500">{item.unit.toLowerCase()}</span>
+                                        )}
+                                      </span>
+                                    </div>
+                                    {item.suggestedRetailerId && item.suggestedPrice && (
+                                      <div className="flex items-center text-xs text-gray-500 mt-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                          <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/>
+                                          <path d="M3 9V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4"/>
+                                        </svg>
+                                        <span>
+                                          Best price: ${(item.suggestedPrice / 100).toFixed(2)} at Retailer #{item.suggestedRetailerId}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex space-x-2">
+                                  <button
+                                    onClick={() => handleEditItem(item)}
+                                    className="text-gray-400 hover:text-blue-500"
+                                    aria-label="Edit item"
+                                    title="Edit item"
+                                  >
+                                    <Pencil className="h-5 w-5" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteItem(item.id)}
+                                    className="text-gray-400 hover:text-red-500"
+                                    aria-label="Delete item"
+                                    title="Delete item"
+                                  >
+                                    <Trash2 className="h-5 w-5" />
+                                  </button>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ))}
+                    
+                    {/* Completed items section */}
+                    {completedItems.length > 0 && (
+                      <div className="mt-6">
+                        <div className="flex items-center space-x-2 mb-3">
+                          <Check className="h-5 w-5 text-green-600" />
+                          <h4 className="font-semibold text-gray-700">Completed</h4>
+                          <div className="flex-1 h-px bg-gray-200"></div>
+                          <span className="text-xs text-gray-500">{completedItems.length} items</span>
+                        </div>
+                        <div className="space-y-2">
+                          {completedItems.map((item: ShoppingListItem) => (
+                            <Card key={item.id} className="opacity-60 ml-2">
+                              <CardContent className="p-3">
+                                <div className="flex justify-between items-center">
+                                  <div className="flex items-center flex-1">
+                                    <input
+                                      type="checkbox"
+                                      checked={item.isCompleted}
+                                      onChange={() => handleToggleItem(item.id, item.isCompleted)}
+                                      className="h-5 w-5 text-primary rounded mr-3"
+                                    />
+                                    <div className="flex-1">
+                                      <div className="flex items-center">
+                                        <span className="font-medium line-through text-gray-500">
+                                          {item.productName}
+                                        </span>
+                                        <span className="ml-2 text-sm bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
+                                          Qty: {item.quantity} {item.unit && item.unit !== "COUNT" && (
+                                            <span className="text-xs text-gray-500">{item.unit.toLowerCase()}</span>
+                                          )}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="flex space-x-2">
+                                    <button
+                                      onClick={() => handleDeleteItem(item.id)}
+                                      className="text-gray-400 hover:text-red-500"
+                                      aria-label="Delete item"
+                                      title="Delete item"
+                                    >
+                                      <Trash2 className="h-5 w-5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
                         </div>
                       </div>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleEditItem(item)}
-                          className="text-gray-400 hover:text-blue-500"
-                          aria-label="Edit item"
-                          title="Edit item"
-                        >
-                          <Pencil className="h-5 w-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteItem(item.id)}
-                          className="text-gray-400 hover:text-red-500"
-                          aria-label="Delete item"
-                          title="Delete item"
-                        >
-                          <Trash2 className="h-5 w-5" />
-                        </button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+                    )}
+                  </>
+                );
+              })()
             )}
           </div>
         </TabsContent>
