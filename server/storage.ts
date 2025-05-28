@@ -1,4 +1,4 @@
-import { eq, and, gte } from "drizzle-orm";
+import { eq, and, gte, lt } from "drizzle-orm";
 import { db } from "./db";
 import { 
   users, retailers, retailerAccounts, products, purchases, purchaseItems,
@@ -504,8 +504,7 @@ export class MemStorage implements IStorage {
   async createPurchase(purchase: InsertPurchase): Promise<Purchase> {
     const id = this.purchaseIdCounter++;
     const newPurchase: Purchase = { ...purchase, id };
-    this.purchases.set(id, newPurchase);
-    return newPurchase;
+    this.purchases.set(id, newPurchase);    return newPurchase;
   }
 
   async createPurchaseFromReceipt(receiptData: any): Promise<Purchase> {
@@ -1474,6 +1473,48 @@ export class DatabaseStorage implements IStorage {
     // In a real implementation, this would query the database
     // For demo, return random number between 10-50
     return Math.floor(Math.random() * 40) + 10;
+  }
+
+  // Cleanup methods
+  async cleanupExpiredCirculars(): Promise<number> {
+    const now = new Date();
+
+    try {
+      // Delete expired circulars
+      const expiredCirculars = await db
+        .select()
+        .from(weeklyCirculars)
+        .where(
+          and(
+            eq(weeklyCirculars.isActive, true),
+            lt(weeklyCirculars.endDate, now)
+          )
+        );
+
+      if (expiredCirculars.length > 0) {
+        // Mark them as inactive instead of deleting (for audit trail)
+        await db
+          .update(weeklyCirculars)
+          .set({ isActive: false })
+          .where(
+            and(
+              eq(weeklyCirculars.isActive, true),
+              lt(weeklyCirculars.endDate, now)
+            )
+          );
+
+        // Also cleanup related expired deals
+        await db
+          .delete(storeDeals)
+          .where(lt(storeDeals.endDate, now));
+      }
+
+      console.log(`Cleaned up ${expiredCirculars.length} expired circulars`);
+      return expiredCirculars.length;
+    } catch (error) {
+      console.error('Error cleaning up expired circulars:', error);
+      return 0;
+    }
   }
 
   // Purchase Anomaly methods

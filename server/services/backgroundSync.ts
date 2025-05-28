@@ -63,18 +63,16 @@ export class BackgroundSyncService {
   }
 
   /**
-   * Remove expired deals from database
+   * Remove expired circulars and deals from database
    */
   private async cleanupExpiredDeals(): Promise<void> {
     try {
-      // Note: This would require adding a cleanup method to storage
-      // For now, just log the intention
-      console.log("Cleaning up expired deals...");
+      console.log("Cleaning up expired circulars and deals...");
       
-      // In a real implementation, you would:
-      // await storage.deleteExpiredDeals();
+      const removedCount = await storage.cleanupExpiredCirculars();
+      console.log(`Successfully cleaned up ${removedCount} expired circulars`);
     } catch (error) {
-      console.error("Failed to cleanup expired deals:", error);
+      console.error("Failed to cleanup expired circulars:", error);
     }
   }
 }
