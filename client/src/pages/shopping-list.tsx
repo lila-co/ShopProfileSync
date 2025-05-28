@@ -936,118 +936,100 @@ bread')) shelfLocation = 'End Cap';
     if (!selectedPlan) return '';
 
     const currentDate = new Date().toLocaleDateString();
-    let content = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Shopping Plan - ${selectedPlan.planType}</title>
-        <style>
-          body { font-family: Arial, sans-serif; margin: 20px; }
-          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 10px; }
-          .store-section { margin-bottom: 30px; page-break-inside: avoid; }
-          .store-header { background-color: #f5f5f5; padding: 10px; font-weight: bold; font-size: 18px; }
-          .item-list { margin: 10px 0; }
-          .item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dotted #ccc; }
-          .item-checkbox { display: inline-block; width: 15px; height: 15px; border: 2px solid #333; margin-right: 10px; vertical-align: middle; }
-          .item-text { flex: 1; }
-          .item-price { font-weight: bold; }
-          .summary { margin-top: 30px; border-top: 2px solid #000; padding-top: 10px; }
-          .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }
-          .note { margin-top: 20px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #007bff; }
-          @media print { 
-            body { margin: 0; }
-            .mobile-shopping-item { display: none !important; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>Shopping Plan - ${selectedPlan.planType}</h1>
-          <p>Generated on ${currentDate}</p>
-        </div>
-    `;
+    let content = `<!DOCTYPE html>
+<html>
+<head>
+  <title>Shopping Plan - ${selectedPlan.planType}</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+    .store-section { margin-bottom: 30px; page-break-inside: avoid; }
+    .store-header { background-color: #f5f5f5; padding: 10px; font-weight: bold; font-size: 18px; }
+    .item-list { margin: 10px 0; }
+    .item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dotted #ccc; }
+    .item-checkbox { display: inline-block; width: 15px; height: 15px; border: 2px solid #333; margin-right: 10px; vertical-align: middle; }
+    .item-text { flex: 1; }
+    .item-price { font-weight: bold; }
+    .summary { margin-top: 30px; border-top: 2px solid #000; padding-top: 10px; }
+    .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }
+    .note { margin-top: 20px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #007bff; }
+    @media print { 
+      body { margin: 0; }
+      .mobile-shopping-item { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Shopping Plan - ${selectedPlan.planType}</h1>
+    <p>Generated on ${currentDate}</p>
+  </div>`;
 
     if (selectedPlan.stores) {
       selectedPlan.stores.forEach((store: any) => {
-        content += `
-          <div class="store-section">
-            <div class="store-header">
-              ${store.retailerName}
-              ${store.address ? `<br><small style="font-weight: normal;">${store.address}</small>` : ''}
-            </div>
-            <div class="item-list">
-        `;
+        content += `<div class="store-section">
+  <div class="store-header">
+    ${store.retailerName}
+    ${store.address ? `<br><small style="font-weight: normal;">${store.address}</small>` : ''}
+  </div>
+  <div class="item-list">`;
 
         store.items.forEach((item: any) => {
-          content += `
-            <div class="item">
-              <div class="item-text">
-                <span class="item-checkbox"></span>
-                ${item.productName} (Qty: ${item.quantity})
-              </div>
-              <span class="item-price">$${(item.price / 100).toFixed(2)}</span>
-            </div>
-          `;
+          content += `<div class="item">
+  <div class="item-text">
+    <span class="item-checkbox"></span>
+    ${item.productName} (Qty: ${item.quantity})
+  </div>
+  <span class="item-price">$${(item.price / 100).toFixed(2)}</span>
+</div>`;
         });
 
-        content += `
-            </div>
-            <div style="text-align: right; font-weight: bold; margin-top: 10px;">
-              Store Total: $${(store.subtotal / 100).toFixed(2)}
-            </div>
-          </div>
-        `;
+        content += `</div>
+  <div style="text-align: right; font-weight: bold; margin-top: 10px;">
+    Store Total: $${(store.subtotal / 100).toFixed(2)}
+  </div>
+</div>`;
       });
     } else if (selectedPlan.items) {
-      content += `
-        <div class="store-section">
-          <div class="store-header">${selectedPlan.retailerName || 'Shopping List'}</div>
-          <div class="item-list">
-      `;
+      content += `<div class="store-section">
+  <div class="store-header">${selectedPlan.retailerName || 'Shopping List'}</div>
+  <div class="item-list">`;
 
       selectedPlan.items.forEach((item: any) => {
-        content += `
-          <div class="item">
-            <div class="item-text">
-              <span class="item-checkbox"></span>
-              ${item.productName} (Qty: ${item.quantity})
-            </div>
-            <span class="item-price">$${(item.price / 100).toFixed(2)}</span>
-          </div>
-        `;
+        content += `<div class="item">
+  <div class="item-text">
+    <span class="item-checkbox"></span>
+    ${item.productName} (Qty: ${item.quantity})
+  </div>
+  <span class="item-price">$${(item.price / 100).toFixed(2)}</span>
+</div>`;
       });
 
-      content += `
-          </div>
-        </div>
-      `;
+      content += `</div>
+</div>`;
     }
 
-    content += `
-        <div class="summary">
-          <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold;">
-            <span>Total Cost:</span>
-            <span>$${(selectedPlan.totalCost / 100).toFixed(2)}</span>
-          </div>
-          ${selectedPlan.savings > 0 ? `
-            <div style="display: flex; justify-content: space-between; color: green;">
-              <span>Total Savings:</span>
-              <span>$${(selectedPlan.savings / 100).toFixed(2)}</span>
-            </div>
-          ` : ''}
-        </div>
+    content += `<div class="summary">
+  <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold;">
+    <span>Total Cost:</span>
+    <span>$${(selectedPlan.totalCost / 100).toFixed(2)}</span>
+  </div>
+  ${selectedPlan.savings > 0 ? `<div style="display: flex; justify-content: space-between; color: green;">
+    <span>Total Savings:</span>
+    <span>$${(selectedPlan.savings / 100).toFixed(2)}</span>
+  </div>` : ''}
+</div>
 
-        <div class="note">
-          <h4 style="margin-top: 0;">📱 Mobile Shopping Tip:</h4>
-          <p style="margin-bottom: 0;">Access your shopping list on your mobile device to check off items as you shop. Changes sync in real-time!</p>
-        </div>
+<div class="note">
+  <h4 style="margin-top: 0;">📱 Mobile Shopping Tip:</h4>
+  <p style="margin-bottom: 0;">Access your shopping list on your mobile device to check off items as you shop. Changes sync in real-time!</p>
+</div>
 
-        <div class="footer">
-          <p>Happy Shopping! 🛒</p>
-        </div>
-      </body>
-      </html>
-    `;
+<div class="footer">
+  <p>Happy Shopping! 🛒</p>
+</div>
+</body>
+</html>`;
 
     return content;
   };
