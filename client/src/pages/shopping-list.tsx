@@ -61,7 +61,7 @@ const ShoppingListPage: React.FC = () => {
 
   // Upload list dialog state
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const [uploadedItems, setUploadedItems] = useState<any[]>(([]);
+  const [uploadedItems, setUploadedItems] = useState<any[]>([]);
   const [uploadType, setUploadType] = useState<'file' | 'image'>('file');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
