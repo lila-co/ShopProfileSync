@@ -2366,7 +2366,6 @@ const ShoppingListPage: React.FC = () => {
               ))}
             </div>
           </div>
-          </div>
           <DialogFooter className="flex justify-between">
             <Button 
               variant="outline" 
