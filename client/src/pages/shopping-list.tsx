@@ -2044,7 +2044,7 @@ const ShoppingListPage: React.FC = () => {
                             </div>
                           )}
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -2329,8 +2329,7 @@ const ShoppingListPage: React.FC = () => {
             <DialogTitle>Recipe Ingredients Preview</DialogTitle>
           </DialogHeader>
           <div className="max-h-[60vh] overflow-y-auto py-4">
-            <p className="text-sm text-gray-500 mb-4">
-              Preview of ingredients that will be added to your shopping list from this recipe:
+            <p className="text-sm text-gray-500 mb-4              Preview of ingredients that will be added to your shopping list from this recipe:
             </p>
 
             <div className="space-y-2">
@@ -2510,7 +2509,7 @@ const ShoppingListPage: React.FC = () => {
                     onClick={handlePrintShoppingPlan}
                     className="text-xs sm:text-sm"
                   >
-                    <Printer className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    <Printer className="h-3 w-3 sm:h-4 w-4 mr-1 sm:mr-2" />
                     Print
                   </Button>
                   <Button
