@@ -28,6 +28,7 @@ const CircularUploadDialog: React.FC<CircularUploadDialogProps> = ({ children })
   const [circularUrl, setCircularUrl] = useState('');
   const [retailerName, setRetailerName] = useState('');
   const [circularTitle, setCircularTitle] = useState('');
+  const [activeTab, setActiveTab] = useState('image');
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -86,6 +87,7 @@ const CircularUploadDialog: React.FC<CircularUploadDialogProps> = ({ children })
     setCircularUrl('');
     setRetailerName('');
     setCircularTitle('');
+    setActiveTab('image');
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -185,7 +187,7 @@ const CircularUploadDialog: React.FC<CircularUploadDialogProps> = ({ children })
             </div>
           </div>
 
-          <Tabs defaultValue="image" className="w-full">
+          <Tabs defaultValue="image" value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="image">
                 <Upload className="h-4 w-4 mr-2" />
@@ -265,40 +267,8 @@ const CircularUploadDialog: React.FC<CircularUploadDialogProps> = ({ children })
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Tabs defaultValue="image" className="hidden">
-            <TabsContent value="image">
-              <Button 
-                onClick={handleImageUpload}
-                disabled={uploadMutation.isPending}
-              >
-                {uploadMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Upload Image
-              </Button>
-            </TabsContent>
-            <TabsContent value="file">
-              <Button 
-                onClick={handleFileUpload}
-                disabled={uploadMutation.isPending}
-              >
-                {uploadMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Upload File
-              </Button>
-            </TabsContent>
-            <TabsContent value="url">
-              <Button 
-                onClick={handleUrlUpload}
-                disabled={uploadMutation.isPending}
-              >
-                {uploadMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Process URL
-              </Button>
-            </TabsContent>
-          </Tabs>
-          
-          {/* Single upload button that works for all tabs */}
           <Button 
             onClick={() => {
-              const activeTab = document.querySelector('[data-state="active"]')?.getAttribute('data-value');
               if (activeTab === 'image') handleImageUpload();
               else if (activeTab === 'file') handleFileUpload();
               else if (activeTab === 'url') handleUrlUpload();
