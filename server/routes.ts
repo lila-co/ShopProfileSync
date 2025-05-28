@@ -135,6 +135,85 @@ async function createSampleDealsFromURL(retailerId: number, circularId: number, 
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Authentication routes
+  app.post('/api/auth/login', async (req: Request, res: Response) => {
+    try {
+      const { username, password } = req.body;
+
+      if (!username || !password) {
+        return res.status(400).json({ message: 'Username and password are required' });
+      }
+
+      const user = await storage.authenticateUser(username, password);
+      
+      if (!user) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+
+      // In production, you'd set a proper session/JWT token here
+      res.json({ 
+        user: { ...user, password: undefined }, // Don't send password back
+        token: 'demo-token', // Replace with real JWT
+        message: 'Login successful' 
+      });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  app.post('/api/auth/register', async (req: Request, res: Response) => {
+    try {
+      const { username, password, email, name } = req.body;
+
+      if (!username || !password) {
+        return res.status(400).json({ message: 'Username and password are required' });
+      }
+
+      const existingUser = await storage.getUserByUsername(username);
+      if (existingUser) {
+        return res.status(409).json({ message: 'Username already exists' });
+      }
+
+      const newUser = await storage.createUser({
+        username,
+        password, // In production, hash this password
+        email,
+        name
+      });
+
+      res.status(201).json({ 
+        user: { ...newUser, password: undefined },
+        message: 'Registration successful' 
+      });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  app.post('/api/auth/logout', async (req: Request, res: Response) => {
+    try {
+      // In production, invalidate the session/token
+      res.json({ message: 'Logout successful' });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  app.post('/api/auth/forgot-password', async (req: Request, res: Response) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ message: 'Email is required' });
+      }
+
+      // In production, send password reset email
+      res.json({ message: 'Password reset instructions sent to email' });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
   // API Routes
   // User profile routes
   app.get('/api/user/profile', async (req: Request, res: Response) => {
@@ -476,6 +555,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update retailer account
+  app.patch('/api/user/retailer-accounts/:id', async (req: Request, res: Response) => {
+    try {
+      const accountId = parseInt(req.params.id);
+      const updates = req.body;
+
+      const updatedAccount = await storage.updateRetailerAccount(accountId, updates);
+      
+      if (!updatedAccount) {
+        return res.status(404).json({ message: 'Retailer account not found' });
+      }
+
+      res.json(updatedAccount);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Delete retailer account
+  app.delete('/api/user/retailer-accounts/:id', async (req: Request, res: Response) => {
+    try {
+      const accountId = parseInt(req.params.id);
+      
+      await storage.deleteRetailerAccount(accountId);
+      res.status(204).send();
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Test retailer account connection
+  app.post('/api/user/retailer-accounts/:id/test', async (req: Request, res: Response) => {
+    try {
+      const accountId = parseInt(req.params.id);
+      
+      const account = await storage.getRetailerAccount(accountId);
+      if (!account) {
+        return res.status(404).json({ message: 'Retailer account not found' });
+      }
+
+      // Test the connection (mock for demo)
+      const testResult = {
+        success: Math.random() > 0.2, // 80% success rate for demo
+        message: Math.random() > 0.2 ? 'Connection successful' : 'Authentication failed',
+        lastTested: new Date()
+      };
+
+      res.json(testResult);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
   // Receipt routes
   app.post('/api/receipts/extract', async (req: Request, res: Response) => {
     try {
@@ -721,6 +853,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create new shopping list
+  app.post('/api/shopping-lists', async (req: Request, res: Response) => {
+    try {
+      const { name, description, isDefault } = req.body;
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+
+      if (!name) {
+        return res.status(400).json({ message: 'Shopping list name is required' });
+      }
+
+      const newList = await storage.createShoppingList({
+        name,
+        description: description || '',
+        userId,
+        isDefault: isDefault || false
+      });
+
+      res.status(201).json(newList);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Update shopping list
+  app.patch('/api/shopping-lists/:id', async (req: Request, res: Response) => {
+    try {
+      const listId = parseInt(req.params.id);
+      const { name, description, isDefault } = req.body;
+
+      const updatedList = await storage.updateShoppingList(listId, {
+        name,
+        description,
+        isDefault
+      });
+
+      if (!updatedList) {
+        return res.status(404).json({ message: 'Shopping list not found' });
+      }
+
+      res.json(updatedList);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Delete shopping list
+  app.delete('/api/shopping-lists/:id', async (req: Request, res: Response) => {
+    try {
+      const listId = parseInt(req.params.id);
+      
+      await storage.deleteShoppingList(listId);
+      res.status(204).send();
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
   app.get('/api/shopping-lists', async (req: Request, res: Response) => {
     try {
       const lists = await storage.getShoppingLists();
@@ -750,6 +940,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .slice(0, 5);
 
       res.json(recentPurchases);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Get all purchases for a user
+  app.get('/api/purchases', async (req: Request, res: Response) => {
+    try {
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const offset = req.query.offset ? parseInt(req.query.offset as string) : undefined;
+
+      const purchases = await storage.getPurchases(userId, limit, offset);
+      res.json(purchases);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Create manual purchase entry
+  app.post('/api/purchases', async (req: Request, res: Response) => {
+    try {
+      const { retailerId, items, totalAmount, purchaseDate } = req.body;
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+
+      if (!retailerId || !items || !totalAmount) {
+        return res.status(400).json({ message: 'Retailer ID, items, and total amount are required' });
+      }
+
+      const purchase = await storage.createPurchase({
+        userId,
+        retailerId,
+        items,
+        totalAmount,
+        purchaseDate: purchaseDate ? new Date(purchaseDate) : new Date()
+      });
+
+      res.status(201).json(purchase);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Update purchase
+  app.patch('/api/purchases/:id', async (req: Request, res: Response) => {
+    try {
+      const purchaseId = parseInt(req.params.id);
+      const updates = req.body;
+
+      const updatedPurchase = await storage.updatePurchase(purchaseId, updates);
+      
+      if (!updatedPurchase) {
+        return res.status(404).json({ message: 'Purchase not found' });
+      }
+
+      res.json(updatedPurchase);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Delete purchase
+  app.delete('/api/purchases/:id', async (req: Request, res: Response) => {
+    try {
+      const purchaseId = parseInt(req.params.id);
+      
+      await storage.deletePurchase(purchaseId);
+      res.status(204).send();
     } catch (error) {
       handleError(res, error);
     }
@@ -1375,6 +1635,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching deal categories:', error);
       res.status(500).json({ error: 'Failed to fetch categories' });
+    }
+  });
+
+  // Mark deal as used/claimed
+  app.post('/api/deals/:id/claim', async (req: Request, res: Response) => {
+    try {
+      const dealId = parseInt(req.params.id);
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+
+      const result = await storage.claimDeal(dealId, userId);
+      res.json(result);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Get deals with advanced filtering
+  app.get('/api/deals/search', async (req: Request, res: Response) => {
+    try {
+      const {
+        retailerId,
+        category,
+        minDiscount,
+        maxPrice,
+        sortBy,
+        sortOrder,
+        limit,
+        offset
+      } = req.query;
+
+      const filters = {
+        retailerId: retailerId ? parseInt(retailerId as string) : undefined,
+        category: category as string,
+        minDiscount: minDiscount ? parseInt(minDiscount as string) : undefined,
+        maxPrice: maxPrice ? parseInt(maxPrice as string) : undefined,
+        sortBy: sortBy as string || 'createdAt',
+        sortOrder: sortOrder as string || 'desc',
+        limit: limit ? parseInt(limit as string) : 50,
+        offset: offset ? parseInt(offset as string) : 0
+      };
+
+      const deals = await storage.searchDeals(filters);
+      res.json(deals);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Get user's claimed deals
+  app.get('/api/user/claimed-deals', async (req: Request, res: Response) => {
+    try {
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+
+      const claimedDeals = await storage.getUserClaimedDeals(userId);
+      res.json(claimedDeals);
+    } catch (error) {
+      handleError(res, error);
     }
   });
 
@@ -2925,6 +3244,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Error triggering data collection:', error);
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Bulk operations
+  app.delete('/api/shopping-list/items/bulk', async (req: Request, res: Response) => {
+    try {
+      const { itemIds } = req.body;
+
+      if (!itemIds || !Array.isArray(itemIds)) {
+        return res.status(400).json({ message: 'Item IDs array is required' });
+      }
+
+      for (const itemId of itemIds) {
+        await storage.deleteShoppingListItem(itemId);
+      }
+
+      res.json({ success: true, deletedCount: itemIds.length });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  app.patch('/api/shopping-list/items/bulk', async (req: Request, res: Response) => {
+    try {
+      const { updates } = req.body; // Array of {id, quantity, unit, isCompleted}
+
+      if (!updates || !Array.isArray(updates)) {
+        return res.status(400).json({ message: 'Updates array is required' });
+      }
+
+      const results = [];
+      for (const update of updates) {
+        const { id, ...updateData } = update;
+        const updatedItem = await storage.updateShoppingListItem(id, updateData);
+        results.push(updatedItem);
+      }
+
+      res.json(results);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Search endpoints
+  app.get('/api/shopping-lists/search', async (req: Request, res: Response) => {
+    try {
+      const { query, userId } = req.query;
+      const userIdNum = userId ? parseInt(userId as string) : 
+        (req.headers['x-current-user-id'] ? parseInt(req.headers['x-current-user-id'] as string) : 1);
+
+      const lists = await storage.searchShoppingLists(query as string, userIdNum);
+      res.json(lists);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  app.get('/api/purchases/search', async (req: Request, res: Response) => {
+    try {
+      const { query, startDate, endDate, retailerId } = req.query;
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+
+      const purchases = await storage.searchPurchases({
+        query: query as string,
+        userId,
+        startDate: startDate ? new Date(startDate as string) : undefined,
+        endDate: endDate ? new Date(endDate as string) : undefined,
+        retailerId: retailerId ? parseInt(retailerId as string) : undefined
+      });
+
+      res.json(purchases);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Export endpoints
+  app.get('/api/purchases/export', async (req: Request, res: Response) => {
+    try {
+      const { format = 'json' } = req.query;
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+
+      const purchases = await storage.getPurchases(userId);
+
+      if (format === 'csv') {
+        // Convert to CSV format
+        const csv = purchases.map(p => 
+          `${p.id},${p.purchaseDate},${p.retailerId},${p.totalAmount}`
+        ).join('\n');
+        
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=purchases.csv');
+        res.send(`ID,Date,Retailer,Amount\n${csv}`);
+      } else {
+        res.json(purchases);
+      }
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // User statistics
+  app.get('/api/user/statistics', async (req: Request, res: Response) => {
+    try {
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+
+      const stats = await storage.getUserStatistics(userId);
+      res.json(stats);
+    } catch (error) {
+      handleError(res, error);
     }
   });
 
