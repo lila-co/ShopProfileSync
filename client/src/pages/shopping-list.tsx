@@ -1242,7 +1242,7 @@ const ShoppingListPage: React.FC = () => {
                   <Sparkles className="h-5 w-5 text-purple-600 mr-2" />
                   <div>
                     <h3 className="text-sm font-semibold text-purple-700">AI Product Categorization</h3>
-                    <p className="text-xs text-gray-600">Analyze your items with AI-powered categorization and retail naming</p>
+                    <p className="text-xs text-gray-600">Analyze your items with AI-powered categorization</p>
                   </div>
                 </div>
                 <Button 
