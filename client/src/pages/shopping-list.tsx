@@ -538,21 +538,40 @@ const ShoppingListPage: React.FC = () => {
       // Update items with optimized quantities and units based on AI insights
       const updatePromises = categorizedItems.map(async (categorizedItem) => {
         const originalItem = items.find(item => item.productName === categorizedItem.productName);
-        if (!originalItem) return;
+        if (!originalItem) return null;
 
-        // Only update if there's a meaningful change suggested
-        const shouldUpdate = 
-          categorizedItem.normalized.suggestedQuantity !== categorizedItem.normalized.originalQuantity ||
-          categorizedItem.normalized.suggestedUnit !== categorizedItem.normalized.originalUnit;
+        // Check if there are meaningful changes to apply
+        const currentQuantity = Number(originalItem.quantity) || 1;
+        const currentUnit = originalItem.unit || 'COUNT';
+        const suggestedQuantity = Math.max(1, Math.round(Number(categorizedItem.normalized.suggestedQuantity) || currentQuantity));
+        const suggestedUnit = categorizedItem.normalized.suggestedUnit || currentUnit;
+
+        // Only update if there's a meaningful change suggested OR if the AI provided optimization insights
+        const hasQuantityChange = suggestedQuantity !== currentQuantity;
+        const hasUnitChange = suggestedUnit !== currentUnit;
+        const hasOptimizationReason = categorizedItem.normalized.conversionReason && 
+          categorizedItem.normalized.conversionReason !== 'No conversion needed' &&
+          categorizedItem.normalized.conversionReason !== 'Categorization service unavailable';
+
+        const shouldUpdate = hasQuantityChange || hasUnitChange || hasOptimizationReason;
+
+        console.log('Update check for', originalItem.productName, {
+          currentQuantity,
+          suggestedQuantity,
+          currentUnit,
+          suggestedUnit,
+          hasQuantityChange,
+          hasUnitChange,
+          hasOptimizationReason,
+          shouldUpdate,
+          conversionReason: categorizedItem.normalized.conversionReason
+        });
 
         if (shouldUpdate) {
-          // Ensure we're sending valid integer quantities, not confidence values
-          const suggestedQuantity = Math.max(1, Math.round(Number(categorizedItem.normalized.suggestedQuantity)));
-          
           const response = await apiRequest('PATCH', `/api/shopping-list/items/${originalItem.id}`, {
             productName: originalItem.productName,
             quantity: suggestedQuantity,
-            unit: categorizedItem.normalized.suggestedUnit || 'COUNT'
+            unit: suggestedUnit
           });
           return response.json();
         }

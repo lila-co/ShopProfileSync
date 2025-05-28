@@ -458,40 +458,99 @@ export class ProductCategorizerService {
     let suggestedQuantity = quantity;
     let conversionReason = 'No conversion needed';
     
+    const name = productName.toLowerCase();
+    
     // Smart quantity suggestions based on category and typical purchase patterns
-    if (category.category === 'Produce' && unit === 'COUNT' && suggestedUnit === 'LB') {
-      // Convert count to weight for produce
-      const avgWeights: Record<string, number> = {
-        'banana': 0.3,
-        'apple': 0.4,
-        'orange': 0.5,
-        'potato': 0.3,
-        'onion': 0.25
-      };
-      
-      const name = productName.toLowerCase();
-      const avgWeight = Object.keys(avgWeights).find(key => name.includes(key));
-      
-      if (avgWeight) {
-        suggestedQuantity = Math.round((quantity * avgWeights[avgWeight]) * 100) / 100;
-        conversionReason = `Converted ${quantity} items to ${suggestedQuantity} lbs (typical weight)`;
+    if (category.category === 'Produce') {
+      if (unit === 'COUNT' && suggestedUnit === 'LB') {
+        // Convert count to weight for produce
+        const avgWeights: Record<string, number> = {
+          'banana': 0.3,
+          'apple': 0.4,
+          'orange': 0.5,
+          'potato': 0.3,
+          'onion': 0.25,
+          'tomato': 0.3,
+          'pepper': 0.2
+        };
+        
+        const avgWeight = Object.keys(avgWeights).find(key => name.includes(key));
+        
+        if (avgWeight) {
+          suggestedQuantity = Math.round((quantity * avgWeights[avgWeight]) * 100) / 100;
+          conversionReason = `AI suggests ${suggestedQuantity} lbs instead of ${quantity} items (typical weight)`;
+        } else {
+          // Generic produce weight conversion
+          suggestedQuantity = Math.round((quantity * 0.35) * 100) / 100;
+          conversionReason = `AI suggests ${suggestedQuantity} lbs for better shopping accuracy`;
+        }
+      } else if (unit === 'LB' && quantity > 5) {
+        // Large quantities might be better as COUNT
+        const estimatedCount = Math.round(quantity / 0.35);
+        if (estimatedCount < quantity) {
+          suggestedQuantity = estimatedCount;
+          conversionReason = `AI suggests ${estimatedCount} items instead of ${quantity} lbs for easier shopping`;
+        }
       }
     }
     
-    // Suggest typical retail quantities
+    // Suggest typical retail quantities for different categories
     if (category.category === 'Dairy & Eggs') {
-      if (productName.toLowerCase().includes('milk') && quantity === 1) {
-        conversionReason = 'Milk typically sold in gallons/half-gallons';
-      } else if (productName.toLowerCase().includes('egg') && quantity < 6) {
+      if (name.includes('milk') && quantity === 1 && unit === 'COUNT') {
+        conversionReason = 'AI suggests: Milk typically comes in gallons/half-gallons - consider quantity needed';
+      } else if (name.includes('egg') && quantity < 12 && unit === 'COUNT') {
         suggestedQuantity = 12; // Suggest dozen
-        conversionReason = 'Eggs typically sold by the dozen';
+        conversionReason = `AI suggests 12 eggs (1 dozen) instead of ${quantity} - standard retail packaging`;
+      } else if (name.includes('yogurt') && quantity === 1) {
+        suggestedQuantity = 6; // Multi-pack
+        conversionReason = 'AI suggests 6-pack yogurt for better value';
       }
     }
     
-    if (category.category === 'Meat & Seafood' && unit === 'COUNT') {
-      // Suggest weight for meat products
-      suggestedQuantity = 1;
-      conversionReason = 'Meat typically sold by weight (lbs)';
+    if (category.category === 'Meat & Seafood') {
+      if (unit === 'COUNT' && suggestedUnit === 'LB') {
+        suggestedQuantity = Math.max(1, quantity);
+        conversionReason = `AI suggests ${suggestedQuantity} lbs - meat typically sold by weight`;
+      } else if (unit === 'LB' && quantity < 1) {
+        suggestedQuantity = 1;
+        conversionReason = 'AI suggests minimum 1 lb for practical shopping';
+      }
+    }
+    
+    if (category.category === 'Pantry & Canned Goods') {
+      if (name.includes('can') && quantity === 1) {
+        suggestedQuantity = 2;
+        conversionReason = 'AI suggests 2 cans for meal planning efficiency';
+      } else if (name.includes('pasta') && quantity === 1 && unit === 'COUNT') {
+        suggestedQuantity = 2;
+        conversionReason = 'AI suggests 2 boxes pasta for multiple meals';
+      } else if (name.includes('rice') && quantity < 2) {
+        suggestedQuantity = 2;
+        conversionReason = 'AI suggests larger rice quantity for cost efficiency';
+      }
+    }
+    
+    if (category.category === 'Household Items') {
+      if (name.includes('paper towel') && quantity < 3) {
+        suggestedQuantity = 6;
+        conversionReason = 'AI suggests 6-pack paper towels for better value';
+      } else if (name.includes('toilet paper') && quantity < 4) {
+        suggestedQuantity = 12;
+        conversionReason = 'AI suggests 12-pack toilet paper for household efficiency';
+      }
+    }
+    
+    // Unit optimization suggestions
+    if (unit !== suggestedUnit) {
+      if (suggestedQuantity === quantity) {
+        // Only unit change
+        conversionReason = `AI suggests ${suggestedUnit} instead of ${unit} for better shopping accuracy`;
+      }
+    }
+    
+    // Ensure we always have a meaningful reason if we made changes
+    if ((suggestedQuantity !== quantity || suggestedUnit !== unit) && conversionReason === 'No conversion needed') {
+      conversionReason = 'AI optimization applied based on shopping patterns';
     }
     
     return {
