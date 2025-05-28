@@ -2329,7 +2329,8 @@ const ShoppingListPage: React.FC = () => {
             <DialogTitle>Recipe Ingredients Preview</DialogTitle>
           </DialogHeader>
           <div className="max-h-[60vh] overflow-y-auto py-4">
-            <p className="text-sm text-gray-500 mb-4              Preview of ingredients that will be added to your shopping list from this recipe:
+            <p className="text-sm text-gray-500 mb-4">
+              Preview of ingredients that will be added to your shopping list from this recipe:
             </p>
 
             <div className="space-y-2">
