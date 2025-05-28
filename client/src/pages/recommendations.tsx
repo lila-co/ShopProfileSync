@@ -12,7 +12,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 
 const RecommendationsPage: React.FC = () => {
-  const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -37,7 +37,6 @@ const RecommendationsPage: React.FC = () => {
     },
     onSuccess: (addedItem) => {
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-      setSelectedItems(new Set()); // Clear selections after adding
       toast({
         title: "Item Added",
         description: `${addedItem.productName} added to your shopping list`
@@ -134,28 +133,7 @@ const RecommendationsPage: React.FC = () => {
     }
   ];
 
-  const toggleItemSelection = (id: number) => {
-    const newSelected = new Set(selectedItems);
-    if (newSelected.has(id)) {
-      newSelected.delete(id);
-    } else {
-      newSelected.add(id);
-    }
-    setSelectedItems(newSelected);
-  };
-
-  const addSelectedToList = async () => {
-    if (selectedItems.size === 0) {
-      toast({
-        title: "No Items Selected",
-        description: "Please select items to add to your shopping list",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    addToShoppingListMutation.mutate();
-  };
+  
 
   const groupedRecommendations = enhancedRecommendations.reduce((groups, item) => {
     const category = item.category;
@@ -166,10 +144,7 @@ const RecommendationsPage: React.FC = () => {
     return groups;
   }, {} as Record<string, typeof enhancedRecommendations>);
 
-  const totalSavings = Array.from(selectedItems).reduce((sum, id) => {
-    const item = enhancedRecommendations.find(r => r.id === id);
-    return sum + (item?.savings || 0);
-  }, 0);
+  
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
@@ -183,29 +158,7 @@ const RecommendationsPage: React.FC = () => {
             <p className="text-gray-600">Maximize savings on your typical purchases</p>
           </div>
 
-          {/* Selection Summary */}
-          {selectedItems.size > 0 && (
-            <Card className="mb-4 bg-green-50 border-green-200">
-              <CardContent className="p-4">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <div className="font-semibold text-green-800">
-                      {selectedItems.size} items selected
-                    </div>
-                    <div className="text-sm text-green-600">
-                      Total savings: ${(totalSavings / 100).toFixed(2)}
-                    </div>
-                  </div>
-                  <Button 
-                    onClick={addSelectedToList}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    Add to List
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          
 
           <Tabs defaultValue="all" className="space-y-4">
             <TabsList className="grid w-full grid-cols-4">
@@ -227,12 +180,7 @@ const RecommendationsPage: React.FC = () => {
                   {items.map((item) => (
                     <Card 
                       key={item.id} 
-                      className={`cursor-pointer transition-all ${
-                        selectedItems.has(item.id) 
-                          ? 'ring-2 ring-primary bg-primary/5' 
-                          : 'hover:shadow-md'
-                      }`}
-                      onClick={() => toggleItemSelection(item.id)}
+                      className="transition-all hover:shadow-md"
                     >
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start mb-3">
@@ -280,13 +228,15 @@ const RecommendationsPage: React.FC = () => {
                           </div>
                           <Button 
                             size="sm" 
-                            variant={selectedItems.has(item.id) ? "default" : "outline"}
+                            className="bg-primary hover:bg-primary/90"
                             onClick={(e) => {
                               e.stopPropagation();
-                              toggleItemSelection(item.id);
+                              addToShoppingListMutation.mutate(item);
                             }}
+                            disabled={addToShoppingListMutation.isPending}
                           >
-                            {selectedItems.has(item.id) ? "Selected" : "Select"}
+                            <Plus className="h-4 w-4 mr-1" />
+                            {addToShoppingListMutation.isPending ? "Adding..." : "Add to List"}
                           </Button>
                         </div>
                       </CardContent>
