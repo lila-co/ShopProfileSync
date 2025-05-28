@@ -17,6 +17,10 @@ async function runMigration() {
     await client`ALTER TYPE unit_type ADD VALUE 'GALLON';`;
     console.log('Successfully added GALLON to unit_type enum');
     
+    // Add LOAF to unit_type enum
+    await client`ALTER TYPE unit_type ADD VALUE 'LOAF';`;
+    console.log('Successfully added LOAF to unit_type enum');
+    
   } catch (error) {
     if (error.message.includes('already exists')) {
       console.log('GALLON already exists in unit_type enum');

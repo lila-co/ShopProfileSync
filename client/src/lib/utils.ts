@@ -40,7 +40,7 @@ export function detectUnitFromItemName(itemName: string): string {
     'chip', 'chips', 'snack', 'candy', 'chocolate',
     'frozen', 'waffles', 'pancakes', 'dinner', 'entree'
   ];
-  
+
     const gallonItems = ['milk', 'juice', 'water'];
 
   // Specific packaging types
