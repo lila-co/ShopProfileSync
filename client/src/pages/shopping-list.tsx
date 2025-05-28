@@ -909,7 +909,7 @@ const ShoppingListPage: React.FC = () => {
         // Sort aisles by order and convert to array
         const sortedAisleGroups = Object.values(aisleGroups).sort((a: any, b: any) => a.order - b.order);
 
-        // Calculate route optimization
+                // Calculate route optimization
         const totalAisles = sortedAisleGroups.length;
         const estimatedTime = Math.max(15, totalAisles * 3 + store.items.length * 0.5);
 
@@ -1590,7 +1590,8 @@ const ShoppingListPage: React.FC = () => {
                                   planType: "Single Store"
                                 }, "Single Store - Kroger")}
                               >
-                                <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                <MapPin className="h-3 w-3 sm:h-4```text
+ sm:w-4 mr-1 sm:mr-2" />
                                 View Full Shopping Plan
                               </Button>
                             </div>
@@ -1978,7 +1979,7 @@ const ShoppingListPage: React.FC = () => {
                 Based on your usual purchases and current needs, we recommend adding these items to your shopping list:
               </p>
 
-              
+
 <div className="space-y-2">
               {Array.isArray(generatedItems) && generatedItems.map((item, index) => (
                 <div key={index} className="flex items-center p-2 border rounded-lg">
@@ -2330,8 +2331,7 @@ const ShoppingListPage: React.FC = () => {
           <DialogHeader>
             <DialogTitle>Recipe Ingredients Preview</DialogTitle>
           </DialogHeader>
-          <div className="max-h-[60vh] overflow-y-auto py-4">
-            <p className="text-sm text-gray-500 mb-4">
+          <div className="max-h-[60vh] overflow-y-auto py-4">            <p className="text-sm text-gray-500 mb-4">
               Preview of ingredients that will be added to your shopping list from this recipe:
             </p>
 
@@ -2386,8 +2386,8 @@ const ShoppingListPage: React.FC = () => {
               {importRecipeMutation.isPending ? 'Adding...' : `Add ${recipePreviewItems.filter(item => item.isSelected).length} Items`}
             </Button>
           </DialogFooter>
-        </Dialog>
-      </Dialog>
+        
+      
 
       {/* AI Categorization Results Dialog */}
       <Dialog open={showCategorization} onOpenChange={setShowCategorization}>
@@ -2495,7 +2495,7 @@ const ShoppingListPage: React.FC = () => {
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
+      
 
       {/* Shopping Plan Modal */}
         <Dialog open={showShoppingPlan} onOpenChange={(open) => {
@@ -2736,11 +2736,11 @@ const ShoppingListPage: React.FC = () => {
               )}
             </div>
           </DialogContent>
-        </Dialog>
+        
       </main>
 
       <BottomNavigation activeTab="lists" />
-    </div>
+    
   );
 };
 
