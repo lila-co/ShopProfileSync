@@ -70,7 +70,7 @@ const ShoppingListPage: React.FC = () => {
   const [recipeDialogOpen, setRecipeDialogOpen] = useState(false);
   const [recipeUrl, setRecipeUrl] = useState('');
   const [servings, setServings] = useState('4');
-
+  
   // Recipe preview state
   const [recipePreviewDialogOpen, setRecipePreviewDialogOpen] = useState(false);
   const [recipePreviewItems, setRecipePreviewItems] = useState<any[]>([]);
@@ -111,8 +111,11 @@ const ShoppingListPage: React.FC = () => {
       return response.json();
     },
     onSuccess: (data) => {
+      // Safely handle the items array
+      const items = data.items || data.generatedItems || [];
+      
       // Add estimated savings to each item
-      const enhancedItems = data.items.map((item: any) => ({
+      const enhancedItems = items.map((item: any) => ({
         ...item,
         isSelected: true,
       }));
@@ -134,14 +137,16 @@ const ShoppingListPage: React.FC = () => {
     mutationFn: async () => {
       const response = await apiRequest('POST', '/api/shopping-lists/preview', {});
       const data = await response.json();
-      setGeneratedItems(data.items || []);
+      const items = data.items || data.generatedItems || [];
+      setGeneratedItems(items);
       setGenerateDialogOpen(true);
       return data;
     },
     onSuccess: (data) => {
+      const itemCount = data.items?.length || data.generatedItems?.length || 0;
       toast({
         title: "Shopping List Preview Generated",
-        description: `Found ${data.items?.length || 0} recommended items`
+        description: `Found ${itemCount} recommended items`
       });
     },
     onError: (error: any) => {
@@ -195,7 +200,12 @@ const ShoppingListPage: React.FC = () => {
       return response.json();
     },
     onSuccess: (data) => {
-      setRecipePreviewItems(data.items || []);
+      const items = data.items || data.ingredients || [];
+      const processedItems = items.map((item: any) => ({
+        ...item,
+        isSelected: true
+      }));
+      setRecipePreviewItems(processedItems);
       setRecipeDialogOpen(false);
       setRecipePreviewDialogOpen(true);
     },
@@ -278,8 +288,9 @@ const ShoppingListPage: React.FC = () => {
       return extractedData;
     },
     onSuccess: (data) => {
-      if (data.items && Array.isArray(data.items)) {
-        const processedItems = data.items.map((item: any) => ({
+      const items = data?.items || data?.extractedItems || [];
+      if (items && Array.isArray(items) && items.length > 0) {
+        const processedItems = items.map((item: any) => ({
           productName: item.productName || item.name || item,
           quantity: item.quantity || 1,
           unit: item.unit || 'COUNT',
@@ -909,9 +920,8 @@ const ShoppingListPage: React.FC = () => {
         // Sort aisles by order and convert to array
         const sortedAisleGroups = Object.values(aisleGroups).sort((a: any, b: any) => a.order - b.order);
 
-                // Calculate route optimization
+        // Calculate route optimization
         const totalAisles = sortedAisleGroups.length;
-```text
         const estimatedTime = Math.max(15, totalAisles * 3 + store.items.length * 0.5);
 
         return {
@@ -1979,52 +1989,51 @@ const ShoppingListPage: React.FC = () => {
                 Based on your usual purchases and current needs, we recommend adding these items to your shopping list:
               </p>
 
-<div className="space-y-2">
-              {Array.isArray(generatedItems) && generatedItems.map((item, index) => (
-                <div key={index} className="flex items-center p-2 border rounded-lg">
-                  <input
-                    type="checkbox"
-                    checked={item.isSelected || false}
-                    onChange={() => handleToggleGeneratedItem(index)}
-                    className="h-5 w-5 text-primary rounded mr-3"
-                  />
-                  <div className="flex-1">
-                    <div className="flex flex-col sm:flex-row sm:justify-between">
-                      <div>
-                        <p className="font-medium">{item.productName || 'Unknown Item'}</p>
-                        <div className="flex items-center text-sm">
-                          <span className="text-gray-500">
-                            {item.quantity || 1} {item.unit === "LB" ? "lbs" : 
-                              item.unit === "OZ" ? "oz" : 
-                              item.unit === "PKG" ? "pkg" : 
-                              item.unit === "BOX" ? "box" : 
-                              item.unit === "CAN" ? "can" : 
-                              item.unit === "BOTTLE" ? "bottle" :
-                              item.unit === "JAR" ? "jar" : 
-                              item.unit === "BUNCH" ? "bunch" : 
-                              item.unit === "ROLL" ? "roll" : ""}
-                          </span>
-
-                          {item.suggestedRetailerId && (
-                            <span className="ml-2 text-green-600 text-xs">
-                              On sale at Retailer #{item.suggestedRetailerId}
+              <div className="space-y-2">
+                {generatedItems.map((item, index) => (
+                  <div key={index} className="flex items-center p-2 border rounded-lg">
+                    <input
+                      type="checkbox"
+                      checked={item.isSelected}
+                      onChange={() => handleToggleGeneratedItem(index)}
+                      className="h-5 w-5 text-primary rounded mr-3"
+                    />
+                    <div className="flex-1">
+                      <div className="flex flex-col sm:flex-row sm:justify-between">
+                        <div>
+                          <p className="font-medium">{item.productName}</p>
+                          <div className="flex items-center text-sm">
+                            <span className="text-gray-500">
+                              {item.quantity} {item.unit === "LB" ? "lbs" : 
+                                item.unit === "OZ" ? "oz" : 
+                                item.unit === "PKG" ? "pkg" : 
+                                item.unit === "BOX" ? "box" : 
+                                item.unit === "CAN" ? "can" : 
+                                item.unit === "BOTTLE" ? "bottle" :                                item.unit === "JAR" ? "jar" : 
+                                item.unit === "BUNCH" ? "bunch" : 
+                                item.unit === "ROLL" ? "roll"                                  : ""}
                             </span>
-                          )}
+
+                            {item.suggestedRetailerId && (
+                              <span className="ml-2 text-green-600 text-xs">
+                                On sale at Retailer #{item.suggestedRetailerId}
+                              </span>
+                            )}
+                          </div>
                         </div>
+                        {item.savings > 0 && (
+                          <div className="mt-1 sm:mt-0 text-green-600 text-sm font-medium">
+                            Save ${(item.savings / 100).toFixed(2)}
+                          </div>
+                        )}
                       </div>
-                      {item.savings && item.savings > 0 && (
-                        <div className="mt-1 sm:mt-0 text-green-600 text-sm font-medium">
-                          Save ${(item.savings / 100).toFixed(2)}
-                        </div>
-                      )}
-                    </div>
 
                       {item.reason && (
                         <div className="mt-1 text-xs text-gray-500">
                           {item.reason}
                         </div>
                       )}
-
+                      
                       {item.dealComparison && (
                         <div className="mt-2 p-2 bg-blue-50 rounded-md border-l-2 border-blue-400">
                           <div className="text-xs font-medium text-blue-800 mb-1">
@@ -2330,12 +2339,13 @@ const ShoppingListPage: React.FC = () => {
           <DialogHeader>
             <DialogTitle>Recipe Ingredients Preview</DialogTitle>
           </DialogHeader>
-          <div className="max-h-[60vh] overflow-y-auto py-4">            <p className="text-sm text-gray-500 mb-4">
+          <div className="max-h-[60vh] overflow-y-auto py-4">
+            <p className="text-sm text-gray-500 mb-4">
               Preview of ingredients that will be added to your shopping list from this recipe:
             </p>
 
             <div className="space-y-2">
-              {(recipePreviewItems || []).map((item, index) => (
+              {recipePreviewItems.map((item, index) => (
                 <div key={index} className="flex items-center p-2 border rounded-lg">
                   <input
                     type="checkbox"
@@ -2367,7 +2377,6 @@ const ShoppingListPage: React.FC = () => {
               ))}
             </div>
           </div>
-          </DialogContent>
           <DialogFooter className="flex justify-between">
             <Button 
               variant="outline" 

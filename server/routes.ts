@@ -899,7 +899,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           daysUntilPurchase: 5,
           isSelected: true
         },
-        { 
+        {
           productName: 'Chicken Breast', 
           quantity: 2, 
           unit: 'LB',
@@ -918,18 +918,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Return the recommendations for preview
       res.json({
         userId,
-        items: allRecommendedItems || [],
+        items: allRecommendedItems,
         totalSavings: allRecommendedItems.reduce((sum, item) => sum + (item.savings || 0), 0)
       });
     } catch (error) {
-      console.error('Error in shopping list preview:', error);
-      // Return a safe response even on error
-      res.json({
-        userId,
-        items: [],
-        totalSavings: 0,
-        error: 'Failed to generate preview'
-      });
+      handleError(res, error);
     }
   });
 
@@ -937,42 +930,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/shopping-lists/recipe/preview', async (req: Request, res: Response) => {
     try {
       const { recipeUrl, servings } = req.body;
-      if (!recipeUrl || !recipeUrl.trim()) {
-        return res.status(400).json({ 
-          message: 'Recipe URL is required',
-          items: []
-        });
+      if (!recipeUrl) {
+        return res.status(400).json({ message: 'Recipe URL is required' });
       }
 
       // Extract ingredients for preview
-      const extractedIngredients = await extractRecipeIngredients(recipeUrl.trim(), servings || 4);
-      
-      // Ensure we have a valid array
-      if (!Array.isArray(extractedIngredients)) {
-        return res.json({ 
-          items: [],
-          message: 'No ingredients found in recipe'
-        });
-      }
-      
+      const extractedIngredients = await extractRecipeIngredients(recipeUrl, servings || 4);
+
       // Format ingredients for preview
       const previewItems = extractedIngredients.map(ingredient => ({
-        productName: ingredient.name || 'Unknown ingredient',
-        quantity: ingredient.quantity || 1,
+        productName: ingredient.name,
+        quantity: ingredient.quantity,
         unit: ingredient.unit || 'COUNT',
         isSelected: true
       }));
 
-      res.json({ 
-        items: previewItems,
-        totalItems: previewItems.length
-      });
+      res.json({ items: previewItems });
     } catch (error) {
-      console.error('Recipe preview error:', error);
-      res.json({ 
-        items: [],
-        error: 'Failed to extract recipe ingredients'
-      });
+      handleError(res, error);
     }
   });
 
@@ -980,9 +955,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/shopping-lists/recipe', async (req: Request, res: Response) => {
     try {
       const { recipeUrl, shoppingListId, servings, items } = req.body;
-      
+
       let ingredientsToAdd = [];
-      
+
       if (items) {
         // If items are provided (from preview), use those
         ingredientsToAdd = items.filter((item: any) => item.isSelected);
@@ -1805,6 +1780,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 adoption: "78% actively use apps",
                 impact: "Average savings of $23 per trip"
               },
+              ```
               {
                 behavior: "Bulk buying coordination",
                 adoption: "41% coordinate with neighbors",
@@ -2249,7 +2225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         else if (retailer.name === "Walmart") baseAvailability = 0.89;
 
         const availableItemCount = Math.floor(items.length * baseAvailability);
-        
+
         const storeItems = items.map((item, index) => {
           // Find deals at this retailer
           const deal = allDeals.find(d => 
@@ -2287,7 +2263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const availableItems = storeItems.filter(item => item.isAvailable);
         const totalCost = availableItems.reduce((sum, item) => sum + item.totalPrice, 0);
         const dealCount = storeItems.filter(item => item.dealInfo?.isDeal).length;
-        
+
         // Calculate balanced score: availability + deal bonus - cost penalty
         const availabilityScore = baseAvailability * 0.4;
         const dealScore = (dealCount / items.length) * 0.3;
@@ -3041,6 +3017,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json(result);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Generate shopping list based on purchase history and preferences
+  app.post('/api/shopping-lists/generate', async (req: Request, res: Response) => {
+    try {
+      // Get recommendation engine instance
+      const recommendationEngine = RecommendationEngine.getInstance();
+
+      // Generate personalized shopping list for the default user
+      const generatedItems = await recommendationEngine.generatePersonalizedShoppingList(1);
+
+      res.json({ 
+        items: generatedItems,
+        generatedItems,
+        totalItems: generatedItems.length,
+        message: "Shopping list generated successfully"
+      });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Preview shopping list before generation
+  app.post('/api/shopping-lists/preview', async (req: Request, res: Response) => {
+    try {
+      // Get recommendation engine instance
+      const recommendationEngine = RecommendationEngine.getInstance();
+
+      // Generate preview of personalized shopping list for the default user
+      const previewItems = await recommendationEngine.generatePersonalizedShoppingList(1);
+
+      res.json({ 
+        items: previewItems,
+        generatedItems: previewItems,
+        totalItems: previewItems.length,
+        message: "Shopping list preview generated successfully"
+      });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Preview recipe ingredients before adding to shopping list
+  app.post('/api/shopping-lists/recipe/preview', async (req: Request, res: Response) => {
+    try {
+      const { recipeUrl, servings = 4 } = req.body;
+
+      if (!recipeUrl) {
+        return res.status(400).json({ error: 'Recipe URL is required' });
+      }
+
+      // For demo purposes, return mock ingredients based on the URL
+      const mockIngredients = [
+        { productName: 'Chicken Breast', quantity: Math.ceil(servings / 4), unit: 'LB' },
+        { productName: 'Rice', quantity: Math.ceil(servings / 4 * 2), unit: 'CUPS' },
+        { productName: 'Broccoli', quantity: Math.ceil(servings / 4), unit: 'LB' },
+        { productName: 'Olive Oil', quantity: 1, unit: 'BOTTLE' },
+        { productName: 'Garlic', quantity: Math.ceil(servings / 4 * 3), unit: 'CLOVES' },
+        { productName: 'Onion', quantity: Math.ceil(servings / 4), unit: 'COUNT' },
+        { productName: 'Salt', quantity: 1, unit: 'COUNT' },
+        { productName: 'Black Pepper', quantity: 1, unit: 'COUNT' }
+      ];
+
+      res.json({
+        items: mockIngredients,
+        ingredients: mockIngredients,
+        servings,
+        recipeUrl,
+        message: "Recipe ingredients preview generated successfully"
+      });
     } catch (error) {
       handleError(res, error);
     }
