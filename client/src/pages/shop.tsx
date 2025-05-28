@@ -139,6 +139,28 @@ const Shop: React.FC = () => {
     }
   });
   
+  // Mutation for adding items to shopping list
+  const addItemToListMutation = useMutation({
+    mutationFn: async (data: { shoppingListId: number; productName: string; quantity: number }) => {
+      const response = await apiRequest('POST', '/api/shopping-list/items', data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists', selectedList] });
+      toast({
+        title: "Item Added",
+        description: "Product has been added to your shopping list.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add item to shopping list.",
+        variant: "destructive"
+      });
+    }
+  });
+
   // Mutation for submitting shopping order/route
   const submitShoppingMutation = useMutation({
     mutationFn: async () => {
@@ -516,7 +538,10 @@ const Shop: React.FC = () => {
           
           {selectedRetailer && (
             <div className="mt-4">
-              <form onSubmit={handleProductSearch} className="flex gap-2">
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                searchProducts();
+              }} className="flex gap-2">
                 <Input
                   type="text"
                   placeholder="Search for products..."

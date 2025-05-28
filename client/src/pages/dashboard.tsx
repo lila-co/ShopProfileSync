@@ -6,32 +6,32 @@ import ShoppingInsights from '@/components/dashboard/ShoppingInsights';
 import WeeklyDeals from '@/components/dashboard/WeeklyDeals';
 import RecommendationCard from '@/components/dashboard/RecommendationCard';
 import ReceiptScanner from '@/components/receipt/ReceiptScanner';
-import StoreLinking from '@/components/stores/StoreLinking';
+
 import ProfileSetup from '@/components/profile/ProfileSetup';
 import { useQuery } from '@tanstack/react-query';
 import { User, Recommendation } from '@/lib/types';
 
 const Dashboard: React.FC = () => {
   const [showReceiptScanner, setShowReceiptScanner] = useState(false);
-  const [showStoreLinking, setShowStoreLinking] = useState(false);
-  const [showProfileSetup, setShowProfileSetup] = useState(false);
   
+  const [showProfileSetup, setShowProfileSetup] = useState(false);
+
   const { data: user } = useQuery<User>({
     queryKey: ['/api/user/profile'],
   });
-  
+
   const { data: recommendations, isLoading: loadingRecommendations } = useQuery<Recommendation[]>({
     queryKey: ['/api/recommendations'],
   });
-  
+
   const { data: monthlySavings } = useQuery<number>({
     queryKey: ['/api/insights/monthly-savings'],
   });
-  
+
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
       <Header user={user} />
-      
+
       <main className="flex-1 overflow-y-auto">
         <div className="p-4 pb-20">
           {/* Welcome Section */}
@@ -48,52 +48,17 @@ const Dashboard: React.FC = () => {
               )}
             </div>
           </section>
-          
-          {/* Quick Actions */}
-          <section className="mb-6">
-            <div className="grid grid-cols-2 gap-3">
-              <ActionCard 
-                icon={
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9.5 9.5 14.5 14.5"/>
-                    <path d="M14.5 9.5 9.5 14.5"/>
-                    <rect width="16" height="16" x="4" y="4" rx="2"/>
-                    <path d="M4 15h16"/>
-                    <path d="M15 4v6"/>
-                    <path d="M9 4v2"/>
-                  </svg>
-                }
-                title="Add Receipt"
-                subtitle="Scan or upload"
-                onClick={() => setShowReceiptScanner(true)}
-                iconBgColor="bg-primary/10"
-              />
-              
-              <ActionCard 
-                icon={
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-                  </svg>
-                }
-                title="Link Store"
-                subtitle="Connect accounts"
-                onClick={() => setShowStoreLinking(true)}
-                iconBgColor="bg-accent/10"
-              />
-            </div>
-          </section>
-          
+
           {/* Shopping Insights */}
           <ShoppingInsights />
-          
+
           {/* Shopping Recommendations */}
           <section className="mb-6">
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-bold text-gray-800">Recommended Purchases</h3>
               <a href="/recommendations" className="text-primary text-sm font-medium">View All</a>
             </div>
-            
+
             <div className="space-y-3">
               {loadingRecommendations ? (
                 // Loading state
@@ -133,35 +98,71 @@ const Dashboard: React.FC = () => {
               )}
             </div>
           </section>
-          
+
           {/* Weekly Deals */}
           <WeeklyDeals />
-          
-          {/* Quick Link to Shopping Lists */}
+
+          {/* Quick Actions */}
+          <section className="mb-6">
+            <h3 className="font-bold text-gray-800 mb-3">Quick Actions</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <ActionCard 
+                icon={
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9.5 9.5 14.5 14.5"/>
+                    <path d="M14.5 9.5 9.5 14.5"/>
+                    <rect width="16" height="16" x="4" y="4" rx="2"/>
+                    <path d="M4 15h16"/>
+                    <path d="M15 4v6"/>
+                    <path d="M9 4v2"/>
+                  </svg>
+                }
+                title="Add Receipt"
+                subtitle="Scan or upload"
+                onClick={() => setShowReceiptScanner(true)}
+                iconBgColor="bg-primary/10"
+              />
+
+              <ActionCard 
+                icon={
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                }
+                title="View Profile"
+                subtitle="Settings & preferences"
+                onClick={() => window.location.href = '/profile'}
+                iconBgColor="bg-accent/10"
+              />
+            </div>
+          </section>
+
+          {/* Quick Link to Shopping List */}
           <section className="mb-6">
             <div className="bg-primary/5 rounded-xl p-4 border border-primary/20">
               <div className="flex justify-between items-center">
                 <div>
-                  <h3 className="font-bold text-primary mb-1">Shopping Lists</h3>
-                  <p className="text-sm text-gray-600">Manage your shopping lists and optimize your trips</p>
+                  <h3 className="font-bold text-primary mb-1">Shopping List</h3>
+                  <p className="text-sm text-gray-600">Manage your shopping list and optimize your trips</p>
                 </div>
                 <a 
                   href="/shopping-list"
                   className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90"
                 >
-                  View Lists
+                  View List
                 </a>
               </div>
             </div>
           </section>
         </div>
-        
+
         {/* Conditional Modals */}
         {showReceiptScanner && <ReceiptScanner />}
-        {showStoreLinking && <StoreLinking />}
+        
         {showProfileSetup && <ProfileSetup />}
       </main>
-      
+
       <BottomNavigation activeTab="home" />
     </div>
   );

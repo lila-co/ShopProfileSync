@@ -7,7 +7,16 @@ import ShoppingListPage from '@/pages/shopping-list';
 import ProfilePage from '@/pages/profile';
 import NotFound from '@/pages/not-found';
 import DealsPage from '@/pages/deals';
+import RetailersPage from '@/pages/retailers';
+import InsightsPage from '@/pages/insights';
+import RecommendationsPage from '@/pages/recommendations';
+import InternalAnalytics from '@/pages/internal-analytics';
+import AdminSettings from '@/pages/admin-settings';
+import AffiliateDashboard from '@/pages/affiliate-dashboard';
 import { queryClient } from '@/lib/queryClient';
+import Shop from '@/pages/shop'; // Import the Shop component
+import ShoppingRoute from '@/pages/shopping-route'; // Import the ShoppingRoute component
+import RetailerDetailsPage from '@/pages/retailer-details';
 
 function App() {
   return (
@@ -20,7 +29,15 @@ function App() {
             <Route path="/shopping-list" component={ShoppingListPage} />
             <Route path="/profile" component={ProfilePage} />
             <Route path="/deals" component={DealsPage} />
-            <Route path="/retailers" component={Dashboard} />
+            <Route path="/retailers" component={RetailersPage} />
+            <Route path="/retailers/:id" component={RetailerDetailsPage} />
+            <Route path="/insights" component={InsightsPage} />
+            <Route path="/recommendations" component={RecommendationsPage} />
+            <Route path="/internal/analytics" component={InternalAnalytics} />
+            <Route path="/admin-settings" component={AdminSettings} />
+            <Route path="/affiliate-dashboard" component={AffiliateDashboard} />
+            <Route path="/shop" component={Shop} />
+            <Route path="/shopping-route" component={ShoppingRoute} />
             <Route component={NotFound} />
           </Switch>
         </div>

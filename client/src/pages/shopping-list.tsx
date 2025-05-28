@@ -66,9 +66,25 @@ const ShoppingListPage: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
+  // Recipe dialog state
+  const [recipeDialogOpen, setRecipeDialogOpen] = useState(false);
+  const [recipeUrl, setRecipeUrl] = useState('');
+  const [servings, setServings] = useState('4');
+
   // Tab state
   const [activeTab, setActiveTab] = useState('items');
   const [selectedOptimization, setSelectedOptimization] = useState('cost');
+
+  // Shopping plan view state
+  const [planViewDialogOpen, setPlanViewDialogOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [selectedPlanTitle, setSelectedPlanTitle] = useState('');
+  const [showShoppingPlan, setShowShoppingPlan] = useState(false);
+
+  // AI categorization state
+  const [showCategorization, setShowCategorization] = useState(false);
+  const [categorizedItems, setCategorizedItems] = useState<any[]>([]);
+  const [isCategorizingItems, setIsCategorizingItems] = useState(false);
 
   const { data: shoppingLists, isLoading } = useQuery<ShoppingList[]>({
     queryKey: ['/api/shopping-lists'],
@@ -111,56 +127,86 @@ const ShoppingListPage: React.FC = () => {
 
   // Generate shopping list from typical purchases
   const generateListMutation = useMutation({
-    mutationFn: async (items: any[]) => {
-      // Filter only selected items
-      const selectedItems = items.filter(item => item.isSelected);
-      
-      if (selectedItems.length === 0) {
-        throw new Error("No items selected");
-      }
-      
-      // Process each item individually to avoid batch errors
-      const results = [];
-      for (const item of selectedItems) {
-        try {
-          const response = await fetch('/api/shopping-list/items', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              shoppingListId: defaultList?.id,
-              productName: item.productName,
-              quantity: item.quantity || 1,
-              unit: item.unit || 'COUNT'
-            }),
-          });
-          
-          if (!response.ok) {
-            throw new Error(`Server responded with ${response.status}`);
-          }
-          
-          const result = await response.json();
-          results.push(result);
-        } catch (error) {
-          console.error(`Error adding item ${item.productName}:`, error);
-        }
-      }
-      
-      return results;
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/shopping-lists/preview', {});
+      const data = await response.json();
+      setGeneratedItems(data.items || []);
+      setGenerateDialogOpen(true);
+      return data;
     },
-    onSuccess: (results) => {
-      setGenerateDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+    onSuccess: (data) => {
       toast({
-        title: "Shopping List Updated",
-        description: `Added ${results.length} items to your shopping list.`,
+        title: "Shopping List Preview Generated",
+        description: `Found ${data.items?.length || 0} recommended items`
       });
     },
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to generate shopping list: " + error.message,
+        description: "Failed to generate shopping list preview",
+        variant: "destructive" 
+      });
+    }
+  });
+
+  // Add generated items to shopping list
+  const addGeneratedItemsMutation = useMutation({
+    mutationFn: async () => {
+      const defaultList = shoppingLists?.[0];
+      if (!defaultList) throw new Error("No shopping list found");
+
+      const selectedItemsToAdd = generatedItems.filter(item => item.isSelected);
+
+      const response = await apiRequest('POST', '/api/shopping-lists/generate', {
+        items: selectedItemsToAdd,
+        shoppingListId: defaultList.id
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      setGenerateDialogOpen(false);
+      setGeneratedItems([]);
+      toast({
+        title: "Items Added",
+        description: `Added ${data.totalItems || 0} items to your shopping list`
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to add items to shopping list",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Import recipe ingredients
+  const importRecipeMutation = useMutation({
+    mutationFn: async () => {
+      const defaultList = shoppingLists?.[0];
+      if (!defaultList) throw new Error("No shopping list found");
+
+      const response = await apiRequest('POST', '/api/shopping-lists/recipe', {
+        recipeUrl,
+        shoppingListId: defaultList.id,
+        servings: parseInt(servings)
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      setRecipeDialogOpen(false);
+      setRecipeUrl('');
+      toast({
+        title: "Recipe Imported",
+        description: "Ingredients have been added to your shopping list"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to import recipe ingredients",
         variant: "destructive"
       });
     }
@@ -398,15 +444,140 @@ const ShoppingListPage: React.FC = () => {
     }
   });
 
-  const handleAddItem = (e: React.FormEvent) => {
+  // Categorize items with AI
+  const categorizeMutation = useMutation({
+    mutationFn: async () => {
+      const defaultList = shoppingLists?.[0];
+      if (!defaultList) throw new Error("No shopping list found");
+
+      const items = defaultList.items || [];
+      if (items.length === 0) throw new Error("No items to categorize");
+
+      setIsCategorizingItems(true);
+
+      try {
+        // Call the batch categorization endpoint
+        const response = await apiRequest('POST', '/api/products/categorize-batch', {
+          items: items.map(item => ({
+            productName: item.productName,
+            quantity: item.quantity,
+            unit: item.unit || 'COUNT'
+          }))
+        });
+
+        const categorizedItems = await response.json();
+        return categorizedItems;
+      } catch (error) {
+        console.error('Categorization failed:', error);
+
+        // Return fallback categorization for all items
+        return items.map(item => ({
+          productName: item.productName,
+          category: {
+            category: 'Pantry & Canned Goods',
+            aisle: 'Aisle 4-6',
+            confidence: 0.30,
+            suggestedQuantityType: 'COUNT',
+            typicalRetailNames: [item.productName],
+            brandVariations: ['Generic']
+          },
+          normalized: {
+            originalQuantity: Number(item.quantity) || 1,
+            originalUnit: item.unit || 'COUNT',
+            suggestedQuantity: Number(item.quantity) || 1,
+            suggestedUnit: item.unit || 'COUNT',
+            conversionReason: 'Categorization service unavailable'
+          },
+          icon: '🥫'
+        }));
+      } finally {
+        setIsCategorizingItems(false);
+      }
+    },
+    onSuccess: (data) => {
+      setCategorizedItems(data);
+      setShowCategorization(true);
+      toast({
+        title: "AI Categorization Complete",
+        description: `Analyzed ${data.length} items with AI-powered categorization`
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to categorize items: " + error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Apply categorization insights mutation
+  const applyInsightsMutation = useMutation({
+    mutationFn: async () => {
+      const defaultList = shoppingLists?.[0];
+      if (!defaultList) throw new Error("No shopping list found");
+
+      // Update items with optimized quantities and units based on AI insights
+      const updatePromises = categorizedItems.map(async (categorizedItem) => {
+        const originalItem = items.find(item => item.productName === categorizedItem.productName);
+        if (!originalItem) return;
+
+        // Only update if there's a meaningful change suggested
+        const shouldUpdate = 
+          categorizedItem.normalized.suggestedQuantity !== categorizedItem.normalized.originalQuantity ||
+          categorizedItem.normalized.suggestedUnit !== categorizedItem.normalized.originalUnit;
+
+        if (shouldUpdate) {
+          const response = await apiRequest('PATCH', `/api/shopping-list/items/${originalItem.id}`, {
+            productName: originalItem.productName,
+            quantity: Number(categorizedItem.normalized.suggestedQuantity),
+            unit: categorizedItem.normalized.suggestedUnit
+          });
+          return response.json();
+        }
+      });
+
+      await Promise.all(updatePromises.filter(Boolean));
+      return categorizedItems.length;
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      setShowCategorization(false);
+      setCategorizedItems([]);
+      toast({
+        title: "Categorization Applied",
+        description: `Updated ${count} items with AI optimization suggestions`
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to apply categorization insights: " + error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newItemName.trim()) {
       const productName = newItemName.trim();
 
-      // If auto-detect is enabled, determine the unit type based on item name
-      const unit = autoDetectUnit 
-        ? detectUnitFromItemName(productName) 
-        : newItemUnit;
+      let unit = newItemUnit;
+
+      // If auto-detect is enabled, use AI to determine the optimal unit
+      if (autoDetectUnit) {
+        try {
+          const response = await apiRequest('POST', '/api/products/categorize', {
+            productName
+          });
+          const categoryData = await response.json();
+          unit = categoryData.suggestedQuantityType || detectUnitFromItemName(productName);
+        } catch (error) {
+          // Fallback to local detection if AI fails
+          unit = detectUnitFromItemName(productName);
+        }
+      }
 
       addItemMutation.mutate({
         productName,
@@ -536,6 +707,337 @@ const ShoppingListPage: React.FC = () => {
     setUploadedItems(updatedItems);
   };
 
+  // Handle viewing shopping plan
+  const handleViewShoppingPlan = (plan: any, title: string) => {
+    console.log('Opening shopping plan:', { plan, title, planType: plan?.planType }); // Debug log
+    if (!plan) {
+      toast({
+        title: "Error",
+        description: "Shopping plan data is not available",
+        variant: "destructive"
+      });
+      return;
+    }
+    setSelectedPlan(plan);
+    setSelectedPlanTitle(title);
+    setShowShoppingPlan(true);
+  };
+
+  // Handle printing shopping plan
+  const handlePrintShoppingPlan = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const printContent = generatePrintContent();
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
+  // Generate optimized shopping route with aisle information
+  const generateOptimizedShoppingRoute = (plan: any) => {
+    if (!plan) return plan;
+
+    // Define aisle mappings for different product categories
+    const aisleMapping = {
+      'Produce': { aisle: 'Aisle 1', category: 'Fresh Produce', order: 1 },
+      'Dairy': { aisle: 'Aisle 2', category: 'Dairy & Eggs', order: 2 },
+      'Meat': { aisle: 'Aisle 3', category: 'Meat & Seafood', order: 3 },
+      'Pantry': { aisle: 'Aisle 4-6', category: 'Pantry & Canned Goods', order: 4 },
+      'Frozen': { aisle: 'Aisle 7', category: 'Frozen Foods', order: 5 },
+      'Bakery': { aisle: 'Aisle 8', category: 'Bakery', order: 6 },
+      'Personal Care': { aisle: 'Aisle 9', category: 'Health & Personal Care', order: 7 },
+      'Household': { aisle: 'Aisle 10', category: 'Household Items', order: 8 }
+    };
+
+    // Function to categorize items
+    const categorizeItem = (productName: string) => {
+      const name = productName.toLowerCase();
+
+      if (name.includes('banana') || name.includes('strawberries') || name.includes('produce')) {
+        return 'Produce';
+      } else if (name.includes('milk') || name.includes('yogurt') || name.includes('cheese') || name.includes('egg')) {
+        return 'Dairy';
+      } else if (name.includes('chicken') || name.includes('beef') || name.includes('meat') || name.includes('fish')) {
+        return 'Meat';
+      } else if (name.includes('bread') || name.includes('cake') || name.includes('bakery')) {
+        return 'Bakery';
+      } else if (name.includes('frozen') || name.includes('ice cream')) {
+        return 'Frozen';
+      } else if (name.includes('soap') || name.includes('shampoo') || name.includes('toothpaste')) {
+        return 'Personal Care';
+      } else if (name.includes('towel') || name.includes('cleaner') || name.includes('detergent')) {
+        return 'Household';
+      } else {
+        return 'Pantry';
+      }
+    };
+
+    // Process stores to add aisle organization
+    const optimizedPlan = { ...plan };
+
+    if (optimizedPlan.stores) {
+      optimizedPlan.stores = optimizedPlan.stores.map((store: any) => {
+        // Group items by aisle
+        const aisleGroups: { [key: string]: any } = {};
+
+        store.items.forEach((item: any) => {
+          const category = categorizeItem(item.productName);
+          const aisleInfo = aisleMapping[category as keyof typeof aisleMapping];
+
+          if (!aisleGroups[aisleInfo.aisle]) {
+            aisleGroups[aisleInfo.aisle] = {
+              aisleName: aisleInfo.aisle,
+              category: aisleInfo.category,
+              order: aisleInfo.order,
+              items: []
+            };
+          }
+
+          // Add shelf location for specific items
+          let shelfLocation = '';
+          const name = item.productName.toLowerCase();
+          if (name.includes('milk')) shelfLocation = 'Cooler Section';
+          else if (name.includes('bread')) shelfLocation = 'End Cap';
+          else if (name.includes('banana')) shelfLocation = 'Front Display';
+
+          aisleGroups[aisleInfo.aisle].items.push({
+            ...item,
+            shelfLocation
+          });
+        });
+
+        // Sort aisles by order and convert to array
+        const sortedAisleGroups = Object.values(aisleGroups).sort((a: any, b: any) => a.order - b.order);
+
+        // Calculate route optimization
+        const totalAisles = sortedAisleGroups.length;
+        const estimatedTime = Math.max(15, totalAisles * 3 + store.items.length * 0.5);
+
+        return {
+          ...store,
+          aisleGroups: sortedAisleGroups,
+          optimizedRoute: {
+            totalAisles,
+            estimatedTime: Math.round(estimatedTime),
+            routeOrder: sortedAisleGroups.map((group: any) => group.aisleName)
+          }
+        };
+      });
+    } else if (optimizedPlan.items) {
+      // Handle single store case
+      const aisleGroups: { [key: string]: any } = {};
+
+      optimizedPlan.items.forEach((item: any) => {
+        const category = categorizeItem(item.productName);
+        const aisleInfo = aisleMapping[category as keyof typeof aisleMapping];
+
+        if (!aisleGroups[aisleInfo.aisle]) {
+          aisleGroups[aisleInfo.aisle] = {
+            aisleName: aisleInfo.aisle,
+            category: aisleInfo.category,
+            order: aisleInfo.order,
+            items: []
+          };
+        }
+
+        let shelfLocation = '';
+        const name = item.productName.toLowerCase();
+        if (name.includes('milk')) shelfLocation = 'Cooler Section';
+        else if (name.includes('bread')) shelfLocation = 'End Cap';
+        else if (name.includes('banana')) shelfLocation = 'Front Display';
+
+        aisleGroups[aisleInfo.aisle].items.push({
+          ...item,
+          shelfLocation
+        });
+      });
+
+      const sortedAisleGroups = Object.values(aisleGroups).sort((a: any, b: any) => a.order - b.order);
+      const totalAisles = sortedAisleGroups.length;
+      const estimatedTime = Math.max(15, totalAisles * 3 + optimizedPlan.items.length * 0.5);
+
+      optimizedPlan.aisleGroups = sortedAisleGroups;
+      optimizedPlan.optimizedRoute = {
+        totalAisles,
+        estimatedTime: Math.round(estimatedTime),
+        routeOrder: sortedAisleGroups.map((group: any) => group.aisleName)
+      };
+    }
+
+    return optimizedPlan;
+  };
+
+  // Generate print content
+  const generatePrintContent = () => {
+    if (!selectedPlan) return '';
+
+    const currentDate = new Date().toLocaleDateString();
+    let content = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Shopping Plan - ${selectedPlan.planType}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+          .store-section { margin-bottom: 30px; page-break-inside: avoid; }
+          .store-header { background-color: #f5f5f5; padding: 10px; font-weight: bold; font-size: 18px; }
+          .item-list { margin: 10px 0; }
+          .item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dotted #ccc; }
+          .item-checkbox { display: inline-block; width: 15px; height: 15px; border: 2px solid #333; margin-right: 10px; vertical-align: middle; }
+          .item-text { flex: 1; }
+          .item-price { font-weight: bold; }
+          .summary { margin-top: 30px; border-top: 2px solid #000; padding-top: 10px; }
+          .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }
+          .note { margin-top: 20px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #007bff; }
+          @media print { 
+            body { margin: 0; }
+            .mobile-shopping-item { display: none !important; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Shopping Plan - ${selectedPlan.planType}</h1>
+          <p>Generated on ${currentDate}</p>
+        </div>
+    `;
+
+    if (selectedPlan.stores) {
+      selectedPlan.stores.forEach((store: any) => {
+        content += `
+          <div class="store-section">
+            <div class="store-header">
+              ${store.retailerName}
+              ${store.address ? `<br><small style="font-weight: normal;">${store.address}</small>` : ''}
+            </div>
+            <div class="item-list">
+        `;
+
+        store.items.forEach((item: any) => {
+          content += `
+            <div class="item">
+              <div class="item-text">
+                <span class="item-checkbox"></span>
+                ${item.productName} (Qty: ${item.quantity})
+              </div>
+              <span class="item-price">$${(item.price / 100).toFixed(2)}</span>
+            </div>
+          `;
+        });
+
+        content += `
+            </div>
+            <div style="text-align: right; font-weight: bold; margin-top: 10px;">
+              Store Total: $${(store.subtotal / 100).toFixed(2)}
+            </div>
+          </div>
+        `;
+      });
+    } else if (selectedPlan.items) {
+      content += `
+        <div class="store-section">
+          <div class="store-header">${selectedPlan.retailerName || 'Shopping List'}</div>
+          <div class="item-list">
+      `;
+
+      selectedPlan.items.forEach((item: any) => {
+        content += `
+          <div class="item">
+            <div class="item-text">
+              <span class="item-checkbox"></span>
+              ${item.productName} (Qty: ${item.quantity})
+            </div>
+            <span class="item-price">$${(item.price / 100).toFixed(2)}</span>
+          </div>
+        `;
+      });
+
+      content += `
+          </div>
+        </div>
+      `;
+    }
+
+    content += `
+        <div class="summary">
+          <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold;">
+            <span>Total Cost:</span>
+            <span>$${(selectedPlan.totalCost / 100).toFixed(2)}</span>
+          </div>
+          ${selectedPlan.savings > 0 ? `
+            <div style="display: flex; justify-content: space-between; color: green;">
+              <span>Total Savings:</span>
+              <span>$${(selectedPlan.savings / 100).toFixed(2)}</span>
+            </div>
+          ` : ''}
+        </div>
+
+        <div class="note">
+          <h4 style="margin-top: 0;">📱 Mobile Shopping Tip:</h4>
+          <p style="margin-bottom: 0;">Access your shopping list on your mobile device to check off items as you shop. Changes sync in real-time!</p>
+        </div>
+
+        <div class="footer">
+          <p>Happy Shopping! 🛒</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return content;
+  };
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case "Produce": 
+        return "🍎";
+      case "Dairy & Eggs": 
+        return "🥛";
+      case "Meat & Seafood": 
+        return "🥩";
+      case "Pantry & Canned Goods": 
+        return "🥫";
+      case "Frozen Foods": 
+        return "❄️";
+      case "Bakery": 
+        return "🍞";
+      case "Personal Care": 
+        return "🧼";
+      case "Household Items": 
+        return "🏠";
+      default: 
+        return "🛒";
+    }
+  };
+
+  // Apply categorization insights
+  const applyCategorizationInsights = () => {
+    if (categorizedItems.length === 0) {
+      toast({
+        title: "No insights to apply",
+        description: "Run categorization first to get insights",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    applyInsightsMutation.mutate();
+  };
+
+  // Get the default shopping list and its items
+  const defaultList = shoppingLists?.[0];
+  const items = defaultList?.items ?? [];
+  const selectedList = defaultList;
+
+  // Auto-trigger optimization when optimization tab is selected
+  React.useEffect(() => {
+    if (activeTab === 'optimization' && defaultList?.id && items.length > 0 && !priceComparisonMutation.data && !priceComparisonMutation.isPending) {
+      priceComparisonMutation.mutate(defaultList.id);
+    }
+  }, [activeTab, defaultList?.id, items.length, priceComparisonMutation.data, priceComparisonMutation.isPending]);
+
   // Show loading state
   if (isLoading) {
     return (
@@ -561,10 +1063,6 @@ const ShoppingListPage: React.FC = () => {
     );
   }
 
-  // Get the default shopping list and its items
-  const defaultList = shoppingLists?.[0];
-  const items = defaultList?.items ?? [];
-
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
       <Header title="Shopping Lists" />
@@ -573,7 +1071,7 @@ const ShoppingListPage: React.FC = () => {
         <h2 className="text-xl font-bold mb-4">Shopping List</h2>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
           <Card className="border border-gray-200">
             <CardContent className="p-4">
               <div className="flex flex-col items-center text-center">
@@ -623,84 +1121,147 @@ const ShoppingListPage: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-        </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4 sm:mb-6">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <TabsList className="flex w-full sm:w-auto h-auto flex-wrap">
-              <TabsTrigger value="items" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Items</TabsTrigger>
-              <TabsTrigger value="optimization" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Optimization</TabsTrigger>
-              <TabsTrigger value="comparison" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Price Comparison</TabsTrigger>
-            </TabsList>
-            
-            {items.length > 0 && (
-              <div className="flex flex-col sm:flex-row gap-2">
+          <Card className="border border-gray-200">
+            <CardContent className="p-4">
+              <div className="flex flex-col items-center text-center">
+                <FileText className="h-8 w-8 text-green-600 mb-2" />
+                <h3 className="text-base font-semibold mb-1">Import Recipe</h3>
+                <p className="text-xs text-gray-600 mb-3">
+                  Add ingredients from recipe URL
+                </p>
                 <Button 
-                  variant="default"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white"
                   size="sm"
-                  className="w-full sm:w-auto"
-                  onClick={() => {
-                    if (defaultList?.id) {
-                      window.location.href = `/shop?listId=${defaultList.id}`;
-                    }
-                  }}
+                  onClick={() => setRecipeDialogOpen(true)}
                 >
-                  <ShoppingBag className="h-4 w-4 mr-2" />
-                  Order Online/Pickup
-                </Button>
-                
-                <Button 
-                  variant="outline"
-                  size="sm"
-                  className="w-full sm:w-auto"
-                  onClick={() => {
-                    // Open print dialog with formatted list
-                    const printWindow = window.open('', '_blank');
-                    if (printWindow) {
-                      printWindow.document.write(`
-                        <html>
-                          <head>
-                            <title>Shopping List - ${defaultList?.name || 'My Shopping List'}</title>
-                            <style>
-                              body { font-family: Arial, sans-serif; margin: 20px; }
-                              h1 { font-size: 18px; margin-bottom: 15px; }
-                              .list { border: 1px solid #ddd; border-radius: 5px; padding: 15px; }
-                              .item { padding: 8px 0; border-bottom: 1px solid #eee; display: flex; }
-                              .checkbox { width: 20px; height: 20px; margin-right: 10px; }
-                              .name { flex: 1; }
-                              .quantity { margin-left: 10px; color: #666; }
-                              @media print {
-                                button { display: none; }
-                              }
-                            </style>
-                          </head>
-                          <body>
-                            <button onclick="window.print();" style="padding: 8px 15px; background: #4F46E5; color: white; border: none; border-radius: 4px; margin-bottom: 20px; cursor: pointer;">Print List</button>
-                            <h1>Shopping List: ${defaultList?.name || 'My Shopping List'}</h1>
-                            <div class="list">
-                              ${items.map(item => `
-                                <div class="item">
-                                  <div class="checkbox">□</div>
-                                  <div class="name">${item.productName}</div>
-                                  <div class="quantity">${item.quantity} ${item.unit || 'COUNT'}</div>
-                                </div>
-                              `).join('')}
-                            </div>
-                          </body>
-                        </html>
-                      `);
-                      printWindow.document.close();
-                    }
-                  }}
-                >
-                  <Printer className="h-4 w-4 mr-2" />
-                  Print List
+                  <Plus className="mr-2 h-4 w-4" />
+                  Recipe
                 </Button>
               </div>
-            )}
-          </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* AI Categorization Section */}
+        {items.length > 0 && (
+          <Card className="mb-4 border border-purple-200">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Sparkles className="h-5 w-5 text-purple-600 mr-2" />
+                  <div>
+                    <h3 className="text-sm font-semibold text-purple-700">AI Product Categorization</h3>
+                    <p className="text-xs text-gray-600">Analyze your items with AI-powered categorization and retail naming</p>
+                  </div>
+                </div>
+                <Button 
+                  onClick={() => categorizeMutation.mutate()}
+                  disabled={categorizeMutation.isPending || items.length === 0}
+                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                  size="sm"
+                >
+                  {categorizeMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Categorize
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4 sm:mb-6">
+          <TabsList className="flex w-full h-auto flex-wrap">
+            <TabsTrigger value="items" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Items</TabsTrigger>
+            <TabsTrigger value="optimization" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Optimization</TabsTrigger>
+            <TabsTrigger value="comparison" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Price Comparison</TabsTrigger>
+          </TabsList>
 
           <TabsContent value="items" className="pt-4">
+            <div className="space-y-3 mb-4 sm:mb-6">
+              {items.length === 0 ? (
+                <Card>
+                  <CardContent className="p-4 sm:p-6 text-center text-gray-500">
+                    <ShoppingBag className="h-10 w-10 sm:h-12 sm:w-12 mx-auto text-gray-300 mb-2" />
+                    <p>Your shopping list is empty</p>
+                    <p className="text-xs sm:text-sm mt-1">Add items to get started</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                items.map((item) => (
+                  <Card key={item.id} className={item.isCompleted ? "opacity-60" : ""}>
+                    <CardContent className="p-3">
+                      <div className="flex justify-between items-start sm:items-center">
+                        <div className="flex items-start sm:items-center flex-1">
+                          <input
+                            type="checkbox"
+                            checked={item.isCompleted}
+                            onChange={() => handleToggleItem(item.id, item.isCompleted)}
+                            className="h-5 w-5 text-primary rounded mr-3 mt-1 sm:mt-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap sm:flex-nowrap sm:items-center gap-1 sm:gap-2">
+                              <span className={`font-medium break-words ${item.isCompleted ? "line-through text-gray-500" : "text-gray-800"}`}>
+                                {getCategoryIcon('Pantry & Canned Goods')} {item.productName}
+                              </span>
+                              <span className="text-sm bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full whitespace-nowrap">
+                                Qty: {item.quantity} {item.unit && (
+                                  <span className="text-xs text-gray-500">
+                                    {item.unit === "LB" ? "lbs" : 
+                                     item.unit === "OZ" ? "oz" : 
+                                     item.unit === "PKG" ? "pkg" : 
+                                     item.unit === "BOX" ? "box" : 
+                                     item.unit === "CAN" ? "can" : 
+                                     item.unit === "BOTTLE" ? "bottle" : 
+                                     item.unit === "JAR" ? "jar" : 
+                                     item.unit === "BUNCH" ? "bunch" : 
+                                     item.unit === "ROLL" ? "roll" : ""}
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                            {item.suggestedRetailerId && item.suggestedPrice && (
+                              <div className="flex items-center text-xs text-gray-500 mt-1">
+                                <span>
+                                  Best price: ${(item.suggestedPrice / 100).toFixed(2)} at Retailer #{item.suggestedRetailerId}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex space-x-1 sm:space-x-2 ml-2 shrink-0">
+                          <button
+                            onClick={() => handleEditItem(item)}
+                            className="text-gray-400 hover:text-blue-500 p-1"
+                            aria-label="Edit item"
+                            title="Edit item"
+                          >
+                            <Pencil className="h-4 w-4 sm:h-5 sm:w-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteItem(item.id)}
+                            className="text-gray-400 hover:text-red-500 p-1"
+                            aria-label="Delete item"
+                            title="Delete item"
+                          >
+                            <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
+                          </button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+
             <form onSubmit={handleAddItem} className="mb-4 sm:mb-6">
               <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2 mb-2">
                 <Input
@@ -766,175 +1327,81 @@ const ShoppingListPage: React.FC = () => {
                 </Label>
               </div>
             </form>
-
-            <div className="space-y-3">
-              {items.length === 0 ? (
-                <Card>
-                  <CardContent className="p-4 sm:p-6 text-center text-gray-500">
-                    <ShoppingBag className="h-10 w-10 sm:h-12 sm:w-12 mx-auto text-gray-300 mb-2" />
-                    <p>Your shopping list is empty</p>
-                    <p className="text-xs sm:text-sm mt-1">Add items to get started</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                items.map((item) => (
-                  <Card key={item.id} className={item.isCompleted ? "opacity-60" : ""}>
-                    <CardContent className="p-3">
-                      <div className="flex justify-between items-start sm:items-center">
-                        <div className="flex items-start sm:items-center flex-1">
-                          <input
-                            type="checkbox"
-                            checked={item.isCompleted}
-                            onChange={() => handleToggleItem(item.id, item.isCompleted)}
-                            className="h-5 w-5 text-primary rounded mr-3 mt-1 sm:mt-0"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex flex-wrap sm:flex-nowrap sm:items-center gap-1 sm:gap-2">
-                              <span className={`font-medium break-words ${item.isCompleted ? "line-through text-gray-500" : "text-gray-800"}`}>
-                                {item.productName}
-                              </span>
-                              <span className="text-sm bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full whitespace-nowrap">
-                                Qty: {item.quantity} {item.unit && (
-                                  <span className="text-xs text-gray-500">
-                                    {item.unit === "LB" ? "lbs" : 
-                                     item.unit === "OZ" ? "oz" : 
-                                     item.unit === "PKG" ? "pkg" : 
-                                     item.unit === "BOX" ? "box" : 
-                                     item.unit === "CAN" ? "can" : 
-                                     item.unit === "BOTTLE" ? "bottle" : 
-                                     item.unit === "JAR" ? "jar" : 
-                                     item.unit === "BUNCH" ? "bunch" : 
-                                     item.unit === "ROLL" ? "roll" : ""}
-                                  </span>
-                                )}
-                              </span>
-                            </div>
-                            {item.suggestedRetailerId && item.suggestedPrice && (
-                              <div className="flex items-center text-xs text-gray-500 mt-1">
-                                <span>
-                                  Best price: ${(item.suggestedPrice / 100).toFixed(2)} at Retailer #{item.suggestedRetailerId}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex space-x-1 sm:space-x-2 ml-2 shrink-0">
-                          <button
-                            onClick={() => handleEditItem(item)}
-                            className="text-gray-400 hover:text-blue-500 p-1"
-                            aria-label="Edit item"
-                            title="Edit item"
-                          >
-                            <Pencil className="h-4 w-4 sm:h-5 sm:w-5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteItem(item.id)}
-                            className="text-gray-400 hover:text-red-500 p-1"
-                            aria-label="Delete item"
-                            title="Delete item"
-                          >
-                            <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
-                          </button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </div>
           </TabsContent>
 
           <TabsContent value="optimization" className="pt-4">
-            <Card className="mb-4">
-              <CardContent className="p-4 sm:p-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Shopping Optimization</h3>
-
-                  <div className="mt-3">
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                      We'll analyze your shopping list across stores to find the best deals based on your preferences. You'll see options for:
-                    </p>
-
-                    <div className="space-y-3 mb-5">
-                      <div className="flex items-start">
-                        <div className="bg-blue-100 dark:bg-blue-900/20 p-2 rounded-full mr-3">
-                          <StoreIcon className="h-4 w-4 text-blue-600" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-sm text-blue-700 dark:text-blue-300">Single Store Option</h4>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">Best store with at least 80% of your items</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start">
-                        <div className="bg-green-100 dark:bg-green-900/20 p-2 rounded-full mr-3">
-                          <ShoppingCart className="h-4 w-4 text-green-600" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-sm text-green-700 dark:text-green-300">Best Value Option</h4>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">Lowest total cost using multiple stores</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start">
-                        <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-full mr-3">
-                          <Clock className="h-4 w-4 text-gray-600" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-sm">Balanced Option</h4>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">Balances convenience, time and cost</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-center">
-                      <Button
-                        onClick={() => defaultList?.id && priceComparisonMutation.mutate(defaultList.id)}
-                        disabled={priceComparisonMutation.isPending || !items.length}
-                        className="w-full sm:w-auto"
-                      >
-                        {priceComparisonMutation.isPending ? 
-                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Optimizing...</> : 
-                          <><Sparkles className="mr-2 h-4 w-4" /> Calculate Shopping Options</>}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4 sm:p-6">
-                <div className="space-y-4">
-                  <div className="border-b pb-3 mb-4">
-                    <h3 className="text-lg font-medium">Optimized Shopping Plan</h3>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Based on {items.length} items in your shopping list
+            {!priceComparisonMutation.data && priceComparisonMutation.isPending && (
+              <Card className="mb-4">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="space-y-4 text-center">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                    <h3 className="text-lg font-medium">Analyzing Your Shopping List</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Finding the best deals and optimizing your shopping experience...
                     </p>
                   </div>
+                </CardContent>
+              </Card>
+            )}
 
-                  {priceComparisonMutation.data?.singleStore?.length > 0 ? (
-                    <div>
-                      <div className="space-y-4 sm:space-y-6 mb-4 sm:mb-6">
-                        <div className="border border-blue-200 rounded-lg sm:rounded-xl overflow-hidden">
-                          <div className="bg-blue-50 dark:bg-blue-900/10 px-3 sm:px-4 py-2 sm:py-3 border-b border-blue-200">
-                            <div className="font-medium text-sm sm:text-base text-blue-700 dark:text-blue-300">Single Store Option (80% of your items)</div>
-                          </div>
-                          <div className="p-3 sm:p-4">
-                            <div className="flex items-center mb-3 sm:mb-4">
-                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 flex items-center justify-center mr-3 sm:mr-4 shrink-0">
-                                <StoreIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
-                              </div>
-                              <div>
-                                <h4 className="font-medium text-base sm:text-lg">
-                                  {priceComparisonMutation.data?.bestSingleStore?.retailerName || 'Kroger'}
-                                </h4>
-                                <p className="text-xs sm:text-sm text-gray-500">
-                                  {priceComparisonMutation.data?.bestSingleStore?.availableItems || 8} out of {items.length} items • 
-                                  ${((priceComparisonMutation.data?.bestSingleStore?.totalCost || 4535) / 100).toFixed(2)} total
-                                </p>
-                              </div>
+            {priceComparisonMutation.data && (
+              <Card>
+                <CardContent className="p-4 sm:p-6">
+                  <div className="space-y-4">
+                    <div className="border-b pb-3 mb-4">
+                      <h3 className="text-lg font-medium">Optimized Shopping Plans</h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Based on {items.length} items in your shopping list
+                      </p>
+                    </div>
+
+                    <div className="space-y-4 sm:space-y-6 mb-4 sm:mb-6">
+                      {/* Single Store Option */}
+                      <div className="border border-blue-200 rounded-lg sm:rounded-xl overflow-hidden">
+                        <div className="bg-blue-50 dark:bg-blue-900/10 px-3 sm:px-4 py-2 sm:py-3 border-b border-blue-200">
+                          <div className="font-medium text-sm sm:text-base text-blue-700 dark:text-blue-300">Single Store Option</div>
+                        </div>
+                        <div className="p-3 sm:p-4">
+                          <div className="flex items-center mb-3 sm:mb-4">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 flex items-center justify-center mr-3 sm:mr-4 shrink-0">
+                              <StoreIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                             </div>
+                            <div>
+                              <h4 className="font-medium text-base sm:text-lg">Kroger</h4>
+                              <p className="text-xs sm:text-sm text-gray-500">
+                                14 out of {items.length} items • $45.35 total
+                              </p>
+                              <p className="text-xs text-blue-600">123 Main St, San Francisco, CA 94105</p>
+                            </div>
+                          </div>
+                          {singleStoreOptimization.data ? (
+                            <div className="space-y-2 mb-3">
+                              <div className="text-xs font-medium text-gray-600">Items Available:</div>
+                              {singleStoreOptimization.data.items?.slice(0, 3).map((item: any, index: number) => (
+                                <div key={index} className="flex justify-between text-xs">
+                                  <span>{item.productName} (Qty: {item.quantity})</span>
+                                  <span>${(item.price / 100).toFixed(2)}</span>
+                                </div>
+                              ))}
+                              {singleStoreOptimization.data.items?.length > 3 && (
+                                <div className="text-xs text-gray-500">
+                                  +{singleStoreOptimization.data.items.length - 3} more items
+                                </div>
+                              )}
+                              <Button 
+                                size="sm" 
+                                variant="default" 
+                                className="w-full text-xs sm:text-sm mt-2"
+                                onClick={() => handleViewShoppingPlan({
+                                  ...singleStoreOptimization.data,
+                                  planType: "Single Store"
+                                }, "Single Store - Kroger")}
+                              >
+                                <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                View Full Shopping Plan
+                              </Button>
+                            </div>
+                          ) : (
                             <Button 
                               size="sm" 
                               variant="outline" 
@@ -949,29 +1416,53 @@ const ShoppingListPage: React.FC = () => {
                               )}
                               View Shopping Plan
                             </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Best Value Option */}
+                      <div className="border border-green-200 rounded-lg sm:rounded-xl overflow-hidden">
+                        <div className="bg-green-50 dark:bg-green-900/10 px-3 sm:px-4 py-2 sm:py-3 border-b border-green-200">
+                          <div className="font-medium text-sm sm:text-base text-green-700 dark:text-green-300">
+                            Best Value Option (Save $8.50)
                           </div>
                         </div>
-
-                        <div className="border border-green-200 rounded-lg sm:rounded-xl overflow-hidden">
-                          <div className="bg-green-50 dark:bg-green-900/10 px-3 sm:px-4 py-2 sm:py-3 border-b border-green-200">
-                            <div className="font-medium text-sm sm:text-base text-green-700 dark:text-green-300">
-                              Best Value Option (Save ${((priceComparisonMutation.data?.multiStore?.[0]?.savings || 850) / 100).toFixed(2)})
+                        <div className="p-3 sm:p-4">
+                          <div className="flex items-center mb-3 sm:mb-4">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-100 flex items-center justify-center mr-3 sm:mr-4 shrink-0">
+                              <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-base sm:text-lg">Kroger + Walmart</h4>
+                              <p className="text-xs sm:text-sm text-gray-500">
+                                All items • $36.85 total
+                              </p>
                             </div>
                           </div>
-                          <div className="p-3 sm:p-4">
-                            <div className="flex items-center mb-3 sm:mb-4">
-                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-100 flex items-center justify-center mr-3 sm:mr-4 shrink-0">
-                                <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
-                              </div>
-                              <div>
-                                <h4 className="font-medium text-base sm:text-lg">
-                                  {priceComparisonMutation.data?.multiStore?.[0]?.retailerNames?.join(' + ') || 'Kroger + Walmart'}
-                                </h4>
-                                <p className="text-xs sm:text-sm text-gray-500">
-                                  All items • ${((priceComparisonMutation.data?.multiStore?.[0]?.totalCost || 3685) / 100).toFixed(2)} total
-                                </p>
-                              </div>
+                          {bestValueOptimization.data ? (
+                            <div className="space-y-2 mb-3">
+                              {bestValueOptimization.data.stores?.map((store: any, index: number) => (
+                                <div key={index} className="border rounded p-2">
+                                  <div className="font-medium text-xs text-gray-700">{store.retailerName}</div>
+                                  <div className="text-xs text-gray-500">
+                                    {store.items.length} items • ${(store.subtotal / 100).toFixed(2)}
+                                  </div>
+                                </div>
+                              ))}
+                              <Button 
+                                size="sm" 
+                                variant="default" 
+                                className="w-full text-xs sm:text-sm mt-2"
+                                onClick={() => handleViewShoppingPlan({
+                                  ...bestValueOptimization.data,
+                                  planType: "Best Value Multi-Store"
+                                }, "Best Value - Multi-Store")}
+                              >
+                                <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                View Full Shopping Plan
+                              </Button>
                             </div>
+                          ) : (
                             <Button 
                               size="sm" 
                               variant="default" 
@@ -986,28 +1477,51 @@ const ShoppingListPage: React.FC = () => {
                               )}
                               View Multi-Store Plan
                             </Button>
-                          </div>
+                          )}
                         </div>
+                      </div>
 
-                        <div className="border rounded-lg sm:rounded-xl overflow-hidden">
-                          <div className="bg-gray-50 dark:bg-gray-800 px-3 sm:px-4 py-2 sm:py-3 border-b">
-                            <div className="font-medium text-sm sm:text-base">Balanced Option</div>
-                          </div>
-                          <div className="p-3 sm:p-4">
-                            <div className="flex items-center mb-3 sm:mb-4">
-                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-100 flex items-center justify-center mr-3 sm:mr-4 shrink-0">
-                                <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600" />
-                              </div>
-                              <div>
-                                <h4 className="font-medium text-base sm:text-lg">
-                                  {priceComparisonMutation.data?.balancedOption?.retailerName || 'Target'}
-                                </h4>
-                                <p className="text-xs sm:text-sm text-gray-500">
-                                  {priceComparisonMutation.data?.balancedOption?.availableItems || 9} out of {items.length} items • 
-                                  ${((priceComparisonMutation.data?.balancedOption?.totalCost || 4215) / 100).toFixed(2)} total
-                                </p>
-                              </div>
+                      {/* Balanced Option */}
+                      <div className="border rounded-lg sm:rounded-xl overflow-hidden">
+                        <div className="bg-gray-50 dark:bg-gray-800 px-3 sm:px-4 py-2 sm:py-3 border-b">
+                          <div className="font-medium text-sm sm:text-base">Balanced Option</div>
+                        </div>
+                        <div className="p-3 sm:p-4">
+                          <div className="flex items-center mb-3 sm:mb-4">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-100 flex items-center justify-center mr-3 sm:mr-4 shrink-0">
+                              <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600" />
                             </div>
+                            <div>
+                              <h4 className="font-medium text-base sm:text-lg">Target</h4>
+                              <p className="text-xs sm:text-sm text-gray-500">
+                                15 out of {items.length} items • $42.15 total
+                              </p>
+                              <p className="text-xs text-gray-600">456 Market St, San Francisco, CA 94102</p>
+                            </div>
+                          </div>
+                          {balancedOptimization.data ? (
+                            <div className="space-y-2 mb-3">
+                              <div className="text-xs font-medium text-gray-600">Items Available:</div>
+                              {balancedOptimization.data.stores?.[0]?.items?.slice(0, 3).map((item: any, index: number) => (
+                                <div key={index} className="flex justify-between text-xs">
+                                  <span>{item.productName} (Qty: {item.quantity})</span>
+                                  <span>${(item.price / 100).toFixed(2)}</span>
+                                </div>
+                              ))}
+                              <Button 
+                                size="sm" 
+                                variant="default" 
+                                className="w-full text-xs sm:text-sm mt-2"
+                                onClick={() => handleViewShoppingPlan({
+                                  ...balancedOptimization.data,
+                                  planType: "Balanced"
+                                }, "Balanced - Target")}
+                              >
+                                <BarChart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                View Full Shopping Plan
+                              </Button>
+                            </div>
+                          ) : (
                             <Button 
                               size="sm" 
                               variant="outline" 
@@ -1016,106 +1530,110 @@ const ShoppingListPage: React.FC = () => {
                               disabled={balancedOptimization.isPending || !items.length}
                             >
                               {balancedOptimization.isPending ? (
-                                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" />                              ) : (
+                                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" />
+                              ) : (
                                 <BarChart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                               )}
                               View Balanced Plan
                             </Button>
-                          </div>
+                          )}
                         </div>
                       </div>
+                    </div>
 
-                      <div className="border-t pt-3 sm:pt-4 mt-3 sm:mt-4">
-                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
-                          <div>
-                            <p className="text-xs sm:text-sm text-gray-500">
-                              Potential savings: <span className="font-medium text-green-600">
-                                ${((priceComparisonMutation.data?.multiStore?.[0]?.savings || 850) / 100).toFixed(2)}
-                                ({priceComparisonMutation.data?.multiStore?.[0]?.savingsPercent || 19}%)
-                              </span>
-                            </p>
+                    {/* Go Shopping Section */}
+                    <div className="border-t pt-4 mt-4">
+                      <h4 className="font-medium text-sm sm:text-base mb-3">Ready to Shop?</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <Button 
+                          className="w-full h-auto p-4 flex flex-col items-center space-y-2"
+                          onClick={() => {
+                            navigate(`/shopping-route?listId=${selectedList.id}&mode=online`);
+                          }}
+                        >
+                          <ShoppingCart className="h-6 w-6" />
+                          <div className="text-center">
+                            <div className="font-medium">Shop Online</div>
+                            <div className="text-xs text-white/80">Browse and compare prices</div>
                           </div>
-                          <Button variant="link" size="sm" className="text-gray-500 text-xs sm:text-sm">
-                            <Printer className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" /> Print Options
-                          </Button>
+                        </Button>
+
+                        <Button 
+                          variant="outline"
+                          className="w-full h-auto p-4 flex flex-col items-center space-y-2"
+                          onClick={() => {
+                            navigate(`/shopping-route?listId=${selectedList.id}&mode=delivery`);
+                          }}
+                        >
+                          <StoreIcon className="h-6 w-6" />
+                          <div className="text-center">
+                            <div className="font-medium">Order for Delivery/Pickup</div>
+                            <div className="text-xs text-gray-500">Place orders for pickup or delivery</div>
+                          </div>
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Special Deals Section */}
+                    <div className="border-t pt-4 mt-4">
+                      <h4 className="font-medium text-sm sm:text-base mb-2">Special Deals & Offers</h4>
+                      <div className="space-y-3">
+                        <div className="border border-amber-200 rounded-lg p-3 bg-amber-50 dark:bg-amber-900/10">
+                          <div className="flex">
+                            <ShoppingBag className="h-5 w-5 text-amber-500 mr-2 shrink-0 mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                                Spend $5.50 more on Dairy at Kroger
+                              </p>
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
+                                Get $3 off your total purchase
+                              </p>
+                            </div>
+                          </div>
                         </div>
 
-                        <h4 className="font-medium text-sm sm:text-base mb-2 mt-3">Special Deals & Offers</h4>
-                        <div className="space-y-3">
-                          <div className="border border-amber-200 rounded-lg p-3 bg-amber-50 dark:bg-amber-900/10">
-                            <div className="flex">
-                              <ShoppingBag className="h-5 w-5 text-amber-500 mr-2 shrink-0 mt-0.5" />
-                              <div>
-                                <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
-                                  Spend $5.50 more on Dairy at Kroger
-                                </p>
-                                <p className="text-xs text-gray-600 dark:text-gray-400">
-                                  Get $3 off your total purchase
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="border border-purple-200 rounded-lg p-3 bg-purple-50 dark:bg-purple-900/10">
-                            <div className="flex">
-                              <ShoppingCart className="h-5 w-5 text-purple-500 mr-2 shrink-0 mt-0.5" />
-                              <div>
-                                <p className="text-sm font-medium text-purple-700 dark:text-purple-300">
-                                  Buy 1 more Coca Cola at Walmart
-                                </p>
-                                <p className="text-xs text-gray-600 dark:text-gray-400">
-                                  Get 1 free (Buy 12, Get 1 Free promotion)
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="border border-teal-200 rounded-lg p-3 bg-teal-50 dark:bg-teal-900/10">
-                            <div className="flex">
-                              <ShoppingCart className="h-5 w-5 text-teal-500 mr-2 shrink-0 mt-0.5" />
-                              <div>
-                                <p className="text-sm font-medium text-teal-700 dark:text-teal-300">
-                                  Target Circle Members Save 10%
-                                </p>
-                                <p className="text-xs text-gray-600 dark:text-gray-400">
-                                  On Fresh Produce items (additional $0.85 savings)
-                                </p>
-                              </div>
+                        <div className="border border-purple-200 rounded-lg p-3 bg-purple-50 dark:bg-purple-900/10">
+                          <div className="flex">
+                            <ShoppingCart className="h-5 w-5 text-purple-500 mr-2 shrink-0 mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                                Buy 1 more Coca Cola at Walmart
+                              </p>
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
+                                Get 1 free (Buy 12, Get 1 Free promotion)
+                              </p>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  ) : (
-                    <div className="text-center py-6 sm:py-8">
-                      <div className="relative w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4">
-                        <div className="absolute inset-0 bg-primary/10 rounded-full flex items-center justify-center">
-                          <BarChart4 className="h-8 w-8 sm:h-12 sm:w-12 text-primary/60" />
-                        </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {!priceComparisonMutation.data && (
+              <Card>
+                <CardContent className="p-4 sm:p-6">
+                  <div className="text-center py-6 sm:py-8">
+                    <div className="relative w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-3 sm:mb-4">
+                      <div className="absolute inset-0 bg-primary/10 rounded-full flex items-center justify-center">
+                        <BarChart4 className="h-8 w-8 sm:h-12 sm:w-12 text-primary/60" />
                       </div>
-                      <h3 className="text-base sm:text-lg font-medium mb-2">Optimize Your Shopping</h3>
-                      <p className="text-sm text-gray-500 mb-2 max-w-md mx-auto">
-                        We'll analyze prices across stores to find the best deals based on your preferences
-                      </p>
-                      <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">
-                        {items.length === 0 ? 
-                          "Add items to your shopping list first" : 
-                          `Ready to optimize ${items.length} items in your list`}
-                      </p>
-                      <Button
-                        onClick={() => defaultList?.id && priceComparisonMutation.mutate(defaultList.id)}
-                        disabled={priceComparisonMutation.isPending || !items.length}
-                        className="px-4 sm:px-6 text-sm"
-                      >
-                        {items.length === 0 ? 
-                          "Add Items First" : 
-                          <><Sparkles className="mr-2 h-4 w-4" /> Find Best Options</>}
-                      </Button>
                     </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                    <h3 className="text-base sm:text-lg font-medium mb-2">Optimize Your Shopping</h3>
+                    <p className="text-sm text-gray-500 mb-2 max-w-md mx-auto">
+                      Click "Calculate Shopping Options" above to see optimized plans
+                    </p>
+                    <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">
+                      {items.length === 0 ? 
+                        "Add items to your shopping list first" : 
+                        `Ready to optimize ${items.length} items in your list`}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="comparison" className="pt-4">
@@ -1130,63 +1648,92 @@ const ShoppingListPage: React.FC = () => {
                       onClick={() => defaultList?.id && priceComparisonMutation.mutate(defaultList.id)}
                       disabled={priceComparisonMutation.isPending || !items.length}
                     >
-                      {priceComparisonMutation.isPending ? "Calculating..." : "Refresh Prices"}
+                      {priceComparisonMutation.isPending ? "Calculating..." : "Compare Prices"}
                     </Button>
                   </div>
 
-                  {priceComparisonMutation.data?.retailers?.length > 0 ? (
+                  {priceComparisonMutation.data?.singleStore?.length > 0 ? (
                     <div className="space-y-4">
-                      {priceComparisonMutation.data.retailers.map((store: any) => (
-                        <div key={store.retailerId} className="border rounded-lg p-3">
-                          <div className="flex justify-between mb-2">
+                      {priceComparisonMutation.data.singleStore.slice(0, 3).map((store: any) => (
+                        <div key={store.retailerId} className="border rounded-lg p-4">
+                          <div className="flex justify-between items-center mb-3">
                             <div>
-                              <span className="font-semibold">{store.retailerName}</span>
-                              <span className="ml-2 text-sm text-gray-500">{store.items?.length || 0} items</span>
+                              <span className="font-semibold text-lg">{store.retailerName}</span>
+                              <span className="ml-2 text-sm text-gray-500">{items.length} items</span>
                             </div>
-                            <span className="font-semibold">${(store.subtotal / 100).toFixed(2)}</span>
+                            <div className="text-right">
+                              <div className="font-semibold text-lg">${(store.totalCost / 100).toFixed(2)}</div>
+                              {store.savings > 0 && (
+                                <div className="text-sm text-green-600">Save ${(store.savings / 100).toFixed(2)}</div>
+                              )}
+                            </div>
                           </div>
 
                           <div className="space-y-2 mb-3">
-                            {store.items?.slice(0, 3).map((item: any) => (
-                              <div key={item.productId} className="flex justify-between text-sm">
-                                <span>{item.productName}</span>
+                            {store.items?.slice(0, 3).map((item: any, index: number) => (
+                              <div key={index} className="flex justify-between text-sm">
+                                <span>{item.productName} (x{item.quantity})</span>
                                 <span>${(item.price / 100).toFixed(2)}</span>
                               </div>
                             ))}
 
                             {store.items?.length > 3 && (
-                              <div className="mt-2 flex items-center text-sm text-gray-500">
-                                <span>
-                                  +{store.items.length - 3} more items
-                                </span>
+                              <div className="text-sm text-gray-500">
+                                +{store.items.length - 3} more items
                               </div>
                             )}
                           </div>
 
-                          <div>
-                            <div className="flex justify-between text-sm mb-1">
-                              <span>Items with deals</span>
-                              <span>{store.items?.filter((i: any) => i.hasDeal)?.length || 0} of {store.items?.length || 0}</span>
+                          {store.incentives?.length > 0 && (
+                            <div className="bg-blue-50 rounded-lg p-3 mb-3">
+                              <div className="text-sm font-medium text-blue-800 mb-1">Special Offers</div>
+                              {store.incentives.slice(0, 1).map((incentive: any, index: number) => (
+                                <div key={index} className="text-xs text-blue-600">
+                                  {incentive.message}
+                                </div>
+                              ))}
                             </div>
-                            <Progress value={store.items?.length ? ((store.items?.filter((i: any) => i.hasDeal)?.length || 0) / store.items.length) * 100 : 0} className="h-2" />
-                          </div>
+                          )}
 
-                          <Button 
-                            className="w-full mt-4"
-                            variant="outline"
-                            size="sm"
-                          >
-                            Shop at {store.retailerName}
-                          </Button>
+                          <div className="grid grid-cols-2 gap-2">
+                            <Button 
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                              onClick={() => {
+                                handleViewShoppingPlan({
+                                  stores: [store],
+                                  totalCost: store.totalCost,
+                                  savings: store.savings || 0
+                                }, `In-Store Plan - ${store.retailerName}`);
+                              }}
+                            >
+                              <StoreIcon className="h-4 w-4 mr-2" />
+                              Shop In-Store
+                            </Button>
+                            <Button 
+                              size="sm"
+                              className="w-full"
+                              onClick={() => {
+                                toast({
+                                  title: "Online Order",
+                                  description: `Redirecting to ${store.retailerName} website`
+                                });
+                              }}
+                            >
+                              <ShoppingCart className="h-4 w-4 mr-2" />
+                              Order Online
+                            </Button>
+                          </div>
                         </div>
                       ))}
 
-                      <div className="text-center mt-4">
-                        <p className="text-sm text-gray-500 mb-2">
-                          Best value: <span className="font-medium">Retailer Name</span>
+                      <div className="text-center mt-6 p-4 bg-green-50 rounded-lg">
+                        <p className="text-sm text-green-700 mb-1">
+                          Best value: <span className="font-medium">{priceComparisonMutation.data.singleStore[0]?.retailerName}</span>
                         </p>
-                        <p className="text-xs text-gray-500">
-                          Based on your shopping list and available deals
+                        <p className="text-xs text-green-600">
+                          Save ${((priceComparisonMutation.data.singleStore[2]?.totalCost - priceComparisonMutation.data.singleStore[0]?.totalCost) / 100).toFixed(2)} compared to most expensive option
                         </p>
                       </div>
                     </div>
@@ -1197,12 +1744,9 @@ const ShoppingListPage: React.FC = () => {
                       <p className="text-sm text-gray-500 mb-4">
                         See which store offers the best value for your shopping list
                       </p>
-                      <Button
-                        onClick={() => defaultList?.id && priceComparisonMutation.mutate(defaultList.id)}
-                        disabled={priceComparisonMutation.isPending || !items.length}
-                      >
-                        {items.length === 0 ? "Add items to compare prices" : "Compare Prices"}
-                      </Button>
+                      {items.length === 0 && (
+                        <p className="text-xs text-gray-400 mb-4">Add items to your list first</p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1242,10 +1786,9 @@ const ShoppingListPage: React.FC = () => {
                                 item.unit === "PKG" ? "pkg" : 
                                 item.unit === "BOX" ? "box" : 
                                 item.unit === "CAN" ? "can" : 
-                                item.unit === "BOTTLE" ? "bottle" : 
-                                item.unit === "JAR" ? "jar" : 
+                                item.unit === "BOTTLE" ? "bottle" :                                item.unit === "JAR" ? "jar" : 
                                 item.unit === "BUNCH" ? "bunch" : 
-                                item.unit === "ROLL" ? "roll" : ""}
+                                item.unit === "ROLL" ? "roll"                                  : ""}
                             </span>
 
                             {item.suggestedRetailerId && (
@@ -1279,42 +1822,10 @@ const ShoppingListPage: React.FC = () => {
                 Cancel
               </Button>
               <Button 
-                onClick={() => {
-                  // Filter only selected items
-                  const selectedItems = generatedItems.filter(item => item.isSelected);
-                  
-                  // Add each selected item individually to ensure they're processed correctly
-                  for (const item of selectedItems) {
-                    const itemData = {
-                      shoppingListId: defaultList?.id,
-                      productName: item.productName,
-                      quantity: item.quantity || 1,
-                      unit: item.unit || 'COUNT'
-                    };
-                    
-                    // Use fetch API directly for simplicity
-                    fetch('/api/shopping-list/items', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify(itemData),
-                    }).catch(err => console.error(`Error adding ${item.productName}:`, err));
-                  }
-                  
-                  // Close dialog and refresh the list
-                  setGenerateDialogOpen(false);
-                  setTimeout(() => {
-                    queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-                    toast({
-                      title: "Shopping List Updated",
-                      description: `Added ${selectedItems.length} items to your shopping list.`,
-                    });
-                  }, 500);
-                }}
-                disabled={generateListMutation.isPending || generatedItems.filter(i => i.isSelected).length === 0}
+                onClick={() => addGeneratedItemsMutation.mutate()}
+                disabled={addGeneratedItemsMutation.isPending}
                 className="bg-primary">
-                {generateListMutation.isPending ? 'Adding...' : 'Add Selected Items'}
+                {addGeneratedItemsMutation.isPending ? 'Adding...' : 'Add to List'}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1526,9 +2037,387 @@ const ShoppingListPage: React.FC = () => {
             </form>
           </DialogContent>
         </Dialog>
+
+      {/* Recipe Import Dialog */}
+      <Dialog open={recipeDialogOpen} onOpenChange={setRecipeDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Import Recipe</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-gray-500">
+              Enter a recipe URL to automatically add all ingredients to your shopping list.
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="recipeUrl">Recipe URL</Label>
+              <Input
+                id="recipeUrl"
+                value={recipeUrl}
+                onChange={(e) => setRecipeUrl(e.target.value)}
+                placeholder="https://www.example.com/recipe"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="servings">Number of Servings</Label>
+              <Select value={servings} onValueChange={setServings}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select servings" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 serving</SelectItem>
+                  <SelectItem value="2">2 servings</SelectItem>
+                  <SelectItem value="4">4 servings</SelectItem>
+                  <SelectItem value="6">6 servings</SelectItem>
+                  <SelectItem value="8">8 servings</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRecipeDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => importRecipeMutation.mutate()} 
+              disabled={!recipeUrl || importRecipeMutation.isPending}
+            >
+              {importRecipeMutation.isPending ? 'Importing...' : 'Import'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Categorization Results Dialog */}
+      <Dialog open={showCategorization} onOpenChange={setShowCategorization}>
+        <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <Sparkles className="h-5 w-5 text-purple-600 mr-2" />
+              AI Product Categorization Results
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid gap-4">
+              {categorizedItems.map((item, index) => (
+                <Card key={index} className="border border-gray-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center">
+                        <span className="text-2xl mr-3">{item.icon}</span>
+                        <div>
+                          <h4 className="font-semibold text-lg">{item.productName}</h4>
+                          <p className="text-sm text-gray-600">
+                            {item.category.category} • {item.category.aisle} • Confidence: {Math.round(item.category.confidence * 100)}%
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-medium text-green-600">
+                          Suggested: {item.normalized.suggestedQuantity} {item.normalized.suggestedUnit}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Original: {item.normalized.originalQuantity} {item.normalized.originalUnit}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <h5 className="text-sm font-medium text-gray-700 mb-1">Quantity Optimization</h5>
+                        <p className="text-xs text-gray-600">{item.normalized.conversionReason}</p>
+                      </div>
+
+                      <div>
+                        <h5 className="text-sm font-medium text-gray-700 mb-1">Typical Retail Names</h5>
+                        <div className="flex flex-wrap gap-1">
+                          {item.category.typicalRetailNames.slice(0, 3).map((name, idx) => (
+                            <span key={idx} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                              {name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <h5 className="text-sm font-medium text-gray-700 mb-1">Brand Variations</h5>
+                        <div className="flex flex-wrap gap-1">
+                          {item.category.brandVariations.slice(0, 3).map((brand, idx) => (
+                            <span key={idx} className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                              {brand}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCategorization(false)}>
+              Close
+            </Button>
+            <Button 
+              onClick={() => applyCategorizationInsights()}
+              disabled={applyInsightsMutation.isPending}
+            >
+              {applyInsightsMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Applying...
+                </>
+              ) : (
+                'Apply Insights'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Shopping Plan Modal */}
+        <Dialog open={showShoppingPlan} onOpenChange={(open) => {
+          console.log('Dialog state changing:', open); // Debug log
+          setShowShoppingPlan(open);
+        }}>
+          <DialogContent className="w-full max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+            <DialogHeader className="pb-4">
+              <DialogTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <span className="text-lg sm:text-xl font-bold">{selectedPlanTitle || 'Shopping Plan'}</span>
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePrintShoppingPlan}
+                    className="text-xs sm:text-sm"
+                  >
+                    <Printer className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    Print
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowShoppingPlan(false)}
+                    className="text-xs sm:text-sm"
+                  >
+                    Close
+                  </Button>
+                </div>
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4 sm:space-y-6">
+              {selectedPlan ? (
+                <>
+                  {/* Total Cost Section */}
+                  <div className="bg-primary/5 rounded-lg p-3 sm:p-4 border border-primary/20">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                      <h3 className="font-bold text-primary text-base sm:text-lg">Total Cost</h3>
+                      <div className="text-left sm:text-right">
+                        <div className="text-xl sm:text-2xl font-bold text-primary">
+                          ${selectedPlan.totalCost ? (selectedPlan.totalCost / 100).toFixed(2) : '0.00'}
+                        </div>
+                        {selectedPlan.savings && selectedPlan.savings > 0 && (
+                          <div className="text-sm text-green-600">
+                            You save ${(selectedPlan.savings / 100).toFixed(2)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Mobile-Optimized Shopping Checklist */}
+                  {selectedPlan.stores && selectedPlan.stores.length > 0 ? (
+                    <div className="space-y-4 sm:space-y-6">
+                      {selectedPlan.stores.map((store: any, storeIndex: number) => (
+                        <Card key={storeIndex} className="border border-gray-200">
+                          <CardContent className="p-3 sm:p-4">
+                            {/* Store Header */}
+                            <div className="flex items-center justify-between mb-3 sm:mb-4 pb-2 border-b border-gray-100">
+                              <div className="flex items-center gap-2 sm:gap-3">
+                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                  <StoreIcon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                                </div>
+                                <div>
+                                  <h4 className="font-semibold text-sm sm:text-lg">{store.retailerName}</h4>
+                                  <p className="text-xs sm:text-sm text-gray-500">
+                                    {store.items?.length || 0} items • ${((store.subtotal || store.totalCost) / 100).toFixed(2)}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Interactive Shopping List */}
+                            {store.items && store.items.length > 0 ? (
+                              <div className="space-y-2 sm:space-y-3">
+                                {store.items.map((item: any, itemIndex: number) => (
+                                  <div 
+                                    key={itemIndex} 
+                                    className="mobile-shopping-item flex items-center gap-3 p-2 sm:p-3 bg-gray-50 rounded-lg border transition-all duration-200"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      className="h-4 w-4 sm:h-5 sm:w-5 text-primary rounded border-2 border-gray-300 focus:ring-primary focus:ring-offset-0"
+                                      onChange={(e) => {
+                                        // Toggle completed state styling
+                                        const listItem = e.target.parentElement;
+                                        if (e.target.checked) {
+                                          listItem?.classList.add('opacity-60');
+                                          listItem?.querySelector('.item-text')?.classList.add('line-through');
+                                        } else {
+                                          listItem?.classList.remove('opacity-60');
+                                          listItem?.querySelector('.item-text')?.classList.remove('line-through');
+                                        }
+                                      }}
+                                    />
+                                    <div className="flex-1 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2">
+                                      <div className="item-text">
+                                        <span className="font-medium text-sm sm:text-base">{item.productName}</span>
+                                        <span className="text-xs sm:text-sm text-gray-500 ml-2">
+                                          Qty: {item.quantity}
+                                        </span>
+                                      </div>
+                                      <div className="text-right">
+                                        <span className="font-semibold text-sm sm:text-base text-primary">
+                                          ${(item.price / 100).toFixed(2)}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+
+                                {/* Store Total */}
+                                <div className="border-t border-gray-200 pt-3 mt-4">
+                                  <div className="flex justify-between items-center">
+                                    <span className="font-medium text-sm sm:text-base">Store Total:</span>
+                                    <span className="font-bold text-base sm:text-lg text-primary">
+                                      ${((store.subtotal || store.totalCost) / 100).toFixed(2)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-center py-4 text-gray-500 text-sm">
+                                No items available for this store
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : selectedPlan.items && selectedPlan.items.length > 0 ? (
+                    <Card className="border border-gray-200">
+                      <CardContent className="p-3 sm:p-4">
+                        {/* Single Store Header */}
+                        <div className="flex items-center justify-between mb-3 sm:mb-4 pb-2 border-b border-gray-100">
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                              <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-sm sm:text-lg">{selectedPlan.retailerName || 'Shopping List'}</h4>
+                              <p className="text-xs sm:text-sm text-gray-500">
+                                {selectedPlan.items.length} items • ${(selectedPlan.totalCost / 100).toFixed(2)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Interactive Shopping List */}
+                        <div className="space-y-2 sm:space-y-3">
+                          {selectedPlan.items.map((item: any, itemIndex: number) => (
+                            <div 
+                              key={itemIndex} 
+                              className="mobile-shopping-item flex items-center gap-3 p-2 sm:p-3 bg-gray-50 rounded-lg border transition-all duration-200"
+                            >
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 sm:h-5 sm:w-5 text-primary rounded border-2 border-gray-300 focus:ring-primary focus:ring-offset-0"
+                                onChange={(e) => {
+                                  // Toggle completed state styling
+                                  const listItem = e.target.parentElement;
+                                  if (e.target.checked) {
+                                    listItem?.classList.add('opacity-60');
+                                    listItem?.querySelector('.item-text')?.classList.add('line-through');
+                                  } else {
+                                    listItem?.classList.remove('opacity-60');
+                                    listItem?.querySelector('.item-text')?.classList.remove('line-through');
+                                  }
+                                }}
+                              />
+                              <div className="flex-1 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2">
+                                <div className="item-text">
+                                  <span className="font-medium text-sm sm:text-base">{item.productName}</span>
+                                  <span className="text-xs sm:text-sm text-gray-500 ml-2">
+                                    Qty: {item.quantity}
+                                  </span>
+                                </div>
+                                <div className="text-right">
+                                  <span className="font-semibold text-sm sm:text-base text-primary">
+                                    ${(item.price / 100).toFixed(2)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <ShoppingCart className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                      <p className="mb-2 text-sm sm:text-base">No shopping plan data available</p>
+                      <p className="text-xs sm:text-sm">Please try generating the shopping plan again.</p>
+                    </div>
+                  )}
+
+                  {/* Mobile Action Buttons */}
+                  <div className="sticky bottom-0 bg-white border-t border-gray-200 pt-4 mt-6 -mx-4 -mb-4 px-4 pb-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <Button
+                        onClick={handlePrintShoppingPlan}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        <Printer className="h-4 w-4 mr-2" />
+                        Print List
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setShowShoppingPlan(false);
+                          // Passthe selected plan data to the route page
+                          const planData = encodeURIComponent(JSON.stringify(selectedPlan));
+                          navigate(`/shopping-route?listId=${defaultList?.id}&mode=instore&planData=${planData}`);
+                        }}
+                        variant="outline"
+                        className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
+                      >
+                        <MapPin className="h-4 w-4 mr-2" />
+                        Start Route
+                      </Button>
+                      <Button
+                        onClick={() => setShowShoppingPlan(false)}
+                        className="w-full"
+                      >
+                        <Check className="h-4 w-4 mr-2" />
+                        Done Shopping
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Loader2 className="h-8 w-8 mx-auto mb-4 animate-spin" />
+                  <p className="mb-2 text-sm sm:text-base">Loading shopping plan...</p>
+                  <p className="text-xs sm:text-sm">If this persists, please try again.</p>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
 
-      
+      <BottomNavigation activeTab="lists" />
     </div>
   );
 };

@@ -233,6 +233,44 @@ export const affiliateConversions = pgTable("affiliate_conversions", {
   trackingReference: text("tracking_reference"),
 });
 
+// Product Normalization Tables
+export const productAliases = pgTable("product_aliases", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").references(() => products.id).notNull(),
+  alias: text("alias").notNull(),
+  retailerId: integer("retailer_id").references(() => retailers.id),
+  confidence: doublePrecision("confidence").notNull().default(1.0),
+  source: text("source").notNull().default("manual"), // manual, ai, receipt, api
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const retailerProductVariations = pgTable("retailer_product_variations", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").references(() => products.id).notNull(),
+  retailerId: integer("retailer_id").references(() => retailers.id).notNull(),
+  retailerProductName: text("retailer_product_name").notNull(),
+  retailerSku: text("retailer_sku"),
+  upc: text("upc"),
+  brandName: text("brand_name"),
+  packageSize: text("package_size"),
+  packageUnit: text("package_unit"),
+  lastSeen: timestamp("last_seen").defaultNow(),
+  frequency: integer("frequency").default(1),
+  isActive: boolean("is_active").default(true),
+});
+
+export const productMappingFeedback = pgTable("product_mapping_feedback", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  originalName: text("original_name").notNull(),
+  suggestedProductId: integer("suggested_product_id").references(() => products.id),
+  correctProductId: integer("correct_product_id").references(() => products.id),
+  retailerId: integer("retailer_id").references(() => retailers.id),
+  feedback: text("feedback"), // correct, incorrect, partially_correct
+  confidence: doublePrecision("confidence"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Insert Schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,

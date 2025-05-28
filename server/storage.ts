@@ -1,4 +1,4 @@
-import { eq, and, gte } from "drizzle-orm";
+import { eq, and, gte, lt } from "drizzle-orm";
 import { db } from "./db";
 import { 
   users, retailers, retailerAccounts, products, purchases, purchaseItems,
@@ -72,7 +72,7 @@ export interface IStorage {
   getDealsSummary(): Promise<any[]>;
   getDealCategories(): Promise<string[]>;
   createDeal(deal: InsertStoreDeal): Promise<StoreDeal>;
-  
+
   // Weekly Circular methods
   getWeeklyCirculars(retailerId?: number): Promise<WeeklyCircular[]>;
   getWeeklyCircular(id: number): Promise<WeeklyCircular | undefined>;
@@ -87,21 +87,21 @@ export interface IStorage {
   getTopPurchasedItems(): Promise<any[]>;
   getMonthlySpending(): Promise<any[]>;
   getMonthlySavings(): Promise<number>;
-  
+
   // Purchase Anomaly methods
   getPurchaseAnomalies(): Promise<PurchaseAnomaly[]>;
   getPurchaseAnomaly(id: number): Promise<PurchaseAnomaly | undefined>;
   createPurchaseAnomaly(anomaly: InsertPurchaseAnomaly): Promise<PurchaseAnomaly>;
   updatePurchaseAnomaly(id: number, updates: Partial<PurchaseAnomaly>): Promise<PurchaseAnomaly>;
   deletePurchaseAnomaly(id: number): Promise<void>;
-  
+
   // Affiliate Partner methods
   getAffiliatePartners(): Promise<AffiliatePartner[]>;
   getAffiliatePartner(id: number): Promise<AffiliatePartner | undefined>;
   createAffiliatePartner(partner: InsertAffiliatePartner): Promise<AffiliatePartner>;
   updateAffiliatePartner(id: number, updates: Partial<AffiliatePartner>): Promise<AffiliatePartner>;
   deleteAffiliatePartner(id: number): Promise<void>;
-  
+
   // Affiliate Product methods
   getAffiliateProducts(partnerId?: number, category?: string): Promise<AffiliateProduct[]>;
   getAffiliateProduct(id: number): Promise<AffiliateProduct | undefined>;
@@ -109,11 +109,11 @@ export interface IStorage {
   createAffiliateProduct(product: InsertAffiliateProduct): Promise<AffiliateProduct>;
   updateAffiliateProduct(id: number, updates: Partial<AffiliateProduct>): Promise<AffiliateProduct>;
   deleteAffiliateProduct(id: number): Promise<void>;
-  
+
   // Affiliate Click methods
   recordAffiliateClick(click: InsertAffiliateClick): Promise<AffiliateClick>;
   getAffiliateClicks(userId?: number, productId?: number): Promise<AffiliateClick[]>;
-  
+
   // Affiliate Conversion methods
   recordAffiliateConversion(conversion: InsertAffiliateConversion): Promise<AffiliateConversion>;
   getAffiliateConversions(userId?: number, status?: string): Promise<AffiliateConversion[]>;
@@ -132,11 +132,11 @@ export class MemStorage implements IStorage {
   private storeDeals: Map<number, StoreDeal>;
   private weeklyCirculars: Map<number, WeeklyCircular>;
   private recommendations: Map<number, Recommendation>;
+  private purchaseAnomalies: Map<number, PurchaseAnomaly>;
   private affiliatePartners: Map<number, AffiliatePartner>;
   private affiliateProducts: Map<number, AffiliateProduct>;
   private affiliateClicks: Map<number, AffiliateClick>;
   private affiliateConversions: Map<number, AffiliateConversion>;
-  private purchaseAnomalies: Map<number, PurchaseAnomaly>;
 
   private userIdCounter: number = 1;
   private retailerIdCounter: number = 1;
@@ -201,7 +201,13 @@ export class MemStorage implements IStorage {
       { name: "Walmart", logoColor: "blue", apiEndpoint: "https://api.walmart.com" },
       { name: "Target", logoColor: "red", apiEndpoint: "https://api.target.com" },
       { name: "Whole Foods", logoColor: "green", apiEndpoint: "https://api.wholefoods.com" },
-      { name: "Kroger", logoColor: "yellow", apiEndpoint: "https://api.kroger.com" }
+      { name: "Kroger", logoColor: "blue", apiEndpoint: "https://api.kroger.com" },
+      { name: "Costco", logoColor: "red", apiEndpoint: "https://api.costco.com" },
+      { name: "Safeway", logoColor: "green", apiEndpoint: "https://api.safeway.com" },
+      { name: "Trader Joe's", logoColor: "orange", apiEndpoint: "https://api.traderjoes.com" },
+      { name: "Publix", logoColor: "green", apiEndpoint: "https://api.publix.com" },
+      { name: "H-E-B", logoColor: "red", apiEndpoint: "https://api.heb.com" },
+      { name: "Meijer", logoColor: "blue", apiEndpoint: "https://api.meijer.com" }
     ];
 
     retailers.forEach(retailer => {
@@ -294,16 +300,41 @@ export class MemStorage implements IStorage {
       this.weeklyCirculars.set(newCircular.id, newCircular);
     });
 
-    // Add store deals
+    // Add store deals with more categories and retailers
     const deals = [
-      { retailerId: 1, productName: "Milk (Gallon)", regularPrice: 389, salePrice: 349, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Dairy", circularId: 1, dealSource: "circular", imageUrl: "https://scene7.samsclub.com/is/image/samsclub/0007874201054_A" },
-      { retailerId: 1, productName: "Cereal", regularPrice: 499, salePrice: 399, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Breakfast", circularId: 1, dealSource: "circular", imageUrl: "https://target.scene7.com/is/image/Target/GUEST_c5af0fc7-5371-4940-a02a-e3b04d389e99" },
-      { retailerId: 2, productName: "Toilet Paper (24 pack)", regularPrice: 1999, salePrice: 1649, startDate: new Date(), endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), category: "Household", circularId: 2, dealSource: "circular", imageUrl: "https://scene7.samsclub.com/is/image/samsclub/0073852052602_A" },
-      { retailerId: 2, productName: "Paper Towels", regularPrice: 1299, salePrice: 1099, startDate: new Date(), endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), category: "Household", circularId: 2, dealSource: "circular", imageUrl: "https://scene7.samsclub.com/is/image/samsclub/0003700006812_A" },
-      { retailerId: 3, productName: "Organic Bananas", regularPrice: 129, salePrice: 99, startDate: new Date(), endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), category: "Produce", circularId: 3, dealSource: "circular", imageUrl: "https://m.media-amazon.com/images/I/61fCPyJqYML.jpg" },
+      // Walmart deals
+      { retailerId: 1, productName: "Milk (Gallon)", regularPrice: 389, salePrice: 349, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Dairy", circularId: 1, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400" },
+      { retailerId: 1, productName: "Whole Grain Cereal", regularPrice: 499, salePrice: 399, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Breakfast", circularId: 1, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1544962503-4d9d8eb6c07b?w=400" },
+      { retailerId: 1, productName: "Ground Coffee", regularPrice: 899, salePrice: 699, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Beverages", circularId: 1, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1559056961-84608fae629c?w=400" },
+      { retailerId: 1, productName: "Frozen Pizza", regularPrice: 599, salePrice: 399, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Frozen Foods", circularId: 1, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400" },
+
+      // Target deals
+      { retailerId: 2, productName: "Toilet Paper (24 pack)", regularPrice: 1999, salePrice: 1649, startDate: new Date(), endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), category: "Household", circularId: 2, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1584473457406-6240486418e9?w=400" },
+      { retailerId: 2, productName: "Paper Towels", regularPrice: 1299, salePrice: 1099, startDate: new Date(), endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), category: "Household", circularId: 2, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1584473457452-00c2f71bdff8?w=400" },
+      { retailerId: 2, productName: "Greek Yogurt", regularPrice: 149, salePrice: 99, startDate: new Date(), endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), category: "Dairy", circularId: 2, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1571212515416-26c10ac12ab2?w=400" },
+      { retailerId: 2, productName: "Shampoo", regularPrice: 799, salePrice: 599, startDate: new Date(), endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), category: "Personal Care", circularId: 2, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=400" },
+
+      // Whole Foods deals
+      { retailerId: 3, productName: "Organic Bananas", regularPrice: 199, salePrice: 149, startDate: new Date(), endDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), category: "Produce", circularId: 3, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?w=400" },
+      { retailerId: 3, productName: "Chicken Breast", regularPrice: 799, salePrice: 599, startDate: new Date(), endDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), category: "Meat", circularId: 3, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1604503468506-a8da13d82791?w=400" },
       { retailerId: 3, productName: "Organic Apples", regularPrice: 399, salePrice: 349, startDate: new Date(), endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), category: "Produce", circularId: 3, dealSource: "circular", imageUrl: "https://i5.walmartimages.com/asr/cd75f189-77e3-40c4-835f-e3d503240812.7d1b3aa48083b60b2290364e6a0d050d.jpeg" },
+      { retailerId: 3, productName: "Organic Pasta", regularPrice: 299, salePrice: 249, startDate: new Date(), endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), category: "Pantry", circularId: 3, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1551462147-37ec24413113?w=400" },
+
+      // Kroger deals
       { retailerId: 4, productName: "Eggs (dozen)", regularPrice: 359, salePrice: 299, startDate: new Date(), endDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000), category: "Dairy", circularId: 4, dealSource: "circular", imageUrl: "https://i5.walmartimages.com/asr/20fe5306-1652-449c-a7a3-12fc36b8b7c9.4ccc9f0e21cd39e47dbc30fe29951cd1.jpeg" },
       { retailerId: 4, productName: "Bread", regularPrice: 329, salePrice: 299, startDate: new Date(), endDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000), category: "Bakery", circularId: 4, dealSource: "circular", imageUrl: "https://scene7.samsclub.com/is/image/samsclub/0001111008737_A" },
+
+      // Costco deals
+      { retailerId: 5, productName: "Bulk Rice (20lb)", regularPrice: 1999, salePrice: 1599, startDate: new Date(), endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), category: "Pantry", circularId: null, dealSource: "manual", imageUrl: "https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=400" },
+      { retailerId: 5, productName: "Salmon Fillet (2lb)", regularPrice: 1599, salePrice: 1299, startDate: new Date(), endDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), category: "Seafood", circularId: null, dealSource: "manual", imageUrl: "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=400" },
+
+      // Safeway deals
+      { retailerId: 6, productName: "Ice Cream", regularPrice: 599, salePrice: 399, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Frozen Foods", circularId: null, dealSource: "manual", imageUrl: "https://images.unsplash.com/photo-1501443762994-82bd5dace89a?w=400" },
+      { retailerId: 6, productName: "Vitamin C", regularPrice: 1299, salePrice: 999, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Health & Wellness", circularId: null, dealSource: "manual", imageUrl: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400" },
+
+      // Trader Joe's deals
+      { retailerId: 7, productName: "Organic Wine", regularPrice: 799, salePrice: 699, startDate: new Date(), endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), category: "Beverages", circularId: null, dealSource: "manual", imageUrl: "https://images.unsplash.com/photo-1510972527921-ce03766a1cf1?w=400" },
+      { retailerId: 7, productName: "Trail Mix", regularPrice: 499, salePrice: 399, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Snacks", circularId: null, dealSource: "manual", imageUrl: "https://images.unsplash.com/photo-1609501676725-7186f0544c5a?w=400" },
     ];
 
     deals.forEach(deal => {
@@ -321,7 +352,7 @@ export class MemStorage implements IStorage {
     this.createSamplePurchase(defaultUser.id, 1, now.getFullYear(), now.getMonth() - 1, 15);
     this.createSamplePurchase(defaultUser.id, 2, now.getFullYear(), now.getMonth() - 1, 5);
     this.createSamplePurchase(defaultUser.id, 4, now.getFullYear(), now.getMonth() - 1, 22);
-    
+
     // This month's purchases 
     this.createSamplePurchase(defaultUser.id, 1, now.getFullYear(), now.getMonth(), 2);
     this.createSamplePurchase(defaultUser.id, 3, now.getFullYear(), now.getMonth(), 10);
@@ -342,7 +373,7 @@ export class MemStorage implements IStorage {
     // Add 3-5 random items to the purchase
     const numItems = Math.floor(Math.random() * 3) + 3;
     const productIds = Array.from(this.products.keys());
-    
+
     for (let i = 0; i < numItems; i++) {
       const productId = productIds[Math.floor(Math.random() * productIds.length)];
       const product = this.products.get(productId)!;
@@ -398,12 +429,12 @@ export class MemStorage implements IStorage {
   }
 
   // Retailer methods
-  async getRetailers(): Promise<Retailer[]> {
-    return Array.from(this.retailers.values());
-  }
-
   async getRetailer(id: number): Promise<Retailer | undefined> {
     return this.retailers.get(id);
+  }
+
+  async getRetailers(): Promise<Retailer[]> {
+    return Array.from(this.retailers.values());
   }
 
   async createRetailer(retailer: InsertRetailer): Promise<Retailer> {
@@ -475,19 +506,19 @@ export class MemStorage implements IStorage {
     const newPurchase: Purchase = { ...purchase, id };
     this.purchases.set(id, newPurchase);
     return newPurchase;
-  }
+    }
 
   async createPurchaseFromReceipt(receiptData: any): Promise<Purchase> {
     // For demo purposes, create a purchase with the extracted receipt data
     const userId = 1; // Default user
     const retailerId = receiptData.retailerId || 1; // Default to Walmart if not specified
     const purchaseDate = receiptData.date ? new Date(receiptData.date).toISOString() : new Date().toISOString();
-    
+
     // Calculate total from items or use the receipt total
     const totalAmount = receiptData.total || 
       receiptData.items?.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0) || 
       Math.floor(Math.random() * 10000) + 2000; // $20 - $120 as fallback
-    
+
     const purchase: InsertPurchase = {
       userId,
       retailerId,
@@ -495,9 +526,9 @@ export class MemStorage implements IStorage {
       totalAmount,
       receiptData
     };
-    
+
     const newPurchase = await this.createPurchase(purchase);
-    
+
     // Create purchase items
     if (receiptData.items && Array.isArray(receiptData.items)) {
       for (const item of receiptData.items) {
@@ -509,7 +540,7 @@ export class MemStorage implements IStorage {
           item.name.toLowerCase().includes(p.name.toLowerCase()) ||
           p.name.toLowerCase().includes(item.name.toLowerCase())
         );
-        
+
         if (matchingProduct) {
           productId = matchingProduct.id;
         } else {
@@ -522,7 +553,7 @@ export class MemStorage implements IStorage {
           });
           productId = newProduct.id;
         }
-        
+
         // Create purchase item
         await this.createPurchaseItem({
           purchaseId: newPurchase.id,
@@ -534,7 +565,7 @@ export class MemStorage implements IStorage {
         });
       }
     }
-    
+
     return this.getPurchase(newPurchase.id) as Promise<Purchase>;
   }
 
@@ -580,7 +611,7 @@ export class MemStorage implements IStorage {
   async getShoppingListItems(listId: number): Promise<ShoppingListItem[]> {
     const items = Array.from(this.shoppingListItems.values())
       .filter(item => item.shoppingListId === listId);
-    
+
     // Add retailer data to items with suggestedRetailerId
     return Promise.all(items.map(async item => {
       if (item.suggestedRetailerId) {
@@ -614,19 +645,20 @@ export class MemStorage implements IStorage {
       suggestedPrice: itemData.suggestedPrice,
       dueDate: itemData.dueDate
     };
-    
+
     this.shoppingListItems.set(id, newItem);
-    
+
     // Add retailer data if available
     if (newItem.suggestedRetailerId) {
       const retailer = await this.getRetailer(newItem.suggestedRetailerId);
       return { ...newItem, suggestedRetailer: retailer };
     }
-    
+
     return newItem;
   }
 
   async updateShoppingListItem(id: number, updates: Partial<ShoppingListItem>): Promise<ShoppingListItem> {
+    try {
     const item = this.shoppingListItems.get(id);
     if (!item) {
       throw new Error("Shopping list item not found");
@@ -634,14 +666,18 @@ export class MemStorage implements IStorage {
 
     const updatedItem = { ...item, ...updates };
     this.shoppingListItems.set(id, updatedItem);
-    
+
     // Add retailer data if available
     if (updatedItem.suggestedRetailerId) {
       const retailer = await this.getRetailer(updatedItem.suggestedRetailerId);
       return { ...updatedItem, suggestedRetailer: retailer };
     }
-    
+
     return updatedItem;
+    } catch (error) {
+      console.error('Error updating shopping list item:', error);
+      throw error;
+    }
   }
 
   async deleteShoppingListItem(id: number): Promise<void> {
@@ -654,35 +690,36 @@ export class MemStorage implements IStorage {
   // Deal methods
   async getDeals(retailerId?: number, category?: string): Promise<StoreDeal[]> {
     let deals = Array.from(this.storeDeals.values());
-    
-    // Filter by retailer if specified
+
+    // Filter out expired deals
+    const now = new Date();
+    deals = deals.filter(deal => new Date(deal.endDate) > now);
+
     if (retailerId) {
       deals = deals.filter(deal => deal.retailerId === retailerId);
     }
-    
-    // Filter by category if specified
+
     if (category) {
       deals = deals.filter(deal => deal.category === category);
     }
-    
-    // Add retailer data
-    return Promise.all(deals.map(async deal => {
-      const retailer = await this.getRetailer(deal.retailerId);
-      return { ...deal, retailer };
-    }));
+
+    // Sort by upload date (newest first) so manual uploads take priority
+    deals.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+
+    return deals;
   }
 
   async getDealsSummary(): Promise<any[]> {
     const retailers = await this.getRetailers();
     const deals = Array.from(this.storeDeals.values());
-    
+
     // Group deals by retailer
     const summaryMap = new Map<number, { retailerId: number, retailerName: string, logoColor: string, dealsCount: number, validUntil: string }>();
-    
+
     for (const deal of deals) {
       const retailer = retailers.find(r => r.id === deal.retailerId);
       if (!retailer) continue;
-      
+
       if (!summaryMap.has(retailer.id)) {
         summaryMap.set(retailer.id, {
           retailerId: retailer.id,
@@ -692,29 +729,29 @@ export class MemStorage implements IStorage {
           validUntil: deal.endDate // Initialize with this deal's end date
         });
       }
-      
+
       const summary = summaryMap.get(retailer.id)!;
       summary.dealsCount++;
-      
+
       // Keep the latest valid until date
       if (new Date(deal.endDate) > new Date(summary.validUntil)) {
         summary.validUntil = deal.endDate;
       }
     }
-    
+
     return Array.from(summaryMap.values());
   }
 
   async getDealCategories(): Promise<string[]> {
     const deals = Array.from(this.storeDeals.values());
     const categories = new Set<string>();
-    
+
     deals.forEach(deal => {
       if (deal.category) {
         categories.add(deal.category);
       }
     });
-    
+
     return Array.from(categories);
   }
 
@@ -731,27 +768,27 @@ export class MemStorage implements IStorage {
     this.storeDeals.set(id, newDeal);
     return newDeal;
   }
-  
+
   // Weekly Circular methods
   async getWeeklyCirculars(retailerId?: number): Promise<WeeklyCircular[]> {
     const circulars = Array.from(this.weeklyCirculars.values());
-    
+
     // Filter by retailer if specified
     if (retailerId) {
       return circulars.filter(circular => circular.retailerId === retailerId);
     }
-    
+
     // Only return active circulars that haven't ended
     const now = new Date();
     return circulars.filter(circular => 
       circular.isActive && new Date(circular.endDate) >= now
     );
   }
-  
+
   async getWeeklyCircular(id: number): Promise<WeeklyCircular | undefined> {
     return this.weeklyCirculars.get(id);
   }
-  
+
   async createWeeklyCircular(circular: InsertWeeklyCircular): Promise<WeeklyCircular> {
     const id = this.weeklyCircularIdCounter++;
     const newCircular: WeeklyCircular = { 
@@ -763,7 +800,7 @@ export class MemStorage implements IStorage {
     this.weeklyCirculars.set(id, newCircular);
     return newCircular;
   }
-  
+
   async getDealsFromCircular(circularId: number): Promise<StoreDeal[]> {
     return Array.from(this.storeDeals.values())
       .filter(deal => deal.circularId === circularId);
@@ -772,7 +809,7 @@ export class MemStorage implements IStorage {
   // Recommendation methods
   async getRecommendations(): Promise<Recommendation[]> {
     const recommendations = Array.from(this.recommendations.values());
-    
+
     // Add retailer data
     return Promise.all(recommendations.map(async rec => {
       if (rec.suggestedRetailerId) {
@@ -787,13 +824,13 @@ export class MemStorage implements IStorage {
     const id = this.recommendationIdCounter++;
     const newRecommendation: Recommendation = { ...recommendation, id };
     this.recommendations.set(id, newRecommendation);
-    
+
     // Add retailer data if available
     if (newRecommendation.suggestedRetailerId) {
       const retailer = await this.getRetailer(newRecommendation.suggestedRetailerId);
       return { ...newRecommendation, suggestedRetailer: retailer };
     }
-    
+
     return newRecommendation;
   }
 
@@ -806,12 +843,12 @@ export class MemStorage implements IStorage {
       totalSpent: number, 
       retailers: Map<number, { count: number, retailerName: string }> 
     }>();
-    
+
     // Count occurrences of each product
     for (const purchase of purchases) {
       const retailer = await this.getRetailer(purchase.retailerId!);
       const retailerName = retailer?.name || "Unknown";
-      
+
       for (const item of purchase.items || []) {
         if (!productCounts.has(item.productName)) {
           productCounts.set(item.productName, {
@@ -821,11 +858,11 @@ export class MemStorage implements IStorage {
             retailers: new Map()
           });
         }
-        
+
         const product = productCounts.get(item.productName)!;
         product.count += item.quantity;
         product.totalSpent += item.totalPrice;
-        
+
         // Track retailer frequency
         if (!product.retailers.has(purchase.retailerId!)) {
           product.retailers.set(purchase.retailerId!, { count: 0, retailerName });
@@ -833,7 +870,7 @@ export class MemStorage implements IStorage {
         product.retailers.get(purchase.retailerId!)!.count++;
       }
     }
-    
+
     // Convert to array and sort by count
     const topItems = Array.from(productCounts.values())
       .sort((a, b) => b.count - a.count)
@@ -842,14 +879,14 @@ export class MemStorage implements IStorage {
         // Find most frequent retailer
         let typicalRetailer = "Various retailers";
         let maxCount = 0;
-        
+
         product.retailers.forEach(retailer => {
           if (retailer.count > maxCount) {
             maxCount = retailer.count;
             typicalRetailer = retailer.retailerName;
           }
         });
-        
+
         // Determine frequency
         let frequency: string;
         if (product.count >= 10) {
@@ -861,7 +898,7 @@ export class MemStorage implements IStorage {
         } else {
           frequency = "Occasionally";
         }
-        
+
         return {
           productName: product.productName,
           frequency,
@@ -869,7 +906,7 @@ export class MemStorage implements IStorage {
           typicalPrice: Math.round(product.totalSpent / product.count) / 100
         };
       });
-    
+
     return topItems;
   }
 
@@ -877,7 +914,7 @@ export class MemStorage implements IStorage {
     const purchases = await this.getPurchases();
     const currentYear = new Date().getFullYear();
     const previousYear = currentYear - 1;
-    
+
     // Initialize monthly data
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const monthlyData = monthNames.map(month => ({
@@ -885,20 +922,20 @@ export class MemStorage implements IStorage {
       currentYear: 0,
       previousYear: 0
     }));
-    
+
     // Calculate spending by month
     for (const purchase of purchases) {
       const date = new Date(purchase.purchaseDate);
       const month = date.getMonth();
       const year = date.getFullYear();
-      
+
       if (year === currentYear) {
         monthlyData[month].currentYear += purchase.totalAmount / 100;
       } else if (year === previousYear) {
         monthlyData[month].previousYear += purchase.totalAmount / 100;
       }
     }
-    
+
     // Return only the first 6 months for display
     return monthlyData.slice(0, 6);
   }
@@ -908,15 +945,184 @@ export class MemStorage implements IStorage {
     // For demo, return a random amount between $5 and $50
     return Math.floor(Math.random() * 45) + 5;
   }
+
+  // Cleanup methods
+  async cleanupExpiredCirculars(): Promise<number> {
+    const now = new Date();
+    let cleanedCount = 0;
+
+    // Clean up expired circulars from memory
+    for (const [id, circular] of this.weeklyCirculars.entries()) {
+      if (circular.isActive && new Date(circular.endDate) < now) {
+        circular.isActive = false;
+        cleanedCount++;
+      }
+    }
+
+    // Clean up expired deals
+    for (const [id, deal] of this.storeDeals.entries()) {
+      if (new Date(deal.endDate) < now) {
+        this.storeDeals.delete(id);
+      }
+    }
+
+    console.log(`Cleaned up ${cleanedCount} expired circulars from memory`);
+    return cleanedCount;
+  }
+
+  // Affiliate Partner methods
+  async getAffiliatePartners(): Promise<AffiliatePartner[]> {
+    return Array.from(this.affiliatePartners.values());
+  }
+
+  async getAffiliatePartner(id: number): Promise<AffiliatePartner | undefined> {
+    return this.affiliatePartners.get(id);
+  }
+
+  async createAffiliatePartner(partner: InsertAffiliatePartner): Promise<AffiliatePartner> {
+    const id = this.affiliatePartnerIdCounter++;
+    const newPartner: AffiliatePartner = { ...partner, id };
+    this.affiliatePartners.set(id, newPartner);
+    return newPartner;
+  }
+
+  async updateAffiliatePartner(id: number, updates: Partial<AffiliatePartner>): Promise<AffiliatePartner> {
+    const partner = this.affiliatePartners.get(id);
+    if (!partner) throw new Error("Affiliate partner not found");
+
+    const updatedPartner = { ...partner, ...updates };
+    this.affiliatePartners.set(id, updatedPartner);
+    return updatedPartner;
+  }
+
+  async deleteAffiliatePartner(id: number): Promise<void> {
+    if (!this.affiliatePartners.has(id)) {
+      throw new Error("Affiliate partner not found");
+    }
+    this.affiliatePartners.delete(id);
+  }
+
+  // Affiliate Product methods
+  async getAffiliateProducts(partnerId?: number, category?: string): Promise<AffiliateProduct[]> {
+    let products = Array.from(this.affiliateProducts.values());
+
+    if (partnerId) {
+      products = products.filter(product => product.partnerId === partnerId);
+    }
+
+    if (category) {
+      products = products.filter(product => product.category === category);
+    }
+
+    return products;
+  }
+
+  async getAffiliateProduct(id: number): Promise<AffiliateProduct | undefined> {
+    return this.affiliateProducts.get(id);
+  }
+
+  async getFeaturedAffiliateProducts(): Promise<AffiliateProduct[]> {
+    return Array.from(this.affiliateProducts.values()).filter(product => product.isFeatured);
+  }
+
+  async createAffiliateProduct(product: InsertAffiliateProduct): Promise<AffiliateProduct> {
+    const id = this.affiliateProductIdCounter++;
+    const newProduct: AffiliateProduct = { ...product, id };
+    this.affiliateProducts.set(id, newProduct);
+    return newProduct;
+  }
+
+  async updateAffiliateProduct(id: number, updates: Partial<AffiliateProduct>): Promise<AffiliateProduct> {
+    const product = this.affiliateProducts.get(id);
+    if (!product) throw new Error("Affiliate product not found");
+
+    const updatedProduct = { ...product, ...updates };
+    this.affiliateProducts.set(id, updatedProduct);
+    return updatedProduct;
+  }
+
+  async deleteAffiliateProduct(id: number): Promise<void> {
+    if (!this.affiliateProducts.has(id)) {
+      throw new Error("Affiliate product not found");
+    }
+    this.affiliateProducts.delete(id);
+  }
+
+  // Affiliate Click methods
+  async recordAffiliateClick(click: InsertAffiliateClick): Promise<AffiliateClick> {
+    const id = this.affiliateClickIdCounter++;
+    const newClick: AffiliateClick = { ...click, id };
+    this.affiliateClicks.set(id, newClick);
+    return newClick;
+  }
+
+  async getAffiliateClicks(userId?: number, productId?: number): Promise<AffiliateClick[]> {
+    let clicks = Array.from(this.affiliateClicks.values());
+
+    if (userId) {
+      clicks = clicks.filter(click => click.userId === userId);
+    }
+
+    if (productId) {
+      clicks = clicks.filter(click => click.productId === productId);
+    }
+
+    return clicks;
+  }
+
+  // Affiliate Conversion methods
+  async recordAffiliateConversion(conversion: InsertAffiliateConversion): Promise<AffiliateConversion> {
+    const id = this.affiliateConversionIdCounter++;
+    const newConversion: AffiliateConversion = { ...conversion, id };
+    this.affiliateConversions.set(id, newConversion);
+    return newConversion;
+  }
+
+  async getAffiliateConversions(userId?: number, status?: string): Promise<AffiliateConversion[]> {
+    let conversions = Array.from(this.affiliateConversions.values());
+
+    if (userId) {
+      conversions = conversions.filter(conversion => conversion.userId === userId);
+    }
+
+    if (status) {
+      conversions = conversions.filter(conversion => conversion.status === status);
+    }
+
+    return conversions;
+  }
+
+  async updateAffiliateConversionStatus(id: number, status: string): Promise<AffiliateConversion> {
+    const conversion = this.affiliateConversions.get(id);
+    if (!conversion) throw new Error("Affiliate conversion not found");
+
+    const updatedConversion = { ...conversion, status };
+    this.affiliateConversions.set(id, updatedConversion);
+    return updatedConversion;
+  }
+
+  async addRetailer(retailerData: { name: string; logoColor: string }): Promise<Retailer> {
+    const newRetailer: Retailer = {
+      id: this.retailerIdCounter++,
+      name: retailerData.name,
+      logoColor: retailerData.logoColor,
+      apiEndpoint: null,
+      apiKey: null
+    };
+
+    this.retailers.set(newRetailer.id, newRetailer);
+    return newRetailer;
+  }
 }
 
 // Database implementation of the storage interface
+
 export class DatabaseStorage implements IStorage {
   // User methods
   async getDefaultUser(): Promise<User> {
     const [user] = await db.select().from(users).where(eq(users.id, 1));
     if (user) return user;
-    
+
     // Create default user if it doesn't exist
     return this.createUser({
       username: "johndoe",
@@ -935,462 +1141,609 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
+    try {
+      const [user] = await db.select().from(users).where(eq(users.id, id));
+      return user || undefined;
+    } catch (error) {
+      console.error("Error getting user:", error);
+      throw error;
+    }
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user || undefined;
+    try {
+      const [user] = await db.select().from(users).where(eq(users.username, username));
+      return user || undefined;
+    } catch (error) {
+      console.error("Error getting user by username:", error);
+      throw error;
+    }
   }
 
   async createUser(userData: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(userData).returning();
-    return user;
+    try {
+      const [user] = await db.insert(users).values(userData).returning();
+      return user;
+    } catch (error) {
+      console.error("Error creating user:", error);
+      throw error;
+    }
   }
 
   async updateUser(userData: Partial<User>): Promise<User> {
     if (!userData.id) throw new Error("User ID is required for update");
-    
-    const [updatedUser] = await db
-      .update(users)
-      .set(userData)
-      .where(eq(users.id, userData.id))
-      .returning();
-    
-    if (!updatedUser) throw new Error("User not found");
-    return updatedUser;
+
+    try {
+      const [updatedUser] = await db
+        .update(users)
+        .set(userData)
+        .where(eq(users.id, userData.id))
+        .returning();
+
+      if (!updatedUser) throw new Error("User not found");
+      return updatedUser;
+    } catch (error) {
+      console.error("Error updating user:", error);
+      throw error;
+    }
   }
 
   // Retailer methods
   async getRetailers(): Promise<Retailer[]> {
-    const allRetailers = await db.select().from(retailers);
-    
-    if (allRetailers.length === 0) {
-      // Add default retailers if none exist
-      await this.createRetailer({
-        name: "Walmart",
-        logoColor: "blue",
-        apiEndpoint: null,
-        apiKey: null
-      });
-      
-      await this.createRetailer({
-        name: "Target",
-        logoColor: "red",
-        apiEndpoint: null,
-        apiKey: null
-      });
-      
-      await this.createRetailer({
-        name: "Kroger",
-        logoColor: "blue",
-        apiEndpoint: null,
-        apiKey: null
-      });
-      
-      await this.createRetailer({
-        name: "Costco",
-        logoColor: "red",
-        apiEndpoint: null,
-        apiKey: null
-      });
-      
-      return this.getRetailers();
+    try {
+      return db.select().from(retailers);
+    } catch (error) {
+      console.error("Error getting retailers:", error);
+      throw error;
     }
-    
-    return allRetailers;
   }
 
   async getRetailer(id: number): Promise<Retailer | undefined> {
-    const [retailer] = await db.select().from(retailers).where(eq(retailers.id, id));
-    return retailer || undefined;
+    try {
+      const [retailer] = await db.select().from(retailers).where(eq(retailers.id, id));
+      return retailer || undefined;
+    } catch (error) {
+      console.error("Error getting retailer:", error);
+      throw error;
+    }
   }
 
-  async createRetailer(retailerData: InsertRetailer): Promise<Retailer> {
-    const [retailer] = await db.insert(retailers).values(retailerData).returning();
-    return retailer;
+  async createRetailer(retailerData: {
+    name: string;
+    logoColor: string;
+    isActive: boolean;
+  }): Promise<Retailer> {
+    try {
+      const [retailer] = await db.insert(retailers).values(retailerData).returning();
+      return retailer;
+    } catch (error) {
+      console.error("Error creating retailer:", error);
+      throw error;
+    }
   }
 
   // Retailer Account methods
   async getRetailerAccounts(): Promise<RetailerAccount[]> {
-    return db.select().from(retailerAccounts);
+    try {
+      return db.select().from(retailerAccounts);
+    } catch (error) {
+      console.error("Error getting retailer accounts:", error);
+      throw error;
+    }
   }
 
   async getRetailerAccount(id: number): Promise<RetailerAccount | undefined> {
-    const [account] = await db.select().from(retailerAccounts).where(eq(retailerAccounts.id, id));
-    return account || undefined;
+    try {
+      const [account] = await db.select().from(retailerAccounts).where(eq(retailerAccounts.id, id));
+      return account || undefined;
+    } catch (error) {
+      console.error("Error getting retailer account:", error);
+      throw error;
+    }
   }
 
   async createRetailerAccount(accountData: InsertRetailerAccount): Promise<RetailerAccount> {
-    const [account] = await db.insert(retailerAccounts).values(accountData).returning();
-    return account;
+    try {
+      const [account] = await db.insert(retailerAccounts).values(accountData).returning();
+      return account;
+    } catch (error) {
+      console.error("Error creating retailer account:", error);
+      throw error;
+    }
   }
 
   // Product methods
   async getProducts(): Promise<Product[]> {
-    const allProducts = await db.select().from(products);
-    
-    if (allProducts.length === 0) {
-      // Add some default products if none exist
-      await this.createProduct({
-        name: "Milk (Gallon)",
-        category: "Dairy",
-        subcategory: null,
-        defaultUnit: "gallon",
-        restockFrequency: "weekly",
-        isNameBrand: false,
-        isOrganic: false
-      });
-      
-      await this.createProduct({
-        name: "Eggs (Dozen)",
-        category: "Dairy",
-        subcategory: null,
-        defaultUnit: "dozen",
-        restockFrequency: "weekly",
-        isNameBrand: false,
-        isOrganic: false
-      });
-      
-      await this.createProduct({
-        name: "Bananas",
-        category: "Produce",
-        subcategory: "Fruits",
-        defaultUnit: "bunch",
-        restockFrequency: "weekly",
-        isNameBrand: false,
-        isOrganic: false
-      });
-      
-      return this.getProducts();
+    try {
+      const allProducts = await db.select().from(products);
+
+      if (allProducts.length === 0) {
+        // Add some default products if none exist
+        await this.createProduct({
+          name: "Milk (Gallon)",
+          category: "Dairy",
+          subcategory: null,
+          defaultUnit: "gallon",
+          restockFrequency: "weekly",
+          isNameBrand: false,
+          isOrganic: false
+        });
+
+        await this.createProduct({
+          name: "Eggs (Dozen)",
+          category: "Dairy",
+          subcategory: null,
+          defaultUnit: "dozen",
+          restockFrequency: "weekly",
+          isNameBrand: false,
+          isOrganic: false
+        });
+
+        await this.createProduct({
+          name: "Bananas",
+          category: "Produce",
+          subcategory: "Fruits",
+          defaultUnit: "bunch",
+          restockFrequency: "weekly",
+          isNameBrand: false,
+          isOrganic: false
+        });
+
+        return this.getProducts();
+      }
+
+      return allProducts;
+    } catch (error) {
+      console.error("Error getting products:", error);
+      throw error;
     }
-    
-    return allProducts;
   }
 
   async getProduct(id: number): Promise<Product | undefined> {
-    const [product] = await db.select().from(products).where(eq(products.id, id));
-    return product || undefined;
+    try {
+      const [product] = await db.select().from(products).where(eq(products.id, id));
+      return product || undefined;
+    } catch (error) {
+      console.error("Error getting product:", error);
+      throw error;
+    }
   }
 
   async createProduct(productData: InsertProduct): Promise<Product> {
-    const [product] = await db.insert(products).values(productData).returning();
-    return product;
+    try {
+      const [product] = await db.insert(products).values(productData).returning();
+      return product;
+    } catch (error) {
+      console.error("Error creating product:", error);
+      throw error;
+    }
   }
 
   // Purchase methods
   async getPurchases(): Promise<Purchase[]> {
-    return db.select().from(purchases);
+    try {
+      return db.select().from(purchases);
+    } catch (error) {
+      console.error("Error getting purchases:", error);
+      throw error;
+    }
   }
 
   async getPurchase(id: number): Promise<Purchase | undefined> {
-    const [purchase] = await db.select().from(purchases).where(eq(purchases.id, id));
-    return purchase || undefined;
+    try {
+      const [purchase] = await db.select().from(purchases).where(eq(purchases.id, id));
+      return purchase || undefined;
+    } catch (error) {
+      console.error("Error getting purchase:", error);
+      throw error;
+    }
   }
 
   async createPurchase(purchaseData: InsertPurchase): Promise<Purchase> {
-    const [purchase] = await db.insert(purchases).values(purchaseData).returning();
-    return purchase;
+    try {
+      const [purchase] = await db.insert(purchases).values(purchaseData).returning();
+      return purchase;
+    } catch (error) {
+      console.error("Error creating purchase:", error);
+      throw error;
+    }
   }
 
   async createPurchaseFromReceipt(receiptData: any): Promise<Purchase> {
     // In a real implementation, this would parse receipt data and create a purchase
     // For now, use demo data
-    const purchase = await this.createPurchase({
-      userId: 1,
-      retailerId: 1,
-      purchaseDate: new Date(),
-      totalAmount: 2500,
-      receiptData: receiptData,
-      receiptImageUrl: null
-    });
-    
-    return purchase;
+    try {
+      const purchase = await this.createPurchase({
+        userId: 1,
+        retailerId: 1,
+        purchaseDate: new Date(),
+        totalAmount: 2500,
+        receiptData: receiptData,
+        receiptImageUrl: null
+      });
+
+      return purchase;
+    } catch (error) {
+      console.error("Error creating purchase from receipt:", error);
+      throw error;
+    }
   }
 
   // Purchase Item methods
   async getPurchaseItems(purchaseId: number): Promise<PurchaseItem[]> {
-    return db.select().from(purchaseItems).where(eq(purchaseItems.purchaseId, purchaseId));
+    try {
+      return db.select().from(purchaseItems).where(eq(purchaseItems.purchaseId, purchaseId));
+    } catch (error) {
+      console.error("Error getting purchase items:", error);
+      throw error;
+    }
   }
 
   async createPurchaseItem(itemData: InsertPurchaseItem): Promise<PurchaseItem> {
-    const [item] = await db.insert(purchaseItems).values(itemData).returning();
-    return item;
+    try {
+      const [item] = await db.insert(purchaseItems).values(itemData).returning();
+      return item;
+    } catch (error) {
+      console.error("Error creating purchase item:", error);
+      throw error;
+    }
   }
 
   // Shopping List methods
   async getShoppingLists(): Promise<ShoppingList[]> {
-    const lists = await db.select().from(shoppingLists);
-    
-    if (lists.length === 0) {
-      // Create a default shopping list if none exists
-      const newList = await this.createShoppingList({
-        name: "My Shopping List",
-        userId: 1,
-        isDefault: true
-      });
-      
-      return [newList];
+    try {
+      const lists = await db.select().from(shoppingLists);
+
+      if (lists.length === 0) {
+        // Create a default shopping list if none exists
+        const newList = await this.createShoppingList({
+          name: "My Shopping List",
+          userId: 1,
+          isDefault: true
+        });
+
+        return [newList];
+      }
+
+      return lists;
+    } catch (error) {
+      console.error("Error getting shopping lists:", error);
+      throw error;
     }
-    
-    return lists;
   }
 
   async getShoppingList(id: number): Promise<ShoppingList | undefined> {
-    const [list] = await db.select().from(shoppingLists).where(eq(shoppingLists.id, id));
-    
-    if (list) {
-      // Fetch items for the list
-      const items = await this.getShoppingListItems(id);
-      return { ...list, items };
+    try {
+      const [list] = await db.select().from(shoppingLists).where(eq(shoppingLists.id, id));
+
+      if (list) {
+        // Fetch items for the list
+        const items = await this.getShoppingListItems(id);
+        return { ...list, items };
+      }
+
+      return undefined;
+    } catch (error) {
+      console.error("Error getting shopping list:", error);
+      throw error;
     }
-    
-    return undefined;
   }
 
   async createShoppingList(listData: InsertShoppingList): Promise<ShoppingList> {
-    const [list] = await db.insert(shoppingLists).values(listData).returning();
-    
-    // Initialize with empty items array
-    return { ...list, items: [] };
+    try {
+      const [list] = await db.insert(shoppingLists).values(listData).returning();
+
+      // Initialize with empty items array
+      return { ...list, items: [] };
+    } catch (error) {
+      console.error("Error creating shopping list:", error);
+      throw error;
+    }
   }
 
   // Shopping List Item methods
   async getShoppingListItems(listId: number): Promise<ShoppingListItem[]> {
-    return db.select().from(shoppingListItems).where(eq(shoppingListItems.shoppingListId, listId));
+    try {
+      return db.select().from(shoppingListItems).where(eq(shoppingListItems.shoppingListId, listId));
+    } catch (error) {
+      console.error("Error getting shopping list items:", error);
+      throw error;
+    }
   }
 
   async addShoppingListItem(itemData: Partial<ShoppingListItem>): Promise<ShoppingListItem> {
-    // Ensure quantity defaults to 1 if not provided
-    const quantity = itemData.quantity || 1;
-    
-    const [item] = await db.insert(shoppingListItems).values({
-      ...itemData,
-      quantity,
-      isCompleted: false,
-      dueDate: null,
-      productId: null,
-      suggestedRetailerId: null,
-      suggestedPrice: null
-    } as any).returning();
-    
-    return item;
+    // Ensure quantity defaults to 1 if not provided and is properly converted to number
+    let quantity = itemData.quantity || 1;
+
+    // Handle both string and number inputs for quantity
+    quantity = typeof quantity === 'string' ? parseFloat(quantity) : Number(quantity);
+
+    if (isNaN(quantity) || quantity < 0) {
+      quantity = 1;
+    }
+
+    try {
+      const [item] = await db.insert(shoppingListItems).values({
+        ...itemData,
+        quantity,
+        isCompleted: false,
+        dueDate: null,
+        productId: null,
+        suggestedRetailerId: null,
+        suggestedPrice: null
+      } as any).returning();
+
+      return item;
+    } catch (error) {
+      console.error("Error adding shopping list item:", error);
+      throw error;
+    }
   }
 
   async updateShoppingListItem(id: number, updates: Partial<ShoppingListItem>): Promise<ShoppingListItem> {
+    // Ensure quantity is properly converted to a number if provided
+    const processedUpdates = { ...updates };
+    if (processedUpdates.quantity !== undefined) {
+      // Handle both string and number inputs for quantity
+      const quantityValue = typeof processedUpdates.quantity === 'string' 
+        ? parseFloat(processedUpdates.quantity) 
+        : Number(processedUpdates.quantity);
+
+      if (isNaN(quantityValue) || quantityValue < 0) {
+        throw new Error("Invalid quantity value");
+      }
+
+      // Ensure quantity is always an integer for database storage
+      processedUpdates.quantity = Math.round(quantityValue);
+    }
+
+    try {
     const [updatedItem] = await db
       .update(shoppingListItems)
-      .set(updates)
+      .set(processedUpdates)
       .where(eq(shoppingListItems.id, id))
       .returning();
-    
-    if (!updatedItem) throw new Error("Shopping list item not found");
+
+    if (!updatedItem) {
+      throw new Error("Shopping list item not found");
+    }
+
     return updatedItem;
+    } catch (error) {
+      console.error("Error updating shopping list item:", error);
+      throw error;
+    }
   }
 
   async deleteShoppingListItem(id: number): Promise<void> {
-    await db.delete(shoppingListItems).where(eq(shoppingListItems.id, id));
+    try {
+      await db.delete(shoppingListItems).where(eq(shoppingListItems.id, id));
+    } catch (error) {
+      console.error("Error deleting shopping list item:", error);
+      throw error;
+    }
   }
 
   // Deal methods
   async getDeals(retailerId?: number, category?: string): Promise<StoreDeal[]> {
-    let query = db.select().from(storeDeals);
-    
-    if (retailerId) {
-      query = query.where(eq(storeDeals.retailerId, retailerId));
-    }
-    
-    if (category) {
-      query = query.where(eq(storeDeals.category, category));
-    }
-    
-    const deals = await query;
-    
-    if (deals.length === 0) {
-      // Add some default deals if none exist
-      const retailers = await this.getRetailers();
-      
-      if (retailers.length > 0) {
-        await this.createDeal({
-          retailerId: retailers[0].id,
-          productName: "Milk (Gallon)",
-          category: "Dairy",
-          regularPrice: 389,
-          salePrice: 349,
-          startDate: new Date(),
-          endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
-        });
-        
-        await this.createDeal({
-          retailerId: retailers[0].id,
-          productName: "Eggs (Dozen)",
-          category: "Dairy",
-          regularPrice: 299,
-          salePrice: 249,
-          startDate: new Date(),
-          endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) // 3 days from now
-        });
-        
-        await this.createDeal({
-          retailerId: retailers[1].id,
-          productName: "Paper Towels",
-          category: "Household",
-          regularPrice: 799,
-          salePrice: 649,
-          startDate: new Date(),
-          endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000) // 5 days from now
-        });
+    try {
+      let query = db.select().from(storeDeals);
+
+      // Filter out expired deals
+      const now = new Date();
+      query = query.where(gte(storeDeals.endDate, now));
+
+      if (retailerId) {
+        query = query.where(eq(storeDeals.retailerId, retailerId));
       }
-      
-      return this.getDeals(retailerId, category);
+
+      if (category) {
+        query = query.where(eq(storeDeals.category, category));
+      }
+
+      return query;
+    } catch (error) {
+      console.error("Error getting deals:", error);
+      throw error;
     }
-    
-    return deals;
   }
 
   async getDealsSummary(): Promise<any[]> {
-    const deals = await this.getDeals();
-    const retailers = await this.getRetailers();
-    
-    // Group deals by retailer
-    const dealsByRetailer = {};
-    
-    retailers.forEach(retailer => {
-      dealsByRetailer[retailer.id] = {
-        retailerId: retailer.id,
-        retailerName: retailer.name,
-        dealCount: 0,
-        totalSavings: 0
-      };
-    });
-    
-    deals.forEach(deal => {
-      if (dealsByRetailer[deal.retailerId]) {
-        dealsByRetailer[deal.retailerId].dealCount += 1;
-        dealsByRetailer[deal.retailerId].totalSavings += deal.regularPrice - deal.salePrice;
-      }
-    });
-    
-    return Object.values(dealsByRetailer);
+    try {
+      const deals = await this.getDeals();
+      const retailers = await this.getRetailers();
+
+      // Group deals by retailer
+      const dealsByRetailer = {};
+
+      retailers.forEach(retailer => {
+        dealsByRetailer[retailer.id] = {
+          retailerId: retailer.id,
+          retailerName: retailer.name,
+          dealCount: 0,
+          totalSavings: 0
+        };
+      });
+
+      deals.forEach(deal => {
+        if (dealsByRetailer[deal.retailerId]) {
+          dealsByRetailer[deal.retailerId].dealCount += 1;
+          dealsByRetailer[deal.retailerId].totalSavings += deal.regularPrice - deal.salePrice;
+        }
+      });
+
+      return Object.values(dealsByRetailer);
+    } catch (error) {
+      console.error("Error getting deals summary:", error);
+      throw error;
+    }
   }
 
   async getDealCategories(): Promise<string[]> {
-    const deals = await this.getDeals();
-    const categories = new Set<string>();
-    
-    deals.forEach(deal => {
-      if (deal.category) {
-        categories.add(deal.category);
-      }
-    });
-    
-    return Array.from(categories);
+    try {
+      const deals = await this.getDeals();
+      const categories = new Set<string>();
+
+      deals.forEach(deal => {
+        if (deal.category) {
+          categories.add(deal.category);
+        }
+      });
+
+      return Array.from(categories);
+    } catch (error) {
+      console.error("Error getting deal categories:", error);
+      throw error;
+    }
   }
 
-  async createDeal(dealData: InsertStoreDeal): Promise<StoreDeal> {
-    const [deal] = await db.insert(storeDeals).values(dealData).returning();
-    return deal;
-  }
-  
-  async getWeeklyCirculars(retailerId?: number): Promise<WeeklyCircular[]> {
-    let query = db.select().from(weeklyCirculars);
-    
-    if (retailerId) {
-      query = query.where(eq(weeklyCirculars.retailerId, retailerId));
+  async createDeal(dealData: {
+    retailerId: number;
+    productName: string;
+    category: string;
+    regularPrice: number;
+    salePrice: number;
+    imageUrl?: string;
+    startDate: Date;
+    endDate: Date;
+  }): Promise<StoreDeal> {
+    try {
+      const [deal] = await db.insert(storeDeals).values(dealData).returning();
+      return deal;
+    } catch (error) {
+      console.error("Error creating deal:", error);
+      throw error;
     }
-    
-    // Get active circulars by default (where end date is in the future)
-    query = query.where(
-      and(
-        eq(weeklyCirculars.isActive, true),
-        gte(weeklyCirculars.endDate, new Date())
-      )
-    );
-    
-    return query;
   }
-  
+
+  async getWeeklyCirculars(retailerId?: number): Promise<WeeklyCircular[]> {
+    try {
+      let query = db.select().from(weeklyCirculars);
+
+      if (retailerId) {
+        query = query.where(eq(weeklyCirculars.retailerId, retailerId));
+      }
+
+      // Get active circulars by default (where end date is in the future)
+      query = query.where(
+        and(
+          eq(weeklyCirculars.isActive, true),
+          gte(weeklyCirculars.endDate, new Date())
+        )
+      );
+
+      return query;
+    } catch (error) {
+      console.error("Error getting weekly circulars:", error);
+      throw error;
+    }
+  }
+
   async getWeeklyCircular(id: number): Promise<WeeklyCircular | undefined> {
-    const [circular] = await db.select().from(weeklyCirculars).where(eq(weeklyCirculars.id, id));
-    return circular;
+    try {
+      const [circular] = await db.select().from(weeklyCirculars).where(eq(weeklyCirculars.id, id));
+      return circular;
+    } catch (error) {
+      console.error("Error getting weekly circular:", error);
+      throw error;
+    }
   }
-  
+
   async createWeeklyCircular(circularData: InsertWeeklyCircular): Promise<WeeklyCircular> {
-    const [circular] = await db.insert(weeklyCirculars).values(circularData).returning();
-    return circular;
+    try {
+      const [circular] = await db.insert(weeklyCirculars).values(circularData).returning();
+      return circular;
+    } catch (error) {
+      console.error("Error creating weekly circular:", error);
+      throw error;
+    }
   }
-  
+
   async getDealsFromCircular(circularId: number): Promise<StoreDeal[]> {
-    return db.select().from(storeDeals).where(eq(storeDeals.circularId, circularId));
+    try {
+      return db.select().from(storeDeals).where(eq(storeDeals.circularId, circularId));
+    } catch (error) {
+      console.error("Error getting deals from circular:", error);
+      throw error;
+    }
   }
 
   // Recommendation methods
   async getRecommendations(): Promise<Recommendation[]> {
-    // Get default user
-    const user = await this.getDefaultUser();
-    
-    const result = await db
-      .select()
-      .from(recommendations)
-      .where(eq(recommendations.userId, user.id));
-    
-    if (result.length === 0) {
-      console.log("Generating recommendations for user:", user.id);
-      
-      // Create demo recommendations
-      await this.createRecommendation({
-        userId: user.id,
-        productName: "Bananas",
-        productId: null,
-        recommendedDate: new Date(),
-        daysUntilPurchase: 2,
-        suggestedRetailerId: 1,
-        suggestedPrice: 349,
-        savings: 50,
-        reason: "Based on your weekly purchase pattern"
-      });
-      
-      await this.createRecommendation({
-        userId: user.id,
-        productName: "Paper Towels",
-        productId: null,
-        recommendedDate: new Date(),
-        daysUntilPurchase: 3,
-        suggestedRetailerId: 2,
-        suggestedPrice: 649,
-        savings: 150,
-        reason: "You typically buy this every 2 weeks"
-      });
-      
-      await this.createRecommendation({
-        userId: user.id,
-        productName: "Milk (Gallon)",
-        productId: null,
-        recommendedDate: new Date(),
-        daysUntilPurchase: 1,
-        suggestedRetailerId: 1,
-        suggestedPrice: 349,
-        savings: 40,
-        reason: "You're almost out based on purchase history"
-      });
-      
-      return db
+    try {
+      // Get default user
+      const user = await this.getDefaultUser();
+
+      const result = await db
         .select()
         .from(recommendations)
         .where(eq(recommendations.userId, user.id));
+
+      if (result.length === 0) {
+        console.log("Generating recommendations for user:", user.id);
+
+        // Create demo recommendations
+        await this.createRecommendation({
+          userId: user.id,
+          productName: "Bananas",
+          productId: null,
+          recommendedDate: new Date(),
+          daysUntilPurchase: 2,
+          suggestedRetailerId: 1,
+          suggestedPrice: 349,
+          savings: 50,
+          reason: "Based on your weekly purchase pattern"
+        });
+
+        await this.createRecommendation({
+          userId: user.id,
+          productName: "Paper Towels",
+          productId: null,
+          recommendedDate: new Date(),
+          daysUntilPurchase: 3,
+          suggestedRetailerId: 2,
+          suggestedPrice: 649,
+          savings: 150,
+          reason: "You typically buy this every 2 weeks"
+        });
+
+        await this.createRecommendation({
+          userId: user.id,
+          productName: "Milk (Gallon)",
+          productId: null,
+          recommendedDate: new Date(),
+          daysUntilPurchase: 1,
+          suggestedRetailerId: 1,
+          suggestedPrice: 349,
+          savings: 40,
+          reason: "You're almost out based on purchase history"
+        });
+
+        return db
+          .select()
+          .from(recommendations)
+          .where(eq(recommendations.userId, user.id));
+      }
+
+      return result;
+    } catch (error) {
+      console.error("Error getting recommendations:", error);
+      throw error;
     }
-    
-    return result;
   }
 
   async createRecommendation(recommendationData: InsertRecommendation): Promise<Recommendation> {
-    const [recommendation] = await db
-      .insert(recommendations)
-      .values(recommendationData)
-      .returning();
-    
-    return recommendation;
+    try {
+      const [recommendation] = await db
+        .insert(recommendations)
+        .values(recommendationData)
+        .returning();
+
+      return recommendation;
+    } catch (error) {
+      console.error("Error creating recommendation:", error);
+      throw error;
+    }
   }
 
   // Insights methods
@@ -1411,7 +1764,7 @@ export class DatabaseStorage implements IStorage {
     // For demo, return mock data
     const currentYear = new Date().getFullYear();
     const previousYear = currentYear - 1;
-    
+
     return [
       { month: "Jan", currentYear: 35000, previousYear: 32000 },
       { month: "Feb", currentYear: 28000, previousYear: 30000 },
@@ -1434,46 +1787,315 @@ export class DatabaseStorage implements IStorage {
     return Math.floor(Math.random() * 40) + 10;
   }
 
+  // Cleanup methods
+  async cleanupExpiredCirculars(): Promise<number> {
+    const now = new Date();
+
+    try {
+      // Delete expired circulars
+      const expiredCirculars = await db
+        .select()
+        .from(weeklyCirculars)
+        .where(
+          and(
+            eq(weeklyCirculars.isActive, true),
+            lt(weeklyCirculars.endDate, now)
+          )
+        );
+
+      if (expiredCirculars.length > 0) {
+        // Mark them as inactive instead of deleting (for audit trail)
+        await db
+          .update(weeklyCirculars)
+          .set({ isActive: false })
+          .where(
+            and(
+              eq(weeklyCirculars.isActive, true),
+              lt(weeklyCirculars.endDate, now)
+            )
+          );
+
+        // Also cleanup related expired deals
+        await db
+          .delete(storeDeals)
+          .where(lt(storeDeals.endDate, now));
+      }
+
+      console.log(`Cleaned up ${expiredCirculars.length} expired circulars`);
+      return expiredCirculars.length;
+    } catch (error) {
+      console.error('Error cleaning up expired circulars:', error);
+      return 0;
+    }
+  }
+
   // Purchase Anomaly methods
   async getPurchaseAnomalies(): Promise<PurchaseAnomaly[]> {
-    const anomalies = await db.select().from(purchaseAnomalies);
-    return anomalies;
+    try {
+      const anomalies = await db.select().from(purchaseAnomalies);
+      return anomalies;
+    } catch (error) {
+      console.error("Error getting purchase anomalies:", error);
+      throw error;
+    }
   }
 
   async getPurchaseAnomaly(id: number): Promise<PurchaseAnomaly | undefined> {
-    const [anomaly] = await db
-      .select()
-      .from(purchaseAnomalies)
-      .where(eq(purchaseAnomalies.id, id));
-    return anomaly;
+    try {
+      const [anomaly] = await db
+        .select()
+        .from(purchaseAnomalies)
+        .where(eq(purchaseAnomalies.id, id));
+      return anomaly;
+    } catch (error) {
+      console.error("Error getting purchase anomaly:", error);
+      throw error;
+    }
   }
 
   async createPurchaseAnomaly(anomalyData: InsertPurchaseAnomaly): Promise<PurchaseAnomaly> {
-    const [anomaly] = await db
-      .insert(purchaseAnomalies)
-      .values(anomalyData)
-      .returning();
-    return anomaly;
+    try {
+      const [anomaly] = await db
+        .insert(purchaseAnomalies)
+        .values(anomalyData)
+        .returning();
+      return anomaly;
+    } catch (error) {
+      console.error("Error creating purchase anomaly:", error);
+      throw error;
+    }
   }
 
   async updatePurchaseAnomaly(id: number, updates: Partial<PurchaseAnomaly>): Promise<PurchaseAnomaly> {
-    const [updatedAnomaly] = await db
-      .update(purchaseAnomalies)
-      .set(updates)
-      .where(eq(purchaseAnomalies.id, id))
-      .returning();
-    
-    if (!updatedAnomaly) {
-      throw new Error(`Purchase anomaly with id ${id} not found`);
+    try {
+      const [updatedAnomaly] = await db
+        .update(purchaseAnomalies)
+        .set(updates)
+        .where(eq(purchaseAnomalies.id, id))
+        .returning();
+
+      if (!updatedAnomaly) {
+        throw new Error(`Purchase anomaly with id ${id} not found`);
+      }
+
+      return updatedAnomaly;
+    } catch (error) {
+      console.error("Error updating purchase anomaly:", error);
+      throw error;
     }
-    
-    return updatedAnomaly;
   }
 
   async deletePurchaseAnomaly(id: number): Promise<void> {
-    await db
-      .delete(purchaseAnomalies)
-      .where(eq(purchaseAnomalies.id, id));
+    try {
+      await db
+        .delete(purchaseAnomalies)
+        .where(eq(purchaseAnomalies.id, id));
+    } catch (error) {
+      console.error("Error deleting purchase anomaly:", error);
+      throw error;
+    }
+  }
+
+  // Affiliate Partner methods
+  async getAffiliatePartners(): Promise<AffiliatePartner[]> {
+    try {
+      return db.select().from(affiliatePartners);
+    } catch (error) {
+      console.error("Error getting affiliate partners:", error);
+      throw error;
+    }
+  }
+
+  async getAffiliatePartner(id: number): Promise<AffiliatePartner | undefined> {
+    try {
+      const [partner] = await db.select().from(affiliatePartners).where(eq(affiliatePartners.id, id));
+      return partner || undefined;
+    } catch (error) {
+      console.error("Error getting affiliate partner:", error);
+      throw error;
+    }
+  }
+
+  async createAffiliatePartner(partnerData: InsertAffiliatePartner): Promise<AffiliatePartner> {
+    try {
+      const [partner] = await db.insert(affiliatePartners).values(partnerData).returning();
+      return partner;
+    } catch (error) {
+      console.error("Error creating affiliate partner:", error);
+      throw error;
+    }
+  }
+
+  async updateAffiliatePartner(id: number, updates: Partial<AffiliatePartner>): Promise<AffiliatePartner> {
+    try {
+      const [partner] = await db
+        .update(affiliatePartners)
+        .set(updates)
+        .where(eq(affiliatePartners.id, id))
+        .returning();
+      if (!partner) throw new Error("Affiliate partner not found");
+      return partner;
+    } catch (error) {
+      console.error("Error updating affiliate partner:", error);
+      throw error;
+    }
+  }
+
+  async deleteAffiliatePartner(id: number): Promise<void> {
+    try {
+      await db.delete(affiliatePartners).where(eq(affiliatePartners.id, id));
+    } catch (error) {
+      console.error("Error deleting affiliate partner:", error);
+      throw error;
+    }
+  }
+
+  // Affiliate Product methods
+  async getAffiliateProducts(partnerId?: number, category?: string): Promise<AffiliateProduct[]> {
+    try {
+      let query = db.select().from(affiliateProducts);
+
+      if (partnerId) {
+        query = query.where(eq(affiliateProducts.partnerId, partnerId));
+      }
+
+      if (category) {
+        query = query.where(eq(affiliateProducts.category, category));
+      }
+
+      return query;
+    } catch (error) {
+      console.error("Error getting affiliate products:", error);
+      throw error;
+    }
+  }
+
+  async getAffiliateProduct(id: number): Promise<AffiliateProduct | undefined> {
+    try {
+      const [product] = await db.select().from(affiliateProducts).where(eq(affiliateProducts.id, id));
+      return product || undefined;
+    } catch (error) {
+      console.error("Error getting affiliate product:", error);
+      throw error;
+    }
+  }
+
+  async getFeaturedAffiliateProducts(): Promise<AffiliateProduct[]> {
+    try {
+      return db.select().from(affiliateProducts).where(eq(affiliateProducts.isFeatured, true));
+    } catch (error) {
+      console.error("Error getting featured affiliate products:", error);
+      throw error;
+    }
+  }
+
+  async createAffiliateProduct(productData: InsertAffiliateProduct): Promise<AffiliateProduct> {
+    try {
+      const [product] = await db.insert(affiliateProducts).values(productData).returning();
+      return product;
+    } catch (error) {
+      console.error("Error creating affiliate product:", error);
+      throw error;
+    }
+  }
+
+  async updateAffiliateProduct(id: number, updates: Partial<AffiliateProduct>): Promise<AffiliateProduct> {
+    try {
+      const [product] = await db
+        .update(affiliateProducts)
+        .set(updates)
+        .where(eq(affiliateProducts.id, id))
+        .returning();
+      if (!product) throw new Error("Affiliate product not found");
+      return product;
+    } catch (error) {
+      console.error("Error updating affiliate product:", error);
+      throw error;
+    }
+  }
+
+  async deleteAffiliateProduct(id: number): Promise<void> {
+    try {
+      await db.delete(affiliateProducts).where(eq(affiliateProducts.id, id));
+    } catch (error) {
+      console.error("Error deleting affiliate product:", error);
+      throw error;
+    }
+  }
+
+  // Affiliate Click methods
+  async recordAffiliateClick(clickData: InsertAffiliateClick): Promise<AffiliateClick> {
+    try {
+      const [click] = await db.insert(affiliateClicks).values(clickData).returning();
+      return click;
+    } catch (error) {
+      console.error("Error recording affiliate click:", error);
+      throw error;
+    }
+  }
+
+  async getAffiliateClicks(userId?: number, productId?: number): Promise<AffiliateClick[]> {
+    try {
+      let query = db.select().from(affiliateClicks);
+
+      if (userId) {
+        query = query.where(eq(affiliateClicks.userId, userId));
+      }
+
+      if (productId) {
+        query = query.where(eq(affiliateClicks.productId, productId));
+      }
+
+      return query;
+    } catch (error) {
+      console.error("Error getting affiliate clicks:", error);
+      throw error;
+    }
+  }
+
+  // Affiliate Conversion methods
+  async recordAffiliateConversion(conversionData: InsertAffiliateConversion): Promise<AffiliateConversion> {
+    try {
+      const [conversion] = await db.insert(affiliateConversions).values(conversionData).returning();
+      return conversion;
+    } catch (error) {
+      console.error("Error recording affiliate conversion:", error);
+      throw error;
+    }
+  }
+
+  async getAffiliateConversions(userId?: number, status?: string): Promise<AffiliateConversion[]> {
+    try {
+      let query = db.select().from(affiliateConversions);
+
+      if (userId) {
+        query = query.where(eq(affiliateConversions.userId, userId));
+      }
+
+      if (status) {
+        query = query.where(eq(affiliateConversions.status, status));
+      }
+
+      return query;
+    } catch (error) {
+      console.error("Error getting affiliate conversions:", error);
+      throw error;
+    }
+  }
+
+  async updateAffiliateConversionStatus(id: number, status: string): Promise<AffiliateConversion> {
+    try {
+      const [conversion] = await db
+        .update(affiliateConversions)
+        .set({ status })
+        .where(eq(affiliateConversions.id, id))
+        .returning();
+      if (!conversion) throw new Error("Affiliate conversion not found");
+      return conversion;
+    } catch (error) {
+      console.error("Error updating affiliate conversion status:", error);
+      throw error;
+    }
   }
 }
 

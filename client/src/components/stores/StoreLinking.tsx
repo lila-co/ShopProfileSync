@@ -10,15 +10,15 @@ const StoreLinking: React.FC = () => {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   const { data: retailers, isLoading } = useQuery<Retailer[]>({
     queryKey: ['/api/retailers'],
   });
-  
+
   const { data: connectedAccounts } = useQuery<RetailerAccount[]>({
     queryKey: ['/api/user/retailer-accounts'],
   });
-  
+
   const connectRetailerMutation = useMutation({
     mutationFn: async (retailerId: number) => {
       // In a real app, this would redirect to OAuth or show a credential input form
@@ -44,11 +44,11 @@ const StoreLinking: React.FC = () => {
       });
     }
   });
-  
+
   const isConnected = (retailerId: number) => {
     return connectedAccounts?.some(account => account.retailerId === retailerId && account.isConnected);
   };
-  
+
   const getColorClasses = (color: string) => {
     const colorMap: Record<string, { bg: string, icon: string }> = {
       blue: { bg: 'bg-blue-100', icon: 'text-blue-600' },
@@ -60,10 +60,10 @@ const StoreLinking: React.FC = () => {
       indigo: { bg: 'bg-indigo-100', icon: 'text-indigo-600' },
       gray: { bg: 'bg-gray-100', icon: 'text-gray-600' },
     };
-    
+
     return colorMap[color] || colorMap.blue;
   };
-  
+
   return (
     <div className="fixed inset-0 bg-white p-4 z-20">
       <div className="flex justify-between items-center mb-4">
@@ -80,11 +80,11 @@ const StoreLinking: React.FC = () => {
         <h2 className="text-lg font-bold">Link Store Account</h2>
         <div className="w-8"></div>
       </div>
-      
+
       <p className="text-gray-600 mb-6">
         Connect your store accounts to automatically import your purchase history and get personalized recommendations.
       </p>
-      
+
       <div className="space-y-3 mb-6">
         {isLoading ? (
           // Skeleton loading
@@ -107,7 +107,7 @@ const StoreLinking: React.FC = () => {
           (retailers || []).map((retailer) => {
             const colorClasses = getColorClasses(retailer.logoColor || 'blue');
             const connected = isConnected(retailer.id);
-            
+
             return (
               <div key={retailer.id} className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
                 <div className="flex justify-between items-center">
@@ -139,7 +139,7 @@ const StoreLinking: React.FC = () => {
           })
         )}
       </div>
-      
+
       <div className="text-center">
         <p className="text-sm text-gray-500 mb-3">Don't see your store?</p>
         <Button 
