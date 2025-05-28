@@ -1807,7 +1807,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               behavior: "Premium product willingness",
               segmentA: { segment: "Health-Conscious Urban", willingness: "High (78%)" },
               segmentB: { segment: "Budget-Conscious Family", willingness: "Low (23%)" },
-              implication: "Targeted marketing needed for premium products"            }
+              implication: "Targeted marketing needed for premium products"
+            }
           ]
         }
       };
