@@ -313,14 +313,11 @@ const RecommendationsPage: React.FC = () => {
                         </span>
                         <Button 
                           size="sm" 
-                          onClick={() => {
-                            const itemToAdd = enhancedRecommendations.find(r => r.id === item.id);
-                            if (itemToAdd) {
-                              addToShoppingListMutation.mutate(itemToAdd);
-                            }
-                          }}
+                          className="bg-primary hover:bg-primary/90"
+                          onClick={() => addToShoppingListMutation.mutate(item)}
                           disabled={addToShoppingListMutation.isPending}
                         >
+                          <Plus className="h-4 w-4 mr-1" />
                           {addToShoppingListMutation.isPending ? "Adding..." : "Add to List"}
                         </Button>
                       </div>
@@ -345,14 +342,11 @@ const RecommendationsPage: React.FC = () => {
                         <span className="text-sm text-gray-600">{item.retailer}</span>
                         <Button 
                           size="sm" 
-                          onClick={() => {
-                            const itemToAdd = enhancedRecommendations.find(r => r.id === item.id);
-                            if (itemToAdd) {
-                              addToShoppingListMutation.mutate(itemToAdd);
-                            }
-                          }}
+                          className="bg-primary hover:bg-primary/90"
+                          onClick={() => addToShoppingListMutation.mutate(item)}
                           disabled={addToShoppingListMutation.isPending}
                         >
+                          <Plus className="h-4 w-4 mr-1" />
                           {addToShoppingListMutation.isPending ? "Adding..." : "Add to List"}
                         </Button>
                       </div>
@@ -375,14 +369,11 @@ const RecommendationsPage: React.FC = () => {
                         <span className="text-sm text-gray-600">{item.retailer}</span>
                         <Button 
                           size="sm" 
-                          onClick={() => {
-                            const itemToAdd = enhancedRecommendations.find(r => r.id === item.id);
-                            if (itemToAdd) {
-                              addToShoppingListMutation.mutate(itemToAdd);
-                            }
-                          }}
+                          className="bg-primary hover:bg-primary/90"
+                          onClick={() => addToShoppingListMutation.mutate(item)}
                           disabled={addToShoppingListMutation.isPending}
                         >
+                          <Plus className="h-4 w-4 mr-1" />
                           {addToShoppingListMutation.isPending ? "Adding..." : "Add to List"}
                         </Button>
                       </div>
