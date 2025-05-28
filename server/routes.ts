@@ -927,6 +927,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Combine analyzed deals with additional items
       const allRecommendedItems = [...recommendedItems, ...additionalItems];
 
+      // Sample items to demonstrate the feature
+      let items = allRecommendedItems;
+      if (items.length === 0) {
+        items = [
+          { productName: 'Milk', quantity: 1, unit: 'GALLON', reason: 'Purchased weekly' },
+          { productName: 'Bananas', quantity: 1, unit: 'LB', reason: 'Running low based on purchase cycle' },
+          { productName: 'Bread', quantity: 1, unit: 'COUNT', reason: 'Typically purchased every 5 days' },
+          { productName: 'Eggs', quantity: 1, unit: 'COUNT', reason: 'Regularly purchased item' },
+          { productName: 'Toilet Paper', quantity: 1, unit: 'ROLL', reason: 'Based on typical household usage' },
+          { productName: 'Chicken Breast', quantity: 1, unit: 'LB', reason: 'Purchased bi-weekly' },
+          { productName: 'Tomatoes', quantity: 3, unit: 'LB', reason: 'Based on recipe usage patterns' }
+        ];
+      }
+
       // Return the recommendations for preview
       res.json({
         userId,
@@ -948,7 +962,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Extract ingredients for preview
       const extractedIngredients = await extractRecipeIngredients(recipeUrl, servings || 4);
-      
+
       // Format ingredients for preview
       const previewItems = extractedIngredients.map(ingredient => ({
         productName: ingredient.name,
@@ -967,9 +981,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/shopping-lists/recipe', async (req: Request, res: Response) => {
     try {
       const { recipeUrl, shoppingListId, servings, items } = req.body;
-      
+
       let ingredientsToAdd = [];
-      
+
       if (items) {
         // If items are provided (from preview), use those
         ingredientsToAdd = items.filter((item: any) => item.isSelected);
@@ -2235,7 +2249,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         else if (retailer.name === "Walmart") baseAvailability = 0.89;
 
         const availableItemCount = Math.floor(items.length * baseAvailability);
-        
+
         const storeItems = items.map((item, index) => {
           // Find deals at this retailer
           const deal = allDeals.find(d => 
@@ -2273,7 +2287,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const availableItems = storeItems.filter(item => item.isAvailable);
         const totalCost = availableItems.reduce((sum, item) => sum + item.totalPrice, 0);
         const dealCount = storeItems.filter(item => item.dealInfo?.isDeal).length;
-        
+
         // Calculate balanced score: availability + deal bonus - cost penalty
         const availabilityScore = baseAvailability * 0.4;
         const dealScore = (dealCount / items.length) * 0.3;
