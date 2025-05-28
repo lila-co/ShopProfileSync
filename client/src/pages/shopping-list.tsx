@@ -1522,7 +1522,10 @@ const ShoppingListPage: React.FC = () => {
                             <div>
                               <h4 className="font-medium text-base sm:text-lg">Kroger</h4>
                               <p className="text-xs sm:text-sm text-gray-500">
-                                14 out of {items.length} items • $45.35 total
+                                {singleStoreOptimization.data ? 
+                                  `${singleStoreOptimization.data.availableItems || items.length} out of ${items.length} items • $${(singleStoreOptimization.data.totalCost / 100).toFixed(2)} total` :
+                                  `${Math.floor(items.length * 0.87)} out of ${items.length} items • Est. $${(items.length * 2.85).toFixed(2)} total`
+                                }
                               </p>
                               <p className="text-xs text-blue-600">123 Main St, San Francisco, CA 94105</p>
                             </div>
@@ -1577,18 +1580,26 @@ const ShoppingListPage: React.FC = () => {
                       <div className="border border-green-200 rounded-lg sm:rounded-xl overflow-hidden">
                         <div className="bg-green-50 dark:bg-green-900/10 px-3 sm:px-4 py-2 sm:py-3 border-b border-green-200">
                           <div className="font-medium text-sm sm:text-base text-green-700 dark:text-green-300">
-                            Best Value Option (Save $8.50)
+                            Best Value Option {bestValueOptimization.data ? `(Save $${(bestValueOptimization.data.savings / 100).toFixed(2)})` : '(Save Est. $8.50)'}
                           </div>
                         </div>
                         <div className="p-3 sm:p-4">
                           <div className="flex items-center mb-3 sm:mb-4">
-                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green100 flex items-center justify-center mr-3 sm:mr-4 shrink-0">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-100 flex items-center justify-center mr-3 sm:mr-4 shrink-0">
                               <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                             </div>
                             <div>
-                              <h4 className="font-medium text-base sm:text-lg">Kroger + Walmart</h4>
+                              <h4 className="font-medium text-base sm:text-lg">
+                                {bestValueOptimization.data ? 
+                                  bestValueOptimization.data.stores?.map((s: any) => s.retailerName).join(' + ') :
+                                  'Kroger + Walmart'
+                                }
+                              </h4>
                               <p className="text-xs sm:text-sm text-gray-500">
-                                All items • $36.85 total
+                                {bestValueOptimization.data ? 
+                                  `All ${items.length} items • $${(bestValueOptimization.data.totalCost / 100).toFixed(2)} total` :
+                                  `All ${items.length} items • Est. $${(items.length * 2.15).toFixed(2)} total`
+                                }
                               </p>
                             </div>
                           </div>
@@ -1637,7 +1648,9 @@ const ShoppingListPage: React.FC = () => {
                       {/* Balanced Option */}
                       <div className="border rounded-lg sm:rounded-xl overflow-hidden">
                         <div className="bg-gray-50 dark:bg-gray-800 px-3 sm:px-4 py-2 sm:py-3 border-b">
-                          <div className="font-medium text-sm sm:text-base">Balanced Option</div>
+                          <div className="font-medium text-sm sm:text-base">
+                            Balanced Option {balancedOptimization.data ? `(Save $${(balancedOptimization.data.savings / 100).toFixed(2)})` : '(Save Est. $3.20)'}
+                          </div>
                         </div>
                         <div className="p-3 sm:p-4">
                           <div className="flex items-center mb-3 sm:mb-4">
@@ -1647,7 +1660,10 @@ const ShoppingListPage: React.FC = () => {
                             <div>
                               <h4 className="font-medium text-base sm:text-lg">Target</h4>
                               <p className="text-xs sm:text-sm text-gray-500">
-                                15 out of {items.length} items • $42.15 total
+                                {balancedOptimization.data ? 
+                                  `${balancedOptimization.data.stores?.[0]?.items?.length || items.length} out of ${items.length} items • $${(balancedOptimization.data.totalCost / 100).toFixed(2)} total` :
+                                  `${Math.floor(items.length * 0.92)} out of ${items.length} items • Est. $${(items.length * 2.65).toFixed(2)} total`
+                                }
                               </p>
                               <p className="text-xs text-gray-600">456 Market St, San Francisco, CA 94102</p>
                             </div>
@@ -1661,6 +1677,11 @@ const ShoppingListPage: React.FC = () => {
                                   <span>${(item.price / 100).toFixed(2)}</span>
                                 </div>
                               ))}
+                              {(balancedOptimization.data.stores?.[0]?.items?.length || 0) > 3 && (
+                                <div className="text-xs text-gray-500">
+                                  +{(balancedOptimization.data.stores?.[0]?.items?.length || 0) - 3} more items
+                                </div>
+                              )}
                               <Button 
                                 size="sm" 
                                 variant="default" 
