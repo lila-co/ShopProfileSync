@@ -66,7 +66,6 @@ export interface IStorage {
   addShoppingListItem(item: Partial<ShoppingListItem>): Promise<ShoppingListItem>;
   updateShoppingListItem(id: number, updates: Partial<ShoppingListItem>): Promise<ShoppingListItem>;
   deleteShoppingListItem(id: number): Promise<void>;
-  getShoppingListCosts(listId: number): Promise<any>;
 
   // Deal methods
   getDeals(retailerId?: number, category?: string): Promise<StoreDeal[]>;
@@ -1270,10 +1269,10 @@ export class MemStorage implements IStorage {
         }
         return results;
     }
-
+    
     async searchPurchases(filters: any): Promise<Purchase[]> {
         let results = Array.from(this.purchases.values());
-
+    
         if (filters.userId) {
             results = results.filter(purchase => purchase.userId === filters.userId);
         }
@@ -1290,7 +1289,7 @@ export class MemStorage implements IStorage {
         }
         return results;
     }
-
+    
     async getUserStatistics(userId: number): Promise<any> {
         // Mock statistics for demo
         return {
@@ -1384,14 +1383,9 @@ export class MemStorage implements IStorage {
 // Database implementation of the storage interface
 
 export class DatabaseStorage implements IStorage {
-  db: any;
-
-  constructor() {
-      this.db = db;
-  }
   // User methods
   async getDefaultUser(): Promise<User> {
-    const [user] = await this.db.select().from(users).where(eq(users.id, 1));
+    const [user] = await db.select().from(users).where(eq(users.id, 1));
     if (user) return user;
 
     // Create default user if it doesn't exist
@@ -1413,7 +1407,7 @@ export class DatabaseStorage implements IStorage {
 
   async getUser(id: number): Promise<User | undefined> {
     try {
-      const [user] = await this.db.select().from(users).where(eq(users.id, id));
+      const [user] = await db.select().from(users).where(eq(users.id, id));
       return user || undefined;
     } catch (error) {
       console.error("Error getting user:", error);
@@ -1423,7 +1417,7 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     try {
-      const [user] = await this.db.select().from(users).where(eq(users.username, username));
+      const [user] = await db.select().from(users).where(eq(users.username, username));
       return user || undefined;
     } catch (error) {
       console.error("Error getting user by username:", error);
@@ -1433,18 +1427,19 @@ export class DatabaseStorage implements IStorage {
 
   async createUser(userData: InsertUser): Promise<User> {
     try {
-      const [user] = await this.db.insert(users).values(userData).returning();
+      const [user] = await db.insert(users).values(userData).returning();
       return user;
     } catch (error) {
       console.error("Error creating user:", error);
-      throw error;      }
+      throw error;
+    }
   }
 
   async updateUser(userData: Partial<User>): Promise<User> {
     if (!userData.id) throw new Error("User ID is required for update");
 
     try {
-const [updatedUser] = await this.db
+const [updatedUser] = await db
         .update(users)
         .set(userData)
         .where(eq(users.id, userData.id))
@@ -1461,7 +1456,7 @@ const [updatedUser] = await this.db
   // Retailer methods
   async getRetailers(): Promise<Retailer[]> {
     try {
-      return this.db.select().from(retailers);
+      return db.select().from(retailers);
     } catch (error) {
       console.error("Error getting retailers:", error);
       throw error;
@@ -1470,7 +1465,7 @@ const [updatedUser] = await this.db
 
   async getRetailer(id: number): Promise<Retailer | undefined> {
     try {
-      const [retailer] = await this.db.select().from(retailers).where(eq(retailers.id, id));
+      const [retailer] = await db.select().from(retailers).where(eq(retailers.id, id));
       return retailer || undefined;
     } catch (error) {
       console.error("Error getting retailer:", error);
@@ -1484,7 +1479,7 @@ const [updatedUser] = await this.db
     isActive: boolean;
   }): Promise<Retailer> {
     try {
-      const [retailer] = await this.db.insert(retailers).values(retailerData).returning();
+      const [retailer] = await db.insert(retailers).values(retailerData).returning();
       return retailer;
     } catch (error) {
       console.error("Error creating retailer:", error);
@@ -1495,7 +1490,7 @@ const [updatedUser] = await this.db
   // Retailer Account methods
   async getRetailerAccounts(): Promise<RetailerAccount[]> {
     try {
-      return this.db.select().from(retailerAccounts);
+      return db.select().from(retailerAccounts);
     } catch (error) {
       console.error("Error getting retailer accounts:", error);
       throw error;
@@ -1504,7 +1499,7 @@ const [updatedUser] = await this.db
 
   async getRetailerAccount(id: number): Promise<RetailerAccount | undefined> {
     try {
-      const [account] = await this.db.select().from(retailerAccounts).where(eq(retailerAccounts.id, id));
+      const [account] = await db.select().from(retailerAccounts).where(eq(retailerAccounts.id, id));
       return account || undefined;
     } catch (error) {
       console.error("Error getting retailer account:", error);
@@ -1514,7 +1509,7 @@ const [updatedUser] = await this.db
 
   async createRetailerAccount(accountData: InsertRetailerAccount): Promise<RetailerAccount> {
     try {
-      const [account] = await this.db.insert(retailerAccounts).values(accountData).returning();
+      const [account] = await db.insert(retailerAccounts).values(accountData).returning();
       return account;
     } catch (error) {
       console.error("Error creating retailer account:", error);
@@ -1525,7 +1520,7 @@ const [updatedUser] = await this.db
   // Product methods
   async getProducts(): Promise<Product[]> {
     try {
-      const allProducts = await this.db.select().from(products);
+      const allProducts = await db.select().from(products);
 
       if (allProducts.length === 0) {
         // Add some default products if none exist
@@ -1571,7 +1566,7 @@ const [updatedUser] = await this.db
 
   async getProduct(id: number): Promise<Product | undefined> {
     try {
-      const [product] = await this.db.select().from(products).where(eq(products.id, id));
+      const [product] = await db.select().from(products).where(eq(products.id, id));
       return product || undefined;
     } catch (error) {
       console.error("Error getting product:", error);
@@ -1581,7 +1576,7 @@ const [updatedUser] = await this.db
 
   async createProduct(productData: InsertProduct): Promise<Product> {
     try {
-      const [product] = await this.db.insert(products).values(productData).returning();
+      const [product] = await db.insert(products).values(productData).returning();
       return product;
     } catch (error) {
       console.error("Error creating product:", error);
@@ -1592,7 +1587,7 @@ const [updatedUser] = await this.db
   // Purchase methods
   async getPurchases(): Promise<Purchase[]> {
     try {
-      return this.db.select().from(purchases);
+      return db.select().from(purchases);
     } catch (error) {
       console.error("Error getting purchases:", error);
       throw error;
@@ -1601,7 +1596,7 @@ const [updatedUser] = await this.db
 
   async getPurchase(id: number): Promise<Purchase | undefined> {
     try {
-      const [purchase] = await this.db.select().from(purchases).where(eq(purchases.id, id));
+      const [purchase] = await db.select().from(purchases).where(eq(purchases.id, id));
       return purchase || undefined;
     } catch (error) {
       console.error("Error getting purchase:", error);
@@ -1611,7 +1606,7 @@ const [updatedUser] = await this.db
 
   async createPurchase(purchaseData: InsertPurchase): Promise<Purchase> {
     try {
-      const [purchase] = await this.db.insert(purchases).values(purchaseData).returning();
+      const [purchase] = await db.insert(purchases).values(purchaseData).returning();
       return purchase;
     } catch (error) {
       console.error("Error creating purchase:", error);
@@ -1642,7 +1637,7 @@ const [updatedUser] = await this.db
   // Purchase Item methods
   async getPurchaseItems(purchaseId: number): Promise<PurchaseItem[]> {
     try {
-      return this.db.select().from(purchaseItems).where(eq(purchaseItems.purchaseId, purchaseId));
+      return db.select().from(purchaseItems).where(eq(purchaseItems.purchaseId, purchaseId));
     } catch (error) {
       console.error("Error getting purchase items:", error);
       throw error;
@@ -1651,7 +1646,7 @@ const [updatedUser] = await this.db
 
   async createPurchaseItem(itemData: InsertPurchaseItem): Promise<PurchaseItem> {
     try {
-      const [item] = await this.db.insert(purchaseItems).values(itemData).returning();
+      const [item] = await db.insert(purchaseItems).values(itemData).returning();
       return item;
     } catch (error) {
       console.error("Error creating purchase item:", error);
@@ -1662,7 +1657,7 @@ const [updatedUser] = await this.db
   // Shopping List methods
   async getShoppingLists(): Promise<ShoppingList[]> {
     try {
-      const lists = await this.db.select().from(shoppingLists);
+      const lists = await db.select().from(shoppingLists);
     } catch (error) {
       console.error("Error getting shopping lists:", error);
       throw error;
@@ -1671,7 +1666,7 @@ const [updatedUser] = await this.db
 
   async getShoppingList(id: number): Promise<ShoppingList | undefined> {
     try {
-      const [list] = await this.db.select().from(shoppingLists).where(eq(shoppingLists.id, id));
+      const [list] = await db.select().from(shoppingLists).where(eq(shoppingLists.id, id));
 
       if (list) {
         // Fetch items for the list
@@ -1688,7 +1683,7 @@ const [updatedUser] = await this.db
 
   async createShoppingList(listData: InsertShoppingList): Promise<ShoppingList> {
     try {
-      const [list] = await this.db.insert(shoppingLists).values(listData).returning();
+      const [list] = await db.insert(shoppingLists).values(listData).returning();
 
       // Initialize with empty items array
       return { ...list, items: [] };
@@ -1701,88 +1696,9 @@ const [updatedUser] = await this.db
   // Shopping List Item methods
   async getShoppingListItems(listId: number): Promise<ShoppingListItem[]> {
     try {
-      const result = await this.db
-        .select()
-        .from(shoppingListItems)
-        .where(eq(shoppingListItems.shoppingListId, listId));
-
-      return result;
+      return db.select().from(shoppingListItems).where(eq(shoppingListItems.shoppingListId, listId));
     } catch (error) {
-      console.error('Error fetching shopping list items:', error);
-      throw error;
-    }
-  }
-
-  async getShoppingListCosts(listId: number): Promise<any> {
-    try {
-      const items = await this.getShoppingListItems(listId);
-      const retailers = await this.getRetailers();
-      const allDeals = await this.getDeals();
-
-      // Multi-store optimization (for demo purposes)
-      const multiStoreOptimization = {
-        totalCost: 0,
-        totalSavings: 0,
-        retailers: [],
-        itemsByRetailer: {}
-      };
-
-      // Find best price for each item across all retailers
-      items.forEach(item => {
-        let bestPrice = Number.MAX_VALUE;
-        let bestRetailer = null;
-
-        retailers.forEach(retailer => {
-          // Find deal for this item at this retailer
-          const deal = allDeals.find(d => 
-            d.retailerId === retailer.id && 
-            (d.productName.toLowerCase().includes(item.productName.toLowerCase()) ||
-             item.productName.toLowerCase().includes(d.productName.toLowerCase())) &&
-            new Date(d.endDate) > new Date()
-          );
-
-          const price = deal ? deal.salePrice : Math.floor(Math.random() * 800) + 200;
-
-          if (price < bestPrice) {
-            bestPrice = price;
-            bestRetailer = retailer;
-          }
-        });
-
-        if (bestRetailer) {
-          // Add retailer to list if not already added
-          if (!multiStoreOptimization.retailers.includes(bestRetailer.id)) {
-            multiStoreOptimization.retailers.push(bestRetailer.id);
-            multiStoreOptimization.itemsByRetailer[bestRetailer.id] = {
-              retailerName: bestRetailer.name,
-              items: [],
-              subtotal: 0
-            };
-          }
-
-          // Add item to this retailer's list
-          const totalPrice = bestPrice * item.quantity;
-          multiStoreOptimization.itemsByRetailer[bestRetailer.id].items.push({
-            id: item.id,
-            productName: item.productName,
-            quantity: item.quantity,
-            price: bestPrice,
-            totalPrice
-          });
-
-          multiStoreOptimization.itemsByRetailer[bestRetailer.id].subtotal += totalPrice;
-          multiStoreOptimization.totalCost += totalPrice;
-        }
-      });
-
-      // Calculate savings (demo)
-      multiStoreOptimization.totalSavings = Math.floor(multiStoreOptimization.totalCost * 0.15);
-
-      return {
-        multiStore: multiStoreOptimization
-      };
-    } catch (error) {
-      console.error('Error calculating shopping list costs:', error);
+      console.error("Error getting shopping list items:", error);
       throw error;
     }
   }
@@ -1799,7 +1715,7 @@ const [updatedUser] = await this.db
     }
 
     try {
-      const [item] = await this.db.insert(shoppingListItems).values({
+      const [item] = await db.insert(shoppingListItems).values({
         ...itemData,
         quantity,
         isCompleted: false,
@@ -1834,7 +1750,7 @@ const [updatedUser] = await this.db
     }
 
     try {
-    const [updatedItem] = await this.db
+    const [updatedItem] = await db
       .update(shoppingListItems)
       .set(processedUpdates)
       .where(eq(shoppingListItems.id, id))
@@ -1853,7 +1769,7 @@ const [updatedUser] = await this.db
 
   async deleteShoppingListItem(id: number): Promise<void> {
     try {
-      await this.db.delete(shoppingListItems).where(eq(shoppingListItems.id, id));
+      await db.delete(shoppingListItems).where(eq(shoppingListItems.id, id));
     } catch (error) {
       console.error("Error deleting shopping list item:", error);
       throw error;
@@ -1863,7 +1779,7 @@ const [updatedUser] = await this.db
   // Deal methods
   async getDeals(retailerId?: number, category?: string): Promise<StoreDeal[]> {
     try {
-      let query = this.db.select().from(storeDeals);
+      let query = db.select().from(storeDeals);
 
       // Filter out expired deals
       const now = new Date();
@@ -1944,7 +1860,7 @@ const [updatedUser] = await this.db
     endDate: Date;
   }): Promise<StoreDeal> {
     try {
-      const [deal] = await this.db.insert(storeDeals).values(dealData).returning();
+      const [deal] = await db.insert(storeDeals).values(dealData).returning();
       return deal;
     } catch (error) {
       console.error("Error creating deal:", error);
@@ -1954,7 +1870,7 @@ const [updatedUser] = await this.db
 
   async getWeeklyCirculars(retailerId?: number): Promise<WeeklyCircular[]> {
     try {
-      let query = this.db.select().from(weeklyCirculars);
+      let query = db.select().from(weeklyCirculars);
 
       if (retailerId) {
         query = query.where(eq(weeklyCirculars.retailerId, retailerId));
@@ -1977,7 +1893,7 @@ const [updatedUser] = await this.db
 
   async getWeeklyCircular(id: number): Promise<WeeklyCircular | undefined> {
     try {
-      const [circular] = await this.db.select().from(weeklyCirculars).where(eq(weeklyCirculars.id, id));
+      const [circular] = await db.select().from(weeklyCirculars).where(eq(weeklyCirculars.id, id));
       return circular;
     } catch (error) {
       console.error("Error getting weekly circular:", error);
@@ -1987,7 +1903,7 @@ const [updatedUser] = await this.db
 
   async createWeeklyCircular(circularData: InsertWeeklyCircular): Promise<WeeklyCircular> {
     try {
-      const [circular] = await this.db.insert(weeklyCirculars).values(circularData).returning();
+      const [circular] = await db.insert(weeklyCirculars).values(circularData).returning();
       return circular;
     } catch (error) {
       console.error("Error creating weekly circular:", error);
@@ -1997,7 +1913,7 @@ const [updatedUser] = await this.db
 
   async getDealsFromCircular(circularId: number): Promise<StoreDeal[]> {
     try {
-      return this.db.select().from(storeDeals).where(eq(storeDeals.circularId, circularId));
+      return db.select().from(storeDeals).where(eq(storeDeals.circularId, circularId));
     } catch (error) {
       console.error("Error getting deals from circular:", error);
       throw error;
@@ -2010,7 +1926,7 @@ const [updatedUser] = await this.db
       // Get default user
       const user = await this.getDefaultUser();
 
-      const result = await this.db
+      const result = await db
         .select()
         .from(recommendations)
         .where(eq(recommendations.userId, user.id));
@@ -2055,7 +1971,7 @@ const [updatedUser] = await this.db
           reason: "You're almost out based on purchase history"
         });
 
-        return this.db
+        return db
           .select()
           .from(recommendations)
           .where(eq(recommendations.userId, user.id));
@@ -2070,7 +1986,7 @@ const [updatedUser] = await this.db
 
   async createRecommendation(recommendationData: InsertRecommendation): Promise<Recommendation> {
     try {
-      const [recommendation] = await this.db
+      const [recommendation] = await db
         .insert(recommendations)
         .values(recommendationData)
         .returning();
@@ -2129,7 +2045,7 @@ const [updatedUser] = await this.db
 
     try {
       // Delete expired circulars
-      const expiredCirculars = await this.db
+      const expiredCirculars = await db
         .select()
         .from(weeklyCirculars)
         .where(
@@ -2141,7 +2057,7 @@ const [updatedUser] = await this.db
 
       if (expiredCirculars.length > 0) {
         // Mark them as inactive instead of deleting (for audit trail)
-        await this.db
+        await db
           .update(weeklyCirculars)
           .set({ isActive: false })
           .where(
@@ -2152,7 +2068,7 @@ const [updatedUser] = await this.db
           );
 
         // Also cleanup related expired deals
-        await this.db
+        await db
           .delete(storeDeals)
           .where(lt(storeDeals.endDate, now));
       }
@@ -2168,7 +2084,7 @@ const [updatedUser] = await this.db
   // Purchase Anomaly methods
   async getPurchaseAnomalies(): Promise<PurchaseAnomaly[]> {
     try {
-      const anomalies = await this.db.select().from(purchaseAnomalies);
+      const anomalies = await db.select().from(purchaseAnomalies);
       return anomalies;
     } catch (error) {
       console.error("Error getting purchase anomalies:", error);
@@ -2178,7 +2094,7 @@ const [updatedUser] = await this.db
 
   async getPurchaseAnomaly(id: number): Promise<PurchaseAnomaly | undefined> {
     try {
-      const [anomaly] = await this.db
+      const [anomaly] = await db
         .select()
         .from(purchaseAnomalies)
         .where(eq(purchaseAnomalies.id, id));
@@ -2191,7 +2107,7 @@ const [updatedUser] = await this.db
 
   async createPurchaseAnomaly(anomalyData: InsertPurchaseAnomaly): Promise<PurchaseAnomaly> {
     try {
-      const [anomaly] = await this.db
+      const [anomaly] = await db
         .insert(purchaseAnomalies)
         .values(anomalyData)
         .returning();
@@ -2204,7 +2120,7 @@ const [updatedUser] = await this.db
 
   async updatePurchaseAnomaly(id: number, updates: Partial<PurchaseAnomaly>): Promise<PurchaseAnomaly> {
     try {
-      const [updatedAnomaly] = await this.db
+      const [updatedAnomaly] = await db
         .update(purchaseAnomalies)
         .set(updates)
         .where(eq(purchaseAnomalies.id, id))
@@ -2223,7 +2139,7 @@ const [updatedUser] = await this.db
 
   async deletePurchaseAnomaly(id: number): Promise<void> {
     try {
-      await this.db
+      await db
         .delete(purchaseAnomalies)
         .where(eq(purchaseAnomalies.id, id));
     } catch (error) {
@@ -2235,7 +2151,7 @@ const [updatedUser] = await this.db
   // Affiliate Partner methods
   async getAffiliatePartners(): Promise<AffiliatePartner[]> {
     try {
-      return this.db.select().from(affiliatePartners);
+      return db.select().from(affiliatePartners);
     } catch (error) {
       console.error("Error getting affiliate partners:", error);
       throw error;
@@ -2244,7 +2160,7 @@ const [updatedUser] = await this.db
 
   async getAffiliatePartner(id: number): Promise<AffiliatePartner | undefined> {
     try {
-      const [partner] = await this.db.select().from(affiliatePartners).where(eq(affiliatePartners.id, id));
+      const [partner] = await db.select().from(affiliatePartners).where(eq(affiliatePartners.id, id));
       return partner || undefined;
     } catch (error) {
       console.error("Error getting affiliate partner:", error);
@@ -2254,7 +2170,7 @@ const [updatedUser] = await this.db
 
   async createAffiliatePartner(partnerData: InsertAffiliatePartner): Promise<AffiliatePartner> {
     try {
-      const [partner] = await this.db.insert(affiliatePartners).values(partnerData).returning();
+      const [partner] = await db.insert(affiliatePartners).values(partnerData).returning();
       return partner;
     } catch (error) {
       console.error("Error creating affiliate partner:", error);
@@ -2264,7 +2180,7 @@ const [updatedUser] = await this.db
 
   async updateAffiliatePartner(id: number, updates: Partial<AffiliatePartner>): Promise<AffiliatePartner> {
     try {
-      const [partner] = await this.db
+      const [partner] = await db
         .update(affiliatePartners)
         .set(updates)
         .where(eq(affiliatePartners.id, id))
@@ -2279,7 +2195,7 @@ const [updatedUser] = await this.db
 
   async deleteAffiliatePartner(id: number): Promise<void> {
     try {
-      await this.db.delete(affiliatePartners).where(eq(affiliatePartners.id, id));
+      await db.delete(affiliatePartners).where(eq(affiliatePartners.id, id));
     } catch (error) {
       console.error("Error deleting affiliate partner:", error);
       throw error;
@@ -2289,7 +2205,7 @@ const [updatedUser] = await this.db
   // Affiliate Product methods
   async getAffiliateProducts(partnerId?: number, category?: string): Promise<AffiliateProduct[]> {
     try {
-      let query = this.db.select().from(affiliateProducts);
+      let query = db.select().from(affiliateProducts);
 
       if (partnerId) {
         query = query.where(eq(affiliateProducts.partnerId, partnerId));
@@ -2308,7 +2224,7 @@ const [updatedUser] = await this.db
 
   async getAffiliateProduct(id: number): Promise<AffiliateProduct | undefined> {
     try {
-      const [product] = await this.db.select().from(affiliateProducts).where(eq(affiliateProducts.id, id));
+      const [product] = await db.select().from(affiliateProducts).where(eq(affiliateProducts.id, id));
       return product || undefined;
     } catch (error) {
       console.error("Error getting affiliate product:", error);
@@ -2318,7 +2234,7 @@ const [updatedUser] = await this.db
 
   async getFeaturedAffiliateProducts(): Promise<AffiliateProduct[]> {
     try {
-      return this.db.select().from(affiliateProducts).where(eq(affiliateProducts.isFeatured, true));
+      return db.select().from(affiliateProducts).where(eq(affiliateProducts.isFeatured, true));
     } catch (error) {
       console.error("Error getting featured affiliate products:", error);
       throw error;
@@ -2327,7 +2243,7 @@ const [updatedUser] = await this.db
 
   async createAffiliateProduct(productData: InsertAffiliateProduct): Promise<AffiliateProduct> {
     try {
-      const [product] = await this.db.insert(affiliateProducts).values(productData).returning();
+      const [product] = await db.insert(affiliateProducts).values(productData).returning();
       return product;
     } catch (error) {
       console.error("Error creating affiliate product:", error);
@@ -2337,7 +2253,7 @@ const [updatedUser] = await this.db
 
   async updateAffiliateProduct(id: number, updates: Partial<AffiliateProduct>): Promise<AffiliateProduct> {
     try {
-      const [product] = await this.db
+      const [product] = await db
         .update(affiliateProducts)
         .set(updates)
         .where(eq(affiliateProducts.id, id))
@@ -2352,7 +2268,7 @@ const [updatedUser] = await this.db
 
   async deleteAffiliateProduct(id: number): Promise<void> {
     try {
-      await this.db.delete(affiliateProducts).where(eq(affiliateProducts.id, id));
+      await db.delete(affiliateProducts).where(eq(affiliateProducts.id, id));
     } catch (error) {
       console.error("Error deleting affiliate product:", error);
       throw error;
@@ -2362,7 +2278,7 @@ const [updatedUser] = await this.db
   // Affiliate Click methods
   async recordAffiliateClick(clickData: InsertAffiliateClick): Promise<AffiliateClick> {
     try {
-      const [click] = await this.db.insert(affiliateClicks).values(clickData).returning();
+      const [click] = await db.insert(affiliateClicks).values(clickData).returning();
       return click;
     } catch (error) {
       console.error("Error recording affiliate click:", error);
@@ -2372,7 +2288,7 @@ const [updatedUser] = await this.db
 
   async getAffiliateClicks(userId?: number, productId?: number): Promise<AffiliateClick[]> {
     try {
-      let query = this.db.select().from(affiliateClicks);
+      let query = db.select().from(affiliateClicks);
 
       if (userId) {
         query = query.where(eq(affiliateClicks.userId, userId));
@@ -2392,7 +2308,7 @@ const [updatedUser] = await this.db
   // Affiliate Conversion methods
   async recordAffiliateConversion(conversionData: InsertAffiliateConversion): Promise<AffiliateConversion> {
     try {
-      const [conversion] = await this.db.insert(affiliateConversions).values(conversionData).returning();
+      const [conversion] = await db.insert(affiliateConversions).values(conversionData).returning();
       return conversion;
     } catch (error) {
       console.error("Error recording affiliate conversion:", error);
@@ -2402,7 +2318,7 @@ const [updatedUser] = await this.db
 
   async getAffiliateConversions(userId?: number, status?: string): Promise<AffiliateConversion[]> {
     try {
-      let query = this.db.select().from(affiliateConversions);
+      let query = db.select().from(affiliateConversions);
 
       if (userId) {
         query = query.where(eq(affiliateConversions.userId, userId));
@@ -2421,7 +2337,7 @@ const [updatedUser] = await this.db
 
   async updateAffiliateConversionStatus(id: number, status: string): Promise<AffiliateConversion> {
     try {
-      const [conversion] = await this.db
+      const [conversion] = await db
         .update(affiliateConversions)
         .set({ status })
         .where(eq(affiliateConversions.id, id))
@@ -2434,16 +2350,16 @@ const [updatedUser] = await this.db
     }
   }
   async getShoppingLists() {
-    return this.db.select().from(shoppingLists);
+    return db.select().from(shoppingLists);
   }
 
   async createShoppingList(data: any) {
-    const [newList] = await this.db.insert(shoppingLists).values(data).returning();
+    const [newList] = await db.insert(shoppingLists).values(data).returning();
     return newList;
   }
 
   async updateShoppingList(id: number, data: any) {
-    const [updatedList] = await this.db.update(shoppingLists)
+    const [updatedList] = await db.update(shoppingLists)
       .set(data)
       .where(eq(shoppingLists.id, id))
       .returning();
@@ -2452,13 +2368,13 @@ const [updatedUser] = await this.db
 
   async deleteShoppingList(id: number) {
     // First delete all items in the list
-    await this.db.delete(shoppingListItems).where(eq(shoppingListItems.shoppingListId, id));
+    await db.delete(shoppingListItems).where(eq(shoppingListItems.shoppingListId, id));
     // Then delete the list itself
-    await this.db.delete(shoppingLists).where(eq(shoppingLists.id, id));
+    await db.delete(shoppingLists).where(eq(shoppingLists.id, id));
   }
 
   async authenticateUser(username: string, password: string) {
-    const [user] = await this.db.select()
+    const [user] = await db.select()
       .from(users)
       .where(and(eq(users.username, username), eq(users.password, password)))
       .limit(1);
@@ -2466,7 +2382,7 @@ const [updatedUser] = await this.db
   }
 
   async getUserByUsername(username: string) {
-    const [user] = await this.db.select()
+    const [user] = await db.select()
       .from(users)
       .where(eq(users.username, username))
       .limit(1);
@@ -2474,12 +2390,12 @@ const [updatedUser] = await this.db
   }
 
   async createUser(data: any) {
-    const [newUser] = await this.db.insert(users).values(data).returning();
+    const [newUser] = await db.insert(users).values(data).returning();
     return newUser;
   }
 
   async getPurchases(userId?: number, limit?: number, offset?: number) {
-    let query = this.db.select().from(purchases);
+    let query = db.select().from(purchases);
 
     if (userId) {
       query = query.where(eq(purchases.userId, userId));
@@ -2497,12 +2413,12 @@ const [updatedUser] = await this.db
   }
 
   async createPurchase(data: any) {
-    const [newPurchase] = await this.db.insert(purchases).values(data).returning();
+    const [newPurchase] = await db.insert(purchases).values(data).returning();
     return newPurchase;
   }
 
   async updatePurchase(id: number, data: any) {
-    const [updatedPurchase] = await this.db.update(purchases)
+    const [updatedPurchase] = await db.update(purchases)
       .set(data)
       .where(eq(purchases.id, id))
       .returning();
@@ -2510,11 +2426,11 @@ const [updatedUser] = await this.db
   }
 
   async deletePurchase(id: number) {
-    await this.db.delete(purchases).where(eq(purchases.id, id));
+    await db.delete(purchases).where(eq(purchases.id, id));
   }
 
   async updateRetailerAccount(id: number, data: any) {
-    const [updatedAccount] = await this.db.update(retailerAccounts)
+    const [updatedAccount] = await db.update(retailerAccounts)
       .set(data)
       .where(eq(retailerAccounts.id, id))
       .returning();
@@ -2522,11 +2438,11 @@ const [updatedUser] = await this.db
   }
 
   async deleteRetailerAccount(id: number) {
-    await this.db.delete(retailerAccounts).where(eq(retailerAccounts.id, id));
+    await db.delete(retailerAccounts).where(eq(retailerAccounts.id, id));
   }
 
   async getRetailerAccount(id: number) {
-    const [account] = await this.db.select()
+    const [account] = await db.select()
       .from(retailerAccounts)
       .where(eq(retailerAccounts.id, id))
       .limit(1);
@@ -2545,7 +2461,7 @@ const [updatedUser] = await this.db
   }
 
   async searchDeals(filters: any) {
-    let query = this.db.select().from(storeDeals);
+    let query = db.select().from(storeDeals);
 
     // Apply filters
     if (filters.retailerId) {
@@ -2587,7 +2503,7 @@ const [updatedUser] = await this.db
   }
 
   async searchShoppingLists(query: string, userId: number) {
-    return this.db.select()
+    return db.select()
       .from(shoppingLists)
       .where(
         and(
@@ -2601,7 +2517,7 @@ const [updatedUser] = await this.db
   }
 
   async searchPurchases(filters: any) {
-    let query = this.db.select().from(purchases);
+    let query = db.select().from(purchases);
 
     const conditions = [];
 
