@@ -9,6 +9,7 @@ import BottomNavigation from '@/components/layout/BottomNavigation';
 import ProfileSetup from '@/components/profile/ProfileSetup';
 import RetailerLinking from '@/components/profile/RetailerLinking';
 import PurchaseAnomalies from '@/components/profile/PurchaseAnomalies';
+import ShoppingInsights from '@/components/dashboard/ShoppingInsights';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -135,9 +136,10 @@ const ProfilePage: React.FC = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5 text-xs">
             <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="preferences">Preferences</TabsTrigger>
+            <TabsTrigger value="preferences">Prefs</TabsTrigger>
+            <TabsTrigger value="insights">Insights</TabsTrigger>
             <TabsTrigger value="privacy">Privacy</TabsTrigger>
             <TabsTrigger value="notifications">Alerts</TabsTrigger>
           </TabsList>
@@ -380,6 +382,21 @@ const ProfilePage: React.FC = () => {
                   <AlertTriangle className="w-4 h-4 mr-2" />
                   Delete Account
                 </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="insights" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
+                  Shopping Analytics
+                </CardTitle>
+                <CardDescription>Detailed analysis of your shopping patterns and spending</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ShoppingInsights />
               </CardContent>
             </Card>
           </TabsContent>

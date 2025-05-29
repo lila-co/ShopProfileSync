@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
 import ActionCard from '@/components/dashboard/ActionCard';
-import ShoppingInsights from '@/components/dashboard/ShoppingInsights';
 import WeeklyDeals from '@/components/dashboard/WeeklyDeals';
 import RecommendationCard from '@/components/dashboard/RecommendationCard';
 import ReceiptScanner from '@/components/receipt/ReceiptScanner';
@@ -48,9 +47,6 @@ const Dashboard: React.FC = () => {
               )}
             </div>
           </section>
-
-          {/* Shopping Insights */}
-          <ShoppingInsights />
 
           {/* Shopping Recommendations */}
           <section className="mb-6">
