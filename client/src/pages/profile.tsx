@@ -233,8 +233,9 @@ const ProfilePage: React.FC = () => {
                 </Form>
               </CardContent>
             </Card>
+          </TabsContent>
 
-            <TabsContent value="insights" className="space-y-4">
+          <TabsContent value="insights" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -297,19 +298,6 @@ const ProfilePage: React.FC = () => {
                     ))}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
-                  Shopping Patterns
-                </CardTitle>
-                <CardDescription>Track and analyze your shopping behavior</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ProfileSetup user={user} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -380,21 +368,6 @@ const ProfilePage: React.FC = () => {
                   <AlertTriangle className="w-4 h-4 mr-2" />
                   Delete Account
                 </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="insights" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
-                  Shopping Analytics
-                </CardTitle>
-                <CardDescription>Detailed analysis of your shopping patterns and spending</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ShoppingInsights />
               </CardContent>
             </Card>
           </TabsContent>
