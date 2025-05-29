@@ -2970,48 +2970,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       res.json({ route });
-
-      // Generate retailer locations (in a real app, these would come from the database)
-      const retailersWithLocations = selectedRetailers.map((retailer, index) => {
-        // Generate locations in a radius around user's location
-        const angle = (index / selectedRetailers.length) * 2 * Math.PI;
-        const radius = 0.01 + (Math.random() * 0.02); // 1-3km roughly
-
-        return {
-          id: retailer.id,
-          name: retailer.name,
-          location: {
-            lat: userCoords.lat + (radius * Math.cos(angle)),
-            lng: userCoords.lng + (radius * Math.sin(angle))
-          },
-          address: `${100 + index} Main St, San Francisco, CA 94105`,
-          distance: (radius * 111).toFixed(1) + 'km', // Convert to approximate kilometers
-          estimatedTime: Math.round(radius * 111 * 2) + ' min' // Very rough estimate
-        };
-      });
-
-      // Calculate a simple route (for a real app, use a routing API)
-      const route = {
-        totalDistance: retailersWithLocations.reduce((sum, r) => sum + parseFloat(r.distance), 0),
-        totalTime: retailersWithLocations.reduce((sum, r) => sum + parseInt(r.estimatedTime), 0),
-        waypoints: [
-          {
-            name: 'Your Location',
-            location: userCoords,
-            address: 'Current Location'
-          },
-          ...retailersWithLocations.map(r => ({
-            name: r.name,
-            location: r.location,
-            address: r.address
-          }))
-        ]
-      };
-
-      res.json({
-        retailers: retailersWithLocations,
-        route: route
-      });
     } catch (error) {
       handleError(res, error);
     }
