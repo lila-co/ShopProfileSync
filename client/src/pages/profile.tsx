@@ -226,6 +226,71 @@ const ProfilePage: React.FC = () => {
                       )}
                     />
 
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center">
+                          <Heart className="w-5 h-5 mr-2 text-red-600" />
+                          Shopping Preferences
+                        </CardTitle>
+                        <CardDescription>Customize your shopping experience</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div>
+                          <Label htmlFor="budgetRange">Monthly Budget Range</Label>
+                          <Select value={form.watch('budgetRange')} onValueChange={(value) => form.setValue('budgetRange', value)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select budget range" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="under-200">Under $200</SelectItem>
+                              <SelectItem value="200-400">$200 - $400</SelectItem>
+                              <SelectItem value="400-600">$400 - $600</SelectItem>
+                              <SelectItem value="600-800">$600 - $800</SelectItem>
+                              <SelectItem value="800-plus">$800+</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label htmlFor="shoppingFrequency">Shopping Frequency</Label>
+                          <Select value={form.watch('shoppingFrequency')} onValueChange={(value) => form.setValue('shoppingFrequency', value)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="How often do you shop?" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="daily">Daily</SelectItem>
+                              <SelectItem value="few-times-week">Few times a week</SelectItem>
+                              <SelectItem value="weekly">Weekly</SelectItem>
+                              <SelectItem value="bi-weekly">Bi-weekly</SelectItem>
+                              <SelectItem value="monthly">Monthly</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label>Dietary Preferences</Label>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {['Vegetarian', 'Vegan', 'Gluten-Free', 'Keto', 'Organic', 'Low-Sodium'].map((diet) => (
+                              <Badge
+                                key={diet}
+                                variant={form.watch('dietaryPreferences')?.includes(diet) ? 'default' : 'outline'}
+                                className="cursor-pointer"
+                                onClick={() => {
+                                  const current = form.watch('dietaryPreferences') || [];
+                                  const updated = current.includes(diet)
+                                    ? current.filter(d => d !== diet)
+                                    : [...current, diet];
+                                  form.setValue('dietaryPreferences', updated);
+                                }}
+                              >
+                                {diet}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
                     <Button type="submit" className="w-full" disabled={updateProfileMutation.isPending}>
                       {updateProfileMutation.isPending ? 'Updating...' : 'Update Profile'}
                     </Button>
@@ -233,71 +298,20 @@ const ProfilePage: React.FC = () => {
                 </Form>
               </CardContent>
             </Card>
+
           </TabsContent>
 
           <TabsContent value="insights" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <Heart className="w-5 h-5 mr-2 text-red-600" />
-                  Shopping Preferences
+                  <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
+                  Shopping Patterns
                 </CardTitle>
-                <CardDescription>Customize your shopping experience</CardDescription>
+                <CardDescription>Track and analyze your shopping behavior</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="budgetRange">Monthly Budget Range</Label>
-                  <Select value={form.watch('budgetRange')} onValueChange={(value) => form.setValue('budgetRange', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select budget range" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="under-200">Under $200</SelectItem>
-                      <SelectItem value="200-400">$200 - $400</SelectItem>
-                      <SelectItem value="400-600">$400 - $600</SelectItem>
-                      <SelectItem value="600-800">$600 - $800</SelectItem>
-                      <SelectItem value="800-plus">$800+</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="shoppingFrequency">Shopping Frequency</Label>
-                  <Select value={form.watch('shoppingFrequency')} onValueChange={(value) => form.setValue('shoppingFrequency', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="How often do you shop?" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="daily">Daily</SelectItem>
-                      <SelectItem value="few-times-week">Few times a week</SelectItem>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="bi-weekly">Bi-weekly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label>Dietary Preferences</Label>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {['Vegetarian', 'Vegan', 'Gluten-Free', 'Keto', 'Organic', 'Low-Sodium'].map((diet) => (
-                      <Badge
-                        key={diet}
-                        variant={form.watch('dietaryPreferences')?.includes(diet) ? 'default' : 'outline'}
-                        className="cursor-pointer"
-                        onClick={() => {
-                          const current = form.watch('dietaryPreferences') || [];
-                          const updated = current.includes(diet)
-                            ? current.filter(d => d !== diet)
-                            : [...current, diet];
-                          form.setValue('dietaryPreferences', updated);
-                        }}
-                      >
-                        {diet}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
+              <CardContent>
+                <ProfileSetup />
               </CardContent>
             </Card>
           </TabsContent>
