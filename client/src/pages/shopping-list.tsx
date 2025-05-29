@@ -1771,7 +1771,7 @@ const ShoppingListPage: React.FC = () => {
                         <Button 
                           className="w-full h-auto p-4 flex flex-col items-center space-y-2"
                           onClick={() => {
-                            navigate('/shopping-route?listId=' + selectedList.id + '&mode=online');
+                            navigate('/shop?listId=' + selectedList?.id + '&mode=online');
                           }}
                         >
                           <ShoppingCart className="h-6 w-6" />
@@ -1785,7 +1785,7 @@ const ShoppingListPage: React.FC = () => {
                           variant="outline"
                           className="w-full h-auto p-4 flex flex-col items-center space-y-2"
                           onClick={() => {
-                            navigate('/shopping-route?listId=' + selectedList.id + '&mode=delivery');
+                            navigate('/shop?listId=' + selectedList?.id + '&mode=pickup');
                           }}
                         >
                           <StoreIcon className="h-6 w-6" />
