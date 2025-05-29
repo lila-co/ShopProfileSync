@@ -185,8 +185,13 @@ const Shop: React.FC = () => {
         });
         
         const result = await response.json();
-        setShoppingRoute(result.route);
-        return { mode: 'instore', route: result.route };
+        // Ensure retailer name is included in the route
+        const routeWithRetailer = {
+          ...result.route,
+          retailer: selectedRetailerInfo?.retailerName || retailers?.find(r => r.id === selectedRetailer)?.name || 'Store'
+        };
+        setShoppingRoute(routeWithRetailer);
+        return { mode: 'instore', route: routeWithRetailer };
       } 
       // For online ordering (pickup or delivery)
       else {
@@ -223,7 +228,13 @@ const Shop: React.FC = () => {
         
         const orderResult = await orderResponse.json();
         
-        return { mode: shoppingMode, order: orderResult };
+        // Ensure retailer name is included in the order result
+        const orderWithRetailer = {
+          ...orderResult,
+          retailer: selectedRetailerInfo?.retailerName || retailers?.find(r => r.id === selectedRetailer)?.name || 'Store'
+        };
+        
+        return { mode: shoppingMode, order: orderWithRetailer };
       }
     },
     onSuccess: (data) => {

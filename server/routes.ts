@@ -2902,22 +2902,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get optimized shopping route
   app.post('/api/shopping-route', async (req: Request, res: Response) => {
     try {
-      const { retailerIds, userLocation } = req.body;
+      const { listId, retailerId } = req.body;
 
-      if (!retailerIds || !retailerIds.length) {
-        return res.status(400).json({ message: 'At least one retailer ID is required' });
+      if (!retailerId) {
+        return res.status(400).json({ message: 'Retailer ID is required' });
       }
 
       // Get retailers
       const retailers = await storage.getRetailers();
-      const selectedRetailers = retailers.filter(r => retailerIds.includes(r.id));
+      const selectedRetailer = retailers.find(r => r.id === retailerId);
 
-      if (selectedRetailers.length === 0) {
-        return res.status(404).json({ message: 'No matching retailers found' });
+      if (!selectedRetailer) {
+        return res.status(404).json({ message: 'Retailer not found' });
       }
 
-      // For demo purposes, generate mock coordinates near the user location
-      const userCoords = userLocation || { lat: 37.7749, lng: -122.4194 }; // Default to San Francisco
+      // Get shopping list items
+      const items = await storage.getShoppingListItems(listId || 1);
+
+      // Generate shopping route organized by store sections/aisles
+      const aisles = [
+        {
+          name: "Produce",
+          items: items.filter(item => 
+            ['banana', 'apple', 'lettuce', 'carrot', 'tomato', 'onion'].some(produce => 
+              item.productName.toLowerCase().includes(produce)
+            )
+          )
+        },
+        {
+          name: "Dairy",
+          items: items.filter(item => 
+            ['milk', 'cheese', 'yogurt', 'butter', 'cream', 'eggs'].some(dairy => 
+              item.productName.toLowerCase().includes(dairy)
+            )
+          )
+        },
+        {
+          name: "Meat & Seafood",
+          items: items.filter(item => 
+            ['chicken', 'beef', 'pork', 'fish', 'turkey', 'ham'].some(meat => 
+              item.productName.toLowerCase().includes(meat)
+            )
+          )
+        },
+        {
+          name: "Bakery",
+          items: items.filter(item => 
+            ['bread', 'bagel', 'muffin', 'cake', 'pastry'].some(bakery => 
+              item.productName.toLowerCase().includes(bakery)
+            )
+          )
+        }
+      ].filter(aisle => aisle.items.length > 0);
+
+      // Items that don't fit in specific aisles
+      const categorizedItems = aisles.flatMap(aisle => aisle.items.map(item => item.id));
+      const otherItems = items.filter(item => !categorizedItems.includes(item.id));
+
+      const route = {
+        retailer: selectedRetailer.name,
+        estimatedTime: `${Math.max(20, items.length * 2)} minutes`,
+        aisles: aisles,
+        other: otherItems.length > 0 ? {
+          name: "General Merchandise",
+          items: otherItems
+        } : null
+      };
+
+      res.json({ route });
 
       // Generate retailer locations (in a real app, these would come from the database)
       const retailersWithLocations = selectedRetailers.map((retailer, index) => {
