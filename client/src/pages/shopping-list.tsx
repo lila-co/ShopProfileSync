@@ -1565,7 +1565,9 @@ const ShoppingListPage: React.FC = () => {
                               <StoreIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                             </div>
                             <div>
-                              <h4 className="font-medium text-base sm:text-lg">Kroger</h4>
+                              <h4 className="font-medium text-base sm:text-lg">
+                                {singleStoreOptimization.data?.retailerName || "Loading..."}
+                              </h4>
                               <p className="text-xs sm:text-sm text-gray-500">
                                 {singleStoreOptimization.data ? 
                                   `${singleStoreOptimization.data.availableItems || items.length} out of ${items.length} items • $${(singleStoreOptimization.data.totalCost / 100).toFixed(2)} total` :
@@ -1596,7 +1598,7 @@ const ShoppingListPage: React.FC = () => {
                                 onClick={() => handleViewShoppingPlan({
                                   ...singleStoreOptimization.data,
                                   planType: "Single Store"
-                                }, "Single Store - Kroger")}
+                                }, `Single Store - ${singleStoreOptimization.data?.retailerName || "Loading..."}`)}
                               >
                                 <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                                 View Full Shopping Plan
@@ -1703,7 +1705,9 @@ const ShoppingListPage: React.FC = () => {
                               <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600" />
                             </div>
                             <div>
-                              <h4 className="font-medium text-base sm:text-lg">Target</h4>
+                              <h4 className="font-medium text-base sm:text-lg">
+                                {balancedOptimization.data?.stores?.[0]?.retailerName || "Loading..."}
+                              </h4>
                               <p className="text-xs sm:text-sm text-gray-500">
                                 {balancedOptimization.data ? 
                                   `${balancedOptimization.data.stores?.[0]?.items?.length || items.length} out of ${items.length} items • $${(balancedOptimization.data.totalCost / 100).toFixed(2)} total` :
@@ -1734,7 +1738,7 @@ const ShoppingListPage: React.FC = () => {
                                 onClick={() => handleViewShoppingPlan({
                                   ...balancedOptimization.data,
                                   planType: "Balanced"
-                                }, "Balanced - Target")}
+                                }, `Balanced - ${balancedOptimization.data?.stores?.[0]?.retailerName || "Loading..."}`)}
                               >
                                 <BarChart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                                 View Full Shopping Plan
