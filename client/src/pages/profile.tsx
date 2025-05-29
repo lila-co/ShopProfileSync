@@ -136,9 +136,8 @@ const ProfilePage: React.FC = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5 text-xs">
+          <TabsList className="grid w-full grid-cols-4 text-xs">
             <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="preferences">Prefs</TabsTrigger>
             <TabsTrigger value="insights">Insights</TabsTrigger>
             <TabsTrigger value="privacy">Privacy</TabsTrigger>
             <TabsTrigger value="notifications">Alerts</TabsTrigger>
@@ -234,9 +233,8 @@ const ProfilePage: React.FC = () => {
                 </Form>
               </CardContent>
             </Card>
-          </TabsContent>
 
-          <TabsContent value="preferences" className="space-y-4">
+            <TabsContent value="insights" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
