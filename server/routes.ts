@@ -2443,7 +2443,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         storeCount: 1,
         missingItems: bestOption.storeItems.filter(item => !item.isAvailable).length,
         estimatedTime: 35, // Single store is faster
-        dealCount: bestOption.dealCount
+        dealCount: bestOption.dealCount,
+        stores: [{
+          retailerId: bestOption.retailer.id,
+          retailerName: bestOption.retailer.name,
+          items: bestOption.storeItems,
+          subtotal: bestOption.totalCost,
+          address: `123 Main St, San Francisco, CA 94105`
+        }]
       });
     } catch (error) {
       handleError(res, error);

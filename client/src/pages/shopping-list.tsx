@@ -1922,7 +1922,13 @@ const ShoppingListPage: React.FC = () => {
                               className="w-full"
                               onClick={() => {
                                 handleViewShoppingPlan({
-                                  stores: [store],
+                                  stores: store.stores || [{
+                                    retailerId: store.retailerId,
+                                    retailerName: store.retailerName,
+                                    items: store.items,
+                                    subtotal: store.totalCost,
+                                    address: store.address
+                                  }],
                                   totalCost: store.totalCost,
                                   savings: store.savings || 0
                                 }, `In-Store Plan - ${store.retailerName}`);
