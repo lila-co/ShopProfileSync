@@ -302,18 +302,7 @@ const ProfilePage: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="insights" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
-                  Shopping Patterns
-                </CardTitle>
-                <CardDescription>Track and analyze your shopping behavior</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ProfileSetup />
-              </CardContent>
-            </Card>
+            <ShoppingInsights />
           </TabsContent>
 
           <TabsContent value="privacy" className="space-y-4">
