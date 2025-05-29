@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 
@@ -40,10 +40,14 @@ interface OptimizedOrder {
 
 const AutoOrder: React.FC = () => {
   const { toast } = useToast();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [location] = useLocation();
+  const searchParams = new URLSearchParams(location.split('?')[1] || '');
   const listId = searchParams.get('listId');
   const mode = searchParams.get('mode') || 'online';
+  
+  const navigate = (path: string) => {
+    window.location.href = path;
+  };
   
   const [currentStep, setCurrentStep] = useState(0);
   const [orderResults, setOrderResults] = useState<OptimizedOrder | null>(null);
