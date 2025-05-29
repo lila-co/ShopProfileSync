@@ -299,6 +299,19 @@ const ProfilePage: React.FC = () => {
               </CardContent>
             </Card>
 
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
+                  Household & Shopping Patterns
+                </CardTitle>
+                <CardDescription>Configure your household details and shopping preferences</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ProfileSetup />
+              </CardContent>
+            </Card>
+
           </TabsContent>
 
           <TabsContent value="insights" className="space-y-4">
