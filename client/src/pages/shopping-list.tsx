@@ -113,7 +113,7 @@ const ShoppingListPage: React.FC = () => {
     onSuccess: (data) => {
       // Get items from the preview response
       const items = data.items || [];
-
+      
       // If no items were returned, create sample suggestions
       const itemsToShow = items.length > 0 ? items : [
         { productName: 'Milk', quantity: 1, unit: 'GALLON', reason: 'Purchased weekly', isSelected: true },
@@ -174,7 +174,7 @@ const ShoppingListPage: React.FC = () => {
       if (!defaultList) throw new Error("No shopping list found");
 
       const selectedItemsToAdd = generatedItems.filter(item => item.isSelected);
-
+      
       if (selectedItemsToAdd.length === 0) {
         throw new Error("No items selected to add");
       }
@@ -526,7 +526,7 @@ const ShoppingListPage: React.FC = () => {
             ...item.normalized,
             originalQuantity: Math.max(1, Math.round(Number(item.normalized.originalQuantity) || 1)),
             suggestedQuantity: Math.max(1, Math.round(Number(item.normalized.suggestedQuantity) || 1)),
-            normalizedQuantity: Math.max(1, Math.round(Number(item.normalizedQuantity) || 1))
+            normalizedQuantity: Math.max(1, Math.round(Number(item.normalized.normalizedQuantity) || 1))
           }
         }));
 
@@ -893,7 +893,8 @@ const ShoppingListPage: React.FC = () => {
     // Process stores to add aisle organization
     const optimizedPlan = { ...plan };
 
-    if (optimizedPlan.stores) {      optimizedPlan.stores = optimizedPlan.stores.map((store: any) => {
+    if (optimizedPlan.stores) {
+      optimizedPlan.stores = optimizedPlan.stores.map((store: any) => {
         // Group items by aisle
         const aisleGroups: { [key: string]: any } = {};
 
@@ -1767,18 +1768,17 @@ const ShoppingListPage: React.FC = () => {
                     <div className="border-t pt-4 mt-4">
                       <h4 className="font-medium text-sm sm:text-base mb-3">Ready to Shop?</h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        
-<Button 
+                        <Button 
                           className="w-full h-auto p-4 flex flex-col items-center space-y-2"
                           onClick={() => {
-                            navigate('/auto-order?listId=' + selectedList?.id + '&mode=online');
+                            navigate('/shop?listId=' + selectedList?.id + '&mode=online');
                           }}
                         >
                           <ShoppingCart className="h-6 w-6" />
-                          <span className="text-sm font-medium">Shop Online</span>
-                          <span className="text-xs text-gray-500 text-center">
-                            Auto-order with best deals
-                          </span>
+                          <div className="text-center">
+                            <div className="font-medium">Shop Online</div>
+                            <div className="text-xs text-white/80">Browse and compare prices</div>
+                          </div>
                         </Button>
 
                         <Button 
