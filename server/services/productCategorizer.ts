@@ -1,4 +1,3 @@
-
 export interface ProductCategory {
   category: string;
   subcategory?: string;
@@ -53,7 +52,7 @@ export class ProductCategorizerService {
         typicalRetailNames: ['Fresh Tomatoes', 'Vine Ripened Tomatoes', 'Roma Tomatoes', 'Cherry Tomatoes'],
         brandVariations: ['Organic', 'Greenhouse', 'Vine Ripened', 'Cherry']
       },
-      
+
       // Dairy & Eggs
       {
         category: 'Dairy & Eggs',
@@ -75,7 +74,19 @@ export class ProductCategorizerService {
         typicalRetailNames: ['Large Grade A Eggs', 'Extra Large Eggs', 'Organic Brown Eggs'],
         brandVariations: ['Great Value', 'Eggland\'s Best', 'Organic Valley', 'Cage Free']
       },
-      
+
+      // Beverages - Sparkling Water
+      {
+        category: 'Pantry & Canned Goods',
+        subcategory: 'Beverages',
+        aisle: 'Aisle 4-6',
+        section: 'Beverage Aisle',
+        confidence: 0.95,
+        suggestedQuantityType: 'CAN',
+        typicalRetailNames: ['Sparkling Water', 'Carbonated Water', 'Flavored Sparkling Water', 'Mineral Water'],
+        brandVariations: ['LaCroix', 'Perrier', 'San Pellegrino', 'Bubly', 'Poland Spring']
+      },
+
       // Meat & Seafood
       {
         category: 'Meat & Seafood',
@@ -87,7 +98,7 @@ export class ProductCategorizerService {
         typicalRetailNames: ['Ground Beef 80/20', 'Ground Turkey', 'Ground Chicken', 'Lean Ground Beef', 'Ground Beef'],
         brandVariations: ['Fresh', 'Organic', 'Grass Fed', 'Antibiotic Free']
       },
-      
+
       // Pantry & Canned Goods
       {
         category: 'Pantry & Canned Goods',
@@ -99,7 +110,7 @@ export class ProductCategorizerService {
         typicalRetailNames: ['Canned Tomatoes', 'Diced Tomatoes', 'Tomato Sauce', 'Crushed Tomatoes'],
         brandVariations: ['Hunt\'s', 'Del Monte', 'Muir Glen', 'Great Value']
       },
-      
+
       // Frozen Foods
       {
         category: 'Frozen Foods',
@@ -111,7 +122,7 @@ export class ProductCategorizerService {
         typicalRetailNames: ['Frozen Vegetables', 'Frozen Mixed Vegetables', 'Frozen Broccoli'],
         brandVariations: ['Birds Eye', 'Green Giant', 'Great Value', 'Organic']
       },
-      
+
       // Bakery
       {
         category: 'Bakery',
@@ -123,7 +134,7 @@ export class ProductCategorizerService {
         typicalRetailNames: ['White Bread', 'Whole Wheat Bread', 'Sourdough Bread', 'Artisan Bread'],
         brandVariations: ['Wonder', 'Pepperidge Farm', 'Sara Lee', 'Dave\'s Killer Bread']
       },
-      
+
       // Personal Care
       {
         category: 'Personal Care',
@@ -135,7 +146,7 @@ export class ProductCategorizerService {
         typicalRetailNames: ['Body Wash', 'Shampoo', 'Conditioner', 'Bar Soap'],
         brandVariations: ['Dove', 'Olay', 'Head & Shoulders', 'Pantene']
       },
-      
+
       // Household Items
       {
         category: 'Household Items',
@@ -154,7 +165,7 @@ export class ProductCategorizerService {
         this.productDatabase.set(name.toLowerCase(), category);
       });
     });
-    
+
     // Add specific entries for common ground products to prevent conflicts
     const groundMeatCategory = categories.find(c => c.subcategory === 'Ground Meat');
     if (groundMeatCategory) {
@@ -210,6 +221,11 @@ export class ProductCategorizerService {
       /\b(cleaner|detergent|soap|towel|tissue|trash|garbage)\w*\b/i,
       /\b(cleaning|laundry|kitchen|bathroom)\b.*\b(supplies|products)\b/i
     ]);
+
+    this.categoryPatterns.set('beverage', [
+      // Beverages (non-dairy)
+      /\b(coffee|tea|soda|juice|water|sports\s*drink|energy\s*drink|sparkling\s*water|carbonated\s*water|mineral\s*water|flavored\s*water)\w*/i
+    ]);
   }
 
   private initializeRetailNaming() {
@@ -243,28 +259,28 @@ export class ProductCategorizerService {
       { items: ['ground chicken', 'ground coffee'], categories: ['meat', 'beverage'] },
       // Other potential conflicts can be added here
     ];
-    
+
     for (const conflict of conflicts) {
       const containsFirst = conflict.items.some(item => name1.includes(item.split(' ')[1]) && name1.includes('ground'));
       const containsSecond = conflict.items.some(item => name2.includes(item.split(' ')[1]) && name2.includes('ground'));
-      
+
       if (containsFirst && containsSecond) {
         // Check if they belong to different categories
         const name1Category = this.getCategoryForConflictCheck(name1);
         const name2Category = this.getCategoryForConflictCheck(name2);
-        
+
         if (name1Category !== name2Category) {
           return true; // This is a semantic conflict
         }
       }
     }
-    
+
     return false;
   }
-  
+
   private getCategoryForConflictCheck(productName: string): string {
     const name = productName.toLowerCase();
-    
+
     if (name.includes('beef') || name.includes('chicken') || name.includes('turkey') || name.includes('pork') || name.includes('meat')) {
       return 'meat';
     } else if (name.includes('coffee') || name.includes('tea') || name.includes('beverage')) {
@@ -272,22 +288,22 @@ export class ProductCategorizerService {
     } else if (name.includes('milk') || name.includes('cheese') || name.includes('yogurt') || name.includes('dairy')) {
       return 'dairy';
     }
-    
+
     return 'other';
   }
 
   // Fuzzy string matching using Levenshtein distance
   private calculateSimilarity(str1: string, str2: string): number {
     const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
-    
+
     for (let i = 0; i <= str1.length; i += 1) {
       matrix[0][i] = i;
     }
-    
+
     for (let j = 0; j <= str2.length; j += 1) {
       matrix[j][0] = j;
     }
-    
+
     for (let j = 1; j <= str2.length; j += 1) {
       for (let i = 1; i <= str1.length; i += 1) {
         const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
@@ -298,7 +314,7 @@ export class ProductCategorizerService {
         );
       }
     }
-    
+
     const maxLength = Math.max(str1.length, str2.length);
     return maxLength === 0 ? 1 : (maxLength - matrix[str2.length][str1.length]) / maxLength;
   }
@@ -306,16 +322,16 @@ export class ProductCategorizerService {
   // Categorize product using fuzzy logic
   public categorizeProduct(productName: string): ProductCategory {
     const normalizedName = productName.toLowerCase().trim();
-    
+
     // Direct database lookup first
     let bestMatch = this.productDatabase.get(normalizedName);
     let bestSimilarity = 0;
-    
+
     // Fuzzy matching against database with semantic checks
     if (!bestMatch) {
       for (const [dbName, category] of this.productDatabase) {
         const similarity = this.calculateSimilarity(normalizedName, dbName);
-        
+
         // Add semantic validation to prevent false matches
         if (similarity > bestSimilarity && similarity > 0.7) {
           // Check for semantic conflicts (e.g., ground beef vs ground coffee)
@@ -327,12 +343,12 @@ export class ProductCategorizerService {
         }
       }
     }
-    
+
     // Pattern matching if no direct match
     if (!bestMatch || bestSimilarity < 0.8) {
       let maxPatternScore = 0;
       let patternCategory = '';
-      
+
       for (const [category, patterns] of this.categoryPatterns) {
         let score = 0;
         for (const pattern of patterns) {
@@ -340,18 +356,18 @@ export class ProductCategorizerService {
             score += 1;
           }
         }
-        
+
         if (score > maxPatternScore) {
           maxPatternScore = score;
           patternCategory = category;
         }
       }
-      
+
       if (maxPatternScore > 0) {
         bestMatch = this.getCategoryDefaults(patternCategory);
       }
     }
-    
+
     // Default fallback
     if (!bestMatch) {
       bestMatch = {
@@ -365,9 +381,9 @@ export class ProductCategorizerService {
         brandVariations: ['Generic', 'Store Brand']
       };
     }
-    
+
     const productNormalizedName = this.normalizeProductName(productName);
-    
+
     const finalCategory = {
       ...bestMatch,
       confidence: Math.max(bestSimilarity, bestMatch.confidence * 0.8),
@@ -375,7 +391,7 @@ export class ProductCategorizerService {
       brandVariations: this.generateBrandVariations(productName, bestMatch),
       normalizedName: productNormalizedName
     };
-    
+
     return finalCategory;
   }
 
@@ -452,23 +468,32 @@ export class ProductCategorizerService {
         suggestedQuantityType: 'COUNT',
         typicalRetailNames: [],
         brandVariations: []
+      },
+       'beverage': {
+        category: 'Pantry & Canned Goods',
+        aisle: 'Aisle 4-6',
+        section: 'Center Store',
+        confidence: 0.7,
+        suggestedQuantityType: 'COUNT',
+        typicalRetailNames: [],
+        brandVariations: []
       }
     };
-    
+
     return defaults[categoryKey] || defaults['pantry'];
   }
 
   private generateRetailNames(productName: string): string[] {
     const names: string[] = [];
     const cleanName = this.cleanProductName(productName);
-    
+
     // Generate variations
     names.push(cleanName);
     names.push(`Organic ${cleanName}`);
     names.push(`Premium ${cleanName}`);
     names.push(`Store Brand ${cleanName}`);
     names.push(`Great Value ${cleanName}`);
-    
+
     return names;
   }
 
@@ -477,10 +502,10 @@ export class ProductCategorizerService {
     if (existingCategory && existingCategory.brandVariations.length > 0) {
       return existingCategory.brandVariations;
     }
-    
+
     // Default brand variations based on product name patterns
     const name = productName.toLowerCase();
-    
+
     if (name.includes('milk') || name.includes('dairy')) {
       return ['Great Value', 'Horizon Organic', 'Lactaid', 'Fairlife', 'Store Brand'];
     } else if (name.includes('bread') || name.includes('bakery')) {
@@ -490,7 +515,7 @@ export class ProductCategorizerService {
     } else if (name.includes('fruit') || name.includes('vegetable') || name.includes('produce')) {
       return ['Organic', 'Fresh', 'Local', 'Store Brand'];
     }
-    
+
     return ['Generic', 'Store Brand', 'Name Brand'];
   }
 
@@ -514,7 +539,7 @@ export class ProductCategorizerService {
   public normalizeProductName(productName: string): string {
     const name = productName.trim();
     const lowerName = name.toLowerCase();
-    
+
     // Brand name mappings for proper capitalization
     const brandMappings: Record<string, string> = {
       'coca cola': 'Coca Cola',
@@ -707,21 +732,21 @@ export class ProductCategorizerService {
       'toothpaste': 'Toothpaste',
       'deodorant': 'Deodorant'
     };
-    
+
     // First check for exact brand matches
     for (const [key, value] of Object.entries(brandMappings)) {
       if (lowerName.includes(key)) {
         return value;
       }
     }
-    
+
     // Then check for specific product combinations (preserves important descriptors)
     for (const [key, value] of Object.entries(productCombinations)) {
       if (lowerName.includes(key)) {
         return value;
       }
     }
-    
+
     // Check for single word products only if it's an exact match or standalone word
     const words = lowerName.split(/\s+/);
     if (words.length === 1) {
@@ -730,7 +755,7 @@ export class ProductCategorizerService {
         return singleWord;
       }
     }
-    
+
     // Default: Clean capitalization while preserving all descriptive words
     return name.split(' ')
       .map(word => {
@@ -756,15 +781,15 @@ export class ProductCategorizerService {
   ): QuantityNormalization {
     const category = this.categorizeProduct(productName);
     const suggestedUnit = category.suggestedQuantityType;
-    
+
     let normalizedQuantity = quantity;
     let suggestedQuantity = quantity;
     let conversionReason = 'No conversion needed';
-    
+
     const name = productName.toLowerCase();
-    
+
     // Enhanced quantity optimization based on common retail packaging and shopping patterns
-    
+
     // Produce optimization with seasonal and practical considerations
     if (category.category === 'Produce') {
       if (name.includes('banana')) {
@@ -798,22 +823,21 @@ export class ProductCategorizerService {
       } else if (name.includes('tomato')) {
         if (quantity > 2 && unit === 'LB') {
           suggestedQuantity = 2;
-          conversionReason = 'AI suggests 2 lbs tomatoes - optimal freshness amount';
-        }
+          conversionReason = 'AI suggests 2 lbs tomatoes - optimal freshness amount';        }
       } else if (name.includes('bell pepper') || name.includes('pepper')) {
         if (quantity > 3 && unit === 'LB') {
           suggestedQuantity = 2;
           conversionReason = 'AI suggests 2 lbs peppers - optimal usage before spoilage';
         }
       }
-      
+
       // Generic produce count to weight conversion
       if (unit === 'COUNT' && suggestedUnit === 'LB') {
         const avgWeights: Record<string, number> = {
           'banana': 0.3, 'apple': 0.4, 'orange': 0.5, 'potato': 0.3,
           'onion': 0.25, 'tomato': 0.3, 'pepper': 0.2, 'garlic': 0.1
         };
-        
+
         const avgWeight = Object.keys(avgWeights).find(key => name.includes(key));
         if (avgWeight && quantity <= 10) {
           suggestedQuantity = Math.round((quantity * avgWeights[avgWeight]) * 4) / 4; // Round to quarter pounds
@@ -821,7 +845,7 @@ export class ProductCategorizerService {
         }
       }
     }
-    
+
     // Dairy & Eggs optimization for retail packaging
     if (category.category === 'Dairy & Eggs') {
       if (name.includes('milk')) {
@@ -862,7 +886,7 @@ export class ProductCategorizerService {
         }
       }
     }
-    
+
     // Meat & Seafood optimization for practical cooking portions
     if (category.category === 'Meat & Seafood') {
       if (name.includes('chicken breast') || name.includes('chicken thigh')) {
@@ -887,14 +911,14 @@ export class ProductCategorizerService {
           conversionReason = 'AI suggests 1.5 lbs fish - optimal freshness';
         }
       }
-      
+
       // Convert COUNT to LB for meat products
       if (unit === 'COUNT' && suggestedUnit === 'LB') {
         suggestedQuantity = Math.max(1, quantity);
         conversionReason = `AI suggests ${suggestedQuantity} lbs - meat typically sold by weight`;
       }
     }
-    
+
     // Pantry & Canned Goods optimization for bulk efficiency
     if (category.category === 'Pantry & Canned Goods') {
       if (name.includes('pasta') && !name.includes('sauce')) {
@@ -933,7 +957,20 @@ export class ProductCategorizerService {
         }
       }
     }
-    
+
+       //Beverages optimization
+    if (category.subcategory === 'Beverages') {
+      if (name.includes('sparkling water') || name.includes('carbonated water') || name.includes('mineral water')) {
+        if (quantity < 6 && unit === 'COUNT') {
+          suggestedQuantity = 12;
+          conversionReason = 'AI suggests 12-pack sparkling water for better value';
+        } else if (quantity > 24 && unit === 'COUNT') {
+          suggestedQuantity = 24;
+          conversionReason = 'AI suggests 24-pack sparkling water - common bulk size';
+        }
+      }
+     }
+
     // Household Items optimization for bulk purchasing
     if (category.category === 'Household Items') {
       if (name.includes('paper towel')) {
@@ -954,7 +991,7 @@ export class ProductCategorizerService {
         }
       }
     }
-    
+
     // Bakery optimization
     if (category.category === 'Bakery') {
       if (name.includes('bread')) {
@@ -964,7 +1001,7 @@ export class ProductCategorizerService {
         }
       }
     }
-    
+
     // Personal Care optimization
     if (category.category === 'Personal Care') {
       if (name.includes('shampoo') || name.includes('conditioner')) {
@@ -974,7 +1011,7 @@ export class ProductCategorizerService {
         }
       }
     }
-    
+
     // Spices and seasonings special handling
     if (name.includes('garlic powder') || name.includes('salt') || name.includes('pepper') || name.includes('spice')) {
       if (quantity > 1 && unit === 'COUNT') {
@@ -982,31 +1019,31 @@ export class ProductCategorizerService {
         conversionReason = 'AI suggests 1 container - spices have long shelf life';
       }
     }
-    
+
     // Unit optimization suggestions
     if (unit !== suggestedUnit && suggestedQuantity === quantity) {
       conversionReason = `AI suggests ${suggestedUnit} instead of ${unit} for better shopping accuracy`;
     }
-    
+
     // Round suggested quantities appropriately
     if (suggestedUnit === 'LB') {
       suggestedQuantity = Math.round(suggestedQuantity * 4) / 4; // Round to quarter pounds
     } else {
       suggestedQuantity = Math.round(suggestedQuantity);
     }
-    
+
     // Ensure we don't suggest 0 quantity
     if (suggestedQuantity <= 0) {
       suggestedQuantity = unit === 'LB' ? 0.5 : 1;
       conversionReason = `AI corrects to minimum practical quantity: ${suggestedQuantity} ${suggestedUnit}`;
     }
-    
+
     // Don't suggest changes if the difference is minimal for practical purposes
     if (Math.abs(suggestedQuantity - quantity) < 0.25 && unit === suggestedUnit) {
       suggestedQuantity = quantity;
       conversionReason = 'No conversion needed';
     }
-    
+
     return {
       originalQuantity: Math.round(quantity * 100) / 100,
       originalUnit: unit,
@@ -1029,7 +1066,7 @@ export class ProductCategorizerService {
       'Personal Care': '🧼',
       'Household Items': '🏠'
     };
-    
+
     return icons[category] || '🛒';
   }
 }

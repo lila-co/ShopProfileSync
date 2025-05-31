@@ -207,6 +207,19 @@ class AICategorationService {
           }
         }
       } else if (category === 'Pantry & Canned Goods') {
+        // Handle beverages specifically
+        if (name.includes('sparkling water') || name.includes('carbonated water') || name.includes('seltzer') || 
+            name.includes('soda') || name.includes('cola')) {
+          if (unit === 'GALLON' || unit === 'LB') {
+            suggestedQuantity = 12;
+            suggestedUnit = 'CAN';
+          } else if (quantity && quantity > 24 && unit === 'CAN') {
+            suggestedQuantity = 12;
+          } else if (quantity && quantity < 6 && unit === 'CAN') {
+            suggestedQuantity = 6;
+          }
+        }
+      } else if (category === 'Pantry & Canned Goods') {
         if (name.includes('can') || name.includes('soup') || name.includes('sauce')) {
           if (quantity && quantity === 1 && unit === 'COUNT') {
             suggestedQuantity = 3;
@@ -346,7 +359,7 @@ class AICategorationService {
           // Snacks
           /\b(chip|cracker|pretzel|nut|almond|peanut|cashew|walnut|granola\s*bar|protein\s*bar)\w*/i,
           // Beverages (non-dairy)
-          /\b(coffee|tea|soda|juice|water|sports\s*drink|energy\s*drink)\w*/i
+          /\b(coffee|tea|soda|juice|water|sports\s*drink|energy\s*drink|sparkling\s*water|carbonated\s*water|seltzer|mineral\s*water|flavored\s*water)\w*/i
         ]
       }
     ];
