@@ -60,9 +60,19 @@ export function detectOptimalUnit(productName: string, currentUnit?: string): st
     return 'LB';
   }
   
-  // Volume/liquid items
-  if (/\b(milk|juice|water|soda|oil|vinegar)\w*/i.test(name)) {
-    return 'COUNT'; // Usually sold in containers
+  // Volume/liquid items - differentiate between gallon items and canned beverages
+  if (/\b(milk|oil|vinegar)\w*/i.test(name)) {
+    return 'COUNT'; // Usually sold in containers (gallons/bottles)
+  }
+  
+  // Canned/bottled beverages
+  if (/\b(sparkling\s*water|carbonated\s*water|seltzer|soda|cola|juice|sports\s*drink|energy\s*drink)\w*/i.test(name)) {
+    return 'CAN'; // Usually sold in cans or bottles
+  }
+  
+  // Regular water can be gallon or bottles
+  if (/\b(water|bottled\s*water)\w*/i.test(name) && !/\b(sparkling|carbonated|seltzer)\w*/i.test(name)) {
+    return 'COUNT'; // Could be gallons or bottles
   }
   
   // Package items
