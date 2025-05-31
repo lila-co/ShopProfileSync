@@ -964,15 +964,9 @@ const ShoppingListComponent: React.FC = () => {
 
           <div className="grid gap-4">
             {/* Single Store Plan */}
-            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => {
-              const planData = encodeURIComponent(JSON.stringify({
-                type: 'single-store',
-                shoppingListId: defaultList?.id
-              }));
-              window.location.href = `/auto-order?listId=${defaultList?.id}&planData=${planData}`;
-            }}>
+            <Card className="border-2 border-blue-200">
               <CardContent className="p-4">
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center">
                     <div className="bg-blue-100 p-3 rounded-lg mr-4">
                       <Clock className="h-6 w-6 text-blue-600" />
@@ -989,19 +983,69 @@ const ShoppingListComponent: React.FC = () => {
                   </div>
                   <Badge variant="outline">~35 min</Badge>
                 </div>
+
+                {/* Plan Summary */}
+                <div className="bg-blue-50 rounded-lg p-4 mb-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="font-semibold text-blue-800">Walmart</span>
+                    <span className="text-sm text-blue-600">{items.length} items</span>
+                  </div>
+                  
+                  <div className="space-y-2 mb-3">
+                    <div className="text-sm">
+                      <div className="flex justify-between">
+                        <span>Estimated Total:</span>
+                        <span className="font-semibold">$47.85</span>
+                      </div>
+                      <div className="flex justify-between text-gray-600">
+                        <span>Est. Shopping Time:</span>
+                        <span>35 minutes</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-gray-600">
+                    Top items: {items.slice(0, 3).map(item => item.productName).join(', ')}
+                    {items.length > 3 && ` +${items.length - 3} more`}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => {
+                      const planData = encodeURIComponent(JSON.stringify({
+                        type: 'single-store',
+                        shoppingListId: defaultList?.id,
+                        mode: 'online'
+                      }));
+                      window.location.href = `/auto-order?listId=${defaultList?.id}&planData=${planData}`;
+                    }}
+                  >
+                    Order Online
+                  </Button>
+                  <Button 
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    onClick={() => {
+                      const planData = encodeURIComponent(JSON.stringify({
+                        type: 'single-store',
+                        shoppingListId: defaultList?.id,
+                        mode: 'instore'
+                      }));
+                      window.location.href = `/shopping-route?listId=${defaultList?.id}&planData=${planData}`;
+                    }}
+                  >
+                    Shop In-Store
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
             {/* Best Value Plan */}
-            <Card className="cursor-pointer hover:shadow-md transition-shadow border-green-200" onClick={() => {
-              const planData = encodeURIComponent(JSON.stringify({
-                type: 'best-value',
-                shoppingListId: defaultList?.id
-              }));
-              window.location.href = `/auto-order?listId=${defaultList?.id}&planData=${planData}`;
-            }}>
+            <Card className="border-2 border-green-200">
               <CardContent className="p-4">
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center">
                     <div className="bg-green-100 p-3 rounded-lg mr-4">
                       <DollarSign className="h-6 w-6 text-green-600" />
@@ -1018,19 +1062,72 @@ const ShoppingListComponent: React.FC = () => {
                   </div>
                   <Badge className="bg-green-100 text-green-800">Most Savings</Badge>
                 </div>
+
+                {/* Plan Summary */}
+                <div className="bg-green-50 rounded-lg p-4 mb-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="font-semibold text-green-800">Multi-Store Plan</span>
+                    <span className="text-sm text-green-600">3 stores</span>
+                  </div>
+                  
+                  <div className="space-y-2 mb-3">
+                    <div className="text-sm">
+                      <div className="flex justify-between">
+                        <span>Estimated Total:</span>
+                        <span className="font-semibold">$38.20</span>
+                      </div>
+                      <div className="flex justify-between text-green-600">
+                        <span>You Save:</span>
+                        <span className="font-semibold">$9.65</span>
+                      </div>
+                      <div className="flex justify-between text-gray-600">
+                        <span>Est. Shopping Time:</span>
+                        <span>65 minutes</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-gray-600">
+                    Stores: Walmart, Target, Safeway
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => {
+                      const planData = encodeURIComponent(JSON.stringify({
+                        type: 'best-value',
+                        shoppingListId: defaultList?.id,
+                        mode: 'online'
+                      }));
+                      window.location.href = `/auto-order?listId=${defaultList?.id}&planData=${planData}`;
+                    }}
+                  >
+                    Order Online
+                  </Button>
+                  <Button 
+                    className="w-full bg-green-600 hover:bg-green-700"
+                    onClick={() => {
+                      const planData = encodeURIComponent(JSON.stringify({
+                        type: 'best-value',
+                        shoppingListId: defaultList?.id,
+                        mode: 'instore'
+                      }));
+                      window.location.href = `/shopping-route?listId=${defaultList?.id}&planData=${planData}`;
+                    }}
+                  >
+                    Shop In-Store
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
             {/* Balanced Plan */}
-            <Card className="cursor-pointer hover:shadow-md transition-shadow border-purple-200" onClick={() => {
-              const planData = encodeURIComponent(JSON.stringify({
-                type: 'balanced',
-                shoppingListId: defaultList?.id
-              }));
-              window.location.href = `/auto-order?listId=${defaultList?.id}&planData=${planData}`;
-            }}>
+            <Card className="border-2 border-purple-200">
               <CardContent className="p-4">
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center">
                     <div className="bg-purple-100 p-3 rounded-lg mr-4">
                       <BarChart2 className="h-6 w-6 text-purple-600" />
@@ -1046,6 +1143,65 @@ const ShoppingListComponent: React.FC = () => {
                     </div>
                   </div>
                   <Badge variant="outline" className="text-purple-700 border-purple-200">~45 min</Badge>
+                </div>
+
+                {/* Plan Summary */}
+                <div className="bg-purple-50 rounded-lg p-4 mb-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="font-semibold text-purple-800">Balanced Plan</span>
+                    <span className="text-sm text-purple-600">2 stores</span>
+                  </div>
+                  
+                  <div className="space-y-2 mb-3">
+                    <div className="text-sm">
+                      <div className="flex justify-between">
+                        <span>Estimated Total:</span>
+                        <span className="font-semibold">$42.15</span>
+                      </div>
+                      <div className="flex justify-between text-purple-600">
+                        <span>You Save:</span>
+                        <span className="font-semibold">$5.70</span>
+                      </div>
+                      <div className="flex justify-between text-gray-600">
+                        <span>Est. Shopping Time:</span>
+                        <span>45 minutes</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-gray-600">
+                    Stores: Walmart, Target
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => {
+                      const planData = encodeURIComponent(JSON.stringify({
+                        type: 'balanced',
+                        shoppingListId: defaultList?.id,
+                        mode: 'online'
+                      }));
+                      window.location.href = `/auto-order?listId=${defaultList?.id}&planData=${planData}`;
+                    }}
+                  >
+                    Order Online
+                  </Button>
+                  <Button 
+                    className="w-full bg-purple-600 hover:bg-purple-700"
+                    onClick={() => {
+                      const planData = encodeURIComponent(JSON.stringify({
+                        type: 'balanced',
+                        shoppingListId: defaultList?.id,
+                        mode: 'instore'
+                      }));
+                      window.location.href = `/shopping-route?listId=${defaultList?.id}&planData=${planData}`;
+                    }}
+                  >
+                    Shop In-Store
+                  </Button>
                 </div>
               </CardContent>
             </Card>
