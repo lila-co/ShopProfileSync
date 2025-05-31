@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { TrendingUp, DollarSign, ShoppingCart, MapPin, Users, Target, Calendar, Package, Plus } from 'lucide-react';
+import { TrendingUp, DollarSign, ShoppingCart, MapPin, Users, Target, Calendar, Package, Plus, BarChart3, Clock } from 'lucide-react';
 import ActionCard from '@/components/dashboard/ActionCard';
 import ReceiptScanner from '@/components/receipt/ReceiptScanner';
 
