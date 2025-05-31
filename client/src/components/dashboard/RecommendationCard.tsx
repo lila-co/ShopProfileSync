@@ -95,7 +95,7 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommendation 
             </div>
             <div>
               <p className="font-medium text-sm">{recommendation.suggestedRetailer?.name || 'Best retailer'}</p>
-              <p className="text-xs text-gray-500">{recommendation.reason || 'Best price available'}</p>
+              <p className="text-xs text-gray-700">{recommendation.reason || 'Best price available'}</p>
             </div>
           </div>
           <span className="font-bold text-gray-800">
