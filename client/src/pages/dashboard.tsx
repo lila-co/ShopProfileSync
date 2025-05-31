@@ -22,9 +22,7 @@ const Dashboard: React.FC = () => {
     queryKey: ['/api/recommendations'],
   });
 
-  const { data: monthlySavings } = useQuery<number>({
-    queryKey: ['/api/insights/monthly-savings'],
-  });
+  
 
   return (
     <div className="max-w-md sm:max-w-4xl mx-auto bg-white min-h-screen flex flex-col">
@@ -32,20 +30,6 @@ const Dashboard: React.FC = () => {
 
       <main className="flex-1 overflow-y-auto p-3 sm:p-4 pb-20">
         <div className="p-4 pb-20">
-          {/* Welcome Section */}
-          <section className="mb-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">Hello, {user?.firstName || 'there'}</h2>
-                <p className="text-gray-700 text-sm">Your shopping assistance is ready</p>
-              </div>
-              {monthlySavings !== undefined && monthlySavings > 0 && (
-                <div className="bg-primary/10 text-primary px-3 py-1 rounded-full font-medium text-sm">
-                  ${monthlySavings} saved this month
-                </div>
-              )}
-            </div>
-          </section>
 
           {/* Shopping Recommendations */}
           <section className="mb-6">
