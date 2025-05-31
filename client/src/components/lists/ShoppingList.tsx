@@ -685,7 +685,7 @@ const ShoppingListComponent: React.FC = () => {
                             <span className="text-xs text-gray-500">{categoryItems.length} items</span>
                           </div>
                           {categoryItems.map((item) => (
-                            <div key={`incomplete-category-${category}-item-${item.id}`} className="mobile-shopping-item border-2 border-gray-200 rounded-xl p-4 ml-2 bg-white">
+                            <div key={`incomplete-${category}-${item.id}`} className="mobile-shopping-item border-2 border-slate-200 rounded-xl p-4 ml-2 bg-white">
                               <div className="flex justify-between items-center">
                                 <div className="flex items-center flex-1">
                                   <input
