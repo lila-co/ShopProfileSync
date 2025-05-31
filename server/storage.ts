@@ -477,6 +477,7 @@ export class MemStorage implements IStorage {
       };
       this.purchaseItems.set(purchaseItem.id, purchaseItem);
     }
+```
   }
 
   // User methods
@@ -1412,8 +1413,7 @@ export class MemStorage implements IStorage {
           ...purchase,
           userId: data.userId || purchase.userId,
           retailerId: data.retailerId || purchase.retailerId,
-          purchaseDate: data<previous_generation>```text
-date || purchase.purchaseDate,
+          purchaseDate: data.purchaseDate || purchase.purchaseDate,
           totalAmount: data.totalAmount || purchase.totalAmount,
           receiptData: data.receiptData || purchase.receiptData,
           receiptImageUrl: data.receiptImageUrl !== undefined ? data.receiptImageUrl : purchase.receiptImageUrl
