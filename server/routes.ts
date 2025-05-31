@@ -3172,6 +3172,133 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
+  // Auto-order endpoint for optimized plans
+  app.post('/api/auto-order', async (req: Request, res: Response) => {
+    try {
+      const { shoppingListId, selectedPlan, mode } = req.body;
+
+      if (!shoppingListId || !selectedPlan) {
+        return res.status(400).json({ message: 'Shopping list ID and selected plan are required' });
+      }
+
+      // Get the optimization plan data
+      let planResponse;
+      switch (selectedPlan) {
+        case 'single':
+          planResponse = await apiRequest('POST', '/api/shopping-lists/single-store', { shoppingListId });
+          break;
+        case 'best-value':
+          planResponse = await apiRequest('POST', '/api/shopping-lists/best-value', { shoppingListId });
+          break;
+        case 'balanced':
+          planResponse = await apiRequest('POST', '/api/shopping-lists/balanced', { shoppingListId });
+          break;
+        default:
+          return res.status(400).json({ message: 'Invalid plan selection' });
+      }
+
+      const planData = await planResponse.json();
+
+      // Customer info - in real app, get from authenticated user
+      const customerInfo = {
+        name: "John Doe",
+        email: "johndoe@example.com", 
+        address: "123 Main St, Anytown, USA",
+        phone: "555-123-4567"
+      };
+
+      const orderResults = [];
+
+      if (selectedPlan === 'single') {
+        // Single store order
+        try {
+          const retailerAPI = await getRetailerAPI(planData.retailerId);
+          const orderResult = await retailerAPI.submitOrder(planData.items, mode, customerInfo);
+          
+          orderResults.push({
+            retailerId: planData.retailerId,
+            retailerName: planData.retailerName,
+            orderId: orderResult.orderId,
+            status: 'completed',
+            totalCost: planData.totalCost,
+            items: planData.items,
+            estimatedDelivery: orderResult.estimatedDelivery
+          });
+        } catch (error) {
+          console.error('Single store order failed:', error);
+          orderResults.push({
+            retailerId: planData.retailerId,
+            retailerName: planData.retailerName,
+            status: 'failed',
+            error: error.message,
+            totalCost: planData.totalCost,
+            items: planData.items
+          });
+        }
+      } else {
+        // Multi-store orders
+        for (const store of planData.stores || []) {
+          try {
+            const retailerAPI = await getRetailerAPI(store.retailerId);
+            const orderResult = await retailerAPI.submitOrder(store.items, mode, customerInfo);
+            
+            orderResults.push({
+              retailerId: store.retailerId,
+              retailerName: store.retailerName,
+              orderId: orderResult.orderId,
+              status: 'completed',
+              totalCost: store.subtotal,
+              items: store.items,
+              estimatedDelivery: orderResult.estimatedDelivery
+            });
+          } catch (error) {
+            console.error(`Order failed for ${store.retailerName}:`, error);
+            orderResults.push({
+              retailerId: store.retailerId,
+              retailerName: store.retailerName,
+              status: 'failed',
+              error: error.message,
+              totalCost: store.subtotal,
+              items: store.items
+            });
+          }
+        }
+      }
+
+      // Mark shopping list items as completed for successful orders
+      const successfulItems = orderResults
+        .filter(result => result.status === 'completed')
+        .flatMap(result => result.items.map(item => item.id))
+        .filter(Boolean);
+
+      for (const itemId of successfulItems) {
+        try {
+          await storage.updateShoppingListItem(itemId, { isCompleted: true });
+        } catch (error) {
+          console.warn(`Failed to mark item ${itemId} as completed:`, error);
+        }
+      }
+
+      const totalCost = orderResults.reduce((sum, result) => sum + result.totalCost, 0);
+      const successfulOrders = orderResults.filter(result => result.status === 'completed');
+
+      res.json({
+        orderResults,
+        summary: {
+          totalOrders: orderResults.length,
+          successfulOrders: successfulOrders.length,
+          failedOrders: orderResults.length - successfulOrders.length,
+          totalCost,
+          selectedPlan,
+          mode
+        }
+      });
+
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
   // Get retailer integration status (API, auth, etc.)
   app.get('/api/retailers/:retailerId/integration-status', async (req: Request, res: Response) => {
     try {
