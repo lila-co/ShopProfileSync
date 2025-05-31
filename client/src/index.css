@@ -17,15 +17,15 @@
   --input: 241 245 249;
 
   /* Primary: Professional blue with high contrast */
-  --primary: 30 64 175;
+  --primary: 29 78 216;
   --primary-foreground: 255 255 255;
 
-  /* Secondary: Muted teal for secondary actions */
-  --secondary: 71 85 105;
+  /* Secondary: Neutral gray for secondary actions */
+  --secondary: 100 116 139;
   --secondary-foreground: 255 255 255;
 
-  /* Accent: Subtle green for success states */
-  --accent: 34 197 94;
+  /* Accent: Professional green for success states */
+  --accent: 21 128 61;
   --accent-foreground: 255 255 255;
 
   --destructive: 220 38 38;
