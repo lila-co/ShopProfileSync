@@ -144,7 +144,7 @@ const RetailerLinking: React.FC = () => {
   });
 
   // Handle linking a new retailer account
-  const handleLinkAccount = (e: React.FormEvent) => {
+  const handleLinkAccount = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!selectedRetailer) return;
@@ -156,8 +156,6 @@ const RetailerLinking: React.FC = () => {
       storeCredentials: rememberMe,
       allowOrdering,
     };
-
-    linkAccountMutation.mutate(accountData);
 
     // If loyalty card info is provided, save it separately
     if (loyaltyCardNumber.trim()) {
@@ -173,6 +171,8 @@ const RetailerLinking: React.FC = () => {
         console.warn('Failed to save loyalty card:', error);
       }
     }
+
+    linkAccountMutation.mutate(accountData);
   };
 
   // Open the link dialog for a specific retailer
