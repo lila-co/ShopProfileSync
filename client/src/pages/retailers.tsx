@@ -118,28 +118,28 @@ const RetailersPage: React.FC = () => {
       <main className="flex-1 overflow-y-auto p-4 pb-20">
         <h2 className="text-xl font-bold mb-4">Partner Retailers</h2>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           {retailers?.map((retailer) => (
-            <Card key={retailer.id} className="cursor-pointer hover:shadow-md transition-all duration-200 touch-target">
+            <Card key={retailer.id} className="cursor-pointer hover:shadow-md transition-shadow">
               <CardContent className="p-4" onClick={() => handleRetailerClick(retailer.id)}>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3 flex-1 min-w-0">
+                  <div className="flex items-center space-x-3">
                     <div 
-                      className={`w-4 h-4 rounded-full bg-${retailer.logoColor}-500 flex-shrink-0`}
+                      className={`w-4 h-4 rounded-full bg-${retailer.logoColor}-500`}
                     />
-                    <Store className="h-5 w-5 text-gray-600 flex-shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold text-sm truncate">{retailer.name}</h3>
-                      <p className="text-xs text-gray-500 truncate">
+                    <Store className="h-6 w-6 text-gray-600" />
+                    <div>
+                      <h3 className="font-semibold">{retailer.name}</h3>
+                      <p className="text-sm text-gray-500">
                         {isConnected(retailer.id) ? 'Connected' : 'Available for connection'}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2 flex-shrink-0">
+                  <div className="flex items-center space-x-2">
                     {isConnected(retailer.id) ? (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <CheckCircle className="h-5 w-5 text-green-500" />
                     ) : (
-                      <ExternalLink className="h-4 w-4 text-gray-400" />
+                      <ExternalLink className="h-5 w-5 text-gray-400" />
                     )}
                   </div>
                 </div>
@@ -152,12 +152,12 @@ const RetailersPage: React.FC = () => {
         <div className="mt-6">
           <Dialog open={showAddStore} onOpenChange={setShowAddStore}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="w-full h-12 touch-target">
+              <Button variant="outline" className="w-full">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Custom Store
               </Button>
             </DialogTrigger>
-            <DialogContent className="w-[90vw] max-w-md">
+            <DialogContent>
               <DialogHeader>
                 <DialogTitle>Add Custom Store</DialogTitle>
               </DialogHeader>
@@ -169,7 +169,6 @@ const RetailersPage: React.FC = () => {
                     value={newStoreName}
                     onChange={(e) => setNewStoreName(e.target.value)}
                     placeholder="Enter store name"
-                    className="touch-target"
                   />
                 </div>
                 <div>
@@ -179,17 +178,15 @@ const RetailersPage: React.FC = () => {
                     value={newStoreWebsite}
                     onChange={(e) => setNewStoreWebsite(e.target.value)}
                     placeholder="Enter store website"
-                    className="touch-target"
                   />
                 </div>
-                <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
-                  <Button variant="outline" onClick={() => setShowAddStore(false)} className="touch-target">
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={() => setShowAddStore(false)}>
                     Cancel
                   </Button>
                   <Button 
                     onClick={handleAddStore}
                     disabled={!newStoreName.trim() || addStoreMutation.isPending}
-                    className="touch-target"
                   >
                     {addStoreMutation.isPending ? 'Adding...' : 'Add Store'}
                   </Button>

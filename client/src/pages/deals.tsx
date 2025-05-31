@@ -143,133 +143,128 @@ const DealsView: React.FC = () => {
 
   if (isLoadingDeals) {
     return (
-      <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
-        <div className="p-4 pb-20">
-          <h1 className="text-xl sm:text-2xl font-bold mb-4">Weekly Deals</h1>
-          <div className="grid grid-cols-2 gap-3">
-            {Array.from({ length: 8 }).map((_, index) => (
-              <Card key={index} className="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-100">
-                <CardContent className="p-3">
-                  <div className="aspect-square mb-2 overflow-hidden rounded-md bg-gray-200 animate-pulse" />
-                  <div className="h-4 bg-gray-200 rounded animate-pulse mb-1" />
-                  <div className="h-6 bg-gray-200 rounded animate-pulse mb-2" />
-                  <div className="h-8 bg-gray-200 rounded animate-pulse" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+      <div className="container mx-auto py-6">
+        <h1 className="text-2xl font-bold mb-6">Weekly Deals</h1>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          {Array.from({ length: 8 }).map((_, index) => (
+            <Card key={index} className="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-100">
+              <CardContent className="p-3">
+                <div className="aspect-square mb-2 overflow-hidden rounded-md bg-gray-200 animate-pulse" />
+                <div className="h-4 bg-gray-200 rounded animate-pulse mb-1" />
+                <div className="h-6 bg-gray-200 rounded animate-pulse mb-2" />
+                <div className="h-8 bg-gray-200 rounded animate-pulse" />
+              </CardContent>
+            </Card>
+          ))}
         </div>
-        <BottomNavigation activeTab="deals" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
-      <div className="p-4 pb-20">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
-          <h1 className="text-xl sm:text-2xl font-bold">Weekly Deals</h1>
-          <CircularUploadDialog>
-            <Button variant="outline" size="sm" className="w-full sm:w-auto">
-              <Plus className="h-4 w-4 mr-2" />
-              Upload Circular
-            </Button>
-          </CircularUploadDialog>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-          <Select onValueChange={handleRetailerChange} value={selectedRetailer}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Filter by Retailer" />
-            </SelectTrigger>
-            <SelectContent>
-              {isLoadingRetailers ? (
-                <SelectItem value="loading" disabled>Loading retailers...</SelectItem>
-              ) : (
-                retailerOptions.map((retailer) => (
-                  <SelectItem key={retailer.value} value={retailer.value}>
-                    {retailer.label}
-                  </SelectItem>
-                ))
-              )}
-            </SelectContent>
-          </Select>
-
-          <Select onValueChange={handleCategoryChange} value={selectedCategory}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Filter by Category" />
-            </SelectTrigger>
-            <SelectContent>
-              {isLoadingCategories ? (
-                <SelectItem value="loading" disabled>Loading categories...</SelectItem>
-              ) : (
-                categoryOptions.map((category) => (
-                  <SelectItem key={category.value} value={category.value}>
-                    {category.label}
-                  </SelectItem>
-                ))
-              )}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {deals && deals.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3">
-            {deals.map((deal: Deal) => (
-              <Card key={`${deal.id}-${deal.retailerId}`} className="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-100 hover:shadow-md transition-shadow">
-                <CardContent className="p-3">
-                  <div className="aspect-square mb-2 overflow-hidden rounded-md bg-gray-100">
-                    <img 
-                      src={deal.imageUrl || `https://images.unsplash.com/photo-1506617420156-8e4536971650?w=400&h=400&fit=crop&crop=center`} 
-                      alt={deal.productName} 
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        // Fallback to a generic product image
-                        e.currentTarget.src = `https://images.unsplash.com/photo-1506617420156-8e4536971650?w=400&h=400&fit=crop&crop=center`;
-                      }}
-                    />
-                  </div>
-                  <h3 className="font-medium text-sm line-clamp-2 mb-1" title={deal.productName}>
-                    {deal.productName}
-                  </h3>
-                  <div className="flex flex-col gap-1 mb-2">
-                    <div className="flex items-center gap-1">
-                      <span className="text-xs text-gray-500 line-through">
-                        ${((deal.price || 0) / 100 * 1.3).toFixed(2)}
-                      </span>
-                      <span className="text-lg font-bold text-primary">
-                        ${((deal.price || 0) / 100).toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="text-xs text-green-600 font-medium">
-                      Save ${(((deal.price || 0) / 100) * 0.3).toFixed(2)} (23% off)
-                    </div>
-                    {deal.category && (
-                      <span className="text-xs text-gray-500 ml-auto">
-                        {deal.category}
-                      </span>
-                    )}
-                  </div>
-                  <Button 
-                    size="sm" 
-                    className="w-full h-8 text-xs"
-                    onClick={() => addDealToListMutation.mutate(deal)}
-                    disabled={addDealToListMutation.isPending}
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    {addDealToListMutation.isPending ? 'Adding...' : 'Add to List'}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <p className="text-gray-500 text-lg mb-2">No deals found</p>
-            <p className="text-gray-400 text-sm">Try adjusting your filters or check back later for new deals.</p>
-          </div>
-        )}
+    <div className="container mx-auto py-6">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Weekly Deals</h1>
+        <CircularUploadDialog>
+          <Button variant="outline" size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            Upload Circular
+          </Button>
+        </CircularUploadDialog>
       </div>
+
+      <div className="flex flex-wrap gap-4 mb-6">
+        <Select onValueChange={handleRetailerChange} value={selectedRetailer}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by Retailer" />
+          </SelectTrigger>
+          <SelectContent>
+            {isLoadingRetailers ? (
+              <SelectItem value="loading" disabled>Loading retailers...</SelectItem>
+            ) : (
+              retailerOptions.map((retailer) => (
+                <SelectItem key={retailer.value} value={retailer.value}>
+                  {retailer.label}
+                </SelectItem>
+              ))
+            )}
+          </SelectContent>
+        </Select>
+
+        <Select onValueChange={handleCategoryChange} value={selectedCategory}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by Category" />
+          </SelectTrigger>
+          <SelectContent>
+            {isLoadingCategories ? (
+              <SelectItem value="loading" disabled>Loading categories...</SelectItem>
+            ) : (
+              categoryOptions.map((category) => (
+                <SelectItem key={category.value} value={category.value}>
+                  {category.label}
+                </SelectItem>
+              ))
+            )}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {deals && deals.length > 0 ? (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          {deals.map((deal: Deal) => (
+            <Card key={`${deal.id}-${deal.retailerId}`} className="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-100 hover:shadow-md transition-shadow">
+              <CardContent className="p-3">
+                <div className="aspect-square mb-2 overflow-hidden rounded-md bg-gray-100">
+                  <img 
+                    src={deal.imageUrl || `https://images.unsplash.com/photo-1506617420156-8e4536971650?w=400&h=400&fit=crop&crop=center`} 
+                    alt={deal.productName} 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Fallback to a generic product image
+                      e.currentTarget.src = `https://images.unsplash.com/photo-1506617420156-8e4536971650?w=400&h=400&fit=crop&crop=center`;
+                    }}
+                  />
+                </div>
+                <h3 className="font-medium text-sm line-clamp-2 mb-1" title={deal.productName}>
+                  {deal.productName}
+                </h3>
+                <div className="flex flex-col gap-1 mb-2">
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-gray-500 line-through">
+                      ${((deal.price || 0) / 100 * 1.3).toFixed(2)}
+                    </span>
+                    <span className="text-lg font-bold text-primary">
+                      ${((deal.price || 0) / 100).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="text-xs text-green-600 font-medium">
+                    Save ${(((deal.price || 0) / 100) * 0.3).toFixed(2)} (23% off)
+                  </div>
+                  {deal.category && (
+                    <span className="text-xs text-gray-500 ml-auto">
+                      {deal.category}
+                    </span>
+                  )}
+                </div>
+                <Button 
+                  size="sm" 
+                  className="w-full h-8 text-xs"
+                  onClick={() => addDealToListMutation.mutate(deal)}
+                  disabled={addDealToListMutation.isPending}
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  {addDealToListMutation.isPending ? 'Adding...' : 'Add to List'}
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12">
+          <p className="text-gray-500 text-lg mb-2">No deals found</p>
+          <p className="text-gray-400 text-sm">Try adjusting your filters or check back later for new deals.</p>
+        </div>
+      )}
       <BottomNavigation activeTab="deals" />
     </div>
   );
