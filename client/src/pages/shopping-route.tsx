@@ -42,6 +42,7 @@ const ShoppingRoute: React.FC = () => {
   const [currentAisleIndex, setCurrentAisleIndex] = useState(0);
   const [completedItems, setCompletedItems] = useState<Set<number>>(new Set());
   const [loyaltyCard, setLoyaltyCard] = useState<any>(null);
+  const [startTime, setStartTime] = useState<Date | null>(null);
 
   // Fetch loyalty card info for the retailer
   const { data: loyaltyCardData } = useQuery({
