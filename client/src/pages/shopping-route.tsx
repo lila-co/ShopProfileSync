@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
+import { aiCategorizationService } from '@/lib/aiCategorization';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -147,80 +148,145 @@ const ShoppingRoute: React.FC = () => {
     return generateOptimizedShoppingRoute(items, retailerName, planData);
   };
 
-  // Generate optimized shopping route with aisle information
+  // Generate optimized shopping route with AI-powered categorization
   const generateOptimizedShoppingRoute = (items: any[], retailerName?: string, planData?: any) => {
-    // Define aisle mappings for different product categories
+    // Define aisle mappings with better color schemes
     const aisleMapping = {
       'Produce': { aisle: 'Aisle 1', category: 'Fresh Produce', order: 1, color: 'bg-green-100 text-green-800' },
-      'Dairy': { aisle: 'Aisle 2', category: 'Dairy & Eggs', order: 2, color: 'bg-blue-100 text-blue-800' },
-      'Meat': { aisle: 'Aisle 3', category: 'Meat & Seafood', order: 3, color: 'bg-red-100 text-red-800' },
-      'Pantry': { aisle: 'Aisle 4-6', category: 'Pantry & Canned Goods', order: 4, color: 'bg-yellow-100 text-yellow-800' },
-      'Frozen': { aisle: 'Aisle 7', category: 'Frozen Foods', order: 5, color: 'bg-cyan-100 text-cyan-800' },
+      'Dairy & Eggs': { aisle: 'Aisle 2', category: 'Dairy & Eggs', order: 2, color: 'bg-blue-100 text-blue-800' },
+      'Meat & Seafood': { aisle: 'Aisle 3', category: 'Meat & Seafood', order: 3, color: 'bg-red-100 text-red-800' },
+      'Pantry & Canned Goods': { aisle: 'Aisle 4-6', category: 'Pantry & Canned Goods', order: 4, color: 'bg-yellow-100 text-yellow-800' },
+      'Frozen Foods': { aisle: 'Aisle 7', category: 'Frozen Foods', order: 5, color: 'bg-cyan-100 text-cyan-800' },
       'Bakery': { aisle: 'Aisle 8', category: 'Bakery', order: 6, color: 'bg-orange-100 text-orange-800' },
-      'Personal Care': { aisle: 'Aisle 9', category: 'Health & Personal Care', order: 7, color: 'bg-purple-100 text-purple-800' },
-      'Household': { aisle: 'Aisle 10', category: 'Household Items', order: 8, color: 'bg-gray-100 text-gray-800' }
+      'Personal Care': { aisle: 'Aisle 9', category: 'Personal Care', order: 7, color: 'bg-purple-100 text-purple-800' },
+      'Household Items': { aisle: 'Aisle 10', category: 'Household Items', order: 8, color: 'bg-gray-100 text-gray-800' }
     };
 
-    // Function to categorize items
-    const categorizeItem = (productName: string) => {
-      const name = productName.toLowerCase();
-
-      if (name.includes('banana') || name.includes('tomato') || name.includes('onion') || name.includes('bell pepper') || name.includes('basil') || name.includes('garlic')) {
-        return 'Produce';
-      } else if (name.includes('milk') || name.includes('yogurt') || name.includes('cheese') || name.includes('egg')) {
-        return 'Dairy';
-      } else if (name.includes('chicken') || name.includes('beef') || name.includes('meat') || name.includes('fish')) {
-        return 'Meat';
-      } else if (name.includes('bread') || name.includes('cake') || name.includes('bakery')) {
-        return 'Bakery';
-      } else if (name.includes('frozen') || name.includes('ice cream')) {
-        return 'Frozen';
-      } else if (name.includes('soap') || name.includes('shampoo') || name.includes('toothpaste') || name.includes('towel')) {
-        return 'Personal Care';
-      } else if (name.includes('towel') || name.includes('cleaner') || name.includes('detergent') || name.includes('paper towel')) {
-        return 'Household';
-      } else {
-        return 'Pantry';
+    // Use AI categorization service for better accuracy
+    const categorizeItemWithAI = async (productName: string) => {
+      const result = await aiCategorizationService.categorizeProduct(productName);
+      if (result) {
+        return result;
       }
+
+      // Fallback to basic categorization
+      const fallback = aiCategorizationService.getQuickCategory(productName);
+      return { 
+        category: fallback.category, 
+        confidence: fallback.confidence,
+        aisle: aisleMapping[fallback.category as keyof typeof aisleMapping]?.aisle || 'Aisle 4-6',
+        section: aisleMapping[fallback.category as keyof typeof aisleMapping]?.category || 'Center Store'
+      };
     };
 
-    // Group items by aisle
+    // Group items by aisle using AI categorization
     const aisleGroups: { [key: string]: any } = {};
+    const itemPromises: Promise<any>[] = [];
 
+    // Process items with AI categorization
     items.forEach((item: any) => {
-      const category = categorizeItem(item.productName);
-      const aisleInfo = aisleMapping[category as keyof typeof aisleMapping];
+      // Use AI service for immediate fallback categorization
+      const fallbackResult = aiCategorizationService.getQuickCategory(item.productName);
+      const fallbackAisleInfo = aisleMapping[fallbackResult.category as keyof typeof aisleMapping] || 
+                               aisleMapping['Pantry & Canned Goods'];
 
-      if (!aisleGroups[aisleInfo.aisle]) {
-        aisleGroups[aisleInfo.aisle] = {
-          aisleName: aisleInfo.aisle,
-          category: aisleInfo.category,
-          order: aisleInfo.order,
-          color: aisleInfo.color,
+      if (!aisleGroups[fallbackAisleInfo.aisle]) {
+        aisleGroups[fallbackAisleInfo.aisle] = {
+          aisleName: fallbackAisleInfo.aisle,
+          category: fallbackAisleInfo.category,
+          order: fallbackAisleInfo.order,
+          color: fallbackAisleInfo.color,
           items: []
         };
       }
 
-      // Add shelf location for specific items
+      // Enhanced shelf location logic with more comprehensive patterns
       let shelfLocation = '';
       const name = item.productName.toLowerCase();
-      if (name.includes('milk')) shelfLocation = 'Cooler Section';
-      else if (name.includes('bread')) shelfLocation = 'End Cap';
+      
+      // Dairy specific locations
+      if (name.includes('milk') || name.includes('yogurt') || name.includes('cheese')) {
+        shelfLocation = 'Dairy Cooler';
+      }
+      // Meat specific locations  
+      else if (name.includes('chicken') || name.includes('beef') || name.includes('fish') || name.includes('meat')) {
+        shelfLocation = 'Refrigerated Case';
+      }
+      // Produce specific locations
       else if (name.includes('banana')) shelfLocation = 'Front Display';
-      else if (name.includes('chicken')) shelfLocation = 'Refrigerated Case';
+      else if (name.includes('apple') || name.includes('orange')) shelfLocation = 'Fruit Section';
+      else if (name.includes('lettuce') || name.includes('spinach')) shelfLocation = 'Leafy Greens';
+      else if (name.includes('tomato') || name.includes('pepper')) shelfLocation = 'Vegetable Section';
+      // Bakery specific locations
+      else if (name.includes('bread') || name.includes('bagel')) shelfLocation = 'Bakery Display';
+      // Frozen specific locations
+      else if (name.includes('frozen') || name.includes('ice cream')) shelfLocation = 'Freezer Section';
+      // Household specific locations
+      else if (name.includes('paper towel') || name.includes('toilet paper')) shelfLocation = 'Paper Goods';
+      else if (name.includes('cleaner') || name.includes('detergent')) shelfLocation = 'Cleaning Supplies';
+      // Personal care specific locations
+      else if (name.includes('shampoo') || name.includes('soap')) shelfLocation = 'Health & Beauty';
 
-      aisleGroups[aisleInfo.aisle].items.push({
+      // Add item with enhanced categorization info
+      aisleGroups[fallbackAisleInfo.aisle].items.push({
         ...item,
-        shelfLocation
+        shelfLocation,
+        category: fallbackCategory,
+        confidence: 0.7 // Default confidence for fallback
       });
+
+      // Queue AI categorization for background improvement
+      const aiPromise = categorizeItemWithAI(item.productName).then(aiResult => {
+        if (aiResult && aiResult.confidence > 0.7) {
+          // Find the item and update its categorization if AI is more confident
+          const currentAisle = aisleGroups[fallbackAisleInfo.aisle];
+          const itemIndex = currentAisle.items.findIndex((i: any) => i.id === item.id);
+          
+          if (itemIndex !== -1) {
+            currentAisle.items[itemIndex] = {
+              ...currentAisle.items[itemIndex],
+              category: aiResult.category,
+              confidence: aiResult.confidence,
+              aiSuggestion: aiResult.conversionReason
+            };
+          }
+        }
+      }).catch(error => {
+        console.warn('AI categorization failed for item:', item.productName, error);
+      });
+
+      itemPromises.push(aiPromise);
+    });
+
+    // Allow AI categorization to complete in background without blocking UI
+    Promise.all(itemPromises).then(() => {
+      // Optionally trigger a re-render with improved categorization
+      // This would require state management to update the route
+    }).catch(error => {
+      console.warn('Some AI categorizations failed:', error);
     });
 
     // Sort aisles by order and convert to array
     const sortedAisleGroups = Object.values(aisleGroups).sort((a: any, b: any) => a.order - b.order);
 
-    // Calculate route optimization
+    // Calculate route optimization with AI insights
     const totalAisles = sortedAisleGroups.length;
-    const estimatedTime = Math.max(15, totalAisles * 3 + items.length * 0.5);
+    let estimatedTime = Math.max(15, totalAisles * 3 + items.length * 0.5);
+    
+    // Adjust time estimates based on item complexity and store layout
+    const complexItems = items.filter((item: any) => {
+      const name = item.productName.toLowerCase();
+      return name.includes('organic') || name.includes('specialty') || name.includes('imported');
+    }).length;
+    
+    const freshItems = items.filter((item: any) => {
+      const name = item.productName.toLowerCase();
+      return name.includes('fresh') || name.includes('produce') || name.includes('meat') || name.includes('seafood');
+    }).length;
+    
+    // Add extra time for complex/fresh items that require more selection time
+    estimatedTime += complexItems * 1.5 + freshItems * 1;
+    estimatedTime = Math.round(estimatedTime);
 
     return {
       aisleGroups: sortedAisleGroups,
