@@ -518,10 +518,9 @@ export class MemStorage implements IStorage {
         endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
         imageUrl: "https://media1.popsugar-assets.com/files/thumbor/3RKvU_OxIBSMxGGhsB9kY-tI534=/fit-in/768x0/filters:format_auto():upscale()/2017/10/30/734/n/24155406/fcbbf68459f73997af2319.40139935_edit_img_cover_file_44213587_1509374304.jpg",
         isActive: true,
-        createdAt:```text
- new Date()
+        createdAt: new Date()
       },
-      { 
+      { ```text
         retailerId: 4, 
         title: "Kroger Weekly Savings", 
         description: "Save on fresh produce and more", 
@@ -1449,7 +1448,7 @@ export class MemStorage implements IStorage {
       }
 
       return deals;
-  }```text
+  }
   async getUserClaimedDeals(userId: number): Promise<any[]> {
       // Mock data for demo - in production you'd have a claimed_deals table
       return [
@@ -2441,9 +2440,9 @@ const [updatedUser] = await db
   async createAffiliateProduct(productData: InsertAffiliateProduct): Promise<AffiliateProduct> {
     try {
       const [product] = await db.insert(affiliateProducts).values(productData).returning();
-```text
       return product;
     } catch (error) {
+```text
       console.error("Error creating affiliate product:", error);
       throw error;
     }
