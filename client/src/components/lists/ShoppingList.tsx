@@ -258,6 +258,7 @@ const ShoppingListComponent: React.FC = () => {
       }));
 
       setGeneratedItems(enhancedItems);
+      }
       setGenerateDialogOpen(true);
     },
     onError: (error) => {
