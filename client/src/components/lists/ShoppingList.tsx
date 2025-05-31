@@ -637,7 +637,7 @@ const ShoppingListComponent: React.FC = () => {
       {/* Manual Add Item Section - Enhanced Visibility */}
       <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4 shadow-sm">
         <div className="flex items-center mb-3">
-          <Plus className="h-5 w-5 text-blue-600 mr-2" />
+          
           <h3 className="text-lg font-semibold text-gray-900">Add New Item</h3>
         </div>
 
@@ -645,7 +645,7 @@ const ShoppingListComponent: React.FC = () => {
           <div className="flex space-x-2 mb-3">
             <Input
               type="text"
-              placeholder="What do you need to buy?"
+              placeholder="Enter item name (e.g., milk, bread, apples)..."
               value={newItemName}
               onChange={(e) => setNewItemName(e.target.value)}
               className="flex-1 bg-white border-2 border-blue-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium shadow-sm"
@@ -815,7 +815,7 @@ const ShoppingListComponent: React.FC = () => {
                   const incompleteItems = items.filter(item => !item.isCompleted);
                   const completedItems = items.filter(item => item.isCompleted);
 
-                  // Group incomplete items by category
+                  //// Group incomplete items by category
                   const incompleteGrouped: { [key: string]: ShoppingListItem[] } = {};
                   incompleteItems.forEach(item => {
                     const category = getCategoryFromName(item.productName);
