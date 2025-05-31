@@ -520,7 +520,8 @@ export class MemStorage implements IStorage {
         isActive: true,
         createdAt: new Date()
       },
-      { ```text
+      { 
+```python
         retailerId: 4, 
         title: "Kroger Weekly Savings", 
         description: "Save on fresh produce and more", 
@@ -1449,7 +1450,8 @@ export class MemStorage implements IStorage {
 
       return deals;
   }
-  async getUserClaimedDeals(userId: number): Promise<any[]> {
+
+  async getUserClaimedDeals(userId:number): Promise<any[]> {
       // Mock data for demo - in production you'd have a claimed_deals table
       return [
           {
@@ -2442,7 +2444,8 @@ const [updatedUser] = await db
       const [product] = await db.insert(affiliateProducts).values(productData).returning();
       return product;
     } catch (error) {
-```text
+```python
+
       console.error("Error creating affiliate product:", error);
       throw error;
     }
