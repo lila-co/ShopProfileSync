@@ -306,6 +306,99 @@ export class MemStorage implements IStorage {
       this.shoppingListItems.set(newItem.id, newItem);
     });
 
+    // Add additional demo shopping lists with sample items
+    const additionalLists = [
+      { 
+        name: "Weekly Groceries", 
+        description: "Regular weekly shopping items",
+        items: [
+          { productName: "White Bread", quantity: 1, unit: "LOAF" },
+          { productName: "2% Milk", quantity: 1, unit: "GALLON" },
+          { productName: "Large Eggs", quantity: 1, unit: "DOZEN" },
+          { productName: "Ground Beef", quantity: 1, unit: "LB" }
+        ]
+      },
+      { 
+        name: "Bulk Shopping", 
+        description: "Monthly bulk shopping at warehouse stores",
+        items: [
+          { productName: "Paper Towels", quantity: 12, unit: "ROLL" },
+          { productName: "Toilet Paper", quantity: 24, unit: "ROLL" },
+          { productName: "Frozen Chicken", quantity: 5, unit: "LB" },
+          { productName: "Rice", quantity: 20, unit: "LB" }
+        ]
+      },
+      { 
+        name: "Organic Essentials", 
+        description: "Organic and natural products",
+        items: [
+          { productName: "Organic Spinach", quantity: 1, unit: "BAG" },
+          { productName: "Organic Apples", quantity: 2, unit: "LB" },
+          { productName: "Organic Whole Milk", quantity: 1, unit: "GALLON" },
+          { productName: "Organic Free-Range Eggs", quantity: 1, unit: "DOZEN" }
+        ]
+      },
+      { 
+        name: "Quick Meals", 
+        description: "Fast and easy meal ingredients",
+        items: [
+          { productName: "Pasta", quantity: 2, unit: "BOX" },
+          { productName: "Marinara Sauce", quantity: 2, unit: "JAR" },
+          { productName: "Pre-cooked Chicken", quantity: 1, unit: "PACKAGE" },
+          { productName: "Bagged Salad", quantity: 2, unit: "BAG" }
+        ]
+      },
+      { 
+        name: "Party Planning", 
+        description: "Items for upcoming party",
+        items: [
+          { productName: "Chips", quantity: 3, unit: "BAG" },
+          { productName: "Soda", quantity: 2, unit: "CASE" },
+          { productName: "Ice Cream", quantity: 2, unit: "PINT" },
+          { productName: "Paper Plates", quantity: 1, unit: "PACKAGE" }
+        ]
+      },
+      { 
+        name: "Health & Wellness", 
+        description: "Vitamins, supplements, and health foods",
+        items: [
+          { productName: "Vitamin D", quantity: 1, unit: "BOTTLE" },
+          { productName: "Protein Powder", quantity: 1, unit: "CONTAINER" },
+          { productName: "Greek Yogurt", quantity: 6, unit: "CUP" },
+          { productName: "Almonds", quantity: 1, unit: "BAG" }
+        ]
+      }
+    ];
+
+    additionalLists.forEach(listData => {
+      const list: ShoppingList = {
+        id: this.shoppingListIdCounter++,
+        userId: defaultUser.id,
+        name: listData.name,
+        description: listData.description,
+        isDefault: false
+      };
+      this.shoppingLists.set(list.id, list);
+
+      // Add sample items to this list
+      listData.items.forEach(item => {
+        const newItem: ShoppingListItem = {
+          id: this.shoppingListItemIdCounter++,
+          shoppingListId: list.id,
+          productName: item.productName,
+          quantity: item.quantity,
+          isCompleted: false,
+          unit: item.unit,
+          suggestedRetailerId: Math.floor(Math.random() * 3) + 1,
+          suggestedPrice: Math.floor(Math.random() * 800) + 200,
+          dueDate: null
+        };
+        this.shoppingListItems.set(newItem.id, newItem);
+      });
+
+      console.log(`Added ${listData.items.length} items to shopping list: ${listData.name}`);
+    });
+
     // Add weekly circulars
     const circulars = [
       { 
@@ -392,7 +485,8 @@ export class MemStorage implements IStorage {
 
       // Trader Joe's deals
       { retailerId: 7, productName: "Organic Wine", regularPrice: 799, salePrice: 699, startDate: new Date(), endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), category: "Beverages", circularId: null, dealSource: "manual", imageUrl: "https://images.unsplash.com/photo-1510972527921-ce03766a1cf1?w=400" },
-      { retailerId: 7, productName: "Trail Mix", regularPrice: 499, salePrice: 399, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Snacks", circularId: null, dealSource: "manual", imageUrl: "https://images.unsplash.com/photo-1609501676725-7186f0544c5a?w=400" },
+      { retailerId: 7, productName: "Trail Mix", regularPrice: 499, salePrice: 399, startDate: new Date(), endDate:```text
+ new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Snacks", circularId: null, dealSource: "manual", imageUrl: "https://images.unsplash.com/photo-1609501676725-7186f0544c5a?w=400" },
     ];
 
     deals.forEach(deal => {
@@ -1305,6 +1399,7 @@ export class MemStorage implements IStorage {
     }
 
     async searchPurchases(filters: any): Promise<Purchase[]> {
+        ```text
         let results = Array.from(this.purchases.values());
 
         if (filters.userId) {
@@ -2302,7 +2397,7 @@ const [updatedUser] = await db
 
   async deleteAffiliateProduct(id: number): Promise<void> {
     try {
-      await db.delete(affiliateProducts).where(eq(affiliateProducts.id, id));
+      await db.delete(aff affiliateProducts).where(eq(affiliateProducts.id, id));
     } catch (error) {
       console.error("Error deleting affiliate product:", error);
       throw error;
