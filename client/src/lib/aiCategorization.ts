@@ -42,7 +42,7 @@ class AICategorationService {
   }
 
   // Get categorization from cache or API
-  async categorizeProduct(productName: string): Promise<AICategorization | null> {
+  async categorizeProduct(productName: string, quantity: number = 1, unit: string = 'COUNT'): Promise<AICategorization | null> {
     const normalizedName = productName.toLowerCase().trim();
     
     // Check cache first
@@ -52,15 +52,17 @@ class AICategorationService {
     }
 
     try {
+      const requestBody = {
+        products: [{ productName, quantity, unit }]
+      };
+
       const response = await fetch('/api/products/batch-categorize', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({
-          items: [{ productName, quantity: 1, unit: 'COUNT' }]
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (response.ok) {
@@ -126,7 +128,7 @@ class AICategorationService {
             'Content-Type': 'application/json',
           },
           credentials: 'include',
-          body: JSON.stringify({ items: uncachedItems })
+          body: JSON.stringify({ products: uncachedItems })
         });
 
         if (response.ok) {
@@ -164,8 +166,58 @@ class AICategorationService {
   }
 
   // Enhanced quick categorization with research-based patterns and semantic understanding
-  getQuickCategory(productName: string): { category: string; confidence: number } {
+  getQuickCategory(productName: string, quantity?: number, unit?: string): { category: string; confidence: number; suggestedUnit?: string; suggestedQuantity?: number } {
     const name = productName.toLowerCase().trim();
+    
+    // Enhanced count-based item detection for better quantity suggestions
+    const detectCountOptimization = (category: string, productName: string, quantity?: number, unit?: string) => {
+      const name = productName.toLowerCase();
+      let suggestedQuantity = quantity;
+      let suggestedUnit = unit;
+      
+      // Smart count suggestions based on category and common purchase patterns
+      if (category === 'Dairy & Eggs') {
+        if (name.includes('egg') && unit === 'COUNT') {
+          if (quantity && quantity < 6) {
+            suggestedQuantity = 12;
+            suggestedUnit = 'DOZEN';
+          } else if (quantity && quantity > 24) {
+            suggestedQuantity = 24;
+            suggestedUnit = 'COUNT';
+          } else if (quantity && quantity >= 6 && quantity <= 24) {
+            suggestedQuantity = Math.ceil(quantity / 12) * 12;
+            suggestedUnit = 'DOZEN';
+          }
+        } else if (name.includes('milk') && unit === 'COUNT') {
+          suggestedQuantity = 1;
+          suggestedUnit = 'GALLON';
+        }
+      } else if (category === 'Household Items') {
+        if (name.includes('paper towel') && unit === 'COUNT') {
+          if (quantity && quantity < 6) {
+            suggestedQuantity = 6;
+          } else if (quantity && quantity > 12) {
+            suggestedQuantity = 12;
+          }
+        } else if (name.includes('toilet paper') && unit === 'COUNT') {
+          if (quantity && quantity < 12) {
+            suggestedQuantity = 12;
+          } else if (quantity && quantity > 24) {
+            suggestedQuantity = 24;
+          }
+        }
+      } else if (category === 'Pantry & Canned Goods') {
+        if (name.includes('can') || name.includes('soup') || name.includes('sauce')) {
+          if (quantity && quantity === 1 && unit === 'COUNT') {
+            suggestedQuantity = 3;
+          } else if (quantity && quantity > 6) {
+            suggestedQuantity = 6;
+          }
+        }
+      }
+      
+      return { suggestedQuantity, suggestedUnit };
+    };
     
     // Advanced categorization patterns based on grocery industry research
     const categoryPatterns = [
@@ -366,7 +418,15 @@ class AICategorationService {
       }
     }
 
-    return { category: bestCategory, confidence: bestConfidence };
+    // Apply count optimization suggestions
+    const countOptimization = detectCountOptimization(bestCategory, name, quantity, unit);
+
+    return { 
+      category: bestCategory, 
+      confidence: bestConfidence,
+      suggestedQuantity: countOptimization.suggestedQuantity,
+      suggestedUnit: countOptimization.suggestedUnit
+    };
   }
 
   // Clear cache manually

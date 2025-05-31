@@ -231,7 +231,7 @@ const ShoppingRoute: React.FC = () => {
       aisleGroups[fallbackAisleInfo.aisle].items.push({
         ...item,
         shelfLocation,
-        category: fallbackCategory,
+        category: fallbackResult.category,
         confidence: 0.7 // Default confidence for fallback
       });
 

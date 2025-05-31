@@ -136,25 +136,49 @@ const ShoppingListComponent: React.FC = () => {
       const defaultList = shoppingLists?.[0];
       if (!defaultList) throw new Error("No shopping list found");
 
-      // Apply historical size preferences for items like milk
+      // Use AI categorization for intelligent quantity and unit optimization
       let optimizedQuantity = quantity;
       let optimizedUnit = unit;
 
-      // Check if this item has historical size preferences
-      const lowerName = productName.toLowerCase();
-      if (lowerName.includes('milk')) {
-        // Apply historical preference for milk (gallon, half gallon, etc.)
-        optimizedUnit = 'GALLON';
-        // For now, use default gallon sizing - can be enhanced with user preferences later
-        optimizedQuantity = 1;
-      } else if (lowerName.includes('egg')) {
-        // Apply historical preference for eggs (dozen, half dozen)
-        optimizedUnit = 'DOZEN';
-      } else if (lowerName.includes('bread')) {
-        optimizedUnit = 'LOAF';
-      } else if (lowerName.includes('cheese')) {
-        optimizedUnit = 'OZ';
-        optimizedQuantity = 8;
+      try {
+        // Get AI categorization with count optimization
+        const aiResult = await aiCategorizationService.categorizeProduct(productName, quantity, unit);
+        
+        if (aiResult && aiResult.confidence > 0.7) {
+          // Use AI suggestions if confidence is high
+          if (aiResult.suggestedQuantity && aiResult.suggestedQuantity !== quantity) {
+            optimizedQuantity = aiResult.suggestedQuantity;
+          }
+          if (aiResult.suggestedUnit && aiResult.suggestedUnit !== unit) {
+            optimizedUnit = aiResult.suggestedUnit;
+          }
+        } else {
+          // Fallback to quick categorization optimization
+          const quickResult = aiCategorizationService.getQuickCategory(productName, quantity, unit);
+          if (quickResult.suggestedQuantity) {
+            optimizedQuantity = quickResult.suggestedQuantity;
+          }
+          if (quickResult.suggestedUnit) {
+            optimizedUnit = quickResult.suggestedUnit;
+          }
+        }
+      } catch (error) {
+        console.warn('AI optimization failed, using fallback logic:', error);
+        
+        // Fallback historical size preferences
+        const lowerName = productName.toLowerCase();
+        if (lowerName.includes('milk')) {
+          optimizedUnit = 'GALLON';
+          optimizedQuantity = 1;
+        } else if (lowerName.includes('egg')) {
+          optimizedUnit = 'DOZEN';
+          optimizedQuantity = 1;
+        } else if (lowerName.includes('bread')) {
+          optimizedUnit = 'LOAF';
+        } else if (lowerName.includes('cheese')) {
+          optimizedUnit = 'OZ';
+          optimizedQuantity = 8;
+        }
       }
 
       const response = await apiRequest('POST', '/api/shopping-list/items', {
@@ -170,7 +194,7 @@ const ShoppingListComponent: React.FC = () => {
       setNewItemQuantity(1);
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
 
-      // Show appropriate message based on whether item was merged or corrected
+      // Show appropriate message based on whether item was merged, corrected, or optimized
       if (data.merged) {
         toast({
           title: "Items Combined",
@@ -181,6 +205,12 @@ const ShoppingListComponent: React.FC = () => {
         toast({
           title: "Item Added",
           description: `Added as "${data.productName}" (corrected from "${data.originalName}")`,
+          variant: "default"
+        });
+      } else if (data.optimized) {
+        toast({
+          title: "Item Added & Optimized",
+          description: `Added "${data.productName}" with AI-optimized quantity/unit for better shopping.`,
           variant: "default"
         });
       } else {
