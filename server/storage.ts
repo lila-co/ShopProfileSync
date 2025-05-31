@@ -477,7 +477,6 @@ export class MemStorage implements IStorage {
       };
       this.purchaseItems.set(purchaseItem.id, purchaseItem);
     }
-```
   }
 
   // User methods
