@@ -1638,6 +1638,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get deals relevant to a shopping list
+  app.get('/api/deals', async (req: Request, res: Response) => {
+    try {
+      const listId = req.query.listId as string;
+      const retailerId = req.query.retailerId as string;
+      
+      if (listId) {
+        // Get deals for specific shopping list items
+        const shoppingList = await storage.getShoppingList(parseInt(listId));
+        if (!shoppingList) {
+          return res.status(404).json({ error: 'Shopping list not found' });
+        }
+
+        const items = shoppingList.items || [];
+        const allDeals = await storage.getStoreDeals();
+        
+        // Filter deals that match shopping list items
+        const relevantDeals = allDeals.filter(deal => 
+          items.some(item => 
+            item.productName.toLowerCase().includes(deal.productName.toLowerCase()) ||
+            deal.productName.toLowerCase().includes(item.productName.toLowerCase())
+          )
+        ).slice(0, 10); // Limit to 10 most relevant deals
+
+        res.json(relevantDeals);
+      } else {
+        // Return all deals with optional retailer filter
+        const deals = await storage.getStoreDeals(retailerId ? parseInt(retailerId) : undefined);
+        res.json(deals);
+      }
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
   // Mark deal as used/claimed
   app.post('/api/deals/:id/claim', async (req: Request, res: Response) => {
     try {
