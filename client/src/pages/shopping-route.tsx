@@ -476,7 +476,7 @@ const ShoppingRoute: React.FC = () => {
                         <p className="font-medium text-sm">{deal.productName}</p>
                         <div className="flex items-center gap-2 text-xs text-gray-600">
                           <span className="line-through">${((deal.regularPrice || deal.price * 1.3) / 100).toFixed(2)}</span>
-                          <span className="text-green-600 font-medium">${(deal.salePrice || deal.price) / 100}.toFixed(2)}</span>
+                          <span className="text-green-600 font-medium">${((deal.salePrice || deal.price) / 100).toFixed(2)}</span>
                           <span className="text-amber-600">
                             Save ${(((deal.regularPrice || deal.price * 1.3) - (deal.salePrice || deal.price)) / 100).toFixed(2)}
                           </span>
