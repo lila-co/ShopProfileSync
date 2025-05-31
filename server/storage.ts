@@ -481,7 +481,7 @@ export class MemStorage implements IStorage {
 
   // User methods
   async getDefaultUser(): Promise<User> {
-    return Array.from(this.users.values())[0];
+    return Array.from(this.users.values())[0];Fixed storage initialization and removed broken code.
   }
 
   async getUser(id: number): Promise<User | undefined> {
@@ -1195,10 +1195,12 @@ export class MemStorage implements IStorage {
   }
 
   async deleteAffiliateProduct(id: number): Promise<void> {
-    if (!this.affiliateProducts.has(id)) {
-      throw new Error("Affiliate product not found");
+    try {
+      await db.delete(affiliateProducts).where(eq(affiliateProducts.id, id));
+    } catch (error) {
+      console.error("Error deleting affiliate product:", error);
+      throw error;
     }
-    this.affiliateProducts.delete(id);
   }
 
   // Affiliate Click methods
