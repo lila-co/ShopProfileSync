@@ -1176,80 +1176,42 @@ const ShoppingListPage: React.FC = () => {
           <p className="text-gray-600 text-sm sm:text-base">Manage your shopping lists and find the best deals</p>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8">
-          <Card className="border-2 border-gray-100 hover:border-primary/30 hover:shadow-lg transition-all duration-200 group">
-            <CardContent className="p-6">
-              <div className="flex flex-col items-center text-center space-y-4">
-                <div className="p-3 bg-primary/10 rounded-full group-hover:bg-primary/20 transition-colors">
-                  <ShoppingCart className="h-8 w-8 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-base font-semibold text-gray-900">Generate List</h3>
-                  <p className="text-xs text-gray-500 leading-relaxed">AI-powered list based on your shopping history</p>
-                </div>
-                <Button 
-                  className="w-full bg-primary hover:bg-primary/90 h-12 font-medium shadow-sm"
-                  onClick={() => previewGenerateMutation.mutate()}
-                  disabled={previewGenerateMutation.isPending}
-                >
-                  {previewGenerateMutation.isPending ? (
-                    <>
-                      <Loader2 className="animate-spin h-4 w-4 mr-2" />
-                      <span>Generating...</span>
-                    </>
-                  ) : (
-                    <>
-                      <ListChecks className="h-4 w-4 mr-2" />
-                      <span>Generate</span>
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Quick Actions - Mobile Optimized */}
+        <div className="grid grid-cols-3 gap-2 mb-6">
+          <div className="border border-primary/30 rounded-lg overflow-hidden bg-primary/5 hover:bg-primary/10 transition-colors">
+            <Button 
+              className="w-full h-16 flex flex-col items-center justify-center bg-transparent hover:bg-transparent text-primary p-2"
+              onClick={() => previewGenerateMutation.mutate()}
+              disabled={previewGenerateMutation.isPending}
+            >
+              {previewGenerateMutation.isPending ? (
+                <Loader2 className="animate-spin h-5 w-5 mb-1" />
+              ) : (
+                <ListChecks className="h-5 w-5 mb-1" />
+              )}
+              <span className="text-xs font-medium">Generate</span>
+            </Button>
+          </div>
 
-          <Card className="border-2 border-gray-100 hover:border-blue-300 hover:shadow-lg transition-all duration-200 group">
-            <CardContent className="p-6">
-              <div className="flex flex-col items-center text-center space-y-4">
-                <div className="p-3 bg-blue-50 rounded-full group-hover:bg-blue-100 transition-colors">
-                  <FileText className="h-8 w-8 text-blue-600" />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-base font-semibold text-gray-900">Upload List</h3>
-                  <p className="text-xs text-gray-500 leading-relaxed">Import from text, CSV, or photo of handwritten list</p>
-                </div>
-                <Button 
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 font-medium shadow-sm"
-                  onClick={() => setUploadDialogOpen(true)}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  <span>Upload</span>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="border border-blue-300 rounded-lg overflow-hidden bg-blue-50 hover:bg-blue-100 transition-colors">
+            <Button 
+              className="w-full h-16 flex flex-col items-center justify-center bg-transparent hover:bg-transparent text-blue-600 p-2"
+              onClick={() => setUploadDialogOpen(true)}
+            >
+              <Plus className="h-5 w-5 mb-1" />
+              <span className="text-xs font-medium">Upload</span>
+            </Button>
+          </div>
 
-          <Card className="border-2 border-gray-100 hover:border-green-300 hover:shadow-lg transition-all duration-200 group">
-            <CardContent className="p-6">
-              <div className="flex flex-col items-center text-center space-y-4">
-                <div className="p-3 bg-green-50 rounded-full group-hover:bg-green-100 transition-colors">
-                  <FileText className="h-8 w-8 text-green-600" />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-base font-semibold text-gray-900">Import Recipe</h3>
-                  <p className="text-xs text-gray-500 leading-relaxed">Extract ingredients from any recipe URL</p>
-                </div>
-                <Button 
-                  className="w-full bg-green-600 hover:bg-green-700 text-white h-12 font-medium shadow-sm"
-                  onClick={() => setRecipeDialogOpen(true)}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  <span>Recipe</span>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="border border-green-300 rounded-lg overflow-hidden bg-green-50 hover:bg-green-100 transition-colors">
+            <Button 
+              className="w-full h-16 flex flex-col items-center justify-center bg-transparent hover:bg-transparent text-green-600 p-2"
+              onClick={() => setRecipeDialogOpen(true)}
+            >
+              <FileText className="h-5 w-5 mb-1" />
+              <span className="text-xs font-medium">Recipe</span>
+            </Button>
+          </div>
         </div>
 
         {/* AI Categorization Section */}
