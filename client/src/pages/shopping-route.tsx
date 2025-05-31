@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -30,21 +31,19 @@ const ShoppingRoute: React.FC = () => {
   const [location, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
+  
   // Get URL parameters
   const params = new URLSearchParams(window.location.search);
   const listId = params.get('listId');
   const mode = params.get('mode') || 'instore';
   const planDataParam = params.get('planData');
-
+  
   const [optimizedRoute, setOptimizedRoute] = useState<any>(null);
   const [selectedPlanData, setSelectedPlanData] = useState<any>(null);
   const [currentAisleIndex, setCurrentAisleIndex] = useState(0);
   const [completedItems, setCompletedItems] = useState<Set<number>>(new Set());
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [dealsData, setDealsData] = useState<any>([]);
-  const [relevantDeals, setRelevantDeals] = useState<any>([]);
 
   // Fetch shopping list and items
   const { data: shoppingList, isLoading } = useQuery({
@@ -80,9 +79,8 @@ const ShoppingRoute: React.FC = () => {
     if (planDataParam) {
       try {
         const planData = JSON.parse(decodeURIComponent(planDataParam));
-        console.log('Parsed plan data:', planData);
         setSelectedPlanData(planData);
-
+        
         // Generate route from the selected plan instead of raw shopping list items
         const route = generateOptimizedShoppingRouteFromPlan(planData);
         setOptimizedRoute(route);
@@ -103,45 +101,6 @@ const ShoppingRoute: React.FC = () => {
       setStartTime(new Date());
     }
   }, [shoppingList, planDataParam]);
-
-  // Process deals data when available
-  useEffect(() => {
-    // Fetch deals data (replace with your actual API endpoint)
-    const fetchDeals = async () => {
-      try {
-        const response = await fetch('/api/deals', { credentials: "include" });
-        if (response.ok) {
-          const deals = await response.json();
-          setDealsData(deals);
-        } else {
-          console.error('Failed to fetch deals data');
-        }
-      } catch (error) {
-        console.error('Error fetching deals:', error);
-      }
-    };
-
-    fetchDeals();
-  }, []);
-
-  // Process deals data when available
-  useEffect(() => {
-    if (dealsData && optimizedRoute) {
-      // Filter deals that match items in the shopping route
-      const routeItems = optimizedRoute.aisleGroups?.flatMap((aisle: any) => 
-        aisle.items?.map((item: any) => item.productName.toLowerCase()) || []
-      ) || optimizedRoute.items?.map((item: any) => item.productName.toLowerCase()) || [];
-
-      const matchingDeals = (dealsData || []).filter((deal: any) => 
-        routeItems.some((itemName: string) => 
-          itemName.includes(deal.productName.toLowerCase()) || 
-          deal.productName.toLowerCase().includes(itemName)
-        )
-      );
-
-      setRelevantDeals(matchingDeals);
-    }
-  }, [dealsData, optimizedRoute]);
 
   // Timer effect
   useEffect(() => {
@@ -279,13 +238,13 @@ const ShoppingRoute: React.FC = () => {
 
   const handleToggleItem = (itemId: number, currentStatus: boolean) => {
     const newCompletedItems = new Set(completedItems);
-
+    
     if (currentStatus) {
       newCompletedItems.delete(itemId);
     } else {
       newCompletedItems.add(itemId);
     }
-
+    
     setCompletedItems(newCompletedItems);
     toggleItemMutation.mutate({ itemId, completed: !currentStatus });
 
@@ -452,62 +411,6 @@ const ShoppingRoute: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Deals & Discounts Section */}
-        {relevantDeals && relevantDeals.length > 0 && (
-          <div className="mb-4">
-            <Card className="border-amber-200 bg-amber-50">
-              <CardContent className="p-4">
-                <div className="flex items-center mb-3">
-                  <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center mr-3">
-                    <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732L14.146 12.8l-1.179 4.456a1 1 0 01-1.934 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732L9.854 7.2l1.179-4.456A1 1 0 0112 2z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-amber-800">Available Deals & Discounts</h3>
-                    <p className="text-xs text-amber-600">Save money on items in your list</p>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  {relevantDeals.slice(0, 3).map((deal: any, index: number) => (
-                    <div key={index} className="flex items-center justify-between p-2 bg-white rounded border border-amber-200">
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{deal.productName}</p>
-                        <div className="flex items-center gap-2 text-xs text-gray-600">
-                          <span className="line-through">${((deal.regularPrice || deal.price * 1.3) / 100).toFixed(2)}</span>
-                          <span className="text-green-600 font-medium">${((deal.salePrice || deal.price) / 100).toFixed(2)}</span>
-                          <span className="text-amber-600">
-                            Save ${(((deal.regularPrice || deal.price * 1.3) - (deal.salePrice || deal.price)) / 100).toFixed(2)}
-                          </span>
-                        </div>
-                        {deal.endDate && (
-                          <p className="text-xs text-red-600 mt-1">
-                            Expires: {new Date(deal.endDate).toLocaleDateString()}
-                          </p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <div className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">
-                          {Math.round(((deal.regularPrice || deal.price * 1.3) - (deal.salePrice || deal.price)) / (deal.regularPrice || deal.price * 1.3) * 100)}% OFF
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {relevantDeals.length > 3 && (
-                    <div className="text-center pt-2">
-                      <button className="text-amber-600 text-sm font-medium hover:text-amber-700">
-                        View {relevantDeals.length - 3} more deals
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
         {/* Current Aisle */}
         {currentAisle && (
           <Card className="mb-4">
@@ -530,7 +433,7 @@ const ShoppingRoute: React.FC = () => {
               <div className="space-y-3">
                 {currentAisle.items.map((item: any) => {
                   const isCompleted = completedItems.has(item.id) || item.isCompleted;
-
+                  
                   return (
                     <div 
                       key={item.id} 
@@ -551,7 +454,7 @@ const ShoppingRoute: React.FC = () => {
                             <Circle className="h-6 w-6 text-gray-400 hover:text-green-600" />
                           )}
                         </button>
-
+                        
                         <div className="flex-1">
                           <div className={`font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
                             {item.productName}
@@ -585,7 +488,7 @@ const ShoppingRoute: React.FC = () => {
                     <ArrowRight className="h-4 w-4 mr-2 rotate-180" />
                     Previous
                   </Button>
-
+                  
                   {isLastAisle ? (
                     <Button 
                       className="w-full bg-green-600 hover:bg-green-700"
@@ -627,7 +530,7 @@ const ShoppingRoute: React.FC = () => {
                 const completionStatus = getAisleCompletionStatus(aisle);
                 const isCurrent = index === currentAisleIndex;
                 const isVisited = index < currentAisleIndex;
-
+                
                 return (
                   <button
                     key={aisle.aisleName}
@@ -663,7 +566,7 @@ const ShoppingRoute: React.FC = () => {
                         <div className="text-xs text-gray-500">{aisle.category}</div>
                       </div>
                     </div>
-
+                    
                     <div className="flex items-center gap-2">
                       <div className="text-xs text-gray-600">
                         {completionStatus.completed}/{completionStatus.total}
