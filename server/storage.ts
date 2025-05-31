@@ -297,7 +297,8 @@ export class MemStorage implements IStorage {
         { productName: "Quinoa", quantity: 1, unit: "BAG" },
         { productName: "Olive Oil", quantity: 1, unit: "BOTTLE" },
         { productName: "Cheddar Cheese", quantity: 1, unit: "BLOCK" },
-        { productName: "Almond Butter", quantity: 1, unit: "JAR" }
+        { productName: "Almond Butter", quantity: 1, unit: "JAR" },
+        { productName: "Sparkling Water", quantity: 6, unit: "BOTTLES" }
       ];
 
       sampleItems.forEach(item => {
@@ -473,6 +474,7 @@ export class MemStorage implements IStorage {
         productName: product.name,
         quantity,
         unitPrice,
+        totalPrice,
         totalPrice
       };
       this.purchaseItems.set(purchaseItem.id, purchaseItem);
@@ -2416,7 +2418,7 @@ const [updatedUser] = await db
 
   async updateAffiliateConversionStatus(id: number, status: string): Promise<AffiliateConversion> {
     try {
-      const [conversion] = await db
+      const [conversion]= await db
         .update(affiliateConversions)
         .set({ status })
         .where(eq(affiliateConversions.id, id))
