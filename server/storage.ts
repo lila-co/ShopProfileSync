@@ -1269,10 +1269,10 @@ export class MemStorage implements IStorage {
         }
         return results;
     }
-    
+
     async searchPurchases(filters: any): Promise<Purchase[]> {
         let results = Array.from(this.purchases.values());
-    
+
         if (filters.userId) {
             results = results.filter(purchase => purchase.userId === filters.userId);
         }
@@ -1289,7 +1289,7 @@ export class MemStorage implements IStorage {
         }
         return results;
     }
-    
+
     async getUserStatistics(userId: number): Promise<any> {
         // Mock statistics for demo
         return {
@@ -2562,6 +2562,71 @@ const [updatedUser] = await db
         { month: 'Mar', amount: 45000 }
       ],
       savingsThisMonth: 1500 // $15.00
+    };
+  }
+
+  async getRetailer(id: number): Promise<any> {
+    try {
+      const [retailer] = await db.select().from(retailers).where(eq(retailers.id, id));
+      return retailer || undefined;
+    } catch (error) {
+      console.error("Error getting retailer:", error);
+      throw error;
+    }
+  }
+
+  async getRetailerByName(name: string): Promise<any> {
+    try {
+      const [retailer] = await db.select().from(retailers).where(eq(retailers.name, name));
+      return retailer || undefined;
+    } catch (error) {
+      console.error("Error getting retailer by name:", error);
+      throw error;
+    }
+  }
+
+  async getUserLoyaltyCard(userId: number, retailerId: number): Promise<any> {
+    try {
+      // Mock loyalty card data since we don't have a loyalty_cards table yet
+      const mockLoyaltyCards: { [key: string]: any } = {
+        'Walmart': {
+          cardNumber: '6224981234567890',
+          memberId: 'WM' + userId.toString().padStart(8, '0'),
+          barcodeNumber: '6224981234567890',
+          affiliateCode: 'SMARTCART_' + userId
+        },
+        'Target': {
+          cardNumber: '1234567890123456',
+          memberId: 'T' + userId.toString().padStart(9, '0'),
+          barcodeNumber: '1234567890123456',
+          affiliateCode: 'SMARTCART_' + userId
+        },
+        'Kroger': {
+          cardNumber: '4135551234567890',
+          memberId: 'KR' + userId.toString().padStart(8, '0'),
+          barcodeNumber: '4135551234567890',
+          affiliateCode: 'SMARTCART_' + userId
+        }
+      };
+
+      const retailer = await this.getRetailer(retailerId);
+      if (!retailer) return null;
+
+      return mockLoyaltyCards[retailer.name] || null;
+    } catch (error) {
+      console.error("Error getting user loyalty card:", error);
+      throw error;
+    }
+  }
+
+  async addUserLoyaltyCard(userId: number, cardData: any): Promise<any> {
+    // In a real implementation, you'd insert into a loyalty_cards table
+    // For now, we'll return the provided data with an ID
+    return {
+      id: Date.now(),
+      userId,
+      ...cardData,
+      createdAt: new Date()
     };
   }
 }

@@ -58,6 +58,8 @@ const RetailerLinking: React.FC = () => {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [allowOrdering, setAllowOrdering] = useState(true);
+  const [loyaltyCardNumber, setLoyaltyCardNumber] = useState('');
+  const [loyaltyMemberId, setLoyaltyMemberId] = useState('');
 
   // Get all available retailers
   const { data: retailers, isLoading: retailersLoading } = useQuery({
@@ -79,6 +81,8 @@ const RetailerLinking: React.FC = () => {
       // Reset form and close dialog
       setUsername('');
       setPassword('');
+      setLoyaltyCardNumber('');
+      setLoyaltyMemberId('');
       setLinkDialogOpen(false);
 
       // Invalidate queries to refresh the data
@@ -145,13 +149,30 @@ const RetailerLinking: React.FC = () => {
 
     if (!selectedRetailer) return;
 
-    linkAccountMutation.mutate({
+    const accountData = {
       retailerId: selectedRetailer.id,
       username,
       password,
       storeCredentials: rememberMe,
       allowOrdering,
-    });
+    };
+
+    linkAccountMutation.mutate(accountData);
+
+    // If loyalty card info is provided, save it separately
+    if (loyaltyCardNumber.trim()) {
+      try {
+        await apiRequest('POST', '/api/user/loyalty-card', {
+          retailerId: selectedRetailer.id,
+          cardNumber: loyaltyCardNumber,
+          memberId: loyaltyMemberId || loyaltyCardNumber,
+          barcodeNumber: loyaltyCardNumber,
+          affiliateCode: `SMARTCART_${Date.now()}` // Generate affiliate code
+        });
+      } catch (error) {
+        console.warn('Failed to save loyalty card:', error);
+      }
+    }
   };
 
   // Open the link dialog for a specific retailer
@@ -433,6 +454,35 @@ const RetailerLinking: React.FC = () => {
                   onCheckedChange={setAllowOrdering}
                 />
                 <Label htmlFor="allow-ordering">Allow SavvyCart to place orders for me</Label>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <h4 className="font-medium">Loyalty Card (Optional)</h4>
+                <p className="text-xs text-gray-600">
+                  Add your loyalty card to earn points and access member discounts during shopping.
+                </p>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="loyalty-card">Loyalty Card Number</Label>
+                  <Input
+                    id="loyalty-card"
+                    value={loyaltyCardNumber}
+                    onChange={(e) => setLoyaltyCardNumber(e.target.value)}
+                    placeholder="1234567890123456"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="member-id">Member ID (if different)</Label>
+                  <Input
+                    id="member-id"
+                    value={loyaltyMemberId}
+                    onChange={(e) => setLoyaltyMemberId(e.target.value)}
+                    placeholder="Optional member ID"
+                  />
+                </div>
               </div>
 
               <div className="bg-blue-50 p-3 rounded-md">

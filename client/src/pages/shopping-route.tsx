@@ -41,7 +41,29 @@ const ShoppingRoute: React.FC = () => {
   const [selectedPlanData, setSelectedPlanData] = useState<any>(null);
   const [currentAisleIndex, setCurrentAisleIndex] = useState(0);
   const [completedItems, setCompletedItems] = useState<Set<number>>(new Set());
-  
+  const [loyaltyCard, setLoyaltyCard] = useState<any>(null);
+
+  // Fetch loyalty card info for the retailer
+  const { data: loyaltyCardData } = useQuery({
+    queryKey: [`/api/user/loyalty-card/${optimizedRoute?.retailerName}`],
+    enabled: !!optimizedRoute?.retailerName,
+    queryFn: async () => {
+      const response = await fetch(`/api/user/loyalty-card/${encodeURIComponent(optimizedRoute.retailerName)}`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        return null; // No loyalty card found
+      }
+      const data = await response.json();
+      return data;
+    }
+  });
+
+  useEffect(() => {
+    if (loyaltyCardData) {
+      setLoyaltyCard(loyaltyCardData);
+    }
+  }, [loyaltyCardData]);
 
   // Fetch shopping list and items
   const { data: shoppingList, isLoading } = useQuery({
@@ -403,6 +425,63 @@ const ShoppingRoute: React.FC = () => {
       <Header title="Shopping Route" />
 
       <main className="flex-1 overflow-y-auto p-4 pb-20">
+        {/* Loyalty Card Section */}
+        {loyaltyCard && (
+          <Card className="mb-4 border-green-200 bg-green-50">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Badge className="h-5 w-5 text-primary" />
+                  <div>
+                    <div className="font-semibold text-green-800">Loyalty Card Ready</div>
+                    <div className="text-xs text-green-600">{loyaltyCard.cardNumber}</div>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-green-700 border-green-300 hover:bg-green-100"
+                  onClick={() => {
+                    // Generate barcode display or show scannable code
+                    toast({
+                      title: "Loyalty Card",
+                      description: "Show this to the cashier for points/discounts",
+                      duration: 5000
+                    });
+                  }}
+                >
+                  Show Barcode
+                </Button>
+              </div>
+              
+              {/* Barcode Display Area */}
+              <div className="bg-white p-3 rounded border text-center">
+                <div className="text-xs text-gray-500 mb-1">Loyalty Card</div>
+                <div className="font-mono text-lg font-bold tracking-wider">
+                  {loyaltyCard.barcodeNumber || loyaltyCard.cardNumber}
+                </div>
+                {/* Simple barcode visualization */}
+                <div className="flex justify-center mt-2 gap-px">
+                  {loyaltyCard.barcodeNumber?.split('').map((digit: string, index: number) => (
+                    <div
+                      key={index}
+                      className={`w-1 h-8 ${parseInt(digit) % 2 === 0 ? 'bg-black' : 'bg-gray-300'}`}
+                    />
+                  ))}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  Member ID: {loyaltyCard.memberId || loyaltyCard.cardNumber}
+                </div>
+                {loyaltyCard.affiliateCode && (
+                  <div className="text-xs text-blue-600 mt-1">
+                    Affiliate: {loyaltyCard.affiliateCode}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Progress Header */}
         <Card className="mb-4">
           <CardContent className="p-4">
