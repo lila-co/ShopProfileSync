@@ -281,15 +281,15 @@
 
 /* Mobile Shopping List Optimizations */
 .mobile-shopping-item {
-  @apply cursor-pointer transition-all duration-200 touch-manipulation min-h-[60px] p-4 rounded-xl bg-white border-0 shadow-sm;
+  @apply cursor-pointer transition-all duration-200 touch-manipulation min-h-[72px] p-4 rounded-xl bg-white border-0 shadow-sm;
 }
 
 .mobile-shopping-item:hover {
-  @apply shadow-md -translate-y-0.5;
+  @apply shadow-lg -translate-y-1 border-primary/20;
 }
 
 .mobile-shopping-item:active {
-  @apply scale-95;
+  @apply scale-[0.98] shadow-sm;
 }
 
 .mobile-shopping-item:focus-within {
@@ -297,7 +297,7 @@
 }
 
 .mobile-shopping-item input[type="checkbox"] {
-  @apply w-5 h-5 rounded border-2 border-gray-300 focus:ring-2 focus:ring-primary cursor-pointer;
+  @apply w-5 h-5 rounded border-2 border-gray-300 focus:ring-2 focus:ring-primary cursor-pointer transition-all duration-150;
 }
 
 .mobile-shopping-item input[type="checkbox"]:checked {
@@ -306,6 +306,16 @@
 
 .mobile-shopping-item input[type="checkbox"]:checked + div .item-text {
   @apply opacity-60 line-through;
+}
+
+/* Better button touch targets */
+.mobile-shopping-item button {
+  @apply min-w-[44px] min-h-[44px] transition-all duration-150;
+}
+
+/* Improved category headers */
+.category-header {
+  @apply sticky top-0 bg-gray-50 z-10 py-2 px-1;
 }
 
 /* High contrast support */
