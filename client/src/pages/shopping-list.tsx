@@ -1169,30 +1169,39 @@ const ShoppingListPage: React.FC = () => {
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
       <Header title="Shopping Lists" />
 
-      <main className="flex-1 overflow-y-auto p-4 pb-20">
-        <h2 className="text-xl font-bold mb-4">Shopping List</h2>
+      <main className="flex-1 overflow-y-auto px-4 sm:px-6 pt-6 pb-24">
+        {/* Page Header */}
+        <div className="mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Shopping Lists</h1>
+          <p className="text-gray-600 text-sm sm:text-base">Manage your shopping lists and find the best deals</p>
+        </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
-          <Card className="border border-gray-200">
-            <CardContent className="p-4 sm:p-5">
-              <div className="flex flex-col items-center text-center">
-                <ShoppingCart className="h-8 w-8 sm:h-10 sm:w-10 text-primary mb-3 sm:mb-4" />
-                <h3 className="text-sm sm:text-base font-semibold mb-3 sm:mb-4">Generate List</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8">
+          <Card className="border-2 border-gray-100 hover:border-primary/30 hover:shadow-lg transition-all duration-200 group">
+            <CardContent className="p-6">
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="p-3 bg-primary/10 rounded-full group-hover:bg-primary/20 transition-colors">
+                  <ShoppingCart className="h-8 w-8 text-primary" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-base font-semibold text-gray-900">Generate List</h3>
+                  <p className="text-xs text-gray-500 leading-relaxed">AI-powered list based on your shopping history</p>
+                </div>
                 <Button 
-                  className="w-full bg-primary hover:bg-primary/90 h-10 sm:h-11"
+                  className="w-full bg-primary hover:bg-primary/90 h-12 font-medium shadow-sm"
                   onClick={() => previewGenerateMutation.mutate()}
                   disabled={previewGenerateMutation.isPending}
                 >
                   {previewGenerateMutation.isPending ? (
                     <>
                       <Loader2 className="animate-spin h-4 w-4 mr-2" />
-                      <span className="text-sm font-medium">Generating...</span>
+                      <span>Generating...</span>
                     </>
                   ) : (
                     <>
                       <ListChecks className="h-4 w-4 mr-2" />
-                      <span className="text-sm font-medium">Generate</span>
+                      <span>Generate</span>
                     </>
                   )}
                 </Button>
@@ -1200,33 +1209,43 @@ const ShoppingListPage: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card className="border border-gray-200">
-            <CardContent className="p-4 sm:p-5">
-              <div className="flex flex-col items-center text-center">
-                <FileText className="h-8 w-8 sm:h-10 sm:w-10 text-blue-600 mb-3 sm:mb-4" />
-                <h3 className="text-sm sm:text-base font-semibold mb-3 sm:mb-4">Upload List</h3>
+          <Card className="border-2 border-gray-100 hover:border-blue-300 hover:shadow-lg transition-all duration-200 group">
+            <CardContent className="p-6">
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="p-3 bg-blue-50 rounded-full group-hover:bg-blue-100 transition-colors">
+                  <FileText className="h-8 w-8 text-blue-600" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-base font-semibold text-gray-900">Upload List</h3>
+                  <p className="text-xs text-gray-500 leading-relaxed">Import from text, CSV, or photo of handwritten list</p>
+                </div>
                 <Button 
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white h-10 sm:h-11"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 font-medium shadow-sm"
                   onClick={() => setUploadDialogOpen(true)}
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  <span className="text-sm font-medium">Upload</span>
+                  <span>Upload</span>
                 </Button>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border border-gray-200">
-            <CardContent className="p-4 sm:p-5">
-              <div className="flex flex-col items-center text-center">
-                <FileText className="h-8 w-8 sm:h-10 sm:w-10 text-green-600 mb-3 sm:mb-4" />
-                <h3 className="text-sm sm:text-base font-semibold mb-3 sm:mb-4">Import Recipe</h3>
+          <Card className="border-2 border-gray-100 hover:border-green-300 hover:shadow-lg transition-all duration-200 group">
+            <CardContent className="p-6">
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="p-3 bg-green-50 rounded-full group-hover:bg-green-100 transition-colors">
+                  <FileText className="h-8 w-8 text-green-600" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-base font-semibold text-gray-900">Import Recipe</h3>
+                  <p className="text-xs text-gray-500 leading-relaxed">Extract ingredients from any recipe URL</p>
+                </div>
                 <Button 
-                  className="w-full bg-green-600 hover:bg-green-700 text-white h-10 sm:h-11"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white h-12 font-medium shadow-sm"
                   onClick={() => setRecipeDialogOpen(true)}
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  <span className="text-sm font-medium">Recipe</span>
+                  <span>Recipe</span>
                 </Button>
               </div>
             </CardContent>
@@ -1235,31 +1254,39 @@ const ShoppingListPage: React.FC = () => {
 
         {/* AI Categorization Section */}
         {items.length > 0 && (
-          <Card className="mb-4 border border-purple-200">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <Sparkles className="h-5 w-5 text-purple-600 mr-2" />
-                  <div>
-                    <h3 className="text-sm font-semibold text-purple-700">AI Product Categorization</h3>
-                    <p className="text-xs text-gray-600">Analyze your items with AI-powered categorization</p>
+          <Card className="mb-8 border-2 border-purple-100 bg-gradient-to-r from-purple-50 to-indigo-50 hover:shadow-lg transition-all duration-200">
+            <CardContent className="p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-start space-x-4">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <Sparkles className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-semibold text-purple-800">AI Product Categorization</h3>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      Optimize your shopping list with AI-powered product analysis and categorization
+                    </p>
+                    <div className="flex items-center space-x-2 text-xs text-purple-600">
+                      <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
+                      <span>{items.length} items ready for analysis</span>
+                    </div>
                   </div>
                 </div>
                 <Button 
                   onClick={() => categorizeMutation.mutate()}
                   disabled={categorizeMutation.isPending || items.length === 0}
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
-                  size="sm"
+                  className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-md h-12 px-6 font-medium"
+                  size="lg"
                 >
                   {categorizeMutation.isPending ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                       Analyzing...
                     </>
                   ) : (
                     <>
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      Categorize
+                      <Sparkles className="mr-2 h-5 w-5" />
+                      Analyze Items
                     </>
                   )}
                 </Button>
@@ -1268,11 +1295,29 @@ const ShoppingListPage: React.FC = () => {
           </Card>
         )}
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4 sm:mb-6">
-          <TabsList className="flex w-full h-auto flex-wrap">
-            <TabsTrigger value="items" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Items</TabsTrigger>
-            <TabsTrigger value="optimization" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Optimization</TabsTrigger>
-            <TabsTrigger value="comparison" className="flex-1 px-2 py-2 text-xs sm:text-sm whitespace-nowrap">Price Comparison</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
+          <TabsList className="grid grid-cols-3 w-full bg-gray-100 p-1 rounded-xl h-14">
+            <TabsTrigger 
+              value="items" 
+              className="flex-1 rounded-lg px-4 py-3 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary"
+            >
+              <ShoppingBag className="h-4 w-4 mr-2" />
+              Items
+            </TabsTrigger>
+            <TabsTrigger 
+              value="optimization" 
+              className="flex-1 rounded-lg px-4 py-3 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary"
+            >
+              <BarChart className="h-4 w-4 mr-2" />
+              Optimize
+            </TabsTrigger>
+            <TabsTrigger 
+              value="comparison" 
+              className="flex-1 rounded-lg px-4 py-3 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary"
+            >
+              <BarChart4 className="h-4 w-4 mr-2" />
+              Compare
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="items" className="pt-4">
@@ -1335,64 +1380,68 @@ const ShoppingListPage: React.FC = () => {
                       {/* Incomplete items grouped by category */}
                       {Object.entries(incompleteGrouped).map(([category, categoryItems]) => (
                         <div key={'incomplete-' + category} className="space-y-2">
-                          <div className="flex items-center space-x-2 mt-4 mb-2">
-                            <span className="text-lg">{getCategoryIcon(category)}</span>
-                            <h4 className="font-semibold text-gray-700">{category}</h4>
-                            <div className="flex-1 h-px bg-gray-200"></div>
-                            <span className="text-xs text-gray-500">{categoryItems.length} items</span>
+                          <div className="flex items-center space-x-3 mt-6 mb-4 p-3 bg-gray-50 rounded-lg border-l-4 border-primary">
+                            <span className="text-2xl">{getCategoryIcon(category)}</span>
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-gray-800 text-base">{category}</h4>
+                              <p className="text-xs text-gray-500">{categoryItems.length} item{categoryItems.length !== 1 ? 's' : ''}</p>
+                            </div>
                           </div>
                           {categoryItems.map((item: ShoppingListItem) => (
-                            <Card key={item.id} className="ml-2">
-                              <CardContent className="p-3">
-                                <div className="flex justify-between items-center">
-                                  <div className="flex items-center flex-1">
-                                    <input
-                                      type="checkbox"
-                                      checked={item.isCompleted}
-                                      onChange={() => handleToggleItem(item.id, item.isCompleted)}
-                                      className="h-5 w-5 text-primary rounded mr-3"
-                                    />
-                                    <div className="flex-1">
-                                      <div className="flex items-center">
-                                        <span className="font-medium text-gray-800">
+                            <Card key={item.id} className="ml-4 border-2 border-gray-100 hover:border-gray-200 hover:shadow-md transition-all duration-200">
+                              <CardContent className="p-4">
+                                <div className="flex items-center space-x-4">
+                                  <input
+                                    type="checkbox"
+                                    checked={item.isCompleted}
+                                    onChange={() => handleToggleItem(item.id, item.isCompleted)}
+                                    className="h-5 w-5 text-primary rounded border-2 border-gray-300 focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                      <div className="flex-1">
+                                        <h5 className="font-semibold text-gray-900 text-base truncate">
                                           {item.productName}
-                                        </span>
-                                        <span className="ml-2 text-sm bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
-                                          Qty: {item.quantity} {item.unit && item.unit !== "COUNT" && (
-                                            <span className="text-xs text-gray-500">{item.unit.toLowerCase()}</span>
-                                          )}
-                                        </span>
-                                      </div>
-                                      {item.suggestedRetailerId && item.suggestedPrice && (
-                                        <div className="flex items-center text-xs text-gray-500 mt-1">
-                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/>
-                                            <path d="M3 9V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4"/>
-                                          </svg>
-                                          <span>
-                                            Best price: ${(item.suggestedPrice / 100).toFixed(2)} at Retailer #{item.suggestedRetailerId}
+                                        </h5>
+                                        <div className="flex items-center space-x-2 mt-1">
+                                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                            Qty: {item.quantity}
+                                            {item.unit && item.unit !== "COUNT" && (
+                                              <span className="ml-1 text-gray-500">{item.unit.toLowerCase()}</span>
+                                            )}
                                           </span>
                                         </div>
-                                      )}
+                                        {item.suggestedRetailerId && item.suggestedPrice && (
+                                          <div className="flex items-center text-xs text-green-600 mt-2 p-2 bg-green-50 rounded">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                              <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/>
+                                              <path d="M3 9V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4"/>
+                                            </svg>
+                                            <span className="font-medium">
+                                              Best price: ${(item.suggestedPrice / 100).toFixed(2)} at Retailer #{item.suggestedRetailerId}
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <button
+                                          onClick={() => handleEditItem(item)}
+                                          className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                                          aria-label="Edit item"
+                                          title="Edit item"
+                                        >
+                                          <Pencil className="h-4 w-4" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteItem(item.id)}
+                                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                          aria-label="Delete item"
+                                          title="Delete item"
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </button>
+                                      </div>
                                     </div>
-                                  </div>
-                                  <div className="flex space-x-2">
-                                    <button
-                                      onClick={() => handleEditItem(item)}
-                                      className="text-gray-400 hover:text-blue-500"
-                                      aria-label="Edit item"
-                                      title="Edit item"
-                                    >
-                                      <Pencil className="h-5 w-5" />
-                                    </button>
-                                    <button
-                                      onClick={() => handleDeleteItem(item.id)}
-                                      className="text-gray-400 hover:text-red-500"
-                                      aria-label="Delete item"
-                                      title="Delete item"
-                                    >
-                                      <Trash2 className="h-5 w-5" />
-                                    </button>
                                   </div>
                                 </div>
                               </CardContent>
@@ -1403,12 +1452,13 @@ const ShoppingListPage: React.FC = () => {
 
                       {/* Completed items section */}
                       {completedItems.length > 0 && (
-                        <div className="mt-6">
-                          <div className="flex items-center space-x-2 mb-3">
-                            <Check className="h-5 w-5 text-green-600" />
-                            <h4 className="font-semibold text-gray-700">Completed</h4>
-                            <div className="flex-1 h-px bg-gray-200"></div>
-                            <span className="text-xs text-gray-500">{completedItems.length} items</span>
+                        <div className="mt-8">
+                          <div className="flex items-center space-x-3 mb-4 p-3 bg-green-50 rounded-lg border-l-4 border-green-500">
+                            <Check className="h-6 w-6 text-green-600" />
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-green-800 text-base">Completed Items</h4>
+                              <p className="text-xs text-green-600">{completedItems.length} item{completedItems.length !== 1 ? 's' : ''} completed</p>
+                            </div>
                           </div>
                           <div className="space-y-2">
                             {completedItems.map((item: ShoppingListItem) => (
@@ -1458,73 +1508,96 @@ const ShoppingListPage: React.FC = () => {
               )}
             </div>
 
-            <form onSubmit={handleAddItem} className="mb-4 sm:mb-6">
-              <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2 mb-2">
-                <Input
-                  type="text"
-                  placeholder="Add an item..."
-                  value={newItemName}
-                  onChange={(e) => setNewItemName(e.target.value)}
-                  className="flex-1"
-                />
-                <Button 
-                  type="submit" 
-                  className="bg-primary text-white w-full sm:w-auto"
-                  disabled={addItemMutation.isPending}
-                >
-                  {addItemMutation.isPending ? 'Adding...' : 'Add Item'}
-                </Button>
-              </div>
+            {/* Add Item Form */}
+            <Card className="mb-8 border-2 border-gray-100">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Item</h3>
+                <form onSubmit={handleAddItem} className="space-y-4">
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex-1">
+                      <Input
+                        type="text"
+                        placeholder="Enter item name (e.g., Bananas, Milk, Bread)"
+                        value={newItemName}
+                        onChange={(e) => setNewItemName(e.target.value)}
+                        className="h-12 text-base border-2 border-gray-200 focus:border-primary"
+                      />
+                    </div>
+                    <Button 
+                      type="submit" 
+                      className="bg-primary hover:bg-primary/90 text-white h-12 px-8 font-medium shadow-sm w-full sm:w-auto"
+                      disabled={addItemMutation.isPending}
+                    >
+                      {addItemMutation.isPending ? (
+                        <>
+                          <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                          Adding...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Item
+                        </>
+                      )}
+                    </Button>
+                  </div>
 
-              <div className="flex flex-wrap gap-2">
-                <div className="w-full sm:w-20">
-                  <Input
-                    type="number"
-                    placeholder="Qty"
-                    min="0.01"
-                    step="0.01"
-                    defaultValue="1"
-                    onChange={(e) => setNewItemQuantity(Math.round(parseFloat(e.target.value) || 1))}
-                    className="w-full"
-                  />
-                </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700 mb-2 block">Quantity</Label>
+                      <Input
+                        type="number"
+                        placeholder="1"
+                        min="0.01"
+                        step="0.01"
+                        defaultValue="1"
+                        onChange={(e) => setNewItemQuantity(Math.round(parseFloat(e.target.value) || 1))}
+                        className="h-10 border-2 border-gray-200 focus:border-primary"
+                      />
+                    </div>
 
-                <Select 
-                  value={newItemUnit} 
-                  onValueChange={setNewItemUnit}
-                  disabled={autoDetectUnit}
-                >
-                  <SelectTrigger className={'flex-1 ' + (autoDetectUnit ? 'opacity-60' : '')}>
-                    <SelectValue placeholder="Unit" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="COUNT">Count</SelectItem>
-                    <SelectItem value="LB">lb (Pounds)</SelectItem>
-                    <SelectItem value="OZ">oz (Ounces)</SelectItem>
-                    <SelectItem value="GALLON">Gallon</SelectItem>
-                    <SelectItem value="LOAF">Loaf</SelectItem>
-                    <SelectItem value="PKG">Package</SelectItem>
-                    <SelectItem value="ROLL">Rolls</SelectItem>
-                    <SelectItem value="BOX">Box</SelectItem>
-                    <SelectItem value="CAN">Can</SelectItem>
-                    <SelectItem value="BOTTLE">Bottle</SelectItem>
-                    <SelectItem value="JAR">Jar</SelectItem>
-                    <SelectItem value="BUNCH">Bunch</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700 mb-2 block">Unit</Label>
+                      <Select 
+                        value={newItemUnit} 
+                        onValueChange={setNewItemUnit}
+                        disabled={autoDetectUnit}
+                      >
+                        <SelectTrigger className={'h-10 border-2 border-gray-200 focus:border-primary ' + (autoDetectUnit ? 'opacity-60' : '')}>
+                          <SelectValue placeholder="Select unit" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="COUNT">Count</SelectItem>
+                          <SelectItem value="LB">lb (Pounds)</SelectItem>
+                          <SelectItem value="OZ">oz (Ounces)</SelectItem>
+                          <SelectItem value="GALLON">Gallon</SelectItem>
+                          <SelectItem value="LOAF">Loaf</SelectItem>
+                          <SelectItem value="PKG">Package</SelectItem>
+                          <SelectItem value="ROLL">Rolls</SelectItem>
+                          <SelectItem value="BOX">Box</SelectItem>
+                          <SelectItem value="CAN">Can</SelectItem>
+                          <SelectItem value="BOTTLE">Bottle</SelectItem>
+                          <SelectItem value="JAR">Jar</SelectItem>
+                          <SelectItem value="BUNCH">Bunch</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
 
-              <div className="flex items-center space-x-2 mt-2 text-sm text-gray-600">
-                <Switch 
-                  checked={autoDetectUnit} 
-                  onCheckedChange={setAutoDetectUnit}
-                  id="auto-detect"
-                />
-                <Label htmlFor="auto-detect" className="cursor-pointer flex items-center text-xs sm:text-sm">
-                  Auto-detect best unit based on item name
-                </Label>
-              </div>
-            </form>
+                  <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
+                    <Switch 
+                      checked={autoDetectUnit} 
+                      onCheckedChange={setAutoDetectUnit}
+                      id="auto-detect"
+                    />
+                    <Label htmlFor="auto-detect" className="cursor-pointer flex items-center text-sm text-blue-800">
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Auto-detect best unit based on item name
+                    </Label>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="optimization" className="pt-4">
