@@ -490,7 +490,7 @@ const ShoppingListComponent: React.FC = () => {
             variant="default" 
             size="lg" 
             onClick={() => setRecipeDialogOpen(true)} 
-            className="flex items-center justify-center h-12 text-base font-semibold bg-secondary text-white border-2 border-secondary hover:bg-secondary/90 shadow-md transition-all"
+            className="flex items-center justify-center h-12 text-base font-semibold bg-slate-600 text-white border-2 border-slate-600 hover:bg-slate-700 shadow-md transition-all"
           >
             <FileText className="h-5 w-5 mr-2" />
             Import Recipe
