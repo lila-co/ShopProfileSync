@@ -16,14 +16,14 @@ const ShoppingListPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="max-w-md mx-auto bg-background min-h-screen flex flex-col">
+      <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
         <Header user={user} />
-        <main className="flex-1 overflow-y-auto p-4">
+        <main className="flex-1 overflow-y-auto p-4 bg-white">
           <div className="animate-pulse space-y-4">
             <div className="h-8 bg-gray-200 rounded w-3/4"></div>
             <div className="space-y-3">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="border border-gray-200 rounded-lg p-3">
+                <div key={i} className="border border-gray-200 rounded-lg p-3 bg-white">
                   <div className="h-5 bg-gray-200 rounded w-1/2 mb-2"></div>
                   <div className="h-4 bg-gray-200 rounded w-1/3"></div>
                 </div>
@@ -41,7 +41,7 @@ const ShoppingListPage: React.FC = () => {
   const listName = defaultList?.name || 'Shopping List';
 
   return (
-    <div className="max-w-md mx-auto bg-background min-h-screen flex flex-col">
+    <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
       <Header 
         title={listName}
         user={user}
