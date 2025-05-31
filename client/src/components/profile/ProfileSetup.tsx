@@ -25,12 +25,12 @@ const ProfileSetup: React.FC = () => {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
+  
   // Get current user profile
   const { data: user, isLoading } = useQuery<User>({
     queryKey: ['/api/user/profile'],
   });
-
+  
   // Setup form with default values
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -44,7 +44,7 @@ const ProfileSetup: React.FC = () => {
       shoppingRadius: user?.shoppingRadius || 5,
     },
   });
-
+  
   // Update when user data loads
   React.useEffect(() => {
     if (user) {
@@ -59,7 +59,7 @@ const ProfileSetup: React.FC = () => {
       });
     }
   }, [user]);
-
+  
   // Handle form submission
   const updateProfileMutation = useMutation({
     mutationFn: async (values: ProfileFormValues) => {
@@ -86,11 +86,11 @@ const ProfileSetup: React.FC = () => {
       });
     }
   });
-
+  
   const onSubmit = (values: ProfileFormValues) => {
     updateProfileMutation.mutate(values);
   };
-
+  
   if (isLoading) {
     return (
       <div className="bg-white rounded-lg">
@@ -114,13 +114,13 @@ const ProfileSetup: React.FC = () => {
       <div className="mb-4">
         <h2 className="text-lg font-bold text-center">Complete Your Profile</h2>
       </div>
-
+      
       <p className="text-gray-600 mb-6">
         Help us personalize your shopping recommendations by providing some information about your household.
       </p>
-
+      
       <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
-
+        
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Household Type</label>
             <select 
@@ -138,7 +138,7 @@ const ProfileSetup: React.FC = () => {
               <p className="text-red-500 text-xs mt-1">{form.formState.errors.householdType.message}</p>
             )}
           </div>
-
+          
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Number of People</label>
             <select 
@@ -156,7 +156,7 @@ const ProfileSetup: React.FC = () => {
               <p className="text-red-500 text-xs mt-1">{form.formState.errors.householdSize.message}</p>
             )}
           </div>
-
+          
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Shopping Preferences</label>
             <div className="space-y-2">
@@ -198,7 +198,7 @@ const ProfileSetup: React.FC = () => {
               </div>
             </div>
           </div>
-
+          
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Shopping Radius: {form.watch("shoppingRadius") ?? 5} miles
@@ -220,7 +220,7 @@ const ProfileSetup: React.FC = () => {
               </div>
             </div>
           </div>
-
+          
           <button 
           type="submit" 
           className="w-full py-3 bg-primary text-white rounded-lg font-medium mt-6"

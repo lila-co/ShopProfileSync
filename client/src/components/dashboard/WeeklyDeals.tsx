@@ -7,14 +7,14 @@ const WeeklyDeals: React.FC = () => {
   const { data: storeDeals, isLoading } = useQuery<DealsSummary[]>({
     queryKey: ['/api/deals/summary'],
   });
-
+  
   return (
     <section className="mb-6">
       <div className="flex justify-between items-center mb-3">
         <h3 className="font-bold text-gray-800">Weekly Deals</h3>
         <a href="/deals" className="text-primary text-sm font-medium">View All</a>
       </div>
-
+      
       <div className="overflow-x-auto hide-scrollbar -mx-4 px-4">
         <div className="flex space-x-2 sm:space-x-3 pb-2 w-max">
           {isLoading ? (

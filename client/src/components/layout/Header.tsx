@@ -27,7 +27,7 @@ const Header: React.FC<HeaderProps> = ({ title, rightContent, showBackButton = f
             <ArrowLeft className="h-5 w-5 text-gray-600" />
           </button>
         )}
-        <h1 className="text-xl font-semibold text-foreground">{title}</h1>
+        <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
       </div>
       {rightContent && <div>{rightContent}</div>}
     </header>

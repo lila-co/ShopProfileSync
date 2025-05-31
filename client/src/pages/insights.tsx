@@ -63,7 +63,7 @@ const InsightsPage: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-foreground">
+                <div className="text-2xl font-bold text-gray-800">
                   ${monthlySpending?.totalSpent ? (monthlySpending.totalSpent / 100).toFixed(2) : '0.00'}
                 </div>
                 <p className="text-sm text-gray-500">This month</p>
@@ -109,7 +109,7 @@ const InsightsPage: React.FC = () => {
                   <div className="space-y-4">
                     {similarProfiles.slice(0, 2).map((profile: any, index: number) => (
                       <div key={index} className="border-l-4 border-blue-500 pl-4">
-                        <h4 className="font-semibold text-foreground">{profile.profileType}</h4>
+                        <h4 className="font-semibold text-gray-800">{profile.profileType}</h4>
                         <p className="text-sm text-gray-600 mb-2">{profile.matchingUsers} similar shoppers in your area</p>
                         <div className="bg-blue-50 p-3 rounded">
                           <p className="text-sm"><span className="font-medium">Avg. Spend:</span> ${profile.averageSpend}</p>
@@ -122,7 +122,7 @@ const InsightsPage: React.FC = () => {
                 ) : (
                   <div className="space-y-4">
                     <div className="border-l-4 border-blue-500 pl-4">
-                      <h4 className="font-semibold text-foreground">Budget-Conscious Families</h4>
+                      <h4 className="font-semibold text-gray-800">Budget-Conscious Families</h4>
                       <p className="text-sm text-gray-600 mb-2">1,250 similar shoppers in your area</p>
                       <div className="bg-blue-50 p-3 rounded">
                         <p className="text-sm"><span className="font-medium">Avg. Spend:</span> $115/week</p>
@@ -131,7 +131,7 @@ const InsightsPage: React.FC = () => {
                       </div>
                     </div>
                     <div className="border-l-4 border-green-500 pl-4">
-                      <h4 className="font-semibold text-foreground">Health-Conscious Shoppers</h4>
+                      <h4 className="font-semibold text-gray-800">Health-Conscious Shoppers</h4>
                       <p className="text-sm text-gray-600 mb-2">875 similar shoppers in your area</p>
                       <div className="bg-green-50 p-3 rounded">
                         <p className="text-sm"><span className="font-medium">Avg. Spend:</span> $95/week</p>
@@ -205,7 +205,7 @@ const InsightsPage: React.FC = () => {
                     {demographicInsights.slice(0, 3).map((insight: any, index: number) => (
                       <div key={index} className="border rounded-lg p-3">
                         <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-medium text-foreground">{insight.trend}</h4>
+                          <h4 className="font-medium text-gray-800">{insight.trend}</h4>
                           <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">{insight.confidence}% confidence</span>
                         </div>
                         <p className="text-sm text-gray-600 mb-1">{insight.description}</p>
@@ -217,7 +217,7 @@ const InsightsPage: React.FC = () => {
                   <div className="space-y-3">
                     <div className="border rounded-lg p-3">
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium text-foreground">Eco-Friendly Trend</h4>
+                        <h4 className="font-medium text-gray-800">Eco-Friendly Trend</h4>
                         <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">85% confidence</span>
                       </div>
                       <p className="text-sm text-gray-600 mb-1">Eco-friendly products seeing 40% increase in your demographic</p>
@@ -225,7 +225,7 @@ const InsightsPage: React.FC = () => {
                     </div>
                     <div className="border rounded-lg p-3">
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium text-foreground">Bulk Buying Trend</h4>
+                        <h4 className="font-medium text-gray-800">Bulk Buying Trend</h4>
                         <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">78% confidence</span>
                       </div>
                       <p className="text-sm text-gray-600 mb-1">Families like yours are increasingly buying in bulk to save money</p>
@@ -233,7 +233,7 @@ const InsightsPage: React.FC = () => {
                     </div>
                     <div className="border rounded-lg p-3">
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium text-foreground">Digital Coupon Adoption</h4>
+                        <h4 className="font-medium text-gray-800">Digital Coupon Adoption</h4>
                         <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">92% confidence</span>
                       </div>
                       <p className="text-sm text-gray-600 mb-1">Mobile couponing growing 65% among your age group</p>
