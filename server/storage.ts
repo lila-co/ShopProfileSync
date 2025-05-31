@@ -272,6 +272,40 @@ export class MemStorage implements IStorage {
     };
     this.shoppingLists.set(defaultList.id, defaultList);
 
+    // Add sample items to the default shopping list for demo purposes
+    const sampleItems = [
+      { productName: "Organic Milk (1 Gallon)", quantity: 1, unit: "GALLON" },
+      { productName: "Free-Range Eggs (Dozen)", quantity: 2, unit: "DOZEN" },
+      { productName: "Whole Wheat Bread", quantity: 1, unit: "LOAF" },
+      { productName: "Bananas", quantity: 3, unit: "LB" },
+      { productName: "Chicken Breast", quantity: 2, unit: "LB" },
+      { productName: "Greek Yogurt", quantity: 4, unit: "CONTAINER" },
+      { productName: "Baby Spinach", quantity: 1, unit: "BAG" },
+      { productName: "Roma Tomatoes", quantity: 2, unit: "LB" },
+      { productName: "Red Bell Peppers", quantity: 3, unit: "COUNT" },
+      { productName: "Avocados", quantity: 4, unit: "COUNT" },
+      { productName: "Ground Turkey", quantity: 1, unit: "LB" },
+      { productName: "Quinoa", quantity: 1, unit: "BAG" },
+      { productName: "Olive Oil", quantity: 1, unit: "BOTTLE" },
+      { productName: "Cheddar Cheese", quantity: 1, unit: "BLOCK" },
+      { productName: "Almond Butter", quantity: 1, unit: "JAR" }
+    ];
+
+    sampleItems.forEach(item => {
+      const newItem: ShoppingListItem = {
+        id: this.shoppingListItemIdCounter++,
+        shoppingListId: defaultList.id,
+        productName: item.productName,
+        quantity: item.quantity,
+        isCompleted: false,
+        unit: item.unit,
+        suggestedRetailerId: Math.floor(Math.random() * 3) + 1, // Random retailer 1-3
+        suggestedPrice: Math.floor(Math.random() * 800) + 200, // Random price $2-10
+        dueDate: null
+      };
+      this.shoppingListItems.set(newItem.id, newItem);
+    });
+
     // Add weekly circulars
     const circulars = [
       { 
