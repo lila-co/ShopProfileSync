@@ -18,6 +18,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
 import { detectUnitFromItemName } from '@/lib/utils';
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 const ShoppingListComponent: React.FC = () => {
   const { toast } = useToast();
@@ -189,7 +190,7 @@ const ShoppingListComponent: React.FC = () => {
     }
   });
 
-  
+
 
   // Generate shopping list preview
   const previewGenerateMutation = useMutation({
@@ -471,7 +472,7 @@ const ShoppingListComponent: React.FC = () => {
 
   return (
     <div className="p-3 sm:p-4 pb-20">
-      
+
 
       {/* Compact Header with Actions */}
       <div className="flex items-center justify-between mb-4">
@@ -610,142 +611,83 @@ const ShoppingListComponent: React.FC = () => {
             </details>
           )}
 
-          <div className="space-y-3">
-            {items.length === 0 ? (
-              <Card>
-                <CardContent className="p-6 text-center text-gray-500">
-                  <ShoppingBag className="h-12 w-12 mx-auto text-gray-300 mb-2" />
-                  <p>Your shopping list is empty</p>
-                  <p className="text-sm mt-1">Add items to get started</p>
-                </CardContent>
-              </Card>
-            ) : (
-              (() => {
-                // Group items by category for display
-                const getCategoryFromName = (productName: string) => {
-                  const name = productName.toLowerCase();
-                  if (/\b(banana|apple|orange|grape|strawberr|tomato|onion|carrot|potato|lettuce|spinach)\w*/i.test(name)) return 'Produce';
-                  if (/\b(milk|cheese|yogurt|egg|butter|cream)\w*/i.test(name)) return 'Dairy & Eggs';
-                  if (/\b(beef|chicken|pork|turkey|fish|meat|salmon|shrimp)\w*/i.test(name)) return 'Meat & Seafood';
-                  if (/\b(bread|loaf|roll|bagel|muffin|cake)\w*/i.test(name)) return 'Bakery';
-                  if (/\b(rice|pasta|bean|sauce|soup|cereal|flour|sugar|salt)\w*/i.test(name)) return 'Pantry & Canned Goods';
-                  if (/\b(frozen|ice cream|pizza)\w*/i.test(name)) return 'Frozen Foods';
-                  if (/\b(shampoo|soap|toothpaste|deodorant|lotion)\w*/i.test(name)) return 'Personal Care';
-                  if (/\b(cleaner|detergent|towel|tissue|toilet paper)\w*/i.test(name)) return 'Household Items';
-                  return 'Other';
-                };
+          <ScrollArea className="h-[400px] w-full rounded-md border">
+            <div className="space-y-3">
+              {items.length === 0 ? (
+                <Card>
+                  <CardContent className="p-6 text-center text-gray-500">
+                    <ShoppingBag className="h-12 w-12 mx-auto text-gray-300 mb-2" />
+                    <p>Your shopping list is empty</p>
+                    <p className="text-sm mt-1">Add items to get started</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                (() => {
+                  // Group items by category for display
+                  const getCategoryFromName = (productName: string) => {
+                    const name = productName.toLowerCase();
+                    if (/\b(banana|apple|orange|grape|strawberr|tomato|onion|carrot|potato|lettuce|spinach)\w*/i.test(name)) return 'Produce';
+                    if (/\b(milk|cheese|yogurt|egg|butter|cream)\w*/i.test(name)) return 'Dairy & Eggs';
+                    if (/\b(beef|chicken|pork|turkey|fish|meat|salmon|shrimp)\w*/i.test(name)) return 'Meat & Seafood';
+                    if (/\b(bread|loaf|roll|bagel|muffin|cake)\w*/i.test(name)) return 'Bakery';
+                    if (/\b(rice|pasta|bean|sauce|soup|cereal|flour|sugar|salt)\w*/i.test(name)) return 'Pantry & Canned Goods';
+                    if (/\b(frozen|ice cream|pizza)\w*/i.test(name)) return 'Frozen Foods';
+                    if (/\b(shampoo|soap|toothpaste|deodorant|lotion)\w*/i.test(name)) return 'Personal Care';
+                    if (/\b(cleaner|detergent|towel|tissue|toilet paper)\w*/i.test(name)) return 'Household Items';
+                    return 'Other';
+                  };
 
-                const getCategoryIcon = (category: string) => {
-                  switch (category) {
-                    case 'Produce': return '🍎';
-                    case 'Dairy & Eggs': return '🥛';
-                    case 'Meat & Seafood': return '🥩';
-                    case 'Bakery': return '🍞';
-                    case 'Pantry & Canned Goods': return '🥫';
-                    case 'Frozen Foods': return '❄️';
-                    case 'Personal Care': return '🧼';
-                    case 'Household Items': return '🏠';
-                    default: return '🛒';
-                  }
-                };
+                  const getCategoryIcon = (category: string) => {
+                    switch (category) {
+                      case 'Produce': return '🍎';
+                      case 'Dairy & Eggs': return '🥛';
+                      case 'Meat & Seafood': return '🥩';
+                      case 'Bakery': return '🍞';
+                      case 'Pantry & Canned Goods': return '🥫';
+                      case 'Frozen Foods': return '❄️';
+                      case 'Personal Care': return '🧼';
+                      case 'Household Items': return '🏠';
+                      default: return '🛒';
+                    }
+                  };
 
-                // Group items by category while preserving sort order
-                const groupedItems: { [key: string]: ShoppingListItem[] } = {};
-                items.forEach(item => {
-                  const category = getCategoryFromName(item.productName);
-                  if (!groupedItems[category]) {
-                    groupedItems[category] = [];
-                  }
-                  groupedItems[category].push(item);
-                });
+                  // Group items by category while preserving sort order
+                  const groupedItems: { [key: string]: ShoppingListItem[] } = {};
+                  items.forEach(item => {
+                    const category = getCategoryFromName(item.productName);
+                    if (!groupedItems[category]) {
+                      groupedItems[category] = [];
+                    }
+                    groupedItems[category].push(item);
+                  });
 
-                // Separate completed and incomplete items
-                const incompleteItems = items.filter(item => !item.isCompleted);
-                const completedItems = items.filter(item => item.isCompleted);
+                  // Separate completed and incomplete items
+                  const incompleteItems = items.filter(item => !item.isCompleted);
+                  const completedItems = items.filter(item => item.isCompleted);
 
-                // Group incomplete items by category
-                const incompleteGrouped: { [key: string]: ShoppingListItem[] } = {};
-                incompleteItems.forEach(item => {
-                  const category = getCategoryFromName(item.productName);
-                  if (!incompleteGrouped[category]) {
-                    incompleteGrouped[category] = [];
-                  }
-                  incompleteGrouped[category].push(item);
-                });
+                  // Group incomplete items by category
+                  const incompleteGrouped: { [key: string]: ShoppingListItem[] } = {};
+                  incompleteItems.forEach(item => {
+                    const category = getCategoryFromName(item.productName);
+                    if (!incompleteGrouped[category]) {
+                      incompleteGrouped[category] = [];
+                    }
+                    incompleteGrouped[category].push(item);
+                  });
 
-                return (
-                  <>
-                    {/* Incomplete items grouped by category */}
-                    {Object.entries(incompleteGrouped).map(([category, categoryItems]) => (
-                      <div key={`incomplete-${category}`} className="space-y-2">
-                        <div className="flex items-center space-x-2 mt-4 mb-2">
-                          <span className="text-lg">{getCategoryIcon(category)}</span>
-                          <h4 className="font-semibold text-gray-700">{category}</h4>
-                          <div className="flex-1 h-px bg-gray-200"></div>
-                          <span className="text-xs text-gray-500">{categoryItems.length} items</span>
-                        </div>
-                        {categoryItems.map((item) => (
-                          <div key={`incomplete-${item.id}`} className="border border-gray-200 rounded-lg p-3 ml-2 bg-white hover:shadow-sm transition-shadow">
-                            <div className="flex justify-between items-center">
-                              <div className="flex items-center flex-1">
-                                <input
-                                  type="checkbox"
-                                  checked={item.isCompleted}
-                                  onChange={() => handleToggleItem(item.id, item.isCompleted)}
-                                  className="h-4 w-4 text-primary rounded mr-3 flex-shrink-0"
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center flex-wrap gap-2">
-                                    <span className="font-medium text-gray-800 text-sm">
-                                      {item.productName}
-                                    </span>
-                                    <span className="text-xs bg-gray-100 px-2 py-1 rounded-full whitespace-nowrap">
-                                      {item.quantity} {item.unit && item.unit !== "COUNT" ? item.unit.toLowerCase() : ""}
-                                    </span>
-                                  </div>
-                                  {item.suggestedRetailerId && item.suggestedPrice && (
-                                    <div className="flex items-center text-xs text-gray-500 mt-1">
-                                      <span>
-                                        Best: ${(item.suggestedPrice / 100).toFixed(2)}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex space-x-1 ml-2">
-                                <button
-                                  onClick={() => handleEditItem(item)}
-                                  className="text-gray-400 hover:text-blue-500 p-1"
-                                  aria-label="Edit item"
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteItem(item.id)}
-                                  className="text-gray-400 hover:text-red-500 p-1"
-                                  aria-label="Delete item"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </div>
-                            </div>
+                  return (
+                    <>
+                      {/* Incomplete items grouped by category */}
+                      {Object.entries(incompleteGrouped).map(([category, categoryItems]) => (
+                        <div key={`incomplete-${category}`} className="space-y-2">
+                          <div className="flex items-center space-x-2 mt-4 mb-2">
+                            <span className="text-lg">{getCategoryIcon(category)}</span>
+                            <h4 className="font-semibold text-gray-700">{category}</h4>
+                            <div className="flex-1 h-px bg-gray-200"></div>
+                            <span className="text-xs text-gray-500">{categoryItems.length} items</span>
                           </div>
-                        ))}
-                      </div>
-                    ))}
-
-                    {/* Completed items section */}
-                    {completedItems.length > 0 && (
-                      <div className="mt-6">
-                        <div className="flex items-center space-x-2 mb-3">
-                          <Check className="h-5 w-5 text-green-600" />
-                          <h4 className="font-semibold text-gray-700">Completed</h4>
-                          <div className="flex-1 h-px bg-gray-200"></div>
-                          <span className="text-xs text-gray-500">{completedItems.length} items</span>
-                        </div>
-                        <div className="space-y-2">
-                          {completedItems.map((item: ShoppingListItem) => (
-                            <div key={item.id} className="border border-gray-200 rounded-lg p-3 ml-2 bg-gray-50 opacity-70">
+                          {categoryItems.map((item) => (
+                            <div key={`incomplete-${item.id}`} className="border border-gray-200 rounded-lg p-3 ml-2 bg-white hover:shadow-sm transition-shadow">
                               <div className="flex justify-between items-center">
                                 <div className="flex items-center flex-1">
                                   <input
@@ -756,16 +698,30 @@ const ShoppingListComponent: React.FC = () => {
                                   />
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center flex-wrap gap-2">
-                                      <span className="font-medium line-through text-gray-500 text-sm">
+                                      <span className="font-medium text-gray-800 text-sm">
                                         {item.productName}
                                       </span>
-                                      <span className="text-xs bg-gray-200 px-2 py-1 rounded-full whitespace-nowrap">
+                                      <span className="text-xs bg-gray-100 px-2 py-1 rounded-full whitespace-nowrap">
                                         {item.quantity} {item.unit && item.unit !== "COUNT" ? item.unit.toLowerCase() : ""}
                                       </span>
                                     </div>
+                                    {item.suggestedRetailerId && item.suggestedPrice && (
+                                      <div className="flex items-center text-xs text-gray-500 mt-1">
+                                        <span>
+                                          Best: ${(item.suggestedPrice / 100).toFixed(2)}
+                                        </span>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
-                                <div className="ml-2">
+                                <div className="flex space-x-1 ml-2">
+                                  <button
+                                    onClick={() => handleEditItem(item)}
+                                    className="text-gray-400 hover:text-blue-500 p-1"
+                                    aria-label="Edit item"
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </button>
                                   <button
                                     onClick={() => handleDeleteItem(item.id)}
                                     className="text-gray-400 hover:text-red-500 p-1"
@@ -778,13 +734,60 @@ const ShoppingListComponent: React.FC = () => {
                             </div>
                           ))}
                         </div>
-                      </div>
-                    )}
-                  </>
-                );
-              })()
-            )}
-          </div>
+                      ))}
+
+                      {/* Completed items section */}
+                      {completedItems.length > 0 && (
+                        <div className="mt-6">
+                          <div className="flex items-center space-x-2 mb-3">
+                            <Check className="h-5 w-5 text-green-600" />
+                            <h4 className="font-semibold text-gray-700">Completed</h4>
+                            <div className="flex-1 h-px bg-gray-200"></div>
+                            <span className="text-xs text-gray-500">{completedItems.length} items</span>
+                          </div>
+                          <div className="space-y-2">
+                            {completedItems.map((item: ShoppingListItem) => (
+                              <div key={item.id} className="border border-gray-200 rounded-lg p-3 ml-2 bg-gray-50 opacity-70">
+                                <div className="flex justify-between items-center">
+                                  <div className="flex items-center flex-1">
+                                    <input
+                                      type="checkbox"
+                                      checked={item.isCompleted}
+                                      onChange={() => handleToggleItem(item.id, item.isCompleted)}
+                                      className="h-4 w-4 text-primary rounded mr-3 flex-shrink-0"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center flex-wrap gap-2">
+                                        <span className="font-medium line-through text-gray-500 text-sm">
+                                          {item.productName}
+                                        </span>
+                                        <span className="text-xs bg-gray-200 px-2 py-1 rounded-full whitespace-nowrap">
+                                          {item.quantity} {item.unit && item.unit !== "COUNT" ? item.unit.toLowerCase() : ""}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="ml-2">
+                                    <button
+                                      onClick={() => handleDeleteItem(item.id)}
+                                      className="text-gray-400 hover:text-red-500 p-1"
+                                      aria-label="Delete item"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()
+              )}
+            </div>
+          </ScrollArea>
         </TabsContent>
 
         <TabsContent value="price" className="space-y-4">
