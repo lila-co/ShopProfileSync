@@ -18,6 +18,7 @@ import { queryClient } from '@/lib/queryClient';
 import Shop from '@/pages/shop'; // Import the Shop component
 import ShoppingRoute from '@/pages/shopping-route'; // Import the ShoppingRoute component
 import AutoOrder from './pages/auto-order';
+import PlanDetails from './pages/plan-details';
 import RetailerDetailsPage from './pages/retailer-details';
 
 function App() {
@@ -26,7 +27,7 @@ function App() {
       <Router>
         <div className="App">
           <Switch>
-            <Route path="/" component={() => <Redirect to="/dashboard" />} />
+            <Route path="/" component={ShoppingListPage} />
             <Route path="/dashboard" component={Dashboard} />
             <Route path="/shopping-list" component={ShoppingListPage} />
             <Route path="/profile" component={ProfilePage} />
@@ -42,6 +43,7 @@ function App() {
             <Route path="/shop" component={Shop} />
             <Route path="/shopping-route" component={ShoppingRoute} />
             <Route path="/auto-order" component={AutoOrder} />
+            <Route path="/plan-details" component={PlanDetails} />
             <Route component={NotFound} />
           </Switch>
         </div>
