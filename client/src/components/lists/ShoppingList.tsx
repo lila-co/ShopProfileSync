@@ -497,7 +497,7 @@ const ShoppingListComponent: React.FC = () => {
             placeholder="Add an item..."
             value={newItemName}
             onChange={(e) => setNewItemName(e.target.value)}
-            className="flex-1 bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+            className="flex-1 bg-gray-50 border border-gray-200 rounded-l-lg px-3 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
             style={{ backgroundColor: 'white !important' }}
           />
           <Button 
@@ -517,7 +517,7 @@ const ShoppingListComponent: React.FC = () => {
               min="1"
               defaultValue="1"
               onChange={(e) => setNewItemQuantity(parseInt(e.target.value) || 1)}
-              className="w-full bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+              className="w-16 bg-gray-50 border border-gray-200 rounded text-gray-800 text-center text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent px-2 py-1"
               style={{ backgroundColor: 'white !important' }}
             />
           </div>
@@ -765,7 +765,7 @@ const ShoppingListComponent: React.FC = () => {
                                       </div>
                                     </div>
                                   </div>
-                                  <div className="ml-3">
+                                                                 <div className="ml-3">
                                     <button
                                       onClick={() => handleDeleteItem(item.id)}
                                       className="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors"
@@ -1269,7 +1269,7 @@ const ShoppingListComponent: React.FC = () => {
                     min="1"
                     value={editItemQuantity}
                     onChange={(e) => setEditItemQuantity(parseInt(e.target.value) || 1)}
-                    className="w-full bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                    className="w-16 bg-gray-50 border border-gray-200 rounded text-gray-800 text-center text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent px-2 py-1"
                     style={{ backgroundColor: 'white !important' }}
                   />
                 </div>
