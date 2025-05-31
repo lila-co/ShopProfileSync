@@ -484,35 +484,33 @@ const ShoppingListComponent: React.FC = () => {
   const items = sortItemsByCategory(rawItems);
 
   return (
-    <div className="p-4 pb-20">
-      <div className="mb-8 w-full border-2 border-primary shadow-lg rounded-lg overflow-hidden">
-        <div className="bg-primary text-white px-4 py-2 text-base sm:text-lg font-bold text-center">
-          Generate Your Shopping List
+    <div className="p-3 sm:p-4 pb-20">
+      {/* Compact AI Generate Section */}
+      <div className="mb-4 w-full border border-primary/30 rounded-lg overflow-hidden bg-primary/5">
+        <div className="bg-primary text-white px-3 py-2 text-sm font-medium text-center">
+          AI Shopping List Generator
         </div>
-        <div className="p-3 sm:p-4 bg-primary/5">
-          <p className="text-center mb-3 sm:mb-4 text-xs sm:text-sm">Our AI analyzes your purchase history to create personalized shopping lists</p>
+        <div className="p-3">
           <Button 
             variant="default" 
             onClick={() => previewGenerateMutation.mutate()}
-            size="default"
-            className="w-full bg-primary hover:bg-primary/90 text-white py-4 sm:py-6 text-sm sm:text-lg font-bold"
+            size="sm"
+            className="w-full bg-primary hover:bg-primary/90 text-white h-10 text-sm font-medium"
           >
-            <Wand2 className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-            <span className="hidden sm:inline">GENERATE SHOPPING LIST</span>
-            <span className="sm:hidden">GENERATE LIST</span>
+            <Wand2 className="h-4 w-4 mr-2" />
+            Generate List
           </Button>
+          <p className="text-center mt-2 text-xs text-gray-600">AI analyzes your purchase history</p>
         </div>
       </div>
 
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg sm:text-xl font-bold">Shopping List</h2>
-        <div className="flex space-x-1 sm:space-x-2">
-          <Button variant="outline" size="sm" onClick={() => setRecipeDialogOpen(true)} className="text-xs sm:text-sm px-2 sm:px-3">
-            <FileText className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Import Recipe</span>
-            <span className="sm:hidden">Recipe</span>
-          </Button>
-        </div>
+      {/* Compact Header with Actions */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold">Shopping List</h2>
+        <Button variant="ghost" size="sm" onClick={() => setRecipeDialogOpen(true)} className="text-xs px-2 h-8">
+          <FileText className="h-3 w-3 mr-1" />
+          Recipe
+        </Button>
       </div>
 
       <form onSubmit={handleAddItem} className="mb-6">
@@ -776,7 +774,7 @@ const ShoppingListComponent: React.FC = () => {
                         </div>
                         <div className="space-y-2">
                           {completedItems.map((item: ShoppingListItem) => (
-                            <Card key={item.id} className="opacity-60 ml-2">
+<Card key={item.id} className="opacity-60 ml-2">
                               <CardContent className="p-3">
                                 <div className="flex justify-between items-center">
                                   <div className="flex items-center flex-1">
