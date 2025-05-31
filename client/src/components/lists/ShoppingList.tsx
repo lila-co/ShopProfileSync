@@ -687,47 +687,49 @@ const ShoppingListComponent: React.FC = () => {
                             <span className="text-xs text-gray-500">{categoryItems.length} items</span>
                           </div>
                           {categoryItems.map((item) => (
-                            <div key={`incomplete-${item.id}`} className="border border-gray-200 rounded-lg p-3 ml-2 bg-white hover:shadow-sm transition-shadow">
-                              <div className="flex justify-between items-center">
-                                <div className="flex items-center flex-1">
+                            <div key={`incomplete-${item.id}`} className="mobile-shopping-item border border-gray-200 rounded-xl p-4 ml-3 bg-white shadow-sm">
+                              <div className="flex items-center space-x-4">
+                                <div className="flex-shrink-0">
                                   <input
                                     type="checkbox"
                                     checked={item.isCompleted}
                                     onChange={() => handleToggleItem(item.id, item.isCompleted)}
-                                    className="h-4 w-4 text-primary rounded mr-3 flex-shrink-0"
+                                    className="h-6 w-6 text-primary rounded-md border-2 border-gray-300 focus:ring-2 focus:ring-primary cursor-pointer"
                                   />
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center flex-wrap gap-2">
-                                      <span className="font-medium text-gray-800 text-sm">
-                                        {item.productName}
-                                      </span>
-                                      <span className="text-xs bg-gray-100 px-2 py-1 rounded-full whitespace-nowrap">
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex flex-col space-y-1">
+                                    <span className="item-text font-semibold text-gray-900 text-base leading-tight">
+                                      {item.productName}
+                                    </span>
+                                    <div className="flex items-center space-x-2">
+                                      <span className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">
                                         {item.quantity} {item.unit && item.unit !== "COUNT" ? item.unit.toLowerCase() : ""}
                                       </span>
-                                    </div>
-                                    {item.suggestedRetailerId && item.suggestedPrice && (
-                                      <div className="flex items-center text-xs text-gray-500 mt-1">
-                                        <span>
-                                          Best: ${(item.suggestedPrice / 100).toFixed(2)}
+                                      {item.suggestedRetailerId && item.suggestedPrice && (
+                                        <span className="text-sm text-green-600 font-medium">
+                                          ${(item.suggestedPrice / 100).toFixed(2)}
                                         </span>
-                                      </div>
-                                    )}
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
-                                <div className="flex space-x-1 ml-2">
+
+                                <div className="flex-shrink-0 flex space-x-2">
                                   <button
                                     onClick={() => handleEditItem(item)}
-                                    className="text-gray-400 hover:text-blue-500 p-1"
+                                    className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
                                     aria-label="Edit item"
                                   >
-                                    <Pencil className="h-4 w-4" />
+                                    <Pencil className="h-5 w-5" />
                                   </button>
                                   <button
                                     onClick={() => handleDeleteItem(item.id)}
-                                    className="text-gray-400 hover:text-red-500 p-1"
+                                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                     aria-label="Delete item"
                                   >
-                                    <Trash2 className="h-4 w-4" />
+                                    <Trash2 className="h-5 w-5" />
                                   </button>
                                 </div>
                               </div>
@@ -780,7 +782,8 @@ const ShoppingListComponent: React.FC = () => {
                               </div>
                             ))}
                           </div>
-                        </div>
+                        </div>```python
+
                       )}
                     </>
                   );

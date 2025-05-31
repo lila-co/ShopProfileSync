@@ -281,31 +281,42 @@
 
 /* Mobile Shopping List Optimizations */
 .mobile-shopping-item {
-  @apply cursor-pointer transition-all duration-200 touch-manipulation min-h-[60px] p-4 rounded-xl bg-white border-0 shadow-sm;
+  @apply cursor-pointer transition-all duration-300 touch-manipulation min-h-[72px] rounded-xl bg-white border shadow-sm hover:shadow-lg active:scale-[0.98] focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2;
 }
 
 .mobile-shopping-item:hover {
-  @apply shadow-md -translate-y-0.5;
+  @apply shadow-lg border-gray-300 bg-gradient-to-r from-white to-gray-50/30;
 }
 
 .mobile-shopping-item:active {
-  @apply scale-95;
-}
-
-.mobile-shopping-item:focus-within {
-  @apply ring-2 ring-primary ring-offset-2;
+  @apply scale-[0.98] shadow-md;
 }
 
 .mobile-shopping-item input[type="checkbox"] {
-  @apply w-5 h-5 rounded border-2 border-gray-300 focus:ring-2 focus:ring-primary cursor-pointer;
+  @apply w-6 h-6 rounded-md border-2 border-gray-300 focus:ring-2 focus:ring-primary cursor-pointer transition-all duration-200;
 }
 
 .mobile-shopping-item input[type="checkbox"]:checked {
-  @apply bg-primary border-primary;
+  @apply bg-primary border-primary scale-110;
 }
 
-.mobile-shopping-item input[type="checkbox"]:checked + div .item-text {
+.mobile-shopping-item input[type="checkbox"]:checked ~ div .item-text {
   @apply opacity-60 line-through;
+}
+
+/* Enhanced touch targets */
+.mobile-shopping-item button {
+  @apply min-w-[44px] min-h-[44px] flex items-center justify-center;
+}
+
+/* Smooth animations for better mobile feel */
+.mobile-shopping-item * {
+  @apply transition-colors duration-200;
+}
+
+/* Category headers mobile optimization */
+.category-header {
+  @apply sticky top-0 bg-white/95 backdrop-blur-sm z-10 py-3 -mx-4 px-4 border-b border-gray-100;
 }
 
 /* High contrast support */
