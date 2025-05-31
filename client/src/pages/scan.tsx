@@ -7,11 +7,11 @@ const ScanPage: React.FC = () => {
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
       <Header title="Scan Receipt" />
-      
+
       <main className="flex-1 overflow-y-auto">
         <ReceiptScanner />
       </main>
-      
+
       <BottomNavigation activeTab="scan" />
     </div>
   );

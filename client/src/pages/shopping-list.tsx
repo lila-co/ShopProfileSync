@@ -113,7 +113,7 @@ const ShoppingListPage: React.FC = () => {
     onSuccess: (data) => {
       // Get items from the preview response
       const items = data.items || [];
-      
+
       // If no items were returned, create sample suggestions
       const itemsToShow = items.length > 0 ? items : [
         { productName: 'Milk', quantity: 1, unit: 'GALLON', reason: 'Purchased weekly', isSelected: true },
@@ -174,7 +174,7 @@ const ShoppingListPage: React.FC = () => {
       if (!defaultList) throw new Error("No shopping list found");
 
       const selectedItemsToAdd = generatedItems.filter(item => item.isSelected);
-      
+
       if (selectedItemsToAdd.length === 0) {
         throw new Error("No items selected to add");
       }
@@ -1773,7 +1773,7 @@ const ShoppingListPage: React.FC = () => {
                           onClick={() => {
                             // Check if user has optimization data available
                             const hasOptimization = singleStoreOptimization.data || bestValueOptimization.data || balancedOptimization.data;
-                            
+
                             if (hasOptimization) {
                               // Navigate to auto-order with optimization plans
                               navigate('/auto-order?listId=' + selectedList?.id + '&mode=online');
@@ -2719,15 +2719,17 @@ const ShoppingListPage: React.FC = () => {
                     </div>
                   )}
 
+                  
                   {/* Mobile Action Buttons */}
-                  <div className="sticky bottom-0 bg-white border-t border-gray-200 pt-4 mt-6 -mx-4 -mb-4 px-4 pb-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="sticky bottom-0 bg-background border-t border-border pt-6 mt-8 -mx-4 -mb-4 px-4 pb-6 shadow-lg">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <Button
                         onClick={handlePrintShoppingPlan}
                         variant="outline"
-                        className="w-full"
+                        className="w-full min-h-[48px] text-base font-medium border-2 hover:bg-muted focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                        aria-label="Print shopping list"
                       >
-                        <Printer className="h-4 w-4 mr-2" />
+                        <Printer className="h-5 w-5 mr-3" aria-hidden="true" />
                         Print List
                       </Button>
                       <Button
@@ -2738,17 +2740,18 @@ const ShoppingListPage: React.FC = () => {
                           navigate('/shopping-route?listId=' + defaultList?.id + '&mode=instore&planData=' + planData);
                         }}
                         variant="outline"
-                        className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
+                        className="w-full min-h-[48px] text-base font-medium bg-secondary/10 hover:bg-secondary/20 text-secondary-foreground border-2 border-secondary/30 focus:ring-2 focus:ring-secondary focus:ring-offset-2"
+                        aria-label="Start shopping route navigation"
                       >
-                        <MapPin className="h-4 w-4 mr-2" />
+                        <MapPin className="h-5 w-5 mr-3" aria-hidden="true" />
                         Start Route
                       </Button>
                       <Button
                         onClick={() => setShowShoppingPlan(false)}
-                        className="w-full"
+                        className="w-full min-h-[48px] text-base font-medium focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                        aria-label="Close shopping plan"
                       >
-                        <Check className="h-4 w-4 mr-2" />
-                        Done Shopping
+                        Close
                       </Button>
                     </div>
                   </div>

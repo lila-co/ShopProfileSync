@@ -151,7 +151,7 @@ const AuthPage: React.FC = () => {
       title: `${provider} login`,
       description: `Redirecting to ${provider} for authentication...`,
     });
-    
+
     // Simulate successful login after a delay
     setTimeout(() => {
       toast({
