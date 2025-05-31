@@ -75,8 +75,8 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommendation 
           </p>
         </div>
         {recommendation.savings && recommendation.savings > 0 && (
-          <div className="bg-secondary/10 py-1 px-3 rounded-full">
-            <span className="text-secondary font-medium text-sm">Save ${(recommendation.savings / 100).toFixed(2)}</span>
+          <div className="bg-pink-100 py-1 px-3 rounded-full">
+            <span className="text-pink-700 font-medium text-sm">Save ${(recommendation.savings / 100).toFixed(2)}</span>
           </div>
         )}
       </div>
@@ -94,7 +94,7 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommendation 
               </svg>
             </div>
             <div>
-              <p className="font-medium text-sm">{recommendation.suggestedRetailer?.name || 'Best retailer'}</p>
+              <p className="font-medium text-sm text-gray-800">{recommendation.suggestedRetailer?.name || 'Best retailer'}</p>
               <p className="text-xs text-gray-700">{recommendation.reason || 'Best price available'}</p>
             </div>
           </div>
