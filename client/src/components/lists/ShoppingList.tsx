@@ -960,8 +960,8 @@ const ShoppingListComponent: React.FC = () => {
                       <Label htmlFor="cost" className="flex items-center cursor-pointer">
                         <DollarSign className="h-5 w-5 mr-3 text-green-600" />
                         <div>
-                          <span className="font-semibold text-gray-900">Cost Savings</span>
-                          <p className="text-sm text-gray-700">Prioritize getting the best prices, even if it means shopping at multiple stores</p>
+                          <span className="font-medium text-foreground">Cost Savings</span>
+                          <p className="text-sm text-muted-foreground">Prioritize getting the best prices, even if it means shopping at multiple stores</p>
                         </div>
                       </Label>
                     </div>
@@ -971,8 +971,8 @@ const ShoppingListComponent: React.FC = () => {
                       <Label htmlFor="convenience" className="flex items-center cursor-pointer">
                         <Clock className="h-5 w-5 mr-3 text-blue-600" />
                         <div>
-                          <span className="font-semibold text-gray-900">Convenience</span>
-                          <p className="text-sm text-gray-700">Shop at a single store even if some items cost more</p>
+                          <span className="font-medium text-foreground">Convenience</span>
+                          <p className="text-sm text-muted-foreground">Shop at a single store even if some items cost more</p>
                         </div>
                       </Label>
                     </div>
@@ -982,8 +982,8 @@ const ShoppingListComponent: React.FC = () => {
                       <Label htmlFor="quality" className="flex items-center cursor-pointer">
                         <Check className="h-5 w-5 mr-3 text-purple-600" />
                         <div>
-                          <span className="font-semibold text-gray-900">Quality</span>
-                          <p className="text-sm text-gray-700">Prioritize preferred brands and specialty stores</p>
+                          <span className="font-medium text-foreground">Quality</span>
+                          <p className="text-sm text-muted-foreground">Prioritize preferred brands and specialty stores</p>
                         </div>
                       </Label>
                     </div>
@@ -995,8 +995,8 @@ const ShoppingListComponent: React.FC = () => {
                           <path d="M18 8a5 5 0 0 0-5-5c-1.956 0-3.693.94-4.794 2.393A5 5 0 0 0 13 18a4.966 4.966 0 0 0 3.584-1.553A4.978 4.978 0 0 0 18 13h-6"></path>
                         </svg>
                         <div>
-                          <span className="font-semibold text-gray-900">Sustainability</span>
-                          <p className="text-sm text-gray-700">Prioritize eco-friendly products and locally sourced items</p>
+                          <span className="font-medium text-foreground">Sustainability</span>
+                          <p className="text-sm text-muted-foreground">Prioritize eco-friendly products and locally sourced items</p>
                         </div>
                       </Label>
                     </div>
