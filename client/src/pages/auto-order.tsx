@@ -113,69 +113,45 @@ const AutoOrder: React.FC = () => {
   // Start the optimization process
   useEffect(() => {
     if (listId && shoppingList) {
-      const startOptimization = async () => {
-        try {
-          console.log('Starting optimization process...');
-          setCurrentStep(1);
-          await new Promise(resolve => setTimeout(resolve, 1500));
-
-          console.log('Step 1 complete, moving to step 2');
-          setCurrentStep(2);
-          await new Promise(resolve => setTimeout(resolve, 1000));
-
-          console.log('Step 2 complete, moving to step 3');
-          setCurrentStep(3);
-          await new Promise(resolve => setTimeout(resolve, 1000));
-
-          console.log('Step 3 complete, running optimizations');
-          // Run all optimizations in parallel for better performance
-          const [singleStoreResult, bestValueResult, balancedResult] = await Promise.allSettled([
-            new Promise((resolve, reject) => {
-              singleStoreMutation.mutate(undefined, {
-                onSuccess: resolve,
-                onError: reject
-              });
-            }),
-            new Promise((resolve, reject) => {
-              bestValueMutation.mutate(undefined, {
-                onSuccess: resolve,
-                onError: reject
-              });
-            }),
-            new Promise((resolve, reject) => {
-              balancedMutation.mutate(undefined, {
-                onSuccess: resolve,
-                onError: reject
-              });
-            })
-          ]);
-
-          console.log('All optimizations complete, moving to step 4');
-          setCurrentStep(4);
-          
-          // Set sample order results after a delay
-          setTimeout(() => {
-            console.log('Setting order results');
-            setOrderResults({
-              retailerId: 1,
-              retailerName: 'Walmart',
-              items: shoppingList.items || [],
-              totalCost: Math.floor(Math.random() * 5000) + 2000, // Random cost between $20-70
-              estimatedTime: 35
-            });
-          }, 1000);
-
-        } catch (error) {
-          console.error('Optimization error:', error);
-          toast({
-            title: "Error",
-            description: "Failed to optimize shopping list",
-            variant: "destructive"
+      console.log('Starting optimization process...');
+      
+      // Step 1: Start analyzing
+      setCurrentStep(1);
+      
+      // Step 2: Move to price finding after 2 seconds
+      setTimeout(() => {
+        console.log('Moving to step 2 - Finding best prices');
+        setCurrentStep(2);
+        
+        // Start the optimization mutations
+        singleStoreMutation.mutate();
+        bestValueMutation.mutate();
+        balancedMutation.mutate();
+      }, 2000);
+      
+      // Step 3: Move to optimization after 4 seconds
+      setTimeout(() => {
+        console.log('Moving to step 3 - Optimizing plan');
+        setCurrentStep(3);
+      }, 4000);
+      
+      // Step 4: Complete and show results after 6 seconds
+      setTimeout(() => {
+        console.log('Moving to step 4 - Preparing orders');
+        setCurrentStep(4);
+        
+        // Set sample order results
+        setTimeout(() => {
+          console.log('Setting order results');
+          setOrderResults({
+            retailerId: 1,
+            retailerName: 'Walmart',
+            items: shoppingList.items || [],
+            totalCost: Math.floor(Math.random() * 5000) + 2000, // Random cost between $20-70
+            estimatedTime: 35
           });
-        }
-      };
-
-      startOptimization();
+        }, 1500);
+      }, 6000);
     }
   }, [listId, shoppingList]);
 
