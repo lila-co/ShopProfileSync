@@ -1106,74 +1106,76 @@ const ShoppingListComponent: React.FC = () => {
           <h3 className="text-lg font-semibold mb-4">Smart Recommendations</h3>
           <p className="text-gray-600 text-sm mb-4">Maximize savings on your typical purchases</p>
 
-          <div className="space-y-3">
-            {enhancedRecommendations.map((item) => (
-              <Card key={item.id} className="transition-all hover:shadow-md">
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-800 mb-1">{item.productName}</h4>
-                      <div className="flex items-center space-x-2 mb-2">
-                        <Star className="h-3 w-3 text-yellow-500 fill-current" />
-                        <span className="text-xs text-gray-600">{item.rating}</span>
+          <ScrollArea className="h-[400px] w-full rounded-md border">
+            <div className="space-y-3">
+              {enhancedRecommendations.map((item) => (
+                <Card key={item.id} className="transition-all hover:shadow-md">
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-800 mb-1">{item.productName}</h4>
+                        <div className="flex items-center space-x-2 mb-2">
+                          <Star className="h-3 w-3 text-yellow-500 fill-current" />
+                          <span className="text-xs text-gray-600">{item.rating}</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm text-gray-500 line-through">
+                            ${(item.currentPrice / 100).toFixed(2)}
+                          </span>
+                          <span className="font-bold text-primary">
+                            ${(item.salePrice / 100).toFixed(2)}
+                          </span>
+                        </div>
+                        <Badge variant="secondary" className="bg-green-50 text-green-700 mt-1">
+                          <TrendingDown className="h-3 w-3 mr-1" />
+                          ${(item.savings / 100).toFixed(2)} off
+                        </Badge>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-500 line-through">
-                          ${(item.currentPrice / 100).toFixed(2)}
-                        </span>
-                        <span className="font-bold text-primary">
-                          ${(item.salePrice / 100).toFixed(2)}
+
+                    <div className="space-y-2">
+                      <div className="flex items-center text-sm text-gray-600">
+                        <MapPin className="h-3 w-3 mr-1" />
+                        {item.retailer} • {item.distance}
+                      </div>
+                      <div className="flex items-center text-sm text-orange-600">
+                        <Clock className="h-3 w-3 mr-1" />
+                        Deal expires in {item.dealExpires}
+                      </div>
+                      <p className="text-sm text-gray-600">{item.reason}</p>
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between">
+                      <div className="flex items-center">
+                        <Percent className="h-4 w-4 text-green-600 mr-1" />
+                        <span className="text-sm font-medium text-green-600">
+                          {Math.round((item.savings / item.currentPrice) * 100)}% off
                         </span>
                       </div>
-                      <Badge variant="secondary" className="bg-green-50 text-green-700 mt-1">
-                        <TrendingDown className="h-3 w-3 mr-1" />
-                        ${(item.savings / 100).toFixed(2)} off
-                      </Badge>
+                      <Button 
+                        size="sm" 
+                        className="bg-primary hover:bg-primary/90"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          addItemMutation.mutate({
+                            productName: item.productName,
+                            quantity: 1,
+                            unit: 'COUNT'
+                          });
+                        }}
+                        disabled={addItemMutation.isPending}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        {addItemMutation.isPending ? "Adding..." : "Add to List"}
+                      </Button>
                     </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <MapPin className="h-3 w-3 mr-1" />
-                      {item.retailer} • {item.distance}
-                    </div>
-                    <div className="flex items-center text-sm text-orange-600">
-                      <Clock className="h-3 w-3 mr-1" />
-                      Deal expires in {item.dealExpires}
-                    </div>
-                    <p className="text-sm text-gray-600">{item.reason}</p>
-                  </div>
-
-                  <div className="mt-3 flex items-center justify-between">
-                    <div className="flex items-center">
-                      <Percent className="h-4 w-4 text-green-600 mr-1" />
-                      <span className="text-sm font-medium text-green-600">
-                        {Math.round((item.savings / item.currentPrice) * 100)}% off
-                      </span>
-                    </div>
-                    <Button 
-                      size="sm" 
-                      className="bg-primary hover:bg-primary/90"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        addItemMutation.mutate({
-                          productName: item.productName,
-                          quantity: 1,
-                          unit: 'COUNT'
-                        });
-                      }}
-                      disabled={addItemMutation.isPending}
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      {addItemMutation.isPending ? "Adding..." : "Add to List"}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </ScrollArea>
         </TabsContent>
 
       </Tabs>
