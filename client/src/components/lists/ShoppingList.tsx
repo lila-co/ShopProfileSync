@@ -470,22 +470,30 @@ const ShoppingListComponent: React.FC = () => {
     <div className="p-3 sm:p-4 pb-20">
 
 
-      {/* Compact Header with Actions */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">Shopping List</h2>
-        <div className="flex space-x-2">
+      {/* Header */}
+      <div className="mb-4">
+        <h2 className="text-lg font-semibold mb-3">Shopping List</h2>
+        
+        {/* Action Buttons */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
           <Button 
-            variant="ghost" 
-            size="default" 
+            variant="outline" 
+            size="lg" 
             onClick={() => previewGenerateMutation.mutate()}
-            className="text-sm px-4 h-10"
+            className="flex items-center justify-center h-12 text-base font-medium border-2 hover:bg-primary hover:text-white transition-colors"
+            disabled={previewGenerateMutation.isPending}
           >
-            <Wand2 className="h-4 w-4 mr-2" />
-            Generate List
+            <Wand2 className="h-5 w-5 mr-2" />
+            {previewGenerateMutation.isPending ? 'Generating...' : 'Generate List'}
           </Button>
-          <Button variant="ghost" size="default" onClick={() => setRecipeDialogOpen(true)} className="text-sm px-4 h-10">
-            <FileText className="h-4 w-4 mr-2" />
-            Recipe
+          <Button 
+            variant="outline" 
+            size="lg" 
+            onClick={() => setRecipeDialogOpen(true)} 
+            className="flex items-center justify-center h-12 text-base font-medium border-2 hover:bg-primary hover:text-white transition-colors"
+          >
+            <FileText className="h-5 w-5 mr-2" />
+            Import Recipe
           </Button>
         </div>
       </div>
