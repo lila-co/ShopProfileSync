@@ -574,15 +574,15 @@ const ShoppingListComponent: React.FC = () => {
             <ShoppingBag className="h-4 w-4 mr-1" />
             List
           </TabsTrigger>
-          <TabsTrigger value="price" className="flex items-center justify-center text-sm font-semibold py-2 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-700 hover:text-gray-900">
+          <TabsTrigger value="price" className="flex items-center justify-center text-sm font-semibold py-2 data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-sm text-foreground hover:text-foreground">
             <DollarSign className="h-4 w-4 mr-1" />
             Price
           </TabsTrigger>
-          <TabsTrigger value="optimize" className="flex items-center justify-center text-sm font-semibold py-2 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-700 hover:text-gray-900">
+          <TabsTrigger value="optimize" className="flex items-center justify-center text-sm font-semibold py-2 data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-sm text-foreground hover:text-foreground">
             <BarChart2 className="h-4 w-4 mr-1" />
             Optimize
           </TabsTrigger>
-          <TabsTrigger value="route" className="flex items-center justify-center text-sm font-semibold py-2 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-700 hover:text-gray-900">
+          <TabsTrigger value="route" className="flex items-center justify-center text-sm font-semibold py-2 data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-sm text-foreground hover:text-foreground">
             <Car className="h-4 w-4 mr-1" />
             Route
           </TabsTrigger>
