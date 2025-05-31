@@ -89,7 +89,25 @@ const RetailerDetailsPage: React.FC = () => {
           <Button 
             className="w-full" 
             variant="outline"
-            onClick={() => window.open(`https://www.google.com/maps/search/${encodeURIComponent(retailer.name)}+store+locations`, '_blank')}
+            onClick={() => {
+              if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                  (position) => {
+                    const { latitude, longitude } = position.coords;
+                    const searchQuery = encodeURIComponent(`${retailer.name} store near me`);
+                    window.open(`https://www.google.com/maps/search/${searchQuery}/@${latitude},${longitude},15z`, '_blank');
+                  },
+                  (error) => {
+                    console.error('Error getting location:', error);
+                    // Fallback to generic search if location access is denied
+                    window.open(`https://www.google.com/maps/search/${encodeURIComponent(retailer.name)}+store+locations`, '_blank');
+                  }
+                );
+              } else {
+                // Fallback for browsers that don't support geolocation
+                window.open(`https://www.google.com/maps/search/${encodeURIComponent(retailer.name)}+store+locations`, '_blank');
+              }
+            }}
           >
             <MapPin className="h-4 w-4 mr-2" />
             Find Store Locations
