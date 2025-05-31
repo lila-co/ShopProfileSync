@@ -52,7 +52,7 @@ const Dashboard: React.FC = () => {
           <section className="mb-6">
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-bold text-gray-800">Recommended Purchases</h3>
-              <a href="/recommendations" className="text-primary text-sm font-medium">View All</a>
+              <a href="/recommendations" className="text-slate-600 text-sm font-medium hover:text-slate-800">View All</a>
             </div>
 
             <div className="space-y-3">
@@ -144,7 +144,7 @@ const Dashboard: React.FC = () => {
                 </div>
                 <a 
                   href="/shopping-list"
-                  className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90"
+                  className="bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-700"
                 >
                   View List
                 </a>
