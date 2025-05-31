@@ -12,7 +12,7 @@ import { User, Recommendation } from '@/lib/types';
 
 const Dashboard: React.FC = () => {
   const [showReceiptScanner, setShowReceiptScanner] = useState(false);
-  
+
   const [showProfileSetup, setShowProfileSetup] = useState(false);
 
   const { data: user } = useQuery<User>({
@@ -155,7 +155,7 @@ const Dashboard: React.FC = () => {
 
         {/* Conditional Modals */}
         {showReceiptScanner && <ReceiptScanner />}
-        
+
         {showProfileSetup && <ProfileSetup />}
       </main>
 

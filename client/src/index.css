@@ -98,6 +98,49 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Enhanced focus states for accessibility */
+  :focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+  }
+
+  /* Ensure sufficient line height for readability */
+  p, li, span {
+    line-height: 1.6;
+  }
+
+  /* Better button focus states */
+  button:focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+  }
+
+  /* Enhanced link accessibility */
+  a:focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Skip to main content link for screen readers */
+  .skip-to-main {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    padding: 8px;
+    border-radius: 4px;
+    text-decoration: none;
+    z-index: 9999;
+  }
+
+  .skip-to-main:focus {
+    top: 6px;
   }
 }
 
@@ -114,33 +157,96 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  /* Mobile-first responsive spacing */
+  .space-mobile {
+    padding: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .space-mobile {
+      padding: 1.5rem;
+    }
+  }
+
+  /* Responsive text sizing for better mobile readability */
+  .text-responsive-sm {
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 640px) {
+    .text-responsive-sm {
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+  }
+
+  .text-responsive-base {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 640px) {
+    .text-responsive-base {
+      font-size: 1.125rem;
+      line-height: 1.7;
+    }
+  }
+
+  /* Touch target improvements */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  @media (max-width: 640px) {
+    .touch-target {
+      min-height: 48px;
+      min-width: 48px;
+    }
+  }
+
+  /* Accessible color combinations */
+  .text-accessible {
+    color: hsl(var(--foreground));
+    contrast: 4.5;
+  }
+
+  .text-accessible-muted {
+    color: hsl(var(--muted-foreground));
+    contrast: 3;
+  }
 }
 
 /* Mobile Shopping List Optimizations */
 .mobile-shopping-item {
-  transition: all 0.2s ease-in-out;
-}
-
-.mobile-shopping-item {
   cursor: pointer;
   transition: all 0.2s ease;
   touch-action: manipulation;
+  min-height: 60px; /* WCAG AA minimum touch target */
 }
 
 .mobile-shopping-item:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  background-color: rgb(249 250 251);
+  box-shadow: 0 4px 12px hsl(var(--primary) / 0.15);
+  background-color: hsl(var(--muted) / 0.5);
 }
 
 .mobile-shopping-item:active {
   transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px hsl(var(--primary) / 0.1);
+}
+
+.mobile-shopping-item:focus-within {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
 }
 
 .mobile-shopping-item input[type="checkbox"] {
-  transform: scale(1.1);
   cursor: pointer;
+  min-width: 20px;
+  min-height: 20px;
 }
 
 .mobile-shopping-item input[type="checkbox"]:checked + div {
@@ -152,17 +258,43 @@
   text-decoration: line-through;
 }
 
+.mobile-shopping-item input[type="checkbox"]:focus {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
 /* Mobile touch improvements */
 @media (max-width: 640px) {
   .mobile-shopping-item {
-    min-height: 44px; /* iOS recommended minimum touch target */
-    padding: 12px;
+    min-height: 64px; /* Enhanced iOS recommended minimum */
+    padding: 16px;
   }
   
   .mobile-shopping-item input[type="checkbox"] {
-    transform: scale(1.3);
-    min-width: 20px;
-    min-height: 20px;
+    min-width: 24px;
+    min-height: 24px;
+  }
+}
+
+/* High contrast support */
+@media (prefers-contrast: high) {
+  .mobile-shopping-item {
+    border-width: 3px;
+  }
+  
+  .mobile-shopping-item:hover {
+    border-color: hsl(var(--primary));
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .mobile-shopping-item {
+    transition: none;
+  }
+  
+  .mobile-shopping-item:hover {
+    transform: none;
   }
 }
 

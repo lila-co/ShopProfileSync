@@ -348,22 +348,34 @@ const ProfilePage: React.FC = () => {
 
                 <Separator />
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="profileVisibility">Public profile</Label>
-                    <p className="text-sm text-gray-500">Allow others to see your reviews</p>
+                <div className="flex items-start justify-between gap-4 py-2">
+                  <div className="flex-1 min-w-0">
+                    <Label htmlFor="profileVisibility" className="text-base font-medium text-foreground cursor-pointer">Public profile</Label>
+                    <p className="text-sm text-muted-foreground mt-1 leading-relaxed">Allow others to see your reviews</p>
                   </div>
-                  <Switch id="profileVisibility" defaultChecked={false} />
+                  <Switch 
+                    id="profileVisibility" 
+                    defaultChecked={false} 
+                    className="mt-1 focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                    aria-describedby="profileVisibility-description"
+                  />
+                  <span id="profileVisibility-description" className="sr-only">Toggle to make your profile public or private</span>
                 </div>
 
-                <Separator />
+                <Separator className="my-6" />
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="dataRetention">Data retention</Label>
-                    <p className="text-sm text-gray-500">Keep purchase history for recommendations</p>
+                <div className="flex items-start justify-between gap-4 py-2">
+                  <div className="flex-1 min-w-0">
+                    <Label htmlFor="dataRetention" className="text-base font-medium text-foreground cursor-pointer">Data retention</Label>
+                    <p className="text-sm text-muted-foreground mt-1 leading-relaxed">Keep purchase history for recommendations</p>
                   </div>
-                  <Switch id="dataRetention" defaultChecked={true} />
+                  <Switch 
+                    id="dataRetention" 
+                    defaultChecked={true}
+                    className="mt-1 focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                    aria-describedby="dataRetention-description"
+                  />
+                  <span id="dataRetention-description" className="sr-only">Toggle to enable or disable data retention for personalized recommendations</span>
                 </div>
               </CardContent>
             </Card>

@@ -215,13 +215,21 @@ const InsightsPage: React.FC = () => {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    <div className="border rounded-lg p-3">
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium text-gray-800">Sustainable Shopping Growth</h4>
-                        <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">85% confidence</span>
+                    <div className="border-2 border-border rounded-lg p-4 hover:border-primary/20 transition-colors duration-200" role="article" aria-labelledby="eco-trend-title">
+                      <div className="flex justify-between items-start mb-3">
+                        <h4 id="eco-trend-title" className="font-semibold text-foreground text-base">Eco-Friendly Trend</h4>
+                        <span className="bg-secondary/20 text-secondary-foreground text-sm px-3 py-1 rounded-full font-medium" aria-label="85 percent confidence level">85% confidence</span>
                       </div>
-                      <p className="text-sm text-gray-600 mb-1">Eco-friendly products seeing 40% increase in your demographic</p>
-                      <p className="text-xs text-gray-500">Based on 2,341 local shoppers</p>
+                      <p className="text-sm text-muted-foreground mb-2 leading-relaxed">Eco-friendly products seeing 40% increase in your demographic</p>
+                      <p className="text-xs text-muted-foreground/70">Based on 2,341 local shoppers</p>
+                    </div>
+                    <div className="border-2 border-border rounded-lg p-4 hover:border-primary/20 transition-colors duration-200" role="article" aria-labelledby="eco-trend-title">
+                      <div className="flex justify-between items-start mb-3">
+                        <h4 id="eco-trend-title" className="font-semibold text-foreground text-base">Eco-Friendly Trend</h4>
+                        <span className="bg-secondary/20 text-secondary-foreground text-sm px-3 py-1 rounded-full font-medium" aria-label="85 percent confidence level">85% confidence</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2 leading-relaxed">Eco-friendly products seeing 40% increase in your demographic</p>
+                      <p className="text-xs text-muted-foreground/70">Based on 2,341 local shoppers</p>
                     </div>
                     <div className="border rounded-lg p-3">
                       <div className="flex justify-between items-start mb-2">
