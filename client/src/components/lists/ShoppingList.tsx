@@ -683,26 +683,26 @@ const ShoppingListComponent: React.FC = () => {
                             <span className="text-xs text-gray-500">{categoryItems.length} items</span>
                           </div>
                           {categoryItems.map((item) => (
-                            <div key={`incomplete-${item.id}`} className="border border-gray-200 rounded-lg p-3 ml-2 bg-white hover:shadow-sm transition-shadow">
+                            <div key={`incomplete-category-${category}-item-${item.id}`} className="mobile-shopping-item border-2 border-gray-200 rounded-xl p-4 ml-2 bg-white">
                               <div className="flex justify-between items-center">
                                 <div className="flex items-center flex-1">
                                   <input
                                     type="checkbox"
                                     checked={item.isCompleted}
                                     onChange={() => handleToggleItem(item.id, item.isCompleted)}
-                                    className="h-4 w-4 text-primary rounded mr-3 flex-shrink-0"
+                                    className="h-5 w-5 text-primary rounded mr-4 flex-shrink-0 cursor-pointer"
                                   />
                                   <div className="flex-1 min-w-0">
-                                    <div className="flex items-center flex-wrap gap-2">
-                                      <span className="font-medium text-gray-800 text-sm">
+                                    <div className="flex items-center flex-wrap gap-2 mb-1">
+                                      <span className="font-medium text-gray-800 text-base item-text">
                                         {item.productName}
                                       </span>
-                                      <span className="text-xs bg-gray-100 px-2 py-1 rounded-full whitespace-nowrap">
+                                      <span className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-full whitespace-nowrap font-medium">
                                         {item.quantity} {item.unit && item.unit !== "COUNT" ? item.unit.toLowerCase() : ""}
                                       </span>
                                     </div>
                                     {item.suggestedRetailerId && item.suggestedPrice && (
-                                      <div className="flex items-center text-xs text-gray-500 mt-1">
+                                      <div className="flex items-center text-sm text-gray-500">
                                         <span>
                                           Best: ${(item.suggestedPrice / 100).toFixed(2)}
                                         </span>
@@ -710,20 +710,20 @@ const ShoppingListComponent: React.FC = () => {
                                     )}
                                   </div>
                                 </div>
-                                <div className="flex space-x-1 ml-2">
+                                <div className="flex space-x-2 ml-3">
                                   <button
                                     onClick={() => handleEditItem(item)}
-                                    className="text-gray-400 hover:text-blue-500 p-1"
+                                    className="text-gray-400 hover:text-blue-500 p-2 rounded-full hover:bg-blue-50 transition-colors"
                                     aria-label="Edit item"
                                   >
-                                    <Pencil className="h-4 w-4" />
+                                    <Pencil className="h-5 w-5" />
                                   </button>
                                   <button
                                     onClick={() => handleDeleteItem(item.id)}
-                                    className="text-gray-400 hover:text-red-500 p-1"
+                                    className="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors"
                                     aria-label="Delete item"
                                   >
-                                    <Trash2 className="h-4 w-4" />
+                                    <Trash2 className="h-5 w-5" />
                                   </button>
                                 </div>
                               </div>
@@ -743,33 +743,33 @@ const ShoppingListComponent: React.FC = () => {
                           </div>
                           <div className="space-y-2">
                             {completedItems.map((item: ShoppingListItem) => (
-                              <div key={item.id} className="border border-gray-200 rounded-lg p-3 ml-2 bg-gray-50 opacity-70">
+                              <div key={`completed-item-${item.id}`} className="mobile-shopping-item border-2 border-gray-200 rounded-xl p-4 ml-2 bg-gray-50 opacity-75">
                                 <div className="flex justify-between items-center">
                                   <div className="flex items-center flex-1">
                                     <input
                                       type="checkbox"
                                       checked={item.isCompleted}
                                       onChange={() => handleToggleItem(item.id, item.isCompleted)}
-                                      className="h-4 w-4 text-primary rounded mr-3 flex-shrink-0"
+                                      className="h-5 w-5 text-primary rounded mr-4 flex-shrink-0 cursor-pointer"
                                     />
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center flex-wrap gap-2">
-                                        <span className="font-medium line-through text-gray-500 text-sm">
+                                        <span className="font-medium line-through text-gray-500 text-base item-text">
                                           {item.productName}
                                         </span>
-                                        <span className="text-xs bg-gray-200 px-2 py-1 rounded-full whitespace-nowrap">
+                                        <span className="text-sm bg-gray-200 px-3 py-1 rounded-full whitespace-nowrap">
                                           {item.quantity} {item.unit && item.unit !== "COUNT" ? item.unit.toLowerCase() : ""}
                                         </span>
                                       </div>
                                     </div>
                                   </div>
-                                  <div className="ml-2">
+                                  <div className="ml-3">
                                     <button
                                       onClick={() => handleDeleteItem(item.id)}
-                                      className="text-gray-400 hover:text-red-500 p-1"
+                                      className="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors"
                                       aria-label="Delete item"
                                     >
-                                      <Trash2 className="h-4 w-4" />
+                                      <Trash2 className="h-5 w-5" />
                                     </button>
                                   </div>
                                 </div>
