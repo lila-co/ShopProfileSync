@@ -470,22 +470,30 @@ const ShoppingListComponent: React.FC = () => {
     <div className="p-3 sm:p-4 pb-20">
 
 
-      {/* Compact Header with Actions */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">Shopping List</h2>
-        <div className="flex space-x-2">
+      {/* Header */}
+      <div className="mb-4">
+        <h2 className="text-lg font-semibold mb-3">Shopping List</h2>
+        
+        {/* Action Buttons */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
           <Button 
-            variant="ghost" 
-            size="default" 
+            variant="outline" 
+            size="lg" 
             onClick={() => previewGenerateMutation.mutate()}
-            className="text-sm px-4 h-10"
+            className="flex items-center justify-center h-12 text-base font-medium border-2 hover:bg-primary hover:text-white transition-colors"
+            disabled={previewGenerateMutation.isPending}
           >
-            <Wand2 className="h-4 w-4 mr-2" />
-            Generate List
+            <Wand2 className="h-5 w-5 mr-2" />
+            {previewGenerateMutation.isPending ? 'Generating...' : 'Generate List'}
           </Button>
-          <Button variant="ghost" size="default" onClick={() => setRecipeDialogOpen(true)} className="text-sm px-4 h-10">
-            <FileText className="h-4 w-4 mr-2" />
-            Recipe
+          <Button 
+            variant="outline" 
+            size="lg" 
+            onClick={() => setRecipeDialogOpen(true)} 
+            className="flex items-center justify-center h-12 text-base font-medium border-2 hover:bg-primary hover:text-white transition-colors"
+          >
+            <FileText className="h-5 w-5 mr-2" />
+            Import Recipe
           </Button>
         </div>
       </div>
@@ -497,7 +505,7 @@ const ShoppingListComponent: React.FC = () => {
             placeholder="Add an item..."
             value={newItemName}
             onChange={(e) => setNewItemName(e.target.value)}
-            className="flex-1 bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+            className="flex-1 bg-gray-50 border border-gray-200 rounded-l-lg px-3 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
             style={{ backgroundColor: 'white !important' }}
           />
           <Button 
@@ -517,7 +525,7 @@ const ShoppingListComponent: React.FC = () => {
               min="1"
               defaultValue="1"
               onChange={(e) => setNewItemQuantity(parseInt(e.target.value) || 1)}
-              className="w-full bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+              className="w-16 bg-gray-50 border border-gray-200 rounded text-gray-800 text-center text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent px-2 py-1"
               style={{ backgroundColor: 'white !important' }}
             />
           </div>
@@ -699,7 +707,7 @@ const ShoppingListComponent: React.FC = () => {
                                       <span className="font-medium text-gray-800 text-base item-text">
                                         {item.productName}
                                       </span>
-                                      <span className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-full whitespace-nowrap font-medium">
+                                      <span className="text-sm bg-slate-100 text-slate-700 px-3 py-1 rounded-full whitespace-nowrap font-medium border border-slate-200">
                                         {item.quantity} {item.unit && item.unit !== "COUNT" ? item.unit.toLowerCase() : ""}
                                       </span>
                                     </div>
@@ -759,13 +767,13 @@ const ShoppingListComponent: React.FC = () => {
                                         <span className="font-medium line-through text-gray-500 text-base item-text">
                                           {item.productName}
                                         </span>
-                                        <span className="text-sm bg-gray-200 px-3 py-1 rounded-full whitespace-nowrap">
+                                        <span className="text-sm bg-gray-100 text-gray-500 px-3 py-1 rounded-full whitespace-nowrap border border-gray-200">
                                           {item.quantity} {item.unit && item.unit !== "COUNT" ? item.unit.toLowerCase() : ""}
                                         </span>
                                       </div>
                                     </div>
                                   </div>
-                                  <div className="ml-3">
+                                                                 <div className="ml-3">
                                     <button
                                       onClick={() => handleDeleteItem(item.id)}
                                       className="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors"
@@ -1269,7 +1277,7 @@ const ShoppingListComponent: React.FC = () => {
                     min="1"
                     value={editItemQuantity}
                     onChange={(e) => setEditItemQuantity(parseInt(e.target.value) || 1)}
-                    className="w-full bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                    className="w-16 bg-gray-50 border border-gray-200 rounded text-gray-800 text-center text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent px-2 py-1"
                     style={{ backgroundColor: 'white !important' }}
                   />
                 </div>
