@@ -1015,12 +1015,7 @@ const ShoppingListComponent: React.FC = () => {
                     variant="outline" 
                     className="w-full"
                     onClick={() => {
-                      const planData = encodeURIComponent(JSON.stringify({
-                        type: 'single-store',
-                        shoppingListId: defaultList?.id,
-                        mode: 'online'
-                      }));
-                      window.location.href = `/auto-order?listId=${defaultList?.id}&planData=${planData}`;
+                      window.location.href = `/plan-details?listId=${defaultList?.id}&planType=single-store&mode=online`;
                     }}
                   >
                     Order Online
@@ -1028,12 +1023,7 @@ const ShoppingListComponent: React.FC = () => {
                   <Button 
                     className="w-full bg-blue-600 hover:bg-blue-700"
                     onClick={() => {
-                      const planData = encodeURIComponent(JSON.stringify({
-                        type: 'single-store',
-                        shoppingListId: defaultList?.id,
-                        mode: 'instore'
-                      }));
-                      window.location.href = `/shopping-route?listId=${defaultList?.id}&planData=${planData}`;
+                      window.location.href = `/plan-details?listId=${defaultList?.id}&planType=single-store&mode=instore`;
                     }}
                   >
                     Shop In-Store
@@ -1097,12 +1087,7 @@ const ShoppingListComponent: React.FC = () => {
                     variant="outline" 
                     className="w-full"
                     onClick={() => {
-                      const planData = encodeURIComponent(JSON.stringify({
-                        type: 'best-value',
-                        shoppingListId: defaultList?.id,
-                        mode: 'online'
-                      }));
-                      window.location.href = `/auto-order?listId=${defaultList?.id}&planData=${planData}`;
+                      window.location.href = `/plan-details?listId=${defaultList?.id}&planType=best-value&mode=online`;
                     }}
                   >
                     Order Online
@@ -1110,12 +1095,7 @@ const ShoppingListComponent: React.FC = () => {
                   <Button 
                     className="w-full bg-green-600 hover:bg-green-700"
                     onClick={() => {
-                      const planData = encodeURIComponent(JSON.stringify({
-                        type: 'best-value',
-                        shoppingListId: defaultList?.id,
-                        mode: 'instore'
-                      }));
-                      window.location.href = `/shopping-route?listId=${defaultList?.id}&planData=${planData}`;
+                      window.location.href = `/plan-details?listId=${defaultList?.id}&planType=best-value&mode=instore`;
                     }}
                   >
                     Shop In-Store
@@ -1179,12 +1159,7 @@ const ShoppingListComponent: React.FC = () => {
                     variant="outline" 
                     className="w-full"
                     onClick={() => {
-                      const planData = encodeURIComponent(JSON.stringify({
-                        type: 'balanced',
-                        shoppingListId: defaultList?.id,
-                        mode: 'online'
-                      }));
-                      window.location.href = `/auto-order?listId=${defaultList?.id}&planData=${planData}`;
+                      window.location.href = `/plan-details?listId=${defaultList?.id}&planType=balanced&mode=online`;
                     }}
                   >
                     Order Online
@@ -1192,12 +1167,7 @@ const ShoppingListComponent: React.FC = () => {
                   <Button 
                     className="w-full bg-purple-600 hover:bg-purple-700"
                     onClick={() => {
-                      const planData = encodeURIComponent(JSON.stringify({
-                        type: 'balanced',
-                        shoppingListId: defaultList?.id,
-                        mode: 'instore'
-                      }));
-                      window.location.href = `/shopping-route?listId=${defaultList?.id}&planData=${planData}`;
+                      window.location.href = `/plan-details?listId=${defaultList?.id}&planType=balanced&mode=instore`;
                     }}
                   >
                     Shop In-Store
