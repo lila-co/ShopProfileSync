@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
 import ActionCard from '@/components/dashboard/ActionCard';
-import WeeklyDeals from '@/components/dashboard/WeeklyDeals';
 import RecommendationCard from '@/components/dashboard/RecommendationCard';
 import ReceiptScanner from '@/components/receipt/ReceiptScanner';
 
@@ -95,9 +94,6 @@ const Dashboard: React.FC = () => {
             </div>
           </section>
 
-          {/* Weekly Deals */}
-          <WeeklyDeals />
-
           {/* Quick Actions */}
           <section className="mb-6">
             <h3 className="font-bold text-gray-800 mb-3">Quick Actions</h3>
@@ -131,24 +127,6 @@ const Dashboard: React.FC = () => {
                 onClick={() => window.location.href = '/profile'}
                 iconBgColor="bg-accent/10"
               />
-            </div>
-          </section>
-
-          {/* Quick Link to Shopping List */}
-          <section className="mb-6">
-            <div className="bg-primary/5 rounded-xl p-4 border border-primary/20">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="font-bold text-primary mb-1">Shopping List</h3>
-                  <p className="text-sm text-gray-600">Manage your shopping list and optimize your trips</p>
-                </div>
-                <a 
-                  href="/shopping-list"
-                  className="bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-700"
-                >
-                  View List
-                </a>
-              </div>
             </div>
           </section>
         </div>
