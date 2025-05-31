@@ -182,43 +182,93 @@ export class MemStorage implements IStorage {
   }
 
   private initializeData() {
-    // Create default user
-    const defaultUser: User = {
-      id: this.userIdCounter++,
-      username: "johndoe",
-      password: "hashed_password",
-      firstName: "John",
-      lastName: "Doe",
-      email: "john.doe@example.com",
-      householdType: "FAMILY_WITH_CHILDREN",
-      householdSize: 4,
-      preferNameBrand: true,
-      preferOrganic: false,
-      buyInBulk: true,
-      prioritizeCostSavings: true,
-      shoppingRadius: 10,
-      role: 'owner'
-    };
-    this.users.set(defaultUser.id, defaultUser);
+    // Create diverse sample users with different demographics
+    const sampleUsers: User[] = [
+      {
+        id: this.userIdCounter++,
+        username: "caseyfuentes",
+        password: "password123",
+        firstName: "Casey",
+        lastName: "Fuentes",
+        email: "casey@example.com",
+        householdType: "FAMILY_WITH_CHILDREN",
+        householdSize: 4,
+        preferNameBrand: false,
+        preferOrganic: true,
+        buyInBulk: true,
+        prioritizeCostSavings: true,
+        shoppingRadius: 10,
+        role: "customer"
+      },
+      {
+        id: this.userIdCounter++,
+        username: "johnsmith",
+        password: "password123",
+        firstName: "John",
+        lastName: "Smith",
+        email: "john@example.com",
+        householdType: "SINGLE",
+        householdSize: 1,
+        preferNameBrand: true,
+        preferOrganic: false,
+        buyInBulk: false,
+        prioritizeCostSavings: false,
+        shoppingRadius: 5,
+        role: "customer"
+      },
+      {
+        id: this.userIdCounter++,
+        username: "maryjohnson",
+        password: "password123",
+        firstName: "Mary",
+        lastName: "Johnson",
+        email: "mary@example.com",
+        householdType: "COUPLE",
+        householdSize: 2,
+        preferNameBrand: false,
+        preferOrganic: true,
+        buyInBulk: true,
+        prioritizeCostSavings: true,
+        shoppingRadius: 15,
+        role: "customer"
+      },
+      {
+        id: this.userIdCounter++,
+        username: "robertwilson",
+        password: "password123",
+        firstName: "Robert",
+        lastName: "Wilson",
+        email: "robert@example.com",
+        householdType: "SENIOR_LIVING",
+        householdSize: 1,
+        preferNameBrand: true,
+        preferOrganic: false,
+        buyInBulk: false,
+        prioritizeCostSavings: true,
+        shoppingRadius: 3,
+        role: "customer"
+      },
+      {
+        id: this.userIdCounter++,
+        username: "sarahdavis",
+        password: "password123",
+        firstName: "Sarah",
+        lastName: "Davis",
+        email: "sarah@example.com",
+        householdType: "SHARED_HOUSING",
+        householdSize: 3,
+        preferNameBrand: false,
+        preferOrganic: true,
+        buyInBulk: true,
+        prioritizeCostSavings: false,
+        shoppingRadius: 8,
+        role: "customer"
+      }
+    ];
 
-        // Create test user
-    const testUser: User = {
-      id: this.userIdCounter++,
-      username: "testuser",
-      password: "hashed_password",
-      firstName: "Test",
-      lastName: "User",
-      email: "test.user@example.com",
-      householdType: "SINGLE",
-      householdSize: 1,
-      preferNameBrand: false,
-      preferOrganic: true,
-      buyInBulk: false,
-      prioritizeCostSavings: false,
-      shoppingRadius: 5,
-      role: 'test_user'
-    };
-    this.users.set(testUser.id, testUser);
+    sampleUsers.forEach(user => {
+      this.users.set(user.id, user);
+    });
 
     // Create retailers
     const retailers = [
@@ -243,16 +293,71 @@ export class MemStorage implements IStorage {
       this.retailers.set(newRetailer.id, newRetailer);
     });
 
-    // Create sample products
+    // Create comprehensive product catalog
     const products = [
-      { name: "Milk (Gallon)", category: "Dairy", restockFrequency: "WEEKLY", isNameBrand: false, isOrganic: false },
-      { name: "Toilet Paper (24 pack)", category: "Household", restockFrequency: "MONTHLY", isNameBrand: true, isOrganic: false },
-      { name: "Laundry Detergent", category: "Household", restockFrequency: "BI_WEEKLY", isNameBrand: true, isOrganic: false },
-      { name: "Bananas", category: "Produce", restockFrequency: "WEEKLY", isNameBrand: false, isOrganic: false },
-      { name: "Eggs (dozen)", category: "Dairy", restockFrequency: "WEEKLY", isNameBrand: false, isOrganic: false },
-      { name: "Paper Towels", category: "Household", restockFrequency: "MONTHLY", isNameBrand: true, isOrganic: false },
-      { name: "Cereal", category: "Breakfast", restockFrequency: "BI_WEEKLY", isNameBrand: true, isOrganic: false },
-      { name: "Bread", category: "Bakery", restockFrequency: "WEEKLY", isNameBrand: false, isOrganic: false },
+      // Dairy & Eggs
+      { name: "Milk (Whole)", category: "Dairy", subcategory: "Milk", defaultUnit: "gallon", restockFrequency: "weekly", isNameBrand: false, isOrganic: false },
+      { name: "Milk (2%)", category: "Dairy", subcategory: "Milk", defaultUnit: "gallon", restockFrequency: "weekly", isNameBrand: false, isOrganic: false },
+      { name: "Organic Milk", category: "Dairy", subcategory: "Milk", defaultUnit: "gallon", restockFrequency: "weekly", isNameBrand: false, isOrganic: true },
+      { name: "Large Eggs", category: "Dairy", subcategory: "Eggs", defaultUnit: "dozen", restockFrequency: "weekly", isNameBrand: false, isOrganic: false },
+      { name: "Organic Free-Range Eggs", category: "Dairy", subcategory: "Eggs", defaultUnit: "dozen", restockFrequency: "weekly", isNameBrand: false, isOrganic: true },
+      { name: "Butter", category: "Dairy", subcategory: "Butter", defaultUnit: "lb", restockFrequency: "weekly", isNameBrand: false, isOrganic: false },
+      { name: "Greek Yogurt", category: "Dairy", subcategory: "Yogurt", defaultUnit: "container", restockFrequency: "weekly", isNameBrand: false, isOrganic: false },
+      { name: "Cheddar Cheese", category: "Dairy", subcategory: "Cheese", defaultUnit: "lb", restockFrequency: "weekly", isNameBrand: false, isOrganic: false },
+
+      // Produce
+      { name: "Bananas", category: "Produce", subcategory: "Fruit", defaultUnit: "lb", restockFrequency: "weekly", isNameBrand: false, isOrganic: false },
+      { name: "Organic Bananas", category: "Produce", subcategory: "Fruit", defaultUnit: "lb", restockFrequency: "weekly", isNameBrand: false, isOrganic: true },
+      { name: "Apples (Gala)", category: "Produce", subcategory: "Fruit", defaultUnit: "lb", restockFrequency: "weekly", isNameBrand: false, isOrganic: false },
+      { name: "Organic Apples", category: "Produce", subcategory: "Fruit", defaultUnit: "lb", restockFrequency: "weekly", isNameBrand: false, isOrganic: true },
+      { name: "Lettuce (Iceberg)", category: "Produce", subcategory: "Vegetables", defaultUnit: "head", restockFrequency: "weekly", isNameBrand: false, isOrganic: false },
+      { name: "Spinach", category: "Produce", subcategory: "Vegetables", defaultUnit: "bag", restockFrequency: "weekly", isNameBrand: false, isOrganic: false },
+      { name: "Tomatoes", category: "Produce", subcategory: "Vegetables", defaultUnit: "lb", restockFrequency: "weekly", isNameBrand: false, isOrganic: false },
+      { name: "Avocados", category: "Produce", subcategory: "Fruit", defaultUnit: "piece", restockFrequency: "weekly", isNameBrand: false, isOrganic: false },
+      { name: "Carrots", category: "Produce", subcategory: "Vegetables", defaultUnit: "bag", restockFrequency: "weekly", isNameBrand: false, isOrganic: false },
+      { name: "Broccoli", category: "Produce", subcategory: "Vegetables", defaultUnit: "head", restockFrequency: "weekly", isNameBrand: false, isOrganic: false },
+
+      // Meat & Seafood
+      { name: "Chicken Breast", category: "Meat", subcategory: "Poultry", defaultUnit: "lb", restockFrequency: "bi-weekly", isNameBrand: false, isOrganic: false },
+      { name: "Ground Beef (85/15)", category: "Meat", subcategory: "Beef", defaultUnit: "lb", restockFrequency: "bi-weekly", isNameBrand: false, isOrganic: false },
+      { name: "Salmon Fillet", category: "Seafood", subcategory: "Fish", defaultUnit: "lb", restockFrequency: "weekly", isNameBrand: false, isOrganic: false },
+      { name: "Turkey Slices", category: "Meat", subcategory: "Deli", defaultUnit: "lb", restockFrequency: "weekly", isNameBrand: false, isOrganic: false },
+
+      // Pantry & Canned Goods
+      { name: "White Rice", category: "Pantry", subcategory: "Rice & Grains", defaultUnit: "bag", restockFrequency: "monthly", isNameBrand: false, isOrganic: false },
+      { name: "Brown Rice", category: "Pantry", subcategory: "Rice & Grains", defaultUnit: "bag", restockFrequency: "monthly", isNameBrand: false, isOrganic: false },
+      { name: "Pasta (Spaghetti)", category: "Pantry", subcategory: "Pasta", defaultUnit: "box", restockFrequency: "monthly", isNameBrand: false, isOrganic: false },
+      { name: "Whole Wheat Pasta", category: "Pantry", subcategory: "Pasta", defaultUnit: "box", restockFrequency: "monthly", isNameBrand: false, isOrganic: true },
+      { name: "Tomato Sauce", category: "Pantry", subcategory: "Canned Goods", defaultUnit: "can", restockFrequency: "monthly", isNameBrand: false, isOrganic: false },
+      { name: "Black Beans", category: "Pantry", subcategory: "Canned Goods", defaultUnit: "can", restockFrequency: "monthly", isNameBrand: false, isOrganic: false },
+      { name: "Olive Oil", category: "Pantry", subcategory: "Oils & Vinegars", defaultUnit: "bottle", restockFrequency: "monthly", isNameBrand: false, isOrganic: false },
+      { name: "All-Purpose Flour", category: "Pantry", subcategory: "Baking", defaultUnit: "bag", restockFrequency: "monthly", isNameBrand: false, isOrganic: false },
+
+      // Bakery
+      { name: "White Bread", category: "Bakery", subcategory: "Bread", defaultUnit: "loaf", restockFrequency: "weekly", isNameBrand: false, isOrganic: false },
+      { name: "Whole Wheat Bread", category: "Bakery", subcategory: "Bread", defaultUnit: "loaf", restockFrequency: "weekly", isNameBrand: false, isOrganic: false },
+      { name: "Bagels", category: "Bakery", subcategory: "Bread", defaultUnit: "pack", restockFrequency: "weekly", isNameBrand: false, isOrganic: false },
+
+      // Frozen Foods
+      { name: "Frozen Pizza", category: "Frozen", subcategory: "Meals", defaultUnit: "box", restockFrequency: "monthly", isNameBrand: true, isOrganic: false },
+      { name: "Frozen Vegetables", category: "Frozen", subcategory: "Vegetables", defaultUnit: "bag", restockFrequency: "monthly", isNameBrand: false, isOrganic: false },
+      { name: "Ice Cream", category: "Frozen", subcategory: "Desserts", defaultUnit: "pint", restockFrequency: "weekly", isNameBrand: true, isOrganic: false },
+
+      // Personal Care
+      { name: "Shampoo", category: "Personal Care", subcategory: "Hair Care", defaultUnit: "bottle", restockFrequency: "monthly", isNameBrand: true, isOrganic: false },
+      { name: "Toothpaste", category: "Personal Care", subcategory: "Oral Care", defaultUnit: "tube", restockFrequency: "monthly", isNameBrand: true, isOrganic: false },
+      { name: "Body Soap", category: "Personal Care", subcategory: "Bath & Body", defaultUnit: "bar", restockFrequency: "monthly", isNameBrand: false, isOrganic: false },
+
+      // Household Items
+      { name: "Paper Towels", category: "Household", subcategory: "Paper Goods", defaultUnit: "roll", restockFrequency: "monthly", isNameBrand: true, isOrganic: false },
+      { name: "Toilet Paper", category: "Household", subcategory: "Paper Goods", defaultUnit: "pack", restockFrequency: "monthly", isNameBrand: true, isOrganic: false },
+      { name: "Laundry Detergent", category: "Household", subcategory: "Cleaning", defaultUnit: "bottle", restockFrequency: "monthly", isNameBrand: true, isOrganic: false },
+      { name: "Dish Soap", category: "Household", subcategory: "Cleaning", defaultUnit: "bottle", restockFrequency: "monthly", isNameBrand: false, isOrganic: false },
+
+      // Beverages
+      { name: "Orange Juice", category: "Beverages", subcategory: "Juice", defaultUnit: "bottle", restockFrequency: "weekly", isNameBrand: false, isOrganic: false },
+      { name: "Coffee", category: "Beverages", subcategory: "Coffee & Tea", defaultUnit: "bag", restockFrequency: "monthly", isNameBrand: true, isOrganic: false },
+      { name: "Soda (Coca-Cola)", category: "Beverages", subcategory: "Soft Drinks", defaultUnit: "pack", restockFrequency: "weekly", isNameBrand: true, isOrganic: false }
     ];
 
     products.forEach(product => {
@@ -263,14 +368,125 @@ export class MemStorage implements IStorage {
       this.products.set(newProduct.id, newProduct);
     });
 
-    // Create a default shopping list
-    const defaultList: ShoppingList = {
-      id: this.shoppingListIdCounter++,
-      userId: defaultUser.id,
-      name: "My Shopping List",
-      isDefault: true
-    };
-    this.shoppingLists.set(defaultList.id, defaultList);
+    // Ensure only one master shopping list exists
+    this.cleanupShoppingLists();
+
+    // Create or get the single master shopping list
+    const existingDefaultList = Array.from(this.shoppingLists.values()).find(list => list.isDefault);
+
+    if (!existingDefaultList) {
+      const defaultUser = sampleUsers[0];
+      const defaultList: ShoppingList = {
+        id: 1,
+        userId: defaultUser.id,
+        name: 'My Shopping List',
+        description: 'Master shopping list',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isDefault: true
+      };
+      this.shoppingLists.set(defaultList.id, defaultList);
+
+      // Create more realistic default shopping list items
+      const sampleItems = [
+        // Dairy & Essentials
+        { productName: "Milk (2%)", quantity: 1, unit: "GALLON", category: "Dairy" },
+        { productName: "Large Eggs", quantity: 1, unit: "DOZEN", category: "Dairy" },
+        { productName: "Butter", quantity: 1, unit: "LB", category: "Dairy" },
+        { productName: "Greek Yogurt", quantity: 2, unit: "CONTAINER", category: "Dairy" },
+
+        // Produce
+        { productName: "Bananas", quantity: 2, unit: "LB", category: "Produce" },
+        { productName: "Apples (Gala)", quantity: 3, unit: "LB", category: "Produce" },
+        { productName: "Lettuce (Iceberg)", quantity: 1, unit: "COUNT", category: "Produce" },
+        { productName: "Tomatoes", quantity: 2, unit: "LB", category: "Produce" },
+        { productName: "Avocados", quantity: 4, unit: "COUNT", category: "Produce" },
+        { productName: "Carrots", quantity: 1, unit: "BAG", category: "Produce" },
+
+        // Meat & Protein
+        { productName: "Chicken Breast", quantity: 2, unit: "LB", category: "Meat" },
+        { productName: "Ground Beef (85/15)", quantity: 1, unit: "LB", category: "Meat" },
+
+        // Pantry Staples
+        { productName: "White Bread", quantity: 1, unit: "LOAF", category: "Bakery" },
+        { productName: "White Rice", quantity: 1, unit: "BAG", category: "Pantry" },
+        { productName: "Pasta (Spaghetti)", quantity: 2, unit: "BOX", category: "Pantry" },
+        { productName: "Tomato Sauce", quantity: 3, unit: "CAN", category: "Pantry" },
+        { productName: "Black Beans", quantity: 2, unit: "CAN", category: "Pantry" },
+        { productName: "Olive Oil", quantity: 1, unit: "BOTTLE", category: "Pantry" },
+
+        // Household & Personal Care
+        { productName: "Paper Towels", quantity: 1, unit: "PACK", category: "Household" },
+        { productName: "Toilet Paper", quantity: 1, unit: "PACK", category: "Household" },
+        { productName: "Dish Soap", quantity: 1, unit: "BOTTLE", category: "Household" },
+        { productName: "Toothpaste", quantity: 1, unit: "TUBE", category: "Personal Care" },
+
+        // Beverages & Snacks
+        { productName: "Orange Juice", quantity: 1, unit: "BOTTLE", category: "Beverages" },
+        { productName: "Coffee", quantity: 1, unit: "BAG", category: "Beverages" }
+      ];
+
+      sampleItems.forEach(item => {
+        const newItem: ShoppingListItem = {
+          id: this.shoppingListItemIdCounter++,
+          shoppingListId: defaultList.id,
+          productName: item.productName,
+          quantity: item.quantity,
+          isCompleted: false,
+          unit: item.unit,
+          suggestedRetailerId: Math.floor(Math.random() * 3) + 1, // Random retailer 1-3
+          suggestedPrice: Math.floor(Math.random() * 800) + 200, // Random price $2-10
+          dueDate: null
+        };
+        this.shoppingListItems.set(newItem.id, newItem);
+      });
+    }
+
+    // Create comprehensive store deals
+    const sampleDeals = [
+      // Walmart deals
+      { retailerId: 1, productName: "Milk (Whole)", regularPrice: 399, salePrice: 299, category: "Dairy", dealSource: "weekly_ad" },
+      { retailerId: 1, productName: "White Bread", regularPrice: 249, salePrice: 199, category: "Bakery", dealSource: "weekly_ad" },
+      { retailerId: 1, productName: "Ground Beef (85/15)", regularPrice: 599, salePrice: 499, category: "Meat", dealSource: "weekly_ad" },
+      { retailerId: 1, productName: "Bananas", regularPrice: 149, salePrice: 99, category: "Produce", dealSource: "weekly_ad" },
+
+      // Target deals
+      { retailerId: 2, productName: "Greek Yogurt", regularPrice: 499, salePrice: 399, category: "Dairy", dealSource: "weekly_ad" },
+      { retailerId: 2, productName: "Frozen Pizza", regularPrice: 699, salePrice: 549, category: "Frozen", dealSource: "weekly_ad" },
+      { retailerId: 2, productName: "Laundry Detergent", regularPrice: 1299, salePrice: 999, category: "Household", dealSource: "weekly_ad" },
+      { retailerId: 2, productName: "Shampoo", regularPrice: 899, salePrice: 699, category: "Personal Care", dealSource: "weekly_ad" },
+
+      // Whole Foods deals
+      { retailerId: 3, productName: "Organic Apples", regularPrice: 499, salePrice: 399, category: "Produce", dealSource: "weekly_ad" },
+      { retailerId: 3, productName: "Organic Bananas", regularPrice: 199, salePrice: 149, category: "Produce", dealSource: "weekly_ad" },
+      { retailerId: 3, productName: "Salmon Fillet", regularPrice: 1299, salePrice: 999, category: "Seafood", dealSource: "weekly_ad" },
+      { retailerId: 3, productName: "Organic Free-Range Eggs", regularPrice: 599, salePrice: 499, category: "Dairy", dealSource: "weekly_ad" },
+
+      // Kroger deals
+      { retailerId: 4, productName: "Chicken Breast", regularPrice: 699, salePrice: 549, category: "Meat", dealSource: "weekly_ad" },
+      { retailerId: 4, productName: "Cheddar Cheese", regularPrice: 549, salePrice: 449, category: "Dairy", dealSource: "weekly_ad" },
+      { retailerId: 4, productName: "Ice Cream", regularPrice: 599, salePrice: 399, category: "Frozen", dealSource: "weekly_ad" },
+      { retailerId: 4, productName: "Paper Towels", regularPrice: 899, salePrice: 699, category: "Household", dealSource: "weekly_ad" },
+
+      // Costco deals (bulk pricing)
+      { retailerId: 5, productName: "Large Eggs", regularPrice: 899, salePrice: 699, category: "Dairy", dealSource: "warehouse_special" },
+      { retailerId: 5, productName: "Toilet Paper", regularPrice: 2499, salePrice: 1999, category: "Household", dealSource: "warehouse_special" },
+      { retailerId: 5, productName: "Coffee", regularPrice: 1799, salePrice: 1399, category: "Beverages", dealSource: "warehouse_special" },
+
+      // Safeway deals
+      { retailerId: 6, productName: "Avocados", regularPrice: 299, salePrice: 199, category: "Produce", dealSource: "weekly_ad" },
+      { retailerId: 6, productName: "Turkey Slices", regularPrice: 749, salePrice: 599, category: "Meat", dealSource: "weekly_ad" },
+      { retailerId: 6, productName: "Orange Juice", regularPrice: 449, salePrice: 349, category: "Beverages", dealSource: "weekly_ad" }
+    ];
+
+    sampleDeals.forEach(deal => {
+      const newDeal: StoreDeal = {
+        id: this.storeDealIdCounter++,
+        ...deal,
+        featured: true
+      };
+      this.storeDeals.set(newDeal.id, newDeal);
+    });
 
     // Add weekly circulars
     const circulars = [
@@ -323,64 +539,24 @@ export class MemStorage implements IStorage {
       };
       this.weeklyCirculars.set(newCircular.id, newCircular);
     });
-
-    // Add store deals with more categories and retailers
-    const deals = [
-      // Walmart deals
-      { retailerId: 1, productName: "Milk (Gallon)", regularPrice: 389, salePrice: 349, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Dairy", circularId: 1, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400" },
-      { retailerId: 1, productName: "Whole Grain Cereal", regularPrice: 499, salePrice: 399, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Breakfast", circularId: 1, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1544962503-4d9d8eb6c07b?w=400" },
-      { retailerId: 1, productName: "Ground Coffee", regularPrice: 899, salePrice: 699, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Beverages", circularId: 1, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1559056961-84608fae629c?w=400" },
-      { retailerId: 1, productName: "Frozen Pizza", regularPrice: 599, salePrice: 399, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Frozen Foods", circularId: 1, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400" },
-
-      // Target deals
-      { retailerId: 2, productName: "Toilet Paper (24 pack)", regularPrice: 1999, salePrice: 1649, startDate: new Date(), endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), category: "Household", circularId: 2, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1584473457406-6240486418e9?w=400" },
-      { retailerId: 2, productName: "Paper Towels", regularPrice: 1299, salePrice: 1099, startDate: new Date(), endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), category: "Household", circularId: 2, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1584473457452-00c2f71bdff8?w=400" },
-      { retailerId: 2, productName: "Greek Yogurt", regularPrice: 149, salePrice: 99, startDate: new Date(), endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), category: "Dairy", circularId: 2, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1571212515416-26c10ac12ab2?w=400" },
-      { retailerId: 2, productName: "Shampoo", regularPrice: 799, salePrice: 599, startDate: new Date(), endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), category: "Personal Care", circularId: 2, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=400" },
-
-      // Whole Foods deals
-      { retailerId: 3, productName: "Organic Bananas", regularPrice: 199, salePrice: 149, startDate: new Date(), endDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), category: "Produce", circularId: 3, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?w=400" },
-      { retailerId: 3, productName: "Chicken Breast", regularPrice: 799, salePrice: 599, startDate: new Date(), endDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), category: "Meat", circularId: 3, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1604503468506-a8da13d82791?w=400" },
-      { retailerId: 3, productName: "Organic Apples", regularPrice: 399, salePrice: 349, startDate: new Date(), endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), category: "Produce", circularId: 3, dealSource: "circular", imageUrl: "https://i5.walmartimages.com/asr/cd75f189-77e3-40c4-835f-e3d503240812.7d1b3aa48083b60b2290364e6a0d050d.jpeg" },
-      { retailerId: 3, productName: "Organic Pasta", regularPrice: 299, salePrice: 249, startDate: new Date(), endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), category: "Pantry", circularId: 3, dealSource: "circular", imageUrl: "https://images.unsplash.com/photo-1551462147-37ec24413113?w=400" },
-
-      // Kroger deals
-      { retailerId: 4, productName: "Eggs (dozen)", regularPrice: 359, salePrice: 299, startDate: new Date(), endDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000), category: "Dairy", circularId: 4, dealSource: "circular", imageUrl: "https://i5.walmartimages.com/asr/20fe5306-1652-449c-a7a3-12fc36b8b7c9.4ccc9f0e21cd39e47dbc30fe29951cd1.jpeg" },
-      { retailerId: 4, productName: "Bread", regularPrice: 329, salePrice: 299, startDate: new Date(), endDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000), category: "Bakery", circularId: 4, dealSource: "circular", imageUrl: "https://scene7.samsclub.com/is/image/samsclub/0001111008737_A" },
-
-      // Costco deals
-      { retailerId: 5, productName: "Bulk Rice (20lb)", regularPrice: 1999, salePrice: 1599, startDate: new Date(), endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), category: "Pantry", circularId: null, dealSource: "manual", imageUrl: "https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=400" },
-      { retailerId: 5, productName: "Salmon Fillet (2lb)", regularPrice: 1599, salePrice: 1299, startDate: new Date(), endDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), category: "Seafood", circularId: null, dealSource: "manual", imageUrl: "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=400" },
-
-      // Safeway deals
-      { retailerId: 6, productName: "Ice Cream", regularPrice: 599, salePrice: 399, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Frozen Foods", circularId: null, dealSource: "manual", imageUrl: "https://images.unsplash.com/photo-1501443762994-82bd5dace89a?w=400" },
-      { retailerId: 6, productName: "Vitamin C", regularPrice: 1299, salePrice: 999, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Health & Wellness", circularId: null, dealSource: "manual", imageUrl: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400" },
-
-      // Trader Joe's deals
-      { retailerId: 7, productName: "Organic Wine", regularPrice: 799, salePrice: 699, startDate: new Date(), endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), category: "Beverages", circularId: null, dealSource: "manual", imageUrl: "https://images.unsplash.com/photo-1510972527921-ce03766a1cf1?w=400" },
-      { retailerId: 7, productName: "Trail Mix", regularPrice: 499, salePrice: 399, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Snacks", circularId: null, dealSource: "manual", imageUrl: "https://images.unsplash.com/photo-1609501676725-7186f0544c5a?w=400" },
-    ];
-
-    deals.forEach(deal => {
-      const newDeal: StoreDeal = {
-        id: this.storeDealIdCounter++,
-        ...deal,
-        featured: true
-      };
-      this.storeDeals.set(newDeal.id, newDeal);
-    });
-
-    // Create sample purchase history
-    const now = new Date();
-    // Last month's purchases
-    this.createSamplePurchase(defaultUser.id, 1, now.getFullYear(), now.getMonth() - 1, 15);
-    this.createSamplePurchase(defaultUser.id, 2, now.getFullYear(), now.getMonth() - 1, 5);
-    this.createSamplePurchase(defaultUser.id, 4, now.getFullYear(), now.getMonth() - 1, 22);
-
-    // This month's purchases 
-    this.createSamplePurchase(defaultUser.id, 1, now.getFullYear(), now.getMonth(), 2);
-    this.createSamplePurchase(defaultUser.id, 3, now.getFullYear(), now.getMonth(), 10);
   }
+
+    // Cleanup methods
+    private cleanupShoppingLists() {
+        // Find and delete any non-default shopping lists
+        for (const [id, list] of this.shoppingLists.entries()) {
+            if (!list.isDefault) {
+                this.shoppingLists.delete(id);
+
+                // Also delete the shopping list items associated with this list
+                for (const [itemId, item] of this.shoppingListItems.entries()) {
+                    if (item.shoppingListId === list.id) {
+                        this.shoppingListItems.delete(itemId);
+                    }
+                }
+            }
+        }
+    }
 
   private createSamplePurchase(userId: number, retailerId: number, year: number, month: number, day: number) {
     const date = new Date(year, month, day);
@@ -639,12 +815,28 @@ export class MemStorage implements IStorage {
 
   // Shopping List methods
   async getShoppingLists(): Promise<ShoppingList[]> {
-    const lists = Array.from(this.shoppingLists.values());
-    // Add items to each list
-    return Promise.all(lists.map(async list => {
-      const items = await this.getShoppingListItems(list.id);
-      return { ...list, items };
-    }));
+      // Ensure we only return the master shopping list
+      const lists = Array.from(this.shoppingLists.values());
+      const masterList = lists.find(list => list.isDefault);
+
+      if (masterList) {
+          return [masterList];
+      }
+
+      // If no master list exists, create one
+      const defaultUser = sampleUsers[0];
+      const defaultList: ShoppingList = {
+          id: 1,
+          userId: defaultUser.id,
+          name: 'My Shopping List',
+          description: 'Master shopping list',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          isDefault: true
+      };
+      this.shoppingLists.set(defaultList.id, defaultList);
+
+      return [defaultList];
   }
 
   async getShoppingList(id: number): Promise<ShoppingList | undefined> {
@@ -655,11 +847,36 @@ export class MemStorage implements IStorage {
     return { ...list, items };
   }
 
-  async createShoppingList(list: InsertShoppingList): Promise<ShoppingList> {
-    const id = this.shoppingListIdCounter++;
-    const newList: ShoppingList = { ...list, id };
-    this.shoppingLists.set(id, newList);
-    return newList;
+  async createShoppingList(data: Omit<ShoppingList, 'id' | 'createdAt' | 'updatedAt'>): Promise<ShoppingList> {
+      // Only allow one master shopping list - return existing one or update it
+      const existingLists = Array.from(this.shoppingLists.values());
+      const masterList = existingLists.find(list => list.isDefault);
+
+      if (masterList) {
+          // Update the existing master list with new data if provided
+          const updatedList: ShoppingList = {
+              ...masterList,
+              name: data.name || masterList.name,
+              description: data.description || masterList.description,
+              updatedAt: new Date()
+          };
+          this.shoppingLists.set(masterList.id, updatedList);
+          return updatedList;
+      }
+
+      // Create the master list if it doesn't exist
+      const defaultUser = sampleUsers[0];
+      const newList: ShoppingList = {
+          id: 1,
+          userId: defaultUser.id,
+          ...data,
+          isDefault: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+      };
+
+      this.shoppingLists.set(newList.id, newList);
+      return newList;
   }
 
   // Shopping List Item methods
@@ -1001,7 +1218,6 @@ export class MemStorage implements IStorage {
     return Math.floor(Math.random() * 45) + 5;
   }
 
-  // Cleanup methods
   async cleanupExpiredCirculars(): Promise<number> {
     const now = new Date();
     let cleanedCount = 0;
@@ -1097,10 +1313,12 @@ export class MemStorage implements IStorage {
   }
 
   async deleteAffiliateProduct(id: number): Promise<void> {
-    if (!this.affiliateProducts.has(id)) {
-      throw new Error("Affiliate product not found");
+    try {
+      await db.delete(affiliateProducts).where(eq(affiliateProducts.id, id));
+    } catch (error) {
+      console.error("Error deleting affiliate product:", error);
+      throw error;
     }
-    this.affiliateProducts.delete(id);
   }
 
   // Affiliate Click methods
@@ -1169,19 +1387,6 @@ export class MemStorage implements IStorage {
     return newRetailer;
   }
 
-  async createShoppingList(data: any): Promise<ShoppingList> {
-      const id = this.shoppingListIdCounter++;
-      const newList: ShoppingList = {
-          id,
-          userId: data.userId,
-          name: data.name,
-          isDefault: data.isDefault || false,
-          description: data.description || null
-      };
-      this.shoppingLists.set(id, newList);
-      return newList;
-  }
-
   async updateShoppingList(id: number, data: any): Promise<ShoppingList> {
       const shoppingList = this.shoppingLists.get(id);
       if (!shoppingList) {
@@ -1245,7 +1450,7 @@ export class MemStorage implements IStorage {
       return deals;
   }
 
-  async getUserClaimedDeals(userId: number): Promise<any[]> {
+  async getUserClaimedDeals(userId:number): Promise<any[]> {
       // Mock data for demo - in production you'd have a claimed_deals table
       return [
           {
@@ -1269,10 +1474,10 @@ export class MemStorage implements IStorage {
         }
         return results;
     }
-    
+
     async searchPurchases(filters: any): Promise<Purchase[]> {
         let results = Array.from(this.purchases.values());
-    
+
         if (filters.userId) {
             results = results.filter(purchase => purchase.userId === filters.userId);
         }
@@ -1289,7 +1494,7 @@ export class MemStorage implements IStorage {
         }
         return results;
     }
-    
+
     async getUserStatistics(userId: number): Promise<any> {
         // Mock statistics for demo
         return {
@@ -1313,21 +1518,6 @@ export class MemStorage implements IStorage {
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     return Array.from(this.users.values()).find(u => u.username === username);
-  }
-
-  async createPurchase(data: any): Promise<Purchase> {
-      const id = this.purchaseIdCounter++;
-      const newPurchase: Purchase = {
-          id,
-          userId: data.userId,
-          retailerId: data.retailerId,
-          purchaseDate: data.purchaseDate,
-          totalAmount: data.totalAmount,
-          receiptData: data.receiptData,
-          receiptImageUrl: data.receiptImageUrl || null
-      };
-      this.purchases.set(id, newPurchase);
-      return newPurchase;
   }
 
   async updatePurchase(id: number, data: any): Promise<Purchase> {
@@ -1657,7 +1847,9 @@ const [updatedUser] = await db
   // Shopping List methods
   async getShoppingLists(): Promise<ShoppingList[]> {
     try {
-      const lists = await db.select().from(shoppingLists);
+    // Ensure we only return the master shopping list
+    const result = await db.select().from(shoppingLists).where(eq(shoppingLists.isDefault, true)).limit(1);
+    return result;
     } catch (error) {
       console.error("Error getting shopping lists:", error);
       throw error;
@@ -1681,12 +1873,17 @@ const [updatedUser] = await db
     }
   }
 
-  async createShoppingList(listData: InsertShoppingList): Promise<ShoppingList> {
+  async createShoppingList(listData: any): Promise<ShoppingList> {
     try {
-      const [list] = await db.insert(shoppingLists).values(listData).returning();
+    // Check for and delete any existing default shopping lists
+    await db.delete(shoppingLists).where(eq(shoppingLists.isDefault, true));
 
-      // Initialize with empty items array
-      return { ...list, items: [] };
+    // Set the new list as the default and insert it
+    listData.isDefault = true; // Enforce default status
+    const [list] = await db.insert(shoppingLists).values(listData).returning();
+
+    // Initialize with empty items array
+    return { ...list, items: [] };
     } catch (error) {
       console.error("Error creating shopping list:", error);
       throw error;
@@ -1820,7 +2017,7 @@ const [updatedUser] = await db
       deals.forEach(deal => {
         if (dealsByRetailer[deal.retailerId]) {
           dealsByRetailer[deal.retailerId].dealCount += 1;
-          dealsByRetailer[deal.retailerId].totalSavings += deal.regularPrice - deal.salePrice;
+          dealsByRetailer[dealsByRetailer.retailerId].totalSavings += deal.regularPrice - deal.salePrice;
         }
       });
 
@@ -2246,6 +2443,8 @@ const [updatedUser] = await db
       const [product] = await db.insert(affiliateProducts).values(productData).returning();
       return product;
     } catch (error) {
+```python
+
       console.error("Error creating affiliate product:", error);
       throw error;
     }
@@ -2349,105 +2548,6 @@ const [updatedUser] = await db
       throw error;
     }
   }
-  async getShoppingLists() {
-    return db.select().from(shoppingLists);
-  }
-
-  async createShoppingList(data: any) {
-    const [newList] = await db.insert(shoppingLists).values(data).returning();
-    return newList;
-  }
-
-  async updateShoppingList(id: number, data: any) {
-    const [updatedList] = await db.update(shoppingLists)
-      .set(data)
-      .where(eq(shoppingLists.id, id))
-      .returning();
-    return updatedList;
-  }
-
-  async deleteShoppingList(id: number) {
-    // First delete all items in the list
-    await db.delete(shoppingListItems).where(eq(shoppingListItems.shoppingListId, id));
-    // Then delete the list itself
-    await db.delete(shoppingLists).where(eq(shoppingLists.id, id));
-  }
-
-  async authenticateUser(username: string, password: string) {
-    const [user] = await db.select()
-      .from(users)
-      .where(and(eq(users.username, username), eq(users.password, password)))
-      .limit(1);
-    return user;
-  }
-
-  async getUserByUsername(username: string) {
-    const [user] = await db.select()
-      .from(users)
-      .where(eq(users.username, username))
-      .limit(1);
-    return user;
-  }
-
-  async createUser(data: any) {
-    const [newUser] = await db.insert(users).values(data).returning();
-    return newUser;
-  }
-
-  async getPurchases(userId?: number, limit?: number, offset?: number) {
-    let query = db.select().from(purchases);
-
-    if (userId) {
-      query = query.where(eq(purchases.userId, userId));
-    }
-
-    if (limit) {
-      query = query.limit(limit);
-    }
-
-    if (offset) {
-      query = query.offset(offset);
-    }
-
-    return query;
-  }
-
-  async createPurchase(data: any) {
-    const [newPurchase] = await db.insert(purchases).values(data).returning();
-    return newPurchase;
-  }
-
-  async updatePurchase(id: number, data: any) {
-    const [updatedPurchase] = await db.update(purchases)
-      .set(data)
-      .where(eq(purchases.id, id))
-      .returning();
-    return updatedPurchase;
-  }
-
-  async deletePurchase(id: number) {
-    await db.delete(purchases).where(eq(purchases.id, id));
-  }
-
-  async updateRetailerAccount(id: number, data: any) {
-    const [updatedAccount] = await db.update(retailerAccounts)
-      .set(data)
-      .where(eq(retailerAccounts.id, id))
-      .returning();
-    return updatedAccount;
-  }
-
-  async deleteRetailerAccount(id: number) {
-    await db.delete(retailerAccounts).where(eq(retailerAccounts.id, id));
-  }
-
-  async getRetailerAccount(id: number) {
-    const [account] = await db.select()
-      .from(retailerAccounts)
-      .where(eq(retailerAccounts.id, id))
-      .limit(1);
-    return account;
-  }
 
   async claimDeal(dealId: number, userId: number) {
     // In a real app, you'd have a separate table for claimed deals
@@ -2509,8 +2609,7 @@ const [updatedUser] = await db
         and(
           eq(shoppingLists.userId, userId),
           or(
-            ilike(shoppingLists.name, `%${query}%`),
-            ilike(shoppingLists.description, `%${query}%`)
+            ilike(shoppingLists.name, `%${query}%`)
           )
         )
       );
@@ -2564,6 +2663,89 @@ const [updatedUser] = await db
       savingsThisMonth: 1500 // $15.00
     };
   }
+
+  async getRetailer(id: number): Promise<any> {
+    try {
+      const [retailer] = await db.select().from(retailers).where(eq(retailers.id, id));
+      return retailer || undefined;
+    } catch (error) {
+      console.error("Error getting retailer:", error);
+      throw error;
+    }
+  }
+
+  async getRetailerByName(name: string): Promise<any> {
+    try {
+      const [retailer] = await db.select().from(retailers).where(eq(retailers.name, name));
+      return retailer || undefined;
+    } catch (error) {
+      console.error("Error getting retailer by name:", error);
+      throw error;
+    }
+  }
+
+  async getUserLoyaltyCard(userId: number, retailerId: number): Promise<any> {
+    try {
+      // Mock loyalty card data since we don't have a loyalty_cards table yet
+      const mockLoyaltyCards: { [key: string]: any } = {
+        'Walmart': {
+          cardNumber: '6224981234567890',
+          memberId: 'WM' + userId.toString().padStart(8, '0'),
+          barcodeNumber: '6224981234567890',
+          affiliateCode: 'SMARTCART_' + userId
+        },
+        'Target': {
+          cardNumber: '1234567890123456',
+          memberId: 'T' + userId.toString().padStart(9, '0'),
+          barcodeNumber: '1234567890123456',
+          affiliateCode: 'SMARTCART_' + userId
+        },
+        'Kroger': {
+          cardNumber: '4135551234567890',
+          memberId: 'KR' + userId.toString().padStart(8, '0'),
+          barcodeNumber: '4135551234567890',
+          affiliateCode: 'SMARTCART_' + userId
+        }
+      };
+
+      const retailer = await this.getRetailer(retailerId);
+      if (!retailer) return null;
+
+      return mockLoyaltyCards[retailer.name] || null;
+    } catch (error) {
+      console.error("Error getting user loyalty card:", error);
+      throw error;
+    }
+  }
+
+  async addUserLoyaltyCard(userId: number, cardData: any): Promise<any> {
+    // In a real implementation, you'd insert into a loyalty_cards table
+    // For now, we'll return the provided data with an ID
+    return {
+      id: Date.now(),
+      userId,
+      ...cardData,
+      createdAt: new Date()
+    };
+  }
+   async cleanupShoppingLists(): Promise<void> {
+        try {
+            // Fetch all shopping lists, filter out the isDefault one, then delete the rest
+            const allShoppingLists = await db.select().from(shoppingLists);
+            const nonDefaultLists = allShoppingLists.filter(list => !list.isDefault);
+
+            for (const list of nonDefaultLists) {
+                // First delete items in shopping list
+                await db.delete(shoppingListItems).where(eq(shoppingListItems.shoppingListId, list.id));
+
+                // Delete shopping list
+                await db.delete(shoppingLists).where(eq(shoppingLists.id, list.id));
+            }
+        } catch (error) {
+            console.error('Error cleaning up shopping lists:', error);
+            throw error;
+        }
+    }
 }
 
 // Use database storage for persistence

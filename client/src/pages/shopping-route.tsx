@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
+import { aiCategorizationService } from '@/lib/aiCategorization';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,7 +21,6 @@ import {
   CheckCircle2,
   Circle,
   Navigation,
-  Timer,
   Package
 } from 'lucide-react';
 import Header from '@/components/layout/Header';
@@ -41,8 +41,30 @@ const ShoppingRoute: React.FC = () => {
   const [selectedPlanData, setSelectedPlanData] = useState<any>(null);
   const [currentAisleIndex, setCurrentAisleIndex] = useState(0);
   const [completedItems, setCompletedItems] = useState<Set<number>>(new Set());
+  const [loyaltyCard, setLoyaltyCard] = useState<any>(null);
   const [startTime, setStartTime] = useState<Date | null>(null);
-  const [elapsedTime, setElapsedTime] = useState(0);
+
+  // Fetch loyalty card info for the retailer
+  const { data: loyaltyCardData } = useQuery({
+    queryKey: [`/api/user/loyalty-card/${optimizedRoute?.retailerName}`],
+    enabled: !!optimizedRoute?.retailerName,
+    queryFn: async () => {
+      const response = await fetch(`/api/user/loyalty-card/${encodeURIComponent(optimizedRoute.retailerName)}`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        return null; // No loyalty card found
+      }
+      const data = await response.json();
+      return data;
+    }
+  });
+
+  useEffect(() => {
+    if (loyaltyCardData) {
+      setLoyaltyCard(loyaltyCardData);
+    }
+  }, [loyaltyCardData]);
 
   // Fetch shopping list and items
   const { data: shoppingList, isLoading } = useQuery({
@@ -83,7 +105,6 @@ const ShoppingRoute: React.FC = () => {
         // Generate route from the selected plan instead of raw shopping list items
         const route = generateOptimizedShoppingRouteFromPlan(planData);
         setOptimizedRoute(route);
-        setStartTime(new Date());
       } catch (error) {
         console.error('Error parsing plan data:', error);
         // Fallback to original method if plan data is invalid
@@ -97,22 +118,10 @@ const ShoppingRoute: React.FC = () => {
       // Fallback to original method if no plan data is provided
       const route = generateOptimizedShoppingRoute(shoppingList.items);
       setOptimizedRoute(route);
-      setStartTime(new Date());
     }
   }, [shoppingList, planDataParam]);
 
-  // Timer effect
-  useEffect(() => {
-    if (startTime) {
-      const interval = setInterval(() => {
-        const now = new Date();
-        const elapsed = Math.floor((now.getTime() - startTime.getTime()) / 1000);
-        setElapsedTime(elapsed);
-      }, 1000);
-
-      return () => clearInterval(interval);
-    }
-  }, [startTime]);
+  
 
   // Generate optimized shopping route from selected plan data
   const generateOptimizedShoppingRouteFromPlan = (planData: any) => {
@@ -147,80 +156,145 @@ const ShoppingRoute: React.FC = () => {
     return generateOptimizedShoppingRoute(items, retailerName, planData);
   };
 
-  // Generate optimized shopping route with aisle information
+  // Generate optimized shopping route with AI-powered categorization
   const generateOptimizedShoppingRoute = (items: any[], retailerName?: string, planData?: any) => {
-    // Define aisle mappings for different product categories
+    // Define aisle mappings with better color schemes
     const aisleMapping = {
       'Produce': { aisle: 'Aisle 1', category: 'Fresh Produce', order: 1, color: 'bg-green-100 text-green-800' },
-      'Dairy': { aisle: 'Aisle 2', category: 'Dairy & Eggs', order: 2, color: 'bg-blue-100 text-blue-800' },
-      'Meat': { aisle: 'Aisle 3', category: 'Meat & Seafood', order: 3, color: 'bg-red-100 text-red-800' },
-      'Pantry': { aisle: 'Aisle 4-6', category: 'Pantry & Canned Goods', order: 4, color: 'bg-yellow-100 text-yellow-800' },
-      'Frozen': { aisle: 'Aisle 7', category: 'Frozen Foods', order: 5, color: 'bg-cyan-100 text-cyan-800' },
+      'Dairy & Eggs': { aisle: 'Aisle 2', category: 'Dairy & Eggs', order: 2, color: 'bg-blue-100 text-blue-800' },
+      'Meat & Seafood': { aisle: 'Aisle 3', category: 'Meat & Seafood', order: 3, color: 'bg-red-100 text-red-800' },
+      'Pantry & Canned Goods': { aisle: 'Aisle 4-6', category: 'Pantry & Canned Goods', order: 4, color: 'bg-yellow-100 text-yellow-800' },
+      'Frozen Foods': { aisle: 'Aisle 7', category: 'Frozen Foods', order: 5, color: 'bg-cyan-100 text-cyan-800' },
       'Bakery': { aisle: 'Aisle 8', category: 'Bakery', order: 6, color: 'bg-orange-100 text-orange-800' },
-      'Personal Care': { aisle: 'Aisle 9', category: 'Health & Personal Care', order: 7, color: 'bg-purple-100 text-purple-800' },
-      'Household': { aisle: 'Aisle 10', category: 'Household Items', order: 8, color: 'bg-gray-100 text-gray-800' }
+      'Personal Care': { aisle: 'Aisle 9', category: 'Personal Care', order: 7, color: 'bg-purple-100 text-purple-800' },
+      'Household Items': { aisle: 'Aisle 10', category: 'Household Items', order: 8, color: 'bg-gray-100 text-gray-800' }
     };
 
-    // Function to categorize items
-    const categorizeItem = (productName: string) => {
-      const name = productName.toLowerCase();
-
-      if (name.includes('banana') || name.includes('tomato') || name.includes('onion') || name.includes('bell pepper') || name.includes('basil') || name.includes('garlic')) {
-        return 'Produce';
-      } else if (name.includes('milk') || name.includes('yogurt') || name.includes('cheese') || name.includes('egg')) {
-        return 'Dairy';
-      } else if (name.includes('chicken') || name.includes('beef') || name.includes('meat') || name.includes('fish')) {
-        return 'Meat';
-      } else if (name.includes('bread') || name.includes('cake') || name.includes('bakery')) {
-        return 'Bakery';
-      } else if (name.includes('frozen') || name.includes('ice cream')) {
-        return 'Frozen';
-      } else if (name.includes('soap') || name.includes('shampoo') || name.includes('toothpaste') || name.includes('towel')) {
-        return 'Personal Care';
-      } else if (name.includes('towel') || name.includes('cleaner') || name.includes('detergent') || name.includes('paper towel')) {
-        return 'Household';
-      } else {
-        return 'Pantry';
+    // Use AI categorization service for better accuracy
+    const categorizeItemWithAI = async (productName: string) => {
+      const result = await aiCategorizationService.categorizeProduct(productName);
+      if (result) {
+        return result;
       }
+
+      // Fallback to basic categorization
+      const fallback = aiCategorizationService.getQuickCategory(productName);
+      return { 
+        category: fallback.category, 
+        confidence: fallback.confidence,
+        aisle: aisleMapping[fallback.category as keyof typeof aisleMapping]?.aisle || 'Aisle 4-6',
+        section: aisleMapping[fallback.category as keyof typeof aisleMapping]?.category || 'Center Store'
+      };
     };
 
-    // Group items by aisle
+    // Group items by aisle using AI categorization
     const aisleGroups: { [key: string]: any } = {};
+    const itemPromises: Promise<any>[] = [];
 
+    // Process items with AI categorization
     items.forEach((item: any) => {
-      const category = categorizeItem(item.productName);
-      const aisleInfo = aisleMapping[category as keyof typeof aisleMapping];
+      // Use AI service for immediate fallback categorization
+      const fallbackResult = aiCategorizationService.getQuickCategory(item.productName);
+      const fallbackAisleInfo = aisleMapping[fallbackResult.category as keyof typeof aisleMapping] || 
+                               aisleMapping['Pantry & Canned Goods'];
 
-      if (!aisleGroups[aisleInfo.aisle]) {
-        aisleGroups[aisleInfo.aisle] = {
-          aisleName: aisleInfo.aisle,
-          category: aisleInfo.category,
-          order: aisleInfo.order,
-          color: aisleInfo.color,
+      if (!aisleGroups[fallbackAisleInfo.aisle]) {
+        aisleGroups[fallbackAisleInfo.aisle] = {
+          aisleName: fallbackAisleInfo.aisle,
+          category: fallbackAisleInfo.category,
+          order: fallbackAisleInfo.order,
+          color: fallbackAisleInfo.color,
           items: []
         };
       }
 
-      // Add shelf location for specific items
+      // Enhanced shelf location logic with more comprehensive patterns
       let shelfLocation = '';
       const name = item.productName.toLowerCase();
-      if (name.includes('milk')) shelfLocation = 'Cooler Section';
-      else if (name.includes('bread')) shelfLocation = 'End Cap';
+      
+      // Dairy specific locations
+      if (name.includes('milk') || name.includes('yogurt') || name.includes('cheese')) {
+        shelfLocation = 'Dairy Cooler';
+      }
+      // Meat specific locations  
+      else if (name.includes('chicken') || name.includes('beef') || name.includes('fish') || name.includes('meat')) {
+        shelfLocation = 'Refrigerated Case';
+      }
+      // Produce specific locations
       else if (name.includes('banana')) shelfLocation = 'Front Display';
-      else if (name.includes('chicken')) shelfLocation = 'Refrigerated Case';
+      else if (name.includes('apple') || name.includes('orange')) shelfLocation = 'Fruit Section';
+      else if (name.includes('lettuce') || name.includes('spinach')) shelfLocation = 'Leafy Greens';
+      else if (name.includes('tomato') || name.includes('pepper')) shelfLocation = 'Vegetable Section';
+      // Bakery specific locations
+      else if (name.includes('bread') || name.includes('bagel')) shelfLocation = 'Bakery Display';
+      // Frozen specific locations
+      else if (name.includes('frozen') || name.includes('ice cream')) shelfLocation = 'Freezer Section';
+      // Household specific locations
+      else if (name.includes('paper towel') || name.includes('toilet paper')) shelfLocation = 'Paper Goods';
+      else if (name.includes('cleaner') || name.includes('detergent')) shelfLocation = 'Cleaning Supplies';
+      // Personal care specific locations
+      else if (name.includes('shampoo') || name.includes('soap')) shelfLocation = 'Health & Beauty';
 
-      aisleGroups[aisleInfo.aisle].items.push({
+      // Add item with enhanced categorization info
+      aisleGroups[fallbackAisleInfo.aisle].items.push({
         ...item,
-        shelfLocation
+        shelfLocation,
+        category: fallbackResult.category,
+        confidence: 0.7 // Default confidence for fallback
       });
+
+      // Queue AI categorization for background improvement
+      const aiPromise = categorizeItemWithAI(item.productName).then(aiResult => {
+        if (aiResult && aiResult.confidence > 0.7) {
+          // Find the item and update its categorization if AI is more confident
+          const currentAisle = aisleGroups[fallbackAisleInfo.aisle];
+          const itemIndex = currentAisle.items.findIndex((i: any) => i.id === item.id);
+          
+          if (itemIndex !== -1) {
+            currentAisle.items[itemIndex] = {
+              ...currentAisle.items[itemIndex],
+              category: aiResult.category,
+              confidence: aiResult.confidence,
+              aiSuggestion: aiResult.conversionReason
+            };
+          }
+        }
+      }).catch(error => {
+        console.warn('AI categorization failed for item:', item.productName, error);
+      });
+
+      itemPromises.push(aiPromise);
+    });
+
+    // Allow AI categorization to complete in background without blocking UI
+    Promise.all(itemPromises).then(() => {
+      // Optionally trigger a re-render with improved categorization
+      // This would require state management to update the route
+    }).catch(error => {
+      console.warn('Some AI categorizations failed:', error);
     });
 
     // Sort aisles by order and convert to array
     const sortedAisleGroups = Object.values(aisleGroups).sort((a: any, b: any) => a.order - b.order);
 
-    // Calculate route optimization
+    // Calculate route optimization with AI insights
     const totalAisles = sortedAisleGroups.length;
-    const estimatedTime = Math.max(15, totalAisles * 3 + items.length * 0.5);
+    let estimatedTime = Math.max(15, totalAisles * 3 + items.length * 0.5);
+    
+    // Adjust time estimates based on item complexity and store layout
+    const complexItems = items.filter((item: any) => {
+      const name = item.productName.toLowerCase();
+      return name.includes('organic') || name.includes('specialty') || name.includes('imported');
+    }).length;
+    
+    const freshItems = items.filter((item: any) => {
+      const name = item.productName.toLowerCase();
+      return name.includes('fresh') || name.includes('produce') || name.includes('meat') || name.includes('seafood');
+    }).length;
+    
+    // Add extra time for complex/fresh items that require more selection time
+    estimatedTime += complexItems * 1.5 + freshItems * 1;
+    estimatedTime = Math.round(estimatedTime);
 
     return {
       aisleGroups: sortedAisleGroups,
@@ -309,11 +383,7 @@ const ShoppingRoute: React.FC = () => {
     };
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  
 
   if (isLoading) {
     return (
@@ -356,6 +426,63 @@ const ShoppingRoute: React.FC = () => {
       <Header title="Shopping Route" />
 
       <main className="flex-1 overflow-y-auto p-4 pb-20">
+        {/* Loyalty Card Section */}
+        {loyaltyCard && (
+          <Card className="mb-4 border-green-200 bg-green-50">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Badge className="h-5 w-5 text-primary" />
+                  <div>
+                    <div className="font-semibold text-green-800">Loyalty Card Ready</div>
+                    <div className="text-xs text-green-600">{loyaltyCard.cardNumber}</div>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-green-700 border-green-300 hover:bg-green-100"
+                  onClick={() => {
+                    // Generate barcode display or show scannable code
+                    toast({
+                      title: "Loyalty Card",
+                      description: "Show this to the cashier for points/discounts",
+                      duration: 5000
+                    });
+                  }}
+                >
+                  Show Barcode
+                </Button>
+              </div>
+              
+              {/* Barcode Display Area */}
+              <div className="bg-white p-3 rounded border text-center">
+                <div className="text-xs text-gray-500 mb-1">Loyalty Card</div>
+                <div className="font-mono text-lg font-bold tracking-wider">
+                  {loyaltyCard.barcodeNumber || loyaltyCard.cardNumber}
+                </div>
+                {/* Simple barcode visualization */}
+                <div className="flex justify-center mt-2 gap-px">
+                  {loyaltyCard.barcodeNumber?.split('').map((digit: string, index: number) => (
+                    <div
+                      key={index}
+                      className={`w-1 h-8 ${parseInt(digit) % 2 === 0 ? 'bg-black' : 'bg-gray-300'}`}
+                    />
+                  ))}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  Member ID: {loyaltyCard.memberId || loyaltyCard.cardNumber}
+                </div>
+                {loyaltyCard.affiliateCode && (
+                  <div className="text-xs text-blue-600 mt-1">
+                    Affiliate: {loyaltyCard.affiliateCode}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Progress Header */}
         <Card className="mb-4">
           <CardContent className="p-4">
@@ -369,10 +496,7 @@ const ShoppingRoute: React.FC = () => {
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Timer className="h-4 w-4" />
-                <span>{formatTime(elapsedTime)}</span>
-              </div>
+              
             </div>
 
             {/* Plan Summary */}

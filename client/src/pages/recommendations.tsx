@@ -62,9 +62,11 @@ const RecommendationsPage: React.FC = () => {
       retailer: 'Whole Foods',
       distance: '1.2 miles',
       dealExpires: '2 days',
-      reason: 'You buy milk every 6 days. Stock up on this 15% off deal.',
+      reason: 'Best unit price: $3.89/gallon vs $4.59 regular. You buy milk every 6 days.',
       rating: 4.8,
-      category: 'Dairy'
+      category: 'Dairy',
+      unitPrice: 389, // price per unit (gallon)
+      regularUnitPrice: 459
     },
     {
       id: 2,
@@ -75,9 +77,11 @@ const RecommendationsPage: React.FC = () => {
       retailer: 'Target',
       distance: '0.8 miles',
       dealExpires: '1 day',
-      reason: 'Running low based on your purchase pattern. Great deal expires soon!',
+      reason: 'Best unit price: $2.79/dozen vs competitors at $3.49. Running low!',
       rating: 4.6,
-      category: 'Dairy'
+      category: 'Dairy',
+      unitPrice: 279,
+      regularUnitPrice: 349
     },
     {
       id: 3,
@@ -88,9 +92,11 @@ const RecommendationsPage: React.FC = () => {
       retailer: 'Walmart',
       distance: '2.1 miles',
       dealExpires: '4 days',
-      reason: 'Healthy protein alternative. 25% off this week.',
+      reason: 'Excellent unit price: $4.49/lb vs $5.99 regular. Healthy protein choice.',
       rating: 4.3,
-      category: 'Meat'
+      category: 'Meat',
+      unitPrice: 449,
+      regularUnitPrice: 599
     },
     {
       id: 4,
@@ -199,6 +205,9 @@ const RecommendationsPage: React.FC = () => {
                               <span className="font-bold text-primary">
                                 ${(item.salePrice / 100).toFixed(2)}
                               </span>
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              ${(item.salePrice / 100).toFixed(2)}/unit
                             </div>
                             <Badge variant="secondary" className="bg-green-50 text-green-700 mt-1">
                               <TrendingDown className="h-3 w-3 mr-1" />
