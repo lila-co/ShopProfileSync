@@ -241,19 +241,19 @@ const ShoppingListComponent: React.FC = () => {
       let items = data.items || [];
 
       if (items.length === 0) {
-        items = [
-          { productName: 'Milk', quantity: 1, reason: 'Purchased weekly' },
-          { productName: 'Bananas', quantity: 1, reason: 'Running low based on purchase cycle' },
-          { productName: 'Bread', quantity: 1, reason: 'Typically purchased every 5 days' },
-          { productName: 'Eggs', quantity: 1, reason: 'Regularly purchased item' },
-          { productName: 'Toilet Paper', quantity: 1, reason: 'Based on typical household usage' },
-          { productName: 'Chicken Breast', quantity: 1, reason: 'Purchased bi-weekly' },
-          { productName: 'Tomatoes', quantity: 3, reason: 'Based on recipe usage patterns' }
+        const fallbackItems = [
+          { productName: 'Milk', quantity: 1, unit: 'GALLON', reason: 'Purchased weekly' },
+          { productName: 'Bananas', quantity: 2, unit: 'LB', reason: 'Running low based on purchase cycle' },
+          { productName: 'Bread', quantity: 1, unit: 'LOAF', reason: 'Typically purchased every 5 days' },
+          { productName: 'Eggs', quantity: 1, unit: 'DOZEN', reason: 'Regularly purchased item' },
+          { productName: 'Toilet Paper', quantity: 12, unit: 'ROLL', reason: 'Based on typical household usage' },
+          { productName: 'Chicken Breast', quantity: 2, unit: 'LB', reason: 'Purchased bi-weekly' },
+          { productName: 'Tomatoes', quantity: 2, unit: 'LB', reason: 'Based on recipe usage patterns' }
         ];
-      }
 
-      const enhancedItems = items.map(item => ({
+      const enhancedItems = fallbackItems.map(item => ({
         ...item,
+        unit: item.unit || detectUnitFromItemName(item.productName),
         detectedUnit: detectUnitFromItemName(item.productName)
       }));
 
