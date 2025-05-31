@@ -1771,13 +1771,22 @@ const ShoppingListPage: React.FC = () => {
                         <Button 
                           className="w-full h-auto p-4 flex flex-col items-center space-y-2"
                           onClick={() => {
-                            navigate('/shop?listId=' + selectedList?.id + '&mode=online');
+                            // Check if user has optimization data available
+                            const hasOptimization = singleStoreOptimization.data || bestValueOptimization.data || balancedOptimization.data;
+                            
+                            if (hasOptimization) {
+                              // Navigate to auto-order with optimization plans
+                              navigate('/auto-order?listId=' + selectedList?.id + '&mode=online');
+                            } else {
+                              // Fallback to regular shop page if no optimization data
+                              navigate('/shop?listId=' + selectedList?.id + '&mode=online');
+                            }
                           }}
                         >
                           <ShoppingCart className="h-6 w-6" />
                           <div className="text-center">
                             <div className="font-medium">Shop Online</div>
-                            <div className="text-xs text-white/80">Browse and compare prices</div>
+                            <div className="text-xs text-white/80">Place optimized orders automatically</div>
                           </div>
                         </Button>
 
