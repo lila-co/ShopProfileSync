@@ -481,7 +481,7 @@ export class MemStorage implements IStorage {
 
   // User methods
   async getDefaultUser(): Promise<User> {
-    return Array.from(this.users.values())[0];Fixed storage initialization and removed broken code.
+    return Array.from(this.users.values())[0];
   }
 
   async getUser(id: number): Promise<User | undefined> {
