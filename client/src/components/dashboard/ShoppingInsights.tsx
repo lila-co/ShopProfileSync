@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +9,7 @@ const ShoppingInsights: React.FC = () => {
   const { data: topItems, isLoading: loadingTopItems } = useQuery<PurchasePattern[]>({
     queryKey: ['/api/insights/top-items'],
   });
-  
+
   const { data: monthlyData, isLoading: loadingMonthlyData } = useQuery<MonthlySpending[]>({
     queryKey: ['/api/insights/monthly-spending'],
   });
@@ -26,7 +25,7 @@ const ShoppingInsights: React.FC = () => {
   const { data: demographicInsights } = useQuery({
     queryKey: ['/api/insights/demographic-insights'],
   });
-  
+
   const renderTopItems = () => {
     if (loadingTopItems) {
       return Array(5).fill(0).map((_, i) => (
@@ -39,7 +38,7 @@ const ShoppingInsights: React.FC = () => {
         </div>
       ));
     }
-    
+
     return (topItems || []).slice(0, 5).map((item, index) => (
       <div key={index} className="flex items-center py-3 gap-3 border-b border-gray-100 last:border-b-0">
         <div className="h-10 w-10 bg-blue-50 rounded-lg flex items-center justify-center">
@@ -58,7 +57,7 @@ const ShoppingInsights: React.FC = () => {
       </div>
     ));
   };
-  
+
   const renderMonthlyData = () => {
     if (loadingMonthlyData) {
       return (
@@ -75,20 +74,20 @@ const ShoppingInsights: React.FC = () => {
         </div>
       );
     }
-    
+
     return (
       <div className="h-40 flex items-end justify-between">
         {(monthlyData || []).map((month, index) => {
           const currentYearHeight = month.currentYear;
           const previousYearHeight = month.previousYear;
-          
+
           const maxValue = Math.max(
             ...((monthlyData || []).flatMap(m => [m.currentYear, m.previousYear]))
           );
-          
+
           const currentYearScaled = (currentYearHeight / maxValue) * 100;
           const previousYearScaled = (previousYearHeight / maxValue) * 100;
-          
+
           return (
             <div key={index} className="flex flex-col items-center">
               <div className="relative w-8">
@@ -127,7 +126,7 @@ const ShoppingInsights: React.FC = () => {
     { category: 'Beverages', amount: 89.20, percentage: 13, change: '+1%' },
     { category: 'Snacks', amount: 76.90, percentage: 12, change: '+12%' }
   ];
-  
+
   return (
     <div className="space-y-4">
       {/* Summary Stats */}
@@ -144,7 +143,7 @@ const ShoppingInsights: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center">
@@ -222,21 +221,21 @@ const ShoppingInsights: React.FC = () => {
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div className="space-y-3">
               <div>
-                <p className="font-medium text-gray-700">Preferred Day</p>
+                <p className="font-medium text-foreground">Preferred Day</p>
                 <p className="text-gray-600">{shoppingPatterns.preferredShoppingDay}</p>
               </div>
               <div>
-                <p className="font-medium text-gray-700">Preferred Time</p>
+                <p className="font-medium text-foreground">Preferred Time</p>
                 <p className="text-gray-600">{shoppingPatterns.preferredShoppingTime}</p>
               </div>
               <div>
-                <p className="font-medium text-gray-700">Favorite Store</p>
+                <p className="font-medium text-foreground">Favorite Store</p>
                 <p className="text-gray-600">{shoppingPatterns.mostFrequentStore}</p>
               </div>
             </div>
             <div className="space-y-3">
               <div>
-                <p className="font-medium text-gray-700">Budget Adherence</p>
+                <p className="font-medium text-foreground">Budget Adherence</p>
                 <div className="flex items-center">
                   <p className="text-gray-600">{shoppingPatterns.budgetAdherence}%</p>
                   <div className="ml-2 w-16 bg-gray-200 rounded-full h-2">
@@ -248,7 +247,7 @@ const ShoppingInsights: React.FC = () => {
                 </div>
               </div>
               <div>
-                <p className="font-medium text-gray-700">Impulse Purchases</p>
+                <p className="font-medium text-foreground">Impulse Purchases</p>
                 <p className="text-gray-600">{shoppingPatterns.impulsePurchases}% of trips</p>
               </div>
             </div>
@@ -300,11 +299,11 @@ const ShoppingInsights: React.FC = () => {
             </div>
             <div className="grid grid-cols-2 gap-3 mt-3 text-sm">
               <div>
-                <p className="font-medium text-gray-700">Popular Store</p>
+                <p className="font-medium text-foreground">Popular Store</p>
                 <p className="text-gray-600">{areaInsights.popularStore}</p>
               </div>
               <div>
-                <p className="font-medium text-gray-700">Best Deal Day</p>
+                <p className="font-medium text-foreground">Best Deal Day</p>
                 <p className="text-gray-600">{areaInsights.bestDealDay}</p>
               </div>
             </div>
@@ -327,7 +326,7 @@ const ShoppingInsights: React.FC = () => {
               {demographicInsights.slice(0, 2).map((insight: any, index: number) => (
                 <div key={index} className="border rounded-lg p-3">
                   <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-medium text-gray-800 text-sm">{insight.trend}</h4>
+                    <h4 className="font-medium text-foreground text-sm">{insight.trend}</h4>
                     <Badge variant="outline" className="text-xs">{insight.confidence}%</Badge>
                   </div>
                   <p className="text-sm text-gray-600">{insight.description}</p>

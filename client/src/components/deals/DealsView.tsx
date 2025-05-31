@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,22 +21,22 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
   const queryClient = useQueryClient();
   const [selectedRetailerId, setSelectedRetailerId] = useState<number | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  
+
   const { data: retailers, isLoading: loadingRetailers } = useQuery<Retailer[]>({
     queryKey: ['/api/retailers'],
   });
-  
+
   // Determine effective category from either dropdown or quick filter
   const effectiveCategory = selectedCategory || (activeFilter && !['featured', 'nearby'].includes(activeFilter) ? activeFilter : null);
-  
+
   const { data: storeDeals, isLoading: loadingDeals } = useQuery<StoreDeal[]>({
     queryKey: ['/api/deals', selectedRetailerId, effectiveCategory, searchQuery, activeFilter],
   });
-  
+
   const { data: categories } = useQuery<string[]>({
     queryKey: ['/api/deals/categories'],
   });
-  
+
   const addToShoppingListMutation = useMutation({
     mutationFn: async (deal: StoreDeal) => {
       const response = await apiRequest('POST', '/api/shopping-list/items', {
@@ -55,7 +54,7 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
       });
     }
   });
-  
+
   const getRetailerColor = (retailerId: number) => {
     const retailer = retailers?.find(r => r.id === retailerId);
     const colorMap: Record<string, string> = {
@@ -161,10 +160,10 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
 
                   {/* Product Info */}
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 text-sm mb-1 line-clamp-2">
+                    <h3 className="font-semibold text-foreground text-sm mb-1 line-clamp-2">
                       {deal.productName}
                     </h3>
-                    
+
                     {/* Store Info */}
                     <div className="flex items-center gap-2 mb-2">
                       <Avatar className={`h-5 w-5 ${getRetailerColor(deal.retailerId)}`}>
@@ -180,7 +179,7 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
                     {/* Price and Savings */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-lg font-bold text-gray-900">
+                        <span className="text-lg font-bold text-foreground">
                           ${deal.salePrice.toFixed(2)}
                         </span>
                         <span className="text-sm text-gray-500 line-through">
@@ -223,7 +222,7 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
           <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
             <Store className="h-8 w-8 text-gray-400" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No deals found</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-2">No deals found</h3>
           <p className="text-sm text-gray-500 max-w-xs mx-auto">
             {searchQuery ? 
               `No deals found for "${searchQuery}". Try adjusting your search or filters.` :

@@ -131,7 +131,7 @@ const ProfilePage: React.FC = () => {
 
       <main className="flex-1 overflow-y-auto p-4 pb-20">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">My Profile</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-2">My Profile</h1>
           <p className="text-gray-600">Manage your account settings and preferences</p>
         </div>
 
@@ -481,7 +481,7 @@ const ProfilePage: React.FC = () => {
             <Separator className="my-6" />
 
             <div className="mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">Account Management</h2>
+              <h2 className="text-lg font-semibold text-foreground">Account Management</h2>
               <p className="text-sm text-gray-600">Manage your connections and payment options</p>
             </div>
 

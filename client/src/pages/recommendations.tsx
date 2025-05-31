@@ -12,7 +12,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 
 const RecommendationsPage: React.FC = () => {
-  
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -133,7 +133,7 @@ const RecommendationsPage: React.FC = () => {
     }
   ];
 
-  
+
 
   const groupedRecommendations = enhancedRecommendations.reduce((groups, item) => {
     const category = item.category;
@@ -144,7 +144,7 @@ const RecommendationsPage: React.FC = () => {
     return groups;
   }, {} as Record<string, typeof enhancedRecommendations>);
 
-  
+
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
@@ -154,11 +154,11 @@ const RecommendationsPage: React.FC = () => {
         <div className="p-4 pb-20">
           {/* Header */}
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">Smart Recommendations</h1>
+            <h1 className="text-2xl font-bold text-foreground mb-2">Smart Recommendations</h1>
             <p className="text-gray-600">Maximize savings on your typical purchases</p>
           </div>
 
-          
+
 
           <Tabs defaultValue="all" className="space-y-4">
             <TabsList className="grid w-full grid-cols-4">
@@ -185,7 +185,7 @@ const RecommendationsPage: React.FC = () => {
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start mb-3">
                           <div className="flex-1">
-                            <h4 className="font-medium text-gray-800 mb-1">{item.productName}</h4>
+                            <h4 className="font-medium text-foreground mb-1">{item.productName}</h4>
                             <div className="flex items-center space-x-2 mb-2">
                               <Star className="h-3 w-3 text-yellow-500 fill-current" />
                               <span className="text-xs text-gray-600">{item.rating}</span>
@@ -253,7 +253,7 @@ const RecommendationsPage: React.FC = () => {
                   <Card key={item.id} className="border-orange-200">
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium text-gray-800">{item.productName}</h4>
+                        <h4 className="font-medium text-foreground">{item.productName}</h4>
                         <Badge variant="destructive">Expires {item.dealExpires}</Badge>
                       </div>
                       <p className="text-sm text-gray-600 mb-3">{item.reason}</p>
@@ -283,7 +283,7 @@ const RecommendationsPage: React.FC = () => {
                   <Card key={item.id}>
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium text-gray-800">{item.productName}</h4>
+                        <h4 className="font-medium text-foreground">{item.productName}</h4>
                         <Badge className="bg-green-100 text-green-800">
                           ${(item.savings / 100).toFixed(2)} savings
                         </Badge>
@@ -312,7 +312,7 @@ const RecommendationsPage: React.FC = () => {
                   <Card key={item.id}>
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium text-gray-800">{item.productName}</h4>
+                        <h4 className="font-medium text-foreground">{item.productName}</h4>
                         <Badge variant="outline">{item.distance}</Badge>
                       </div>
                       <div className="flex justify-between items-center">

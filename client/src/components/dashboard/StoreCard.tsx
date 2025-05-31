@@ -22,7 +22,7 @@ const StoreCard: React.FC<StoreCardProps> = ({ storeDeal }) => {
         </div>
       </div>
       <div className="p-2 sm:p-3">
-        <h4 className="font-medium text-xs sm:text-sm text-gray-800 mb-1 truncate">
+        <h4 className="font-medium text-xs sm:text-sm text-foreground mb-1 truncate">
           {storeDeal.retailerName}
         </h4>
         <p className="text-xs text-gray-600 mb-1">

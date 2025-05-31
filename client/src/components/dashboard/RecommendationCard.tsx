@@ -98,7 +98,7 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommendation 
               <p className="text-xs text-gray-700">{recommendation.reason || 'Best price available'}</p>
             </div>
           </div>
-          <span className="font-bold text-gray-800">
+          <span className="font-bold text-foreground">
             ${recommendation.suggestedPrice ? (recommendation.suggestedPrice / 100).toFixed(2) : '0.00'}
           </span>
         </div>
