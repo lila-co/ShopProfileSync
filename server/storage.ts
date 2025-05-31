@@ -351,7 +351,7 @@ export class MemStorage implements IStorage {
       { 
         retailerId: 4, 
         title: "Kroger Weekly Savings", 
-        description: "Save on fresh produce and more", 
+        description: "Save on fresh produce and more",
         startDate: new Date(), 
         endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         imageUrl: "https://www.chsretailpartners.com/hs-fs/hubfs/Blog_assets/Kroger.jpg",
@@ -1412,7 +1412,8 @@ export class MemStorage implements IStorage {
           ...purchase,
           userId: data.userId || purchase.userId,
           retailerId: data.retailerId || purchase.retailerId,
-          purchaseDate: data.purchaseDate || purchase.purchaseDate,
+          purchaseDate: data<previous_generation>```text
+date || purchase.purchaseDate,
           totalAmount: data.totalAmount || purchase.totalAmount,
           receiptData: data.receiptData || purchase.receiptData,
           receiptImageUrl: data.receiptImageUrl !== undefined ? data.receiptImageUrl : purchase.receiptImageUrl
@@ -2467,7 +2468,7 @@ const [updatedUser] = await db
     return query;
   }
 
-  async getUserClaimedDeals(userId: number) {
+  async getUserClaimedDeals(userId: number): Promise<any[]> {
     // Mock data for demo - in production you'd have a claimed_deals table
     return [
       {
