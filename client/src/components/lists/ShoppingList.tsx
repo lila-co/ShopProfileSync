@@ -1023,7 +1023,7 @@ const ShoppingListComponent: React.FC = () => {
                 <Separator />
 
                 <div>
-                  <h4 className="font-bold mb-4 text-gray-900 text-lg">Select your preferred retailers</h4>
+                  <h4 className="font-bold mb-4 text-gray-900 text-lg">Select your preferred retailers <span className="text-sm font-normal text-gray-500">(optional)</span></h4>
                   <div className="grid grid-cols-2 gap-3">
                     {retailers && retailers.map((retailer: any) => {
                       const logoUrl = getCompanyLogo(retailer.name);
@@ -1072,11 +1072,15 @@ const ShoppingListComponent: React.FC = () => {
 
                 <Button 
                   className="w-full mt-2"
-                  disabled={selectedRetailers.length === 0}
                   onClick={() => {
+                    const retailerCount = selectedRetailers.length;
+                    const retailerText = retailerCount === 0 
+                      ? "all available retailers" 
+                      : `${retailerCount} selected retailers`;
+                    
                     toast({
                       title: "Shopping List Optimized",
-                      description: `Optimized for ${optimizationPreference} across ${selectedRetailers.length} retailers`
+                      description: `Optimized for ${optimizationPreference} across ${retailerText}`
                     });
                   }}
                 >
