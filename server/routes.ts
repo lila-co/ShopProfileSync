@@ -1275,7 +1275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const recommendedItems = analyzedDeals.map(deal => ({
         productName: deal.productName,
         quantity: deal.quantity,
-        unit: deal.unit,
+        unit: deal.unit || 'COUNT',
         suggestedRetailerId: 1, // Mock Retailer ID
         suggestedPrice: deal.salePrice,
         savings: deal.savings,
