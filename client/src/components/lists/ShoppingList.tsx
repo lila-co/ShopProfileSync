@@ -849,13 +849,13 @@ const ShoppingListComponent: React.FC = () => {
                           </div>
 
                           <div className="mb-2 text-sm text-gray-500">
-                            {store.items.slice(0, 3).map((item: any, idx: number) => (
+                            {store.items && store.items.slice(0, 3).map((item: any, idx: number) => (
                               <div key={idx} className="flex justify-between">
                                 <span>{item.productName} (x{item.quantity})</span>
                                 <span>${(item.price / 100).toFixed(2)}</span>
                               </div>
                             ))}
-                            {store.items.length > 3 && (
+                            {store.items && store.items.length > 3 && (
                               <div className="text-sm text-right text-primary cursor-pointer">
                                 +{store.items.length - 3} more items
                               </div>
