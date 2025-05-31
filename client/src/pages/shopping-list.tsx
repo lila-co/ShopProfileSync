@@ -1554,8 +1554,7 @@ const ShoppingListPage: React.FC = () => {
                       <Input
                         type="number"
                         placeholder="1"
-                        ```text
-min="0.01"
+                        min="0.01"
                         step="0.01"
                         defaultValue="1"
                         onChange={(e) => setNewItemQuantity(Math.round(parseFloat(e.target.value) || 1))}
