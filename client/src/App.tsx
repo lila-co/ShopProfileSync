@@ -17,7 +17,8 @@ import AffiliateDashboard from '@/pages/affiliate-dashboard';
 import { queryClient } from '@/lib/queryClient';
 import Shop from '@/pages/shop'; // Import the Shop component
 import ShoppingRoute from '@/pages/shopping-route'; // Import the ShoppingRoute component
-import RetailerDetailsPage from '@/pages/retailer-details';
+import AutoOrder from './pages/auto-order';
+import RetailerDetailsPage from './pages/retailer-details';
 
 function App() {
   return (
@@ -40,6 +41,7 @@ function App() {
             <Route path="/affiliate-dashboard" component={AffiliateDashboard} />
             <Route path="/shop" component={Shop} />
             <Route path="/shopping-route" component={ShoppingRoute} />
+            <Route path="/auto-order" component={AutoOrder} />
             <Route component={NotFound} />
           </Switch>
         </div>

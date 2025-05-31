@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -31,13 +30,13 @@ const ShoppingRoute: React.FC = () => {
   const [location, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   // Get URL parameters
   const params = new URLSearchParams(window.location.search);
   const listId = params.get('listId');
   const mode = params.get('mode') || 'instore';
   const planDataParam = params.get('planData');
-  
+
   const [optimizedRoute, setOptimizedRoute] = useState<any>(null);
   const [selectedPlanData, setSelectedPlanData] = useState<any>(null);
   const [currentAisleIndex, setCurrentAisleIndex] = useState(0);
@@ -80,7 +79,7 @@ const ShoppingRoute: React.FC = () => {
       try {
         const planData = JSON.parse(decodeURIComponent(planDataParam));
         setSelectedPlanData(planData);
-        
+
         // Generate route from the selected plan instead of raw shopping list items
         const route = generateOptimizedShoppingRouteFromPlan(planData);
         setOptimizedRoute(route);
@@ -238,13 +237,13 @@ const ShoppingRoute: React.FC = () => {
 
   const handleToggleItem = (itemId: number, currentStatus: boolean) => {
     const newCompletedItems = new Set(completedItems);
-    
+
     if (currentStatus) {
       newCompletedItems.delete(itemId);
     } else {
       newCompletedItems.add(itemId);
     }
-    
+
     setCompletedItems(newCompletedItems);
     toggleItemMutation.mutate({ itemId, completed: !currentStatus });
 
@@ -433,7 +432,7 @@ const ShoppingRoute: React.FC = () => {
               <div className="space-y-3">
                 {currentAisle.items.map((item: any) => {
                   const isCompleted = completedItems.has(item.id) || item.isCompleted;
-                  
+
                   return (
                     <div 
                       key={item.id} 
@@ -454,7 +453,7 @@ const ShoppingRoute: React.FC = () => {
                             <Circle className="h-6 w-6 text-gray-400 hover:text-green-600" />
                           )}
                         </button>
-                        
+
                         <div className="flex-1">
                           <div className={`font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
                             {item.productName}
@@ -488,7 +487,7 @@ const ShoppingRoute: React.FC = () => {
                     <ArrowRight className="h-4 w-4 mr-2 rotate-180" />
                     Previous
                   </Button>
-                  
+
                   {isLastAisle ? (
                     <Button 
                       className="w-full bg-green-600 hover:bg-green-700"
@@ -530,7 +529,7 @@ const ShoppingRoute: React.FC = () => {
                 const completionStatus = getAisleCompletionStatus(aisle);
                 const isCurrent = index === currentAisleIndex;
                 const isVisited = index < currentAisleIndex;
-                
+
                 return (
                   <button
                     key={aisle.aisleName}
@@ -566,7 +565,7 @@ const ShoppingRoute: React.FC = () => {
                         <div className="text-xs text-gray-500">{aisle.category}</div>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       <div className="text-xs text-gray-600">
                         {completionStatus.completed}/{completionStatus.total}

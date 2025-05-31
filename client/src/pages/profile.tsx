@@ -9,6 +9,7 @@ import BottomNavigation from '@/components/layout/BottomNavigation';
 import ProfileSetup from '@/components/profile/ProfileSetup';
 import RetailerLinking from '@/components/profile/RetailerLinking';
 import PurchaseAnomalies from '@/components/profile/PurchaseAnomalies';
+import ShoppingInsights from '@/components/dashboard/ShoppingInsights';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -135,9 +136,9 @@ const ProfilePage: React.FC = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-4 text-xs">
             <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="preferences">Preferences</TabsTrigger>
+            <TabsTrigger value="insights">Insights</TabsTrigger>
             <TabsTrigger value="privacy">Privacy</TabsTrigger>
             <TabsTrigger value="notifications">Alerts</TabsTrigger>
           </TabsList>
@@ -225,6 +226,71 @@ const ProfilePage: React.FC = () => {
                       )}
                     />
 
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center">
+                          <Heart className="w-5 h-5 mr-2 text-red-600" />
+                          Shopping Preferences
+                        </CardTitle>
+                        <CardDescription>Customize your shopping experience</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div>
+                          <Label htmlFor="budgetRange">Monthly Budget Range</Label>
+                          <Select value={form.watch('budgetRange')} onValueChange={(value) => form.setValue('budgetRange', value)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select budget range" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="under-200">Under $200</SelectItem>
+                              <SelectItem value="200-400">$200 - $400</SelectItem>
+                              <SelectItem value="400-600">$400 - $600</SelectItem>
+                              <SelectItem value="600-800">$600 - $800</SelectItem>
+                              <SelectItem value="800-plus">$800+</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label htmlFor="shoppingFrequency">Shopping Frequency</Label>
+                          <Select value={form.watch('shoppingFrequency')} onValueChange={(value) => form.setValue('shoppingFrequency', value)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="How often do you shop?" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="daily">Daily</SelectItem>
+                              <SelectItem value="few-times-week">Few times a week</SelectItem>
+                              <SelectItem value="weekly">Weekly</SelectItem>
+                              <SelectItem value="bi-weekly">Bi-weekly</SelectItem>
+                              <SelectItem value="monthly">Monthly</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label>Dietary Preferences</Label>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {['Vegetarian', 'Vegan', 'Gluten-Free', 'Keto', 'Organic', 'Low-Sodium'].map((diet) => (
+                              <Badge
+                                key={diet}
+                                variant={form.watch('dietaryPreferences')?.includes(diet) ? 'default' : 'outline'}
+                                className="cursor-pointer"
+                                onClick={() => {
+                                  const current = form.watch('dietaryPreferences') || [];
+                                  const updated = current.includes(diet)
+                                    ? current.filter(d => d !== diet)
+                                    : [...current, diet];
+                                  form.setValue('dietaryPreferences', updated);
+                                }}
+                              >
+                                {diet}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
                     <Button type="submit" className="w-full" disabled={updateProfileMutation.isPending}>
                       {updateProfileMutation.isPending ? 'Updating...' : 'Update Profile'}
                     </Button>
@@ -232,86 +298,24 @@ const ProfilePage: React.FC = () => {
                 </Form>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="preferences" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Heart className="w-5 h-5 mr-2 text-red-600" />
-                  Shopping Preferences
-                </CardTitle>
-                <CardDescription>Customize your shopping experience</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="budgetRange">Monthly Budget Range</Label>
-                  <Select value={form.watch('budgetRange')} onValueChange={(value) => form.setValue('budgetRange', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select budget range" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="under-200">Under $200</SelectItem>
-                      <SelectItem value="200-400">$200 - $400</SelectItem>
-                      <SelectItem value="400-600">$400 - $600</SelectItem>
-                      <SelectItem value="600-800">$600 - $800</SelectItem>
-                      <SelectItem value="800-plus">$800+</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="shoppingFrequency">Shopping Frequency</Label>
-                  <Select value={form.watch('shoppingFrequency')} onValueChange={(value) => form.setValue('shoppingFrequency', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="How often do you shop?" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="daily">Daily</SelectItem>
-                      <SelectItem value="few-times-week">Few times a week</SelectItem>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="bi-weekly">Bi-weekly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label>Dietary Preferences</Label>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {['Vegetarian', 'Vegan', 'Gluten-Free', 'Keto', 'Organic', 'Low-Sodium'].map((diet) => (
-                      <Badge
-                        key={diet}
-                        variant={form.watch('dietaryPreferences')?.includes(diet) ? 'default' : 'outline'}
-                        className="cursor-pointer"
-                        onClick={() => {
-                          const current = form.watch('dietaryPreferences') || [];
-                          const updated = current.includes(diet)
-                            ? current.filter(d => d !== diet)
-                            : [...current, diet];
-                          form.setValue('dietaryPreferences', updated);
-                        }}
-                      >
-                        {diet}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
 
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
-                  Shopping Patterns
+                  Household & Shopping Patterns
                 </CardTitle>
-                <CardDescription>Track and analyze your shopping behavior</CardDescription>
+                <CardDescription>Configure your household details and shopping preferences</CardDescription>
               </CardHeader>
               <CardContent>
-                <ProfileSetup user={user} />
+                <ProfileSetup />
               </CardContent>
             </Card>
+
+          </TabsContent>
+
+          <TabsContent value="insights" className="space-y-4">
+            <ShoppingInsights />
           </TabsContent>
 
           <TabsContent value="privacy" className="space-y-4">
@@ -344,22 +348,34 @@ const ProfilePage: React.FC = () => {
 
                 <Separator />
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="profileVisibility">Public profile</Label>
-                    <p className="text-sm text-gray-500">Allow others to see your reviews</p>
+                <div className="flex items-start justify-between gap-4 py-2">
+                  <div className="flex-1 min-w-0">
+                    <Label htmlFor="profileVisibility" className="text-base font-medium text-foreground cursor-pointer">Public profile</Label>
+                    <p className="text-sm text-muted-foreground mt-1 leading-relaxed">Allow others to see your reviews</p>
                   </div>
-                  <Switch id="profileVisibility" defaultChecked={false} />
+                  <Switch 
+                    id="profileVisibility" 
+                    defaultChecked={false} 
+                    className="mt-1 focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                    aria-describedby="profileVisibility-description"
+                  />
+                  <span id="profileVisibility-description" className="sr-only">Toggle to make your profile public or private</span>
                 </div>
 
-                <Separator />
+                <Separator className="my-6" />
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="dataRetention">Data retention</Label>
-                    <p className="text-sm text-gray-500">Keep purchase history for recommendations</p>
+                <div className="flex items-start justify-between gap-4 py-2">
+                  <div className="flex-1 min-w-0">
+                    <Label htmlFor="dataRetention" className="text-base font-medium text-foreground cursor-pointer">Data retention</Label>
+                    <p className="text-sm text-muted-foreground mt-1 leading-relaxed">Keep purchase history for recommendations</p>
                   </div>
-                  <Switch id="dataRetention" defaultChecked={true} />
+                  <Switch 
+                    id="dataRetention" 
+                    defaultChecked={true}
+                    className="mt-1 focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                    aria-describedby="dataRetention-description"
+                  />
+                  <span id="dataRetention-description" className="sr-only">Toggle to enable or disable data retention for personalized recommendations</span>
                 </div>
               </CardContent>
             </Card>

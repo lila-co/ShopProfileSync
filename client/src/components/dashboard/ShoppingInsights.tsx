@@ -1,7 +1,10 @@
+
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { PurchasePattern, MonthlySpending } from '@/lib/types';
 import { useQuery } from '@tanstack/react-query';
+import { TrendingUp, Calendar, DollarSign, ShoppingCart, BarChart3, MapPin, Users, Clock } from 'lucide-react';
 
 const ShoppingInsights: React.FC = () => {
   const { data: topItems, isLoading: loadingTopItems } = useQuery<PurchasePattern[]>({
@@ -11,10 +14,22 @@ const ShoppingInsights: React.FC = () => {
   const { data: monthlyData, isLoading: loadingMonthlyData } = useQuery<MonthlySpending[]>({
     queryKey: ['/api/insights/monthly-spending'],
   });
+
+  const { data: monthlySavings } = useQuery<number>({
+    queryKey: ['/api/insights/monthly-savings'],
+  });
+
+  const { data: areaInsights } = useQuery({
+    queryKey: ['/api/insights/area-insights'],
+  });
+
+  const { data: demographicInsights } = useQuery({
+    queryKey: ['/api/insights/demographic-insights'],
+  });
   
   const renderTopItems = () => {
     if (loadingTopItems) {
-      return Array(3).fill(0).map((_, i) => (
+      return Array(5).fill(0).map((_, i) => (
         <div key={i} className="flex items-center py-2 gap-3">
           <div className="h-10 w-10 bg-gray-200 rounded-lg animate-pulse" />
           <div className="flex-1">
@@ -25,32 +40,19 @@ const ShoppingInsights: React.FC = () => {
       ));
     }
     
-    return (topItems || []).slice(0, 3).map((item, index) => (
-      <div key={index} className="flex items-center py-2 gap-3">
-        <div className="h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
-            <rect x="9" y="9" width="6" height="6" rx="1"/>
-            <line x1="9" y1="1" x2="9" y2="5"/>
-            <line x1="15" y1="1" x2="15" y2="5"/>
-            <circle cx="9" cy="19" r="1"/>
-            <circle cx="15" cy="19" r="1"/>
-          </svg>
+    return (topItems || []).slice(0, 5).map((item, index) => (
+      <div key={index} className="flex items-center py-3 gap-3 border-b border-gray-100 last:border-b-0">
+        <div className="h-10 w-10 bg-blue-50 rounded-lg flex items-center justify-center">
+          <ShoppingCart className="h-5 w-5 text-blue-600" />
         </div>
         <div className="flex-1">
-          <div className="flex justify-between">
+          <div className="flex justify-between items-start">
             <span className="font-medium text-sm">{item.productName}</span>
-            <span className="text-secondary font-medium text-sm">{item.frequency}</span>
+            <Badge variant="secondary" className="text-xs">{item.frequency}x</Badge>
           </div>
           <div className="flex justify-between items-center mt-1">
-            <div className="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-gray-500 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/>
-                <path d="M3 9V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4"/>
-              </svg>
-              <span className="text-xs text-gray-500">Purchased {item.frequency}x</span>
-            </div>
-            <span className="text-xs text-gray-500">${(item.totalSpent / 100).toFixed(2)}</span>
+            <span className="text-xs text-gray-500">Total spent: ${(item.totalSpent / 100).toFixed(2)}</span>
+            <span className="text-xs text-green-600">Avg: ${(item.totalSpent / item.frequency / 100).toFixed(2)}</span>
           </div>
         </div>
       </div>
@@ -80,7 +82,6 @@ const ShoppingInsights: React.FC = () => {
           const currentYearHeight = month.currentYear;
           const previousYearHeight = month.previousYear;
           
-          // Scale heights based on the maximum value
           const maxValue = Math.max(
             ...((monthlyData || []).flatMap(m => [m.currentYear, m.previousYear]))
           );
@@ -92,7 +93,7 @@ const ShoppingInsights: React.FC = () => {
             <div key={index} className="flex flex-col items-center">
               <div className="relative w-8">
                 <div 
-                  className="absolute bottom-0 left-0 w-3 bg-primary rounded-sm" 
+                  className="absolute bottom-0 left-0 w-3 bg-blue-500 rounded-sm" 
                   style={{ height: `${currentYearScaled}px` }}
                 ></div>
                 <div 
@@ -107,42 +108,236 @@ const ShoppingInsights: React.FC = () => {
       </div>
     );
   };
+
+  // Mock data for additional insights
+  const shoppingPatterns = {
+    averageTripsPerWeek: 2.3,
+    averageSpendPerTrip: 67.40,
+    preferredShoppingDay: 'Saturday',
+    preferredShoppingTime: 'Morning (9-11 AM)',
+    mostFrequentStore: 'Walmart',
+    budgetAdherence: 92,
+    impulsePurchases: 18
+  };
+
+  const categorySpending = [
+    { category: 'Groceries', amount: 284.50, percentage: 42, change: '+5%' },
+    { category: 'Household', amount: 127.80, percentage: 19, change: '-2%' },
+    { category: 'Personal Care', amount: 95.60, percentage: 14, change: '+8%' },
+    { category: 'Beverages', amount: 89.20, percentage: 13, change: '+1%' },
+    { category: 'Snacks', amount: 76.90, percentage: 12, change: '+12%' }
+  ];
   
   return (
-    <section className="mb-6">
-      <div className="flex justify-between items-center mb-3">
-        <h3 className="font-bold text-gray-800">Your Shopping Insights</h3>
-        <a href="/insights" className="text-primary text-sm font-medium">See all</a>
-      </div>
-      
-      <Card className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
-        {/* Frequently Purchased Items */}
-        <div className="p-4 border-b border-gray-100">
-          <div className="flex justify-between items-center mb-3">
-            <h4 className="font-medium text-sm text-gray-700">Most Purchased Items</h4>
-            <span className="text-xs text-gray-500">Last 3 months</span>
-          </div>
-          
-          {renderTopItems()}
-        </div>
-        
-        {/* Shopping Pattern Visualization */}
-        <CardContent className="p-4">
-          <div className="flex justify-between items-center mb-3">
-            <h4 className="font-medium text-sm text-gray-700">Monthly Spending Pattern</h4>
+    <div className="space-y-4">
+      {/* Summary Stats */}
+      <div className="grid grid-cols-2 gap-3">
+        <Card>
+          <CardContent className="p-4">
             <div className="flex items-center">
-              <div className="w-3 h-3 rounded-full bg-primary mr-1"></div>
-              <span className="text-xs text-gray-500 mr-3">2023</span>
-              <div className="w-3 h-3 rounded-full bg-gray-300 mr-1"></div>
-              <span className="text-xs text-gray-500">2022</span>
+              <DollarSign className="h-5 w-5 text-green-600 mr-2" />
+              <div>
+                <p className="text-xs text-gray-500">This Month</p>
+                <p className="text-lg font-bold text-green-600">${monthlySavings || 0}</p>
+                <p className="text-xs text-gray-500">Saved</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center">
+              <BarChart3 className="h-5 w-5 text-blue-600 mr-2" />
+              <div>
+                <p className="text-xs text-gray-500">Avg per Trip</p>
+                <p className="text-lg font-bold">${shoppingPatterns.averageSpendPerTrip}</p>
+                <p className="text-xs text-gray-500">{shoppingPatterns.averageTripsPerWeek}/week</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Most Purchased Items */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center">
+            <ShoppingCart className="w-5 h-5 mr-2 text-blue-600" />
+            Most Purchased Items
+          </CardTitle>
+          <CardDescription>Your top purchases in the last 3 months</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-0">
+          {renderTopItems()}
+        </CardContent>
+      </Card>
+
+      {/* Category Spending Breakdown */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center">
+            <BarChart3 className="w-5 h-5 mr-2 text-purple-600" />
+            Category Spending
+          </CardTitle>
+          <CardDescription>How you spend across different categories</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {categorySpending.map((category, index) => (
+              <div key={index} className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm font-medium">{category.category}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold">${category.amount}</span>
+                      <Badge variant={category.change.startsWith('+') ? 'default' : 'secondary'} className="text-xs">
+                        {category.change}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-purple-600 h-2 rounded-full" 
+                      style={{ width: `${category.percentage}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Shopping Behavior Patterns */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center">
+            <Clock className="w-5 h-5 mr-2 text-orange-600" />
+            Shopping Patterns
+          </CardTitle>
+          <CardDescription>Your shopping habits and preferences</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="space-y-3">
+              <div>
+                <p className="font-medium text-gray-700">Preferred Day</p>
+                <p className="text-gray-600">{shoppingPatterns.preferredShoppingDay}</p>
+              </div>
+              <div>
+                <p className="font-medium text-gray-700">Preferred Time</p>
+                <p className="text-gray-600">{shoppingPatterns.preferredShoppingTime}</p>
+              </div>
+              <div>
+                <p className="font-medium text-gray-700">Favorite Store</p>
+                <p className="text-gray-600">{shoppingPatterns.mostFrequentStore}</p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <p className="font-medium text-gray-700">Budget Adherence</p>
+                <div className="flex items-center">
+                  <p className="text-gray-600">{shoppingPatterns.budgetAdherence}%</p>
+                  <div className="ml-2 w-16 bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-green-500 h-2 rounded-full" 
+                      style={{ width: `${shoppingPatterns.budgetAdherence}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <p className="font-medium text-gray-700">Impulse Purchases</p>
+                <p className="text-gray-600">{shoppingPatterns.impulsePurchases}% of trips</p>
+              </div>
             </div>
           </div>
-          
-          {/* Simple Chart Representation */}
+        </CardContent>
+      </Card>
+
+      {/* Monthly Spending Trend */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center">
+            <TrendingUp className="w-5 h-5 mr-2 text-green-600" />
+            Monthly Spending Trend
+          </CardTitle>
+          <CardDescription>Compare your spending patterns year over year</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-3">
+            <div className="flex items-center justify-center gap-4 text-sm">
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-blue-500 mr-1"></div>
+                <span className="text-gray-600">2024</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-gray-300 mr-1"></div>
+                <span className="text-gray-600">2023</span>
+              </div>
+            </div>
+          </div>
           {renderMonthlyData()}
         </CardContent>
       </Card>
-    </section>
+
+      {/* Area Insights */}
+      {areaInsights && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center">
+              <MapPin className="w-5 h-5 mr-2 text-purple-600" />
+              Local Area Trends
+            </CardTitle>
+            <CardDescription>What's trending in your area</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="bg-purple-50 p-3 rounded-lg">
+              <h4 className="font-medium text-purple-900 mb-1">{areaInsights.trendingCategory}</h4>
+              <p className="text-sm text-purple-700 mb-2">{areaInsights.trendDescription}</p>
+              <p className="text-xs text-purple-600">+{areaInsights.growthPercentage}% growth this month</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mt-3 text-sm">
+              <div>
+                <p className="font-medium text-gray-700">Popular Store</p>
+                <p className="text-gray-600">{areaInsights.popularStore}</p>
+              </div>
+              <div>
+                <p className="font-medium text-gray-700">Best Deal Day</p>
+                <p className="text-gray-600">{areaInsights.bestDealDay}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Demographic Trends */}
+      {demographicInsights && demographicInsights.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center">
+              <Users className="w-5 h-5 mr-2 text-green-600" />
+              Demographic Trends
+            </CardTitle>
+            <CardDescription>What people like you are buying</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {demographicInsights.slice(0, 2).map((insight: any, index: number) => (
+                <div key={index} className="border rounded-lg p-3">
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-medium text-gray-800 text-sm">{insight.trend}</h4>
+                    <Badge variant="outline" className="text-xs">{insight.confidence}%</Badge>
+                  </div>
+                  <p className="text-sm text-gray-600">{insight.description}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 };
 

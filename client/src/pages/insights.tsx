@@ -217,7 +217,7 @@ const InsightsPage: React.FC = () => {
                   <div className="space-y-3">
                     <div className="border rounded-lg p-3">
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium text-gray-800">Sustainable Shopping Growth</h4>
+                        <h4 className="font-medium text-gray-800">Eco-Friendly Trend</h4>
                         <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">85% confidence</span>
                       </div>
                       <p className="text-sm text-gray-600 mb-1">Eco-friendly products seeing 40% increase in your demographic</p>

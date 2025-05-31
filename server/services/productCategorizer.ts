@@ -5,7 +5,7 @@ export interface ProductCategory {
   aisle: string;
   section: string;
   confidence: number;
-  suggestedQuantityType: 'COUNT' | 'LB' | 'OZ' | 'PKG' | 'BOX' | 'CAN' | 'BOTTLE' | 'JAR' | 'BUNCH' | 'ROLL';
+  suggestedQuantityType: 'COUNT' | 'LB' | 'OZ' | 'PKG' | 'BOX' | 'CAN' | 'BOTTLE' | 'JAR' | 'BUNCH' | 'ROLL' | 'GALLON' | 'LOAF' | 'DOZEN';
   typicalRetailNames: string[];
   brandVariations: string[];
 }
@@ -84,7 +84,7 @@ export class ProductCategorizerService {
         section: 'Meat Counter',
         confidence: 0.97,
         suggestedQuantityType: 'LB',
-        typicalRetailNames: ['Ground Beef 80/20', 'Ground Turkey', 'Ground Chicken', 'Lean Ground Beef'],
+        typicalRetailNames: ['Ground Beef 80/20', 'Ground Turkey', 'Ground Chicken', 'Lean Ground Beef', 'Ground Beef'],
         brandVariations: ['Fresh', 'Organic', 'Grass Fed', 'Antibiotic Free']
       },
       
@@ -154,6 +154,15 @@ export class ProductCategorizerService {
         this.productDatabase.set(name.toLowerCase(), category);
       });
     });
+    
+    // Add specific entries for common ground products to prevent conflicts
+    const groundMeatCategory = categories.find(c => c.subcategory === 'Ground Meat');
+    if (groundMeatCategory) {
+      this.productDatabase.set('ground beef', groundMeatCategory);
+      this.productDatabase.set('ground turkey', groundMeatCategory);
+      this.productDatabase.set('ground chicken', groundMeatCategory);
+      this.productDatabase.set('ground pork', groundMeatCategory);
+    }
   }
 
   private initializePatterns() {
@@ -170,7 +179,8 @@ export class ProductCategorizerService {
     ]);
 
     this.categoryPatterns.set('meat', [
-      /\b(beef|chicken|pork|turkey|fish|salmon|tuna|ground)\w*\b/i,
+      /\b(beef|chicken|pork|turkey|fish|salmon|tuna)\w*\b/i,
+      /\b(ground\s+(beef|chicken|pork|turkey|meat))\b/i,
       /\b(steak|roast|chop|fillet|breast|thigh|wing)\w*\b/i,
       /\b(fresh|lean|organic|grass fed)\b.*\b(meat|protein)\b/i
     ]);
@@ -224,6 +234,48 @@ export class ProductCategorizerService {
     ]);
   }
 
+  // Check for semantic conflicts between product names
+  private isSemanticConflict(name1: string, name2: string): boolean {
+    const conflicts = [
+      // Ground products
+      { items: ['ground beef', 'ground coffee'], categories: ['meat', 'beverage'] },
+      { items: ['ground turkey', 'ground coffee'], categories: ['meat', 'beverage'] },
+      { items: ['ground chicken', 'ground coffee'], categories: ['meat', 'beverage'] },
+      // Other potential conflicts can be added here
+    ];
+    
+    for (const conflict of conflicts) {
+      const containsFirst = conflict.items.some(item => name1.includes(item.split(' ')[1]) && name1.includes('ground'));
+      const containsSecond = conflict.items.some(item => name2.includes(item.split(' ')[1]) && name2.includes('ground'));
+      
+      if (containsFirst && containsSecond) {
+        // Check if they belong to different categories
+        const name1Category = this.getCategoryForConflictCheck(name1);
+        const name2Category = this.getCategoryForConflictCheck(name2);
+        
+        if (name1Category !== name2Category) {
+          return true; // This is a semantic conflict
+        }
+      }
+    }
+    
+    return false;
+  }
+  
+  private getCategoryForConflictCheck(productName: string): string {
+    const name = productName.toLowerCase();
+    
+    if (name.includes('beef') || name.includes('chicken') || name.includes('turkey') || name.includes('pork') || name.includes('meat')) {
+      return 'meat';
+    } else if (name.includes('coffee') || name.includes('tea') || name.includes('beverage')) {
+      return 'beverage';
+    } else if (name.includes('milk') || name.includes('cheese') || name.includes('yogurt') || name.includes('dairy')) {
+      return 'dairy';
+    }
+    
+    return 'other';
+  }
+
   // Fuzzy string matching using Levenshtein distance
   private calculateSimilarity(str1: string, str2: string): number {
     const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
@@ -259,11 +311,17 @@ export class ProductCategorizerService {
     let bestMatch = this.productDatabase.get(normalizedName);
     let bestSimilarity = 0;
     
-    // Fuzzy matching against database
+    // Fuzzy matching against database with semantic checks
     if (!bestMatch) {
       for (const [dbName, category] of this.productDatabase) {
         const similarity = this.calculateSimilarity(normalizedName, dbName);
+        
+        // Add semantic validation to prevent false matches
         if (similarity > bestSimilarity && similarity > 0.7) {
+          // Check for semantic conflicts (e.g., ground beef vs ground coffee)
+          if (this.isSemanticConflict(normalizedName, dbName)) {
+            continue; // Skip this match
+          }
           bestSimilarity = similarity;
           bestMatch = category;
         }

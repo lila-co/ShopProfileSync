@@ -2443,7 +2443,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         storeCount: 1,
         missingItems: bestOption.storeItems.filter(item => !item.isAvailable).length,
         estimatedTime: 35, // Single store is faster
-        dealCount: bestOption.dealCount
+        dealCount: bestOption.dealCount,
+        stores: [{
+          retailerId: bestOption.retailer.id,
+          retailerName: bestOption.retailer.name,
+          items: bestOption.storeItems,
+          subtotal: bestOption.totalCost,
+          address: `123 Main St, San Francisco, CA 94105`
+        }]
       });
     } catch (error) {
       handleError(res, error);
@@ -2902,64 +2909,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get optimized shopping route
   app.post('/api/shopping-route', async (req: Request, res: Response) => {
     try {
-      const { retailerIds, userLocation } = req.body;
+      const { listId, retailerId } = req.body;
 
-      if (!retailerIds || !retailerIds.length) {
-        return res.status(400).json({ message: 'At least one retailer ID is required' });
+      if (!retailerId) {
+        return res.status(400).json({ message: 'Retailer ID is required' });
       }
 
       // Get retailers
       const retailers = await storage.getRetailers();
-      const selectedRetailers = retailers.filter(r => retailerIds.includes(r.id));
+      const selectedRetailer = retailers.find(r => r.id === retailerId);
 
-      if (selectedRetailers.length === 0) {
-        return res.status(404).json({ message: 'No matching retailers found' });
+      if (!selectedRetailer) {
+        return res.status(404).json({ message: 'Retailer not found' });
       }
 
-      // For demo purposes, generate mock coordinates near the user location
-      const userCoords = userLocation || { lat: 37.7749, lng: -122.4194 }; // Default to San Francisco
+      // Get shopping list items
+      const items = await storage.getShoppingListItems(listId || 1);
 
-      // Generate retailer locations (in a real app, these would come from the database)
-      const retailersWithLocations = selectedRetailers.map((retailer, index) => {
-        // Generate locations in a radius around user's location
-        const angle = (index / selectedRetailers.length) * 2 * Math.PI;
-        const radius = 0.01 + (Math.random() * 0.02); // 1-3km roughly
+      // Generate shopping route organized by store sections/aisles
+      const aisles = [
+        {
+          name: "Produce",
+          items: items.filter(item => 
+            ['banana', 'apple', 'lettuce', 'carrot', 'tomato', 'onion'].some(produce => 
+              item.productName.toLowerCase().includes(produce)
+            )
+          )
+        },
+        {
+          name: "Dairy",
+          items: items.filter(item => 
+            ['milk', 'cheese', 'yogurt', 'butter', 'cream', 'eggs'].some(dairy => 
+              item.productName.toLowerCase().includes(dairy)
+            )
+          )
+        },
+        {
+          name: "Meat & Seafood",
+          items: items.filter(item => 
+            ['chicken', 'beef', 'pork', 'fish', 'turkey', 'ham'].some(meat => 
+              item.productName.toLowerCase().includes(meat)
+            )
+          )
+        },
+        {
+          name: "Bakery",
+          items: items.filter(item => 
+            ['bread', 'bagel', 'muffin', 'cake', 'pastry'].some(bakery => 
+              item.productName.toLowerCase().includes(bakery)
+            )
+          )
+        }
+      ].filter(aisle => aisle.items.length > 0);
 
-        return {
-          id: retailer.id,
-          name: retailer.name,
-          location: {
-            lat: userCoords.lat + (radius * Math.cos(angle)),
-            lng: userCoords.lng + (radius * Math.sin(angle))
-          },
-          address: `${100 + index} Main St, San Francisco, CA 94105`,
-          distance: (radius * 111).toFixed(1) + 'km', // Convert to approximate kilometers
-          estimatedTime: Math.round(radius * 111 * 2) + ' min' // Very rough estimate
-        };
-      });
+      // Items that don't fit in specific aisles
+      const categorizedItems = aisles.flatMap(aisle => aisle.items.map(item => item.id));
+      const otherItems = items.filter(item => !categorizedItems.includes(item.id));
 
-      // Calculate a simple route (for a real app, use a routing API)
       const route = {
-        totalDistance: retailersWithLocations.reduce((sum, r) => sum + parseFloat(r.distance), 0),
-        totalTime: retailersWithLocations.reduce((sum, r) => sum + parseInt(r.estimatedTime), 0),
-        waypoints: [
-          {
-            name: 'Your Location',
-            location: userCoords,
-            address: 'Current Location'
-          },
-          ...retailersWithLocations.map(r => ({
-            name: r.name,
-            location: r.location,
-            address: r.address
-          }))
-        ]
+        retailer: selectedRetailer.name,
+        estimatedTime: `${Math.max(20, items.length * 2)} minutes`,
+        aisles: aisles,
+        other: otherItems.length > 0 ? {
+          name: "General Merchandise",
+          items: otherItems
+        } : null
       };
 
-      res.json({
-        retailers: retailersWithLocations,
-        route: route
-      });
+      res.json({ route });
     } catch (error) {
       handleError(res, error);
     }
@@ -3154,6 +3171,133 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
 
+
+  // Auto-order endpoint for optimized plans
+  app.post('/api/auto-order', async (req: Request, res: Response) => {
+    try {
+      const { shoppingListId, selectedPlan, mode } = req.body;
+
+      if (!shoppingListId || !selectedPlan) {
+        return res.status(400).json({ message: 'Shopping list ID and selected plan are required' });
+      }
+
+      // Get the optimization plan data
+      let planResponse;
+      switch (selectedPlan) {
+        case 'single':
+          planResponse = await apiRequest('POST', '/api/shopping-lists/single-store', { shoppingListId });
+          break;
+        case 'best-value':
+          planResponse = await apiRequest('POST', '/api/shopping-lists/best-value', { shoppingListId });
+          break;
+        case 'balanced':
+          planResponse = await apiRequest('POST', '/api/shopping-lists/balanced', { shoppingListId });
+          break;
+        default:
+          return res.status(400).json({ message: 'Invalid plan selection' });
+      }
+
+      const planData = await planResponse.json();
+
+      // Customer info - in real app, get from authenticated user
+      const customerInfo = {
+        name: "John Doe",
+        email: "johndoe@example.com", 
+        address: "123 Main St, Anytown, USA",
+        phone: "555-123-4567"
+      };
+
+      const orderResults = [];
+
+      if (selectedPlan === 'single') {
+        // Single store order
+        try {
+          const retailerAPI = await getRetailerAPI(planData.retailerId);
+          const orderResult = await retailerAPI.submitOrder(planData.items, mode, customerInfo);
+          
+          orderResults.push({
+            retailerId: planData.retailerId,
+            retailerName: planData.retailerName,
+            orderId: orderResult.orderId,
+            status: 'completed',
+            totalCost: planData.totalCost,
+            items: planData.items,
+            estimatedDelivery: orderResult.estimatedDelivery
+          });
+        } catch (error) {
+          console.error('Single store order failed:', error);
+          orderResults.push({
+            retailerId: planData.retailerId,
+            retailerName: planData.retailerName,
+            status: 'failed',
+            error: error.message,
+            totalCost: planData.totalCost,
+            items: planData.items
+          });
+        }
+      } else {
+        // Multi-store orders
+        for (const store of planData.stores || []) {
+          try {
+            const retailerAPI = await getRetailerAPI(store.retailerId);
+            const orderResult = await retailerAPI.submitOrder(store.items, mode, customerInfo);
+            
+            orderResults.push({
+              retailerId: store.retailerId,
+              retailerName: store.retailerName,
+              orderId: orderResult.orderId,
+              status: 'completed',
+              totalCost: store.subtotal,
+              items: store.items,
+              estimatedDelivery: orderResult.estimatedDelivery
+            });
+          } catch (error) {
+            console.error(`Order failed for ${store.retailerName}:`, error);
+            orderResults.push({
+              retailerId: store.retailerId,
+              retailerName: store.retailerName,
+              status: 'failed',
+              error: error.message,
+              totalCost: store.subtotal,
+              items: store.items
+            });
+          }
+        }
+      }
+
+      // Mark shopping list items as completed for successful orders
+      const successfulItems = orderResults
+        .filter(result => result.status === 'completed')
+        .flatMap(result => result.items.map(item => item.id))
+        .filter(Boolean);
+
+      for (const itemId of successfulItems) {
+        try {
+          await storage.updateShoppingListItem(itemId, { isCompleted: true });
+        } catch (error) {
+          console.warn(`Failed to mark item ${itemId} as completed:`, error);
+        }
+      }
+
+      const totalCost = orderResults.reduce((sum, result) => sum + result.totalCost, 0);
+      const successfulOrders = orderResults.filter(result => result.status === 'completed');
+
+      res.json({
+        orderResults,
+        summary: {
+          totalOrders: orderResults.length,
+          successfulOrders: successfulOrders.length,
+          failedOrders: orderResults.length - successfulOrders.length,
+          totalCost,
+          selectedPlan,
+          mode
+        }
+      });
+
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
 
   // Get retailer integration status (API, auth, etc.)
   app.get('/api/retailers/:retailerId/integration-status', async (req: Request, res: Response) => {

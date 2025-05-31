@@ -82,7 +82,7 @@ const AffiliateDashboard: React.FC = () => {
   const [, navigate] = useLocation();
   const [dateRange, setDateRange] = useState('last30days');
   const [retailerFilter, setRetailerFilter] = useState('all');
-  
+
   // Get retailer data from API
   const { data: retailers } = useQuery({
     queryKey: ['/api/retailers'],
@@ -102,7 +102,7 @@ const AffiliateDashboard: React.FC = () => {
       minimumFractionDigits: 2
     }).format(value);
   };
-  
+
   // This would be a real query in production
   const { isLoading: transactionsLoading } = useQuery({
     queryKey: ['/api/affiliate/transactions', { dateRange, retailerFilter }],
@@ -112,7 +112,7 @@ const AffiliateDashboard: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto bg-white min-h-screen flex flex-col">
       <Header title="Affiliate Dashboard" />
-      
+
       <main className="flex-1 overflow-y-auto p-4">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -128,7 +128,7 @@ const AffiliateDashboard: React.FC = () => {
             <h1 className="text-2xl font-bold">Affiliate Revenue Dashboard</h1>
             <p className="text-gray-500">Track and analyze your affiliate marketing performance</p>
           </div>
-          
+
           <div className="flex items-center space-x-3">
             <Select defaultValue={dateRange} onValueChange={setDateRange}>
               <SelectTrigger className="w-[180px]">
@@ -144,19 +144,19 @@ const AffiliateDashboard: React.FC = () => {
                 <SelectItem value="thisYear">This Year</SelectItem>
               </SelectContent>
             </Select>
-            
+
             <Button variant="outline" size="sm" className="gap-1">
               <FileText className="h-4 w-4" />
               Export
             </Button>
-            
+
             <Button variant="outline" size="sm" className="gap-1">
               <Settings className="h-4 w-4" />
               Settings
             </Button>
           </div>
         </div>
-        
+
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <Card>
@@ -176,7 +176,7 @@ const AffiliateDashboard: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
@@ -194,7 +194,7 @@ const AffiliateDashboard: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
@@ -212,7 +212,7 @@ const AffiliateDashboard: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
@@ -231,7 +231,7 @@ const AffiliateDashboard: React.FC = () => {
             </CardContent>
           </Card>
         </div>
-        
+
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Monthly Revenue Trend */}
@@ -265,7 +265,7 @@ const AffiliateDashboard: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-          
+
           {/* Category Breakdown */}
           <Card>
             <CardHeader className="pb-2">
@@ -299,7 +299,7 @@ const AffiliateDashboard: React.FC = () => {
             </CardContent>
           </Card>
         </div>
-        
+
         {/* Retailer Performance Table */}
         <h2 className="text-xl font-bold mt-8 mb-4">Retailer Performance</h2>
         <Card>
@@ -361,7 +361,7 @@ const AffiliateDashboard: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         {/* Recent Transactions */}
         <h2 className="text-xl font-bold mt-8 mb-4">Recent Transactions</h2>
         <Card>
@@ -418,7 +418,7 @@ const AffiliateDashboard: React.FC = () => {
                     const orderAmount = Math.floor(Math.random() * 200) + 50;
                     const commission = (orderAmount * (retailer.conversionRate / 100)).toFixed(2);
                     const status = index % 4 === 0 ? 'pending' : 'paid';
-                    
+
                     return (
                       <tr key={index} className="border-b hover:bg-gray-50">
                         <td className="px-4 py-3 whitespace-nowrap">
@@ -475,7 +475,7 @@ const AffiliateDashboard: React.FC = () => {
             </Button>
           </CardFooter>
         </Card>
-        
+
         {/* Settings Section */}
         <h2 className="text-xl font-bold mt-8 mb-4">Affiliate Program Settings</h2>
         <Card>
@@ -491,7 +491,7 @@ const AffiliateDashboard: React.FC = () => {
                       Default commission percentage when specific retailer rates are not available
                     </p>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="affiliate-prefix">SmartCart Affiliate Prefix</Label>
                     <Input id="affiliate-prefix" defaultValue="smartcart_aff" />
@@ -501,7 +501,7 @@ const AffiliateDashboard: React.FC = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div>
                 <h3 className="font-medium text-lg mb-4">Payout Settings</h3>
                 <div className="space-y-4">
@@ -512,7 +512,7 @@ const AffiliateDashboard: React.FC = () => {
                       Minimum amount required before commissions are paid out
                     </p>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="payout-method">Default Payout Method</Label>
                     <Select defaultValue="bank">
@@ -530,9 +530,9 @@ const AffiliateDashboard: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             <Separator className="my-6" />
-            
+
             <div>
               <h3 className="font-medium text-lg mb-4">Retailer-Specific Commission Rates</h3>
               <div className="space-y-4">
@@ -543,7 +543,7 @@ const AffiliateDashboard: React.FC = () => {
                   <div className="col-span-2">Cookie Duration</div>
                   <div className="col-span-2">Status</div>
                 </div>
-                
+
                 {retailerPerformance.map((retailer) => (
                   <div key={retailer.name} className="grid grid-cols-12 gap-4 items-center px-2 py-3 border-b last:border-0">
                     <div className="col-span-4 flex items-center">
@@ -600,7 +600,7 @@ const AffiliateDashboard: React.FC = () => {
                 ))}
               </div>
             </div>
-            
+
             <div className="mt-6 flex justify-end">
               <Button variant="outline" className="mr-2">Cancel</Button>
               <Button>Save Settings</Button>
@@ -608,7 +608,7 @@ const AffiliateDashboard: React.FC = () => {
           </CardContent>
         </Card>
       </main>
-      
+
       <BottomNavigation activeTab="profile" />
     </div>
   );

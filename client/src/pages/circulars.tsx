@@ -21,7 +21,7 @@ const CircularsPage: React.FC = () => {
   const [selectedCircularId, setSelectedCircularId] = useState<number | null>(null);
   const [location, setLocation] = useState<{ lat: number, lng: number } | null>(null);
   const [locationStatus, setLocationStatus] = useState<'loading' | 'success' | 'error' | 'idle'>('idle');
-  
+
   // Query user profile
   const { data: user } = useQuery<User>({
     queryKey: ['/api/user/profile'],
@@ -48,12 +48,12 @@ const CircularsPage: React.FC = () => {
       setLocationStatus('error');
     }
   };
-  
+
   // Get all retailers
   const { data: retailers } = useQuery({
     queryKey: ['/api/retailers'],
   });
-  
+
   // Use location when available
   useEffect(() => {
     // If user profile exists but no location, request it
@@ -67,7 +67,7 @@ const CircularsPage: React.FC = () => {
     queryKey: ['/api/circulars', selectedRetailerId, location],
     queryFn: async () => {
       let endpoint = '/api/circulars';
-      
+
       // Add query params
       const params = new URLSearchParams();
       if (selectedRetailerId) params.append('retailerId', selectedRetailerId.toString());
@@ -75,17 +75,17 @@ const CircularsPage: React.FC = () => {
         params.append('lat', location.lat.toString());
         params.append('lng', location.lng.toString());
       }
-      
+
       // Append params to endpoint if any exist
       if (params.toString()) {
         endpoint += `?${params.toString()}`;
       }
-      
+
       const response = await fetch(endpoint);
       return response.json();
     },
   });
-  
+
   // Get deals for selected circular
   const { data: circularDeals, isLoading: isLoadingDeals } = useQuery({
     queryKey: ['/api/circulars/deals', selectedCircularId],
@@ -95,13 +95,13 @@ const CircularsPage: React.FC = () => {
     },
     enabled: !!selectedCircularId,
   });
-  
+
   // Handle retailer selection
   const handleRetailerSelect = (retailerId: number | null) => {
     setSelectedRetailerId(retailerId);
     setSelectedCircularId(null); // Reset circular selection when changing retailer
   };
-  
+
   // Handle circular selection
   const handleCircularSelect = (circularId: number) => {
     setSelectedCircularId(circularId);
@@ -110,14 +110,14 @@ const CircularsPage: React.FC = () => {
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
       <Header user={user} />
-      
+
       <main className="flex-1 overflow-y-auto pb-20">
         <div className="p-4">
           <h1 className="text-3xl font-bold mb-6">Weekly Circulars</h1>
           <p className="text-gray-600 mb-4">
             Browse weekly flyers and deals from your favorite local grocery stores
           </p>
-          
+
           {/* Location Alert */}
           {locationStatus === 'idle' && (
             <Alert variant="default" className="mb-4">
@@ -136,7 +136,7 @@ const CircularsPage: React.FC = () => {
               </AlertDescription>
             </Alert>
           )}
-          
+
           {locationStatus === 'loading' && (
             <Alert variant="default" className="mb-4">
               <AlertTitle>Requesting Location...</AlertTitle>
@@ -145,7 +145,7 @@ const CircularsPage: React.FC = () => {
               </AlertDescription>
             </Alert>
           )}
-          
+
           {locationStatus === 'success' && (
             <Alert variant="success" className="mb-4 bg-green-50 border-green-200">
               <MapPin className="h-4 w-4 text-green-600" />
@@ -155,7 +155,7 @@ const CircularsPage: React.FC = () => {
               </AlertDescription>
             </Alert>
           )}
-          
+
           {locationStatus === 'error' && (
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4" />
@@ -173,7 +173,7 @@ const CircularsPage: React.FC = () => {
               </AlertDescription>
             </Alert>
           )}
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Sidebar - Retailer Selection */}
             <div className="lg:col-span-3">
@@ -192,7 +192,7 @@ const CircularsPage: React.FC = () => {
                 </CardContent>
               </Card>
             </div>
-            
+
             {/* Main Content */}
             <div className="lg:col-span-9">
               {/* Circulars List */}
@@ -243,7 +243,7 @@ const CircularsPage: React.FC = () => {
                   )}
                 </div>
               )}
-              
+
               {/* Circular Details */}
               {selectedCircularId && circulars && (
                 <div>
@@ -255,7 +255,7 @@ const CircularsPage: React.FC = () => {
                   >
                     ← Back to circulars
                   </Button>
-                  
+
                   {/* Circular info */}
                   {circulars.filter((c: WeeklyCircular) => c.id === selectedCircularId).map((circular: WeeklyCircular) => (
                     <div key={circular.id}>
@@ -267,7 +267,7 @@ const CircularsPage: React.FC = () => {
                           </p>
                           {circular.description && <p className="mt-2">{circular.description}</p>}
                         </div>
-                        
+
                         {circular.pdfUrl && (
                           <Button className="mt-4 md:mt-0" asChild>
                             <a href={circular.pdfUrl} target="_blank" rel="noopener noreferrer">
@@ -276,7 +276,7 @@ const CircularsPage: React.FC = () => {
                           </Button>
                         )}
                       </div>
-                      
+
                       {circular.imageUrl && (
                         <div className="mb-6">
                           <img 
@@ -286,12 +286,12 @@ const CircularsPage: React.FC = () => {
                           />
                         </div>
                       )}
-                      
+
                       <Separator className="mb-6" />
-                      
+
                       {/* Deals from this circular */}
                       <h3 className="text-xl font-semibold mb-4">Featured Deals</h3>
-                      
+
                       {isLoadingDeals ? (
                         <p>Loading deals...</p>
                       ) : circularDeals && circularDeals.length > 0 ? (
