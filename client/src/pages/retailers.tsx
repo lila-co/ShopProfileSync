@@ -204,6 +204,17 @@ const RetailersPage: React.FC = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Link to manage connected accounts */}
+        <div className="mt-6 text-center">
+          <Button 
+            variant="ghost" 
+            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            onClick={() => navigate('/profile')}
+          >
+            Manage Connected Retailer Accounts
+          </Button>
+        </div>
       </main>
 
       <BottomNavigation activeTab="stores" />
