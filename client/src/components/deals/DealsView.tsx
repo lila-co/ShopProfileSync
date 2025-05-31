@@ -1,7 +1,3 @@
-The code is modified to filter deals on the deals page based on the retailer ID passed as a query parameter.
-```
-
-```replit_final_file
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
