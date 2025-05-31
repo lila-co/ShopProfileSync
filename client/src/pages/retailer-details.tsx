@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams } from 'wouter';
+import { useParams, useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
@@ -17,6 +17,7 @@ interface Retailer {
 
 const RetailerDetailsPage: React.FC = () => {
   const { id } = useParams();
+  const [, navigate] = useLocation();
   const retailerId = parseInt(id || '0');
 
   const { data: retailer, isLoading, error } = useQuery<Retailer>({
