@@ -289,7 +289,7 @@
 }
 
 .mobile-shopping-item:active {
-  @apply scale-98;
+  @apply scale-95;
 }
 
 .mobile-shopping-item:focus-within {
