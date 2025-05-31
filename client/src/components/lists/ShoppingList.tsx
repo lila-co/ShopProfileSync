@@ -582,14 +582,10 @@ const ShoppingListComponent: React.FC = () => {
       </div>
 
       <Tabs defaultValue="list" className="mt-2">
-        <TabsList className="grid w-full grid-cols-4 mb-3 h-10 bg-gray-100 border border-gray-300">
+        <TabsList className="grid w-full grid-cols-3 mb-3 h-10 bg-gray-100 border border-gray-300">
           <TabsTrigger value="list" className="flex items-center justify-center text-sm font-semibold py-2 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-700 hover:text-gray-900">
             <ShoppingBag className="h-4 w-4 mr-1" />
             List
-          </TabsTrigger>
-          <TabsTrigger value="price" className="flex items-center justify-center text-sm font-semibold py-2 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-700 hover:text-gray-900">
-            <DollarSign className="h-4 w-4 mr-1" />
-            Price
           </TabsTrigger>
           <TabsTrigger value="optimize" className="flex items-center justify-center text-sm font-semibold py-2 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-700 hover:text-gray-900">
             <BarChart2 className="h-4 w-4 mr-1" />
@@ -809,152 +805,7 @@ const ShoppingListComponent: React.FC = () => {
           </ScrollArea>
         </TabsContent>
 
-        <TabsContent value="price" className="space-y-4">
-          <h3 className="text-lg font-semibold mb-2 text-foreground">Price Comparison</h3>
-          <p className="text-sm text-gray-500 mb-4">
-            We've compared your shopping list prices across different retailers to help you save money.
-          </p>
-
-          {isLoadingCosts ? (
-            <div className="p-8 text-center">
-              <div className="h-8 w-8 border-4 border-t-primary border-gray-200 rounded-full animate-spin mx-auto"></div>
-              <p className="mt-2 text-sm text-gray-500">Calculating costs...</p>
-            </div>
-          ) : costData ? (
-            <div className="space-y-4">
-              <Card>
-                <CardContent className="p-4">
-                  <h4 className="font-semibold text-lg mb-4 text-foreground">Best Option: Shop at Multiple Stores</h4>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span>Total Cost</span>
-                      <span className="font-semibold">${(costData.multiStore.totalCost / 100).toFixed(2)}</span>
-                    </div>
-
-                    <div className="flex justify-between items-center">
-                      <span>Savings vs. Single Store</span>
-                      <span className="text-green-600 font-semibold">${(costData.multiStore.savings / 100).toFixed(2)}</span>
-                    </div>
-
-                    <Separator className="my-2" />
-
-                    <div className="space-y-3">
-                      <h5 className="font-medium text-foreground">Shopping Plan:</h5>
-                      {costData.multiStore.retailers.map((store: any, index: number) => (
-                        <div key={store.retailerId} className="border rounded-lg p-3">
-                          <div className="flex justify-between mb-2">
-                            <div>
-                              <span className="font-semibold">{store.retailerName}</span>
-                              <span className="ml-2 text-sm text-gray-500">{store.items?.length || 0} items</span>
-                            </div>
-                            <span className="font-semibold">${(store.subtotal / 100).toFixed(2)}</span>
-                          </div>
-
-                          <div className="mb-2 text-sm text-gray-500">
-                            {store.items && store.items.slice(0, 3).map((item: any, idx: number) => (
-                              <div key={idx} className="flex justify-between">
-                                <span>{item.productName} (x{item.quantity})</span>
-                                <span>${(item.price / 100).toFixed(2)}</span>
-                              </div>
-                            ))}
-                            {store.items && store.items.length > 3 && (
-                              <div className="text-sm text-right text-primary cursor-pointer">
-                                +{store.items.length - 3} more items
-                              </div>
-                            )}
-                          </div>
-
-                          <Button 
-                            className="w-full mt-1 text-sm h-10 bg-blue-600 hover:bg-blue-700 text-white font-semibold border-2 border-blue-600 shadow-md transition-all duration-200"
-                            variant="default"
-                            onClick={() => {
-                              window.location.href = `/shop?retailerId=${store.retailerId}&listId=${defaultList?.id}`;
-                            }}
-                          >
-                            <ShoppingBag className="mr-2 h-4 w-4" />
-                            Shop at {store.retailerName}
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <h4 className="font-semibold text-md mt-6 mb-2 text-foreground">Single Store Options</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {costData.singleStore.map((store: any, index: number) => (
-                  <Card key={store.retailerId} className={index === 0 ? "border-primary" : ""}>
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h5 className="font-semibold">{store.retailerName}</h5>
-                          <div className="flex space-x-4 text-sm text-gray-500 mt-1">
-                            <span>Total: ${(store.totalCost / 100).toFixed(2)}</span>
-                            {index !== 0 && (
-                              <span className="text-red-500">
-                                +${((store.totalCost - costData.singleStore[0].totalCost) / 100).toFixed(2)}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        {index === 0 && (
-                          <Badge className="bg-primary text-white">Best Value</Badge>
-                        )}
-                      </div>
-
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Items with deals</span>
-                          <span>{store.items?.filter((i: any) => i.hasDeal)?.length || 0} of {store.items?.length || 0}</span>
-                        </div>
-                        <Progress value={store.items?.length ? ((store.items?.filter((i: any) => i.hasDeal)?.length || 0) / store.items.length) * 100 : 0} className="h-2" />
-                      </div>
-
-                      <Button 
-                        className={`w-full mt-4 h-12 font-semibold text-base border-2 shadow-md transition-all duration-200 ${
-                          index === 0 
-                            ? "bg-green-600 hover:bg-green-700 text-white border-green-600" 
-                            : "bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
-                        }`}
-                        onClick={() => {
-                          window.location.href = `/shop?retailerId=${store.retailerId}&listId=${defaultList?.id}`;
-                        }}
-                        variant="default"
-                      >
-                        <ShoppingBag className="mr-2 h-5 w-5" />
-                        Shop at {store.retailerName}
-                      </Button>
-
-                      {/* Bulk Deals */}
-                      {store.bulkDeals && store.bulkDeals.length > 0 && (
-                        <div className="mt-4">
-                          <h6 className="text-sm font-medium mb-2 flex items-center">
-                            <AlertTriangle className="h-3.5 w-3.5 mr-1.5 text-amber-500" />
-                            Bulk Deals Available
-                          </h6>
-                          <div className="text-xs text-gray-600 space-y-1.5">
-                            {store.bulkDeals.map((deal: any, idx: number) => (
-                              <div key={idx} className="border border-amber-100 bg-amber-50 p-2 rounded">
-                                Buy {deal.quantity} {deal.productName} and save ${(deal.savings / 100).toFixed(2)}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="p-8 text-center border rounded-lg">
-              <AlertTriangle className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-              <p className="text-gray-500">Could not calculate price comparison</p>
-              <p className="text-sm text-gray-400 mt-1">Try adding more items to your shopping list</p>
-            </div>
-          )}
-        </TabsContent>
+        
 
         <TabsContent value="optimize" className="space-y-4">
           <h3 className="text-xl font-bold mb-2 text-gray-900">Shopping Plans</h3>
