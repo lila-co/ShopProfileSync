@@ -1,16 +1,21 @@
-
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { PurchasePattern, MonthlySpending } from '@/lib/types';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { TrendingUp, Calendar, DollarSign, ShoppingCart, BarChart3, MapPin, Users, Clock } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { TrendingUp, DollarSign, ShoppingCart, MapPin, Users, Target, Calendar, Package, Plus } from 'lucide-react';
+import ActionCard from '@/components/dashboard/ActionCard';
+import ReceiptScanner from '@/components/receipt/ReceiptScanner';
 
 const ShoppingInsights: React.FC = () => {
+  const [data, setData] = useState(null);
+  const [role, setRole] = useState('');
+  const [showReceiptScanner, setShowReceiptScanner] = useState(false);
+
   const { data: topItems, isLoading: loadingTopItems } = useQuery<PurchasePattern[]>({
     queryKey: ['/api/insights/top-items'],
   });
-  
+
   const { data: monthlyData, isLoading: loadingMonthlyData } = useQuery<MonthlySpending[]>({
     queryKey: ['/api/insights/monthly-spending'],
   });
@@ -26,7 +31,7 @@ const ShoppingInsights: React.FC = () => {
   const { data: demographicInsights } = useQuery({
     queryKey: ['/api/insights/demographic-insights'],
   });
-  
+
   const renderTopItems = () => {
     if (loadingTopItems) {
       return Array(5).fill(0).map((_, i) => (
@@ -39,7 +44,7 @@ const ShoppingInsights: React.FC = () => {
         </div>
       ));
     }
-    
+
     return (topItems || []).slice(0, 5).map((item, index) => (
       <div key={index} className="flex items-center py-3 gap-3 border-b border-gray-100 last:border-b-0">
         <div className="h-10 w-10 bg-blue-50 rounded-lg flex items-center justify-center">
@@ -58,7 +63,7 @@ const ShoppingInsights: React.FC = () => {
       </div>
     ));
   };
-  
+
   const renderMonthlyData = () => {
     if (loadingMonthlyData) {
       return (
@@ -75,20 +80,20 @@ const ShoppingInsights: React.FC = () => {
         </div>
       );
     }
-    
+
     return (
       <div className="h-40 flex items-end justify-between">
         {(monthlyData || []).map((month, index) => {
           const currentYearHeight = month.currentYear;
           const previousYearHeight = month.previousYear;
-          
+
           const maxValue = Math.max(
             ...((monthlyData || []).flatMap(m => [m.currentYear, m.previousYear]))
           );
-          
+
           const currentYearScaled = (currentYearHeight / maxValue) * 100;
           const previousYearScaled = (previousYearHeight / maxValue) * 100;
-          
+
           return (
             <div key={index} className="flex flex-col items-center">
               <div className="relative w-8">
@@ -127,37 +132,37 @@ const ShoppingInsights: React.FC = () => {
     { category: 'Beverages', amount: 89.20, percentage: 13, change: '+1%' },
     { category: 'Snacks', amount: 76.90, percentage: 12, change: '+12%' }
   ];
-  
+
   return (
     <div className="space-y-4">
-      {/* Summary Stats */}
-      <div className="grid grid-cols-2 gap-3">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <DollarSign className="h-5 w-5 text-green-600 mr-2" />
-              <div>
-                <p className="text-xs text-gray-500">This Month</p>
-                <p className="text-lg font-bold text-green-600">${monthlySavings || 0}</p>
-                <p className="text-xs text-gray-500">Saved</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <BarChart3 className="h-5 w-5 text-blue-600 mr-2" />
-              <div>
-                <p className="text-xs text-gray-500">Avg per Trip</p>
-                <p className="text-lg font-bold">${shoppingPatterns.averageSpendPerTrip}</p>
-                <p className="text-xs text-gray-500">{shoppingPatterns.averageTripsPerWeek}/week</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center">
+            <Plus className="w-5 h-5 mr-2 text-primary" />
+            Quick Actions
+          </CardTitle>
+          <CardDescription>Add data to improve your insights</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ActionCard 
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9.5 9.5 14.5 14.5"/>
+                <path d="M14.5 9.5 9.5 14.5"/>
+                <rect width="16" height="16" x="4" y="4" rx="2"/>
+                <path d="M4 15h16"/>
+                <path d="M15 4v6"/>
+                <path d="M9 4v2"/>
+              </svg>
+            }
+            title="Add Receipt"
+            subtitle="Scan or upload to get better insights"
+            onClick={() => setShowReceiptScanner(true)}
+            iconBgColor="bg-primary/10"
+          />
+        </CardContent>
+      </Card>
 
       {/* Most Purchased Items */}
       <Card>
