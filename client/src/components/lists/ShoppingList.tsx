@@ -132,12 +132,8 @@ const ShoppingListComponent: React.FC = () => {
       if (lowerName.includes('milk')) {
         // Apply historical preference for milk (gallon, half gallon, etc.)
         optimizedUnit = 'GALLON';
-        // Apply the user's preferred size from purchase history
-        if (sizePreferences['milk'] === 'half gallon') {
-          optimizedQuantity = 0.5;
-        } else if (sizePreferences['milk'] === 'quart') {
-          optimizedQuantity = 0.25;
-        }
+        // For now, use default gallon sizing - can be enhanced with user preferences later
+        optimizedQuantity = 1;
       } else if (lowerName.includes('egg')) {
         // Apply historical preference for eggs (dozen, half dozen)
         optimizedUnit = 'DOZEN';
