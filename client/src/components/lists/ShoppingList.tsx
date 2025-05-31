@@ -41,22 +41,9 @@ const ShoppingListComponent: React.FC = () => {
   const [servings, setServings] = useState('4');
   const [recipeDialogOpen, setRecipeDialogOpen] = useState(false);
 
-  // List generation state
-  const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
-  const [generatedItems, setGeneratedItems] = useState<any[]>([]);
-
   // Optimization state
   const [optimizationPreference, setOptimizationPreference] = useState('cost');
   const [selectedRetailers, setSelectedRetailers] = useState<number[]>([]);
-
-  // Size preference tracking (to optimize based on historical preferences)
-  const [sizePreferences, setSizePreferences] = useState<Record<string, string>>({
-    'milk': 'gallon',
-    'eggs': 'dozen',
-    'bread': 'loaf',
-    'cheese': '8oz',
-    'yogurt': 'quart'
-  });
   const [showRouteMap, setShowRouteMap] = useState(false);
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
 
@@ -198,82 +185,7 @@ const ShoppingListComponent: React.FC = () => {
     }
   });
 
-  // Generate shopping list preview
-  const previewGenerateMutation = useMutation({
-    mutationFn: async () => {
-      // First get a preview of items before actually creating the list
-      const response = await apiRequest('POST', '/api/shopping-lists/preview', {});
-      return response.json();
-    },
-    onSuccess: (data) => {
-      // Get items from API or generate sample items if none are returned
-      let items = data.items || [];
-
-      // If no items were returned, show sample suggestions
-      if (items.length === 0) {
-        // Sample items to demonstrate the feature
-        items = [
-          { productName: 'Milk', quantity: 1, reason: 'Purchased weekly' },
-          { productName: 'Bananas', quantity: 1, reason: 'Running low based on purchase cycle' },
-          { productName: 'Bread', quantity: 1, reason: 'Typically purchased every 5 days' },
-          { productName: 'Eggs', quantity: 1, reason: 'Regularly purchased item' },
-          { productName: 'Toilet Paper', quantity: 1, reason: 'Based on typical household usage' },
-          { productName: 'Chicken Breast', quantity: 1, reason: 'Purchased bi-weekly' },
-          { productName: 'Tomatoes', quantity: 3, reason: 'Based on recipe usage patterns' }
-        ];
-      }
-
-      // Enhance items with smart unit detection
-      const enhancedItems = items.map(item => ({
-        ...item,
-        detectedUnit: detectUnitFromItemName(item.productName)
-      }));
-
-      setGeneratedItems(enhancedItems);
-      setGenerateDialogOpen(true);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to generate list preview",
-        variant: "destructive" 
-      });
-    }
-  });
-
-  // Generate shopping list from typical purchases
-  const generateListMutation = useMutation({
-    mutationFn: async () => {
-      // Apply smart unit detection to generated items before creating the list
-      const items = generatedItems.map(item => ({
-        ...item,
-        unit: detectUnitFromItemName(item.productName)
-      }));
-
-      const response = await apiRequest('POST', '/api/shopping-lists/generate', {
-        items: items
-      });
-      return response.json();
-    },
-    onSuccess: (data) => {
-      setGenerateDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-
-      // Show success message with stats
-      const itemCount = data.itemsAdded || generatedItems.length;
-      toast({
-        title: "Shopping List Generated",
-        description: `Added ${itemCount} items with smart unit detection based on your purchase patterns`
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to generate shopping list",
-        variant: "destructive" 
-      });
-    }
-  });
+  
 
   // Import recipe ingredients
   const importRecipeMutation = useMutation({
@@ -485,24 +397,7 @@ const ShoppingListComponent: React.FC = () => {
 
   return (
     <div className="p-3 sm:p-4 pb-20">
-      {/* Compact AI Generate Section */}
-      <div className="mb-4 w-full border border-primary/30 rounded-lg overflow-hidden bg-primary/5">
-        <div className="bg-primary text-white px-3 py-2 text-sm font-medium text-center">
-          AI Shopping List Generator
-        </div>
-        <div className="p-3">
-          <Button 
-            variant="default" 
-            onClick={() => previewGenerateMutation.mutate()}
-            size="sm"
-            className="w-full bg-primary hover:bg-primary/90 text-white h-10 text-sm font-medium"
-          >
-            <Wand2 className="h-4 w-4 mr-2" />
-            Generate List
-          </Button>
-          <p className="text-center mt-2 text-xs text-gray-600">AI analyzes your purchase history</p>
-        </div>
-      </div>
+      
 
       {/* Compact Header with Actions */}
       <div className="flex items-center justify-between mb-4">
