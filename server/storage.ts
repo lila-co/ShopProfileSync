@@ -509,8 +509,9 @@ export class MemStorage implements IStorage {
     }));
   }
 
-  async getRetailer```python
-Account(id: number): Promise<RetailerAccount | undefined> {
+  ```python
+
+  async getRetailerAccount(id: number): Promise<RetailerAccount | undefined> {
     return this.retailerAccounts.get(id);
   }
 
@@ -2447,7 +2448,6 @@ const [updatedUser] = await db
       .from(retailerAccounts)
       .where(eq(retailerAccounts.id, id))
       .limit(1);
-```python
     return account;
   }
 
