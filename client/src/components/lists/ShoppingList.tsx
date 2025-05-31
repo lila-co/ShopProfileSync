@@ -797,7 +797,7 @@ const ShoppingListComponent: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="price" className="space-y-4">
-          <h3 className="text-lg font-semibold mb-2">Price Comparison</h3>
+          <h3 className="text-lg font-semibold mb-2 text-foreground">Price Comparison</h3>
           <p className="text-sm text-gray-500 mb-4">
             We've compared your shopping list prices across different retailers to help you save money.
           </p>
@@ -811,7 +811,7 @@ const ShoppingListComponent: React.FC = () => {
             <div className="space-y-4">
               <Card>
                 <CardContent className="p-4">
-                  <h4 className="font-semibold text-lg mb-4">Best Option: Shop at Multiple Stores</h4>
+                  <h4 className="font-semibold text-lg mb-4 text-foreground">Best Option: Shop at Multiple Stores</h4>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
                       <span>Total Cost</span>
@@ -826,7 +826,7 @@ const ShoppingListComponent: React.FC = () => {
                     <Separator className="my-2" />
 
                     <div className="space-y-3">
-                      <h5 className="font-medium">Shopping Plan:</h5>
+                      <h5 className="font-medium text-foreground">Shopping Plan:</h5>
                       {costData.multiStore.retailers.map((store: any, index: number) => (
                         <div key={store.retailerId} className="border rounded-lg p-3">
                           <div className="flex justify-between mb-2">
@@ -868,7 +868,7 @@ const ShoppingListComponent: React.FC = () => {
                 </CardContent>
               </Card>
 
-              <h4 className="font-semibold text-md mt-6 mb-2">Single Store Options</h4>
+              <h4 className="font-semibold text-md mt-6 mb-2 text-foreground">Single Store Options</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {costData.singleStore.map((store: any, index: number) => (
                   <Card key={store.retailerId} className={index === 0 ? "border-primary" : ""}>
@@ -1098,7 +1098,7 @@ const ShoppingListComponent: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="route" className="space-y-4">
-          <h3 className="text-xl font-bold mb-2 text-gray-900">Shopping Route</h3>
+          <h3 className="text-xl font-bold mb-2 text-foreground">Shopping Route</h3>
           <p className="text-base text-gray-700 mb-4 font-medium">
             Plan the optimal route for your shopping trip across multiple stores.
           </p>
@@ -1106,7 +1106,7 @@ const ShoppingListComponent: React.FC = () => {
           <Card>
             <CardContent className="p-4 space-y-4">
               <div className="flex items-center justify-between">
-                <h4 className="font-bold text-gray-900 text-lg">Map Route</h4>
+                <h4 className="font-bold text-foreground text-lg">Map Route</h4>
                 <Switch 
                   checked={showRouteMap} 
                   onCheckedChange={setShowRouteMap}
@@ -1114,7 +1114,7 @@ const ShoppingListComponent: React.FC = () => {
               </div>
 
               <div>
-                <h5 className="text-base font-bold mb-3 text-gray-900">Selected Retailers</h5>
+                <h5 className="text-base font-bold mb-3 text-foreground">Selected Retailers</h5>
                 <div className="grid grid-cols-2 gap-2">
                   {retailers && retailers.map((retailer: any) => (
                     <div key={retailer.id} className="flex items-center space-x-2">
