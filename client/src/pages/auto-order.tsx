@@ -1,24 +1,23 @@
-
 import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { useLocation } from 'wouter';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
+import { useLocation } from 'wouter';
 import { 
   ShoppingCart, 
   Loader2, 
   CheckCircle, 
-  AlertCircle, 
-  Store,
-  Package,
-  CreditCard,
+  Store, 
+  DollarSign,
   Clock,
-  DollarSign
+  Package,
+  ArrowRight,
+  AlertCircle
 } from 'lucide-react';
 
 interface OptimizedOrder {
@@ -26,9 +25,8 @@ interface OptimizedOrder {
   retailerName: string;
   items: any[];
   totalCost: number;
-  orderId?: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
-  estimatedDelivery?: string;
+  estimatedTime: number;
+  orderUrl?: string;
 }
 
 const AutoOrder: React.FC = () => {
@@ -37,15 +35,22 @@ const AutoOrder: React.FC = () => {
   const searchParams = new URLSearchParams(location.split('?')[1] || '');
   const listId = searchParams.get('listId');
   const mode = searchParams.get('mode') || 'online';
-  
+
   const navigate = (path: string) => {
     window.location.href = path;
   };
-  
+
   const [currentStep, setCurrentStep] = useState(0);
   const [orderResults, setOrderResults] = useState<OptimizedOrder | null>(null);
   const [multiStoreOrders, setMultiStoreOrders] = useState<OptimizedOrder[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<'single' | 'best-value' | 'balanced'>('single');
+
+  const steps = [
+    'Analyzing your shopping list',
+    'Finding best prices across stores',
+    'Optimizing your shopping plan',
+    'Preparing orders'
+  ];
 
   // Fetch shopping list
   const { data: shoppingList } = useQuery({
@@ -60,6 +65,18 @@ const AutoOrder: React.FC = () => {
         shoppingListId: parseInt(listId || '1')
       });
       return response.json();
+    },
+    onSuccess: (data) => {
+      console.log('Single store plan:', data);
+      setCurrentStep(2);
+    },
+    onError: (error) => {
+      console.error('Single store error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to get single store optimization",
+        variant: "destructive"
+      });
     }
   });
 
@@ -69,6 +86,18 @@ const AutoOrder: React.FC = () => {
         shoppingListId: parseInt(listId || '1')
       });
       return response.json();
+    },
+    onSuccess: (data) => {
+      console.log('Best value plan:', data);
+      setCurrentStep(3);
+    },
+    onError: (error) => {
+      console.error('Best value error:', error);
+      toast({
+        title: "Error", 
+        description: "Failed to get best value optimization",
+        variant: "destructive"
+      });
     }
   });
 
@@ -78,411 +107,253 @@ const AutoOrder: React.FC = () => {
         shoppingListId: parseInt(listId || '1')
       });
       return response.json();
-    }
-  });
-
-  // Place order mutation
-  const placeOrderMutation = useMutation({
-    mutationFn: async (orderData: {
-      retailerId: number;
-      items: any[];
-      mode: string;
-      customerInfo: any;
-    }) => {
-      const response = await apiRequest('POST', `/api/retailers/${orderData.retailerId}/orders`, {
-        items: orderData.items,
-        mode: orderData.mode,
-        customerInfo: orderData.customerInfo,
-        shoppingListId: listId
-      });
-      return response.json();
-    }
-  });
-
-  // Load optimization plans on component mount
-  useEffect(() => {
-    if (listId) {
-      setCurrentStep(1);
-      Promise.all([
-        singleStoreMutation.mutateAsync(),
-        bestValueMutation.mutateAsync(),
-        balancedMutation.mutateAsync()
-      ]).then(() => {
-        setCurrentStep(2);
-      }).catch((error) => {
-        console.error('Error loading optimization plans:', error);
-        setCurrentStep(0);
-      });
-    }
-  }, [listId]);
-
-  const handlePlaceOrders = async () => {
-    setCurrentStep(3);
-
-    const customerInfo = {
-      name: "John Doe", // In real app, get from user profile
-      email: "johndoe@example.com",
-      address: "123 Main St, Anytown, USA",
-      phone: "555-123-4567"
-    };
-
-    try {
-      if (selectedPlan === 'single') {
-        // Single store order
-        const planData = singleStoreMutation.data;
-        if (!planData) throw new Error('No single store plan available');
-
-        const orderResult = await placeOrderMutation.mutateAsync({
-          retailerId: planData.retailerId,
-          items: planData.items,
-          mode,
-          customerInfo
-        });
-
-        setOrderResults({
-          retailerId: planData.retailerId,
-          retailerName: planData.retailerName,
-          items: planData.items,
-          totalCost: planData.totalCost,
-          orderId: orderResult.orderId,
-          status: 'completed',
-          estimatedDelivery: orderResult.estimatedDelivery
-        });
-
-      } else {
-        // Multi-store orders (best-value or balanced)
-        const planData = selectedPlan === 'best-value' ? bestValueMutation.data : balancedMutation.data;
-        if (!planData?.stores) throw new Error('No multi-store plan available');
-
-        const orderPromises = planData.stores.map(async (store: any) => {
-          try {
-            const orderResult = await placeOrderMutation.mutateAsync({
-              retailerId: store.retailerId,
-              items: store.items,
-              mode,
-              customerInfo
-            });
-
-            return {
-              retailerId: store.retailerId,
-              retailerName: store.retailerName,
-              items: store.items,
-              totalCost: store.subtotal,
-              orderId: orderResult.orderId,
-              status: 'completed' as const,
-              estimatedDelivery: orderResult.estimatedDelivery
-            };
-          } catch (error) {
-            console.error(`Order failed for ${store.retailerName}:`, error);
-            return {
-              retailerId: store.retailerId,
-              retailerName: store.retailerName,
-              items: store.items,
-              totalCost: store.subtotal,
-              status: 'failed' as const
-            };
-          }
-        });
-
-        const results = await Promise.all(orderPromises);
-        setMultiStoreOrders(results);
-      }
-
+    },
+    onSuccess: (data) => {
+      console.log('Balanced plan:', data);
       setCurrentStep(4);
+      // All plans are ready, show results
+      setTimeout(() => {
+        setOrderResults({
+          retailerId: data.stores?.[0]?.retailerId || 1,
+          retailerName: data.stores?.[0]?.retailerName || 'Store',
+          items: data.stores?.[0]?.items || [],
+          totalCost: data.totalCost || 0,
+          estimatedTime: data.estimatedTime || 30
+        });
+      }, 1000);
+    },
+    onError: (error) => {
+      console.error('Balanced error:', error);
       toast({
-        title: "Orders Placed Successfully",
-        description: `Your ${selectedPlan} plan orders have been submitted`
-      });
-
-    } catch (error: any) {
-      console.error('Order placement error:', error);
-      toast({
-        title: "Order Failed",
-        description: error.message || "Failed to place orders",
+        title: "Error",
+        description: "Failed to get balanced optimization", 
         variant: "destructive"
       });
-      setCurrentStep(2);
+    }
+  });
+
+  // Start the optimization process
+  useEffect(() => {
+    if (listId && shoppingList) {
+      const startOptimization = async () => {
+        try {
+          setCurrentStep(1);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          // Run optimizations sequentially
+          singleStoreMutation.mutate();
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+          bestValueMutation.mutate();
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+          balancedMutation.mutate();
+        } catch (error) {
+          console.error('Optimization error:', error);
+          toast({
+            title: "Error",
+            description: "Failed to optimize shopping list",
+            variant: "destructive"
+          });
+        }
+      };
+
+      startOptimization();
+    }
+  }, [listId, shoppingList]);
+
+  const handlePlaceOrder = async () => {
+    if (!orderResults) return;
+
+    try {
+      toast({
+        title: "Order Placed",
+        description: `Your order has been placed at ${orderResults.retailerName}`,
+      });
+
+      // Navigate to shop page to complete the order
+      navigate(`/shop?retailerId=${orderResults.retailerId}&listId=${listId}&mode=${mode}`);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to place order",
+        variant: "destructive"
+      });
     }
   };
 
-  const steps = [
-    "Initializing",
-    "Loading optimization plans", 
-    "Choose your plan",
-    "Placing orders",
-    "Orders completed"
-  ];
+  const isLoading = currentStep < 4 && !orderResults;
+  const progress = ((currentStep + 1) / steps.length) * 100;
 
-  const renderPlanSelection = () => {
-    const plans = [
-      {
-        key: 'single',
-        title: 'Single Store',
-        data: singleStoreMutation.data,
-        description: 'One stop shopping at the best store'
-      },
-      {
-        key: 'best-value', 
-        title: 'Best Value',
-        data: bestValueMutation.data,
-        description: 'Split orders for maximum savings'
-      },
-      {
-        key: 'balanced',
-        title: 'Balanced',
-        data: balancedMutation.data,
-        description: 'Balance between price and convenience'
-      }
-    ];
+  return (
+    <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
+      <Header title="Smart Order" />
 
-    return (
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Choose Your Shopping Plan</h3>
-        <div className="grid gap-4">
-          {plans.map((plan) => (
-            <Card 
-              key={plan.key}
-              className={`cursor-pointer border-2 transition-colors ${
-                selectedPlan === plan.key ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-gray-300'
-              }`}
-              onClick={() => setSelectedPlan(plan.key as any)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-4 h-4 rounded-full border-2 ${
-                      selectedPlan === plan.key ? 'border-primary bg-primary' : 'border-gray-300'
-                    }`} />
-                    <div>
-                      <h4 className="font-medium">{plan.title}</h4>
-                      <p className="text-sm text-gray-600">{plan.description}</p>
-                    </div>
+      <main className="flex-1 overflow-y-auto p-4 pb-24">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Smart Order</h1>
+          <p className="text-gray-600 text-sm">
+            AI-powered optimization to get you the best deals
+          </p>
+        </div>
+
+        {isLoading ? (
+          <Card>
+            <CardContent className="p-6">
+              <div className="text-center space-y-4">
+                <div className="relative">
+                  <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 text-primary animate-spin" />
                   </div>
-                  <div className="text-right">
-                    <div className="font-semibold">
-                      ${plan.data ? (plan.data.totalCost / 100).toFixed(2) : '0.00'}
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold">Initializing Smart Order</h3>
+                  <p className="text-sm text-gray-600">
+                    {steps[currentStep] || 'Processing...'}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Progress value={progress} className="w-full" />
+                  <p className="text-xs text-gray-500">
+                    Step {Math.min(currentStep + 1, steps.length)} of {steps.length}
+                  </p>
+                </div>
+
+                <div className="text-xs text-gray-400 space-y-1">
+                  {steps.map((step, index) => (
+                    <div 
+                      key={index} 
+                      className={`flex items-center space-x-2 ${
+                        index <= currentStep ? 'text-primary' : 'text-gray-400'
+                      }`}
+                    >
+                      {index < currentStep ? (
+                        <CheckCircle className="h-3 w-3" />
+                      ) : index === currentStep ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <div className="h-3 w-3 rounded-full border border-current" />
+                      )}
+                      <span>{step}</span>
                     </div>
-                    {plan.data?.stores && (
-                      <div className="text-sm text-gray-500">
-                        {plan.data.stores.length} stores
-                      </div>
-                    )}
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : orderResults ? (
+          <div className="space-y-4">
+            <Card className="border-green-200 bg-green-50">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-3 mb-3">
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                  <div>
+                    <h3 className="font-semibold text-green-800">Order Optimized!</h3>
+                    <p className="text-sm text-green-600">Found the best deals for your list</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
-        
-        <Button 
-          onClick={handlePlaceOrders}
-          className="w-full"
-          disabled={!selectedPlan}
-        >
-          <ShoppingCart className="mr-2 h-4 w-4" />
-          Place Orders - {selectedPlan === 'single' ? '1 Store' : `${selectedPlan === 'best-value' ? bestValueMutation.data?.stores?.length || 0 : balancedMutation.data?.stores?.length || 0} Stores`}
-        </Button>
-      </div>
-    );
-  };
 
-  const renderOrderResults = () => {
-    if (selectedPlan === 'single' && orderResults) {
-      return (
-        <div className="space-y-4">
-          <div className="text-center">
-            <CheckCircle className="mx-auto h-12 w-12 text-green-500 mb-4" />
-            <h3 className="text-xl font-semibold text-green-700">Order Placed Successfully!</h3>
-          </div>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-semibold">{orderResults.retailerName}</h4>
-                <span className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                  Confirmed
-                </span>
-              </div>
-              
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Order ID:</span>
-                  <span className="font-mono">{orderResults.orderId}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Items:</span>
-                  <span>{orderResults.items.length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Total:</span>
-                  <span className="font-semibold">${(orderResults.totalCost / 100).toFixed(2)}</span>
-                </div>
-                {orderResults.estimatedDelivery && (
-                  <div className="flex justify-between">
-                    <span>Estimated Delivery:</span>
-                    <span>{orderResults.estimatedDelivery}</span>
+            <Card>
+              <CardContent className="p-4">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold">Recommended Plan</h4>
+                    <Store className="h-5 w-5 text-gray-400" />
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      );
-    }
 
-    if (multiStoreOrders.length > 0) {
-      const totalCost = multiStoreOrders.reduce((sum, order) => sum + order.totalCost, 0);
-      const successfulOrders = multiStoreOrders.filter(order => order.status === 'completed');
-      
-      return (
-        <div className="space-y-4">
-          <div className="text-center">
-            <CheckCircle className="mx-auto h-12 w-12 text-green-500 mb-4" />
-            <h3 className="text-xl font-semibold text-green-700">
-              {successfulOrders.length} of {multiStoreOrders.length} Orders Placed Successfully!
-            </h3>
-          </div>
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-blue-800">{orderResults.retailerName}</span>
+                      <span className="text-sm text-blue-600">{orderResults.items.length} items</span>
+                    </div>
 
-          <div className="grid gap-3">
-            {multiStoreOrders.map((order, index) => (
-              <Card key={index} className={order.status === 'failed' ? 'border-red-200' : ''}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-semibold">{order.retailerName}</h4>
-                    <span className={`text-sm px-2 py-1 rounded-full ${
-                      order.status === 'completed' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {order.status === 'completed' ? 'Confirmed' : 'Failed'}
-                    </span>
-                  </div>
-                  
-                  <div className="space-y-1 text-sm">
-                    {order.orderId && (
-                      <div className="flex justify-between">
-                        <span>Order ID:</span>
-                        <span className="font-mono">{order.orderId}</span>
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div className="text-center">
+                        <DollarSign className="h-4 w-4 mx-auto text-green-600 mb-1" />
+                        <div className="font-medium">${(orderResults.totalCost / 100).toFixed(2)}</div>
+                        <div className="text-xs text-gray-500">Total Cost</div>
                       </div>
-                    )}
-                    <div className="flex justify-between">
-                      <span>Items:</span>
-                      <span>{order.items.length}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Total:</span>
-                      <span className="font-semibold">${(order.totalCost / 100).toFixed(2)}</span>
+
+                      <div className="text-center">
+                        <Clock className="h-4 w-4 mx-auto text-blue-600 mb-1" />
+                        <div className="font-medium">{orderResults.estimatedTime}min</div>
+                        <div className="text-xs text-gray-500">Est. Time</div>
+                      </div>
+
+                      <div className="text-center">
+                        <Package className="h-4 w-4 mx-auto text-purple-600 mb-1" />
+                        <div className="font-medium">{orderResults.items.length}</div>
+                        <div className="text-xs text-gray-500">Items</div>
+                      </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
 
-          <Card className="border-primary">
-            <CardContent className="p-4">
-              <div className="flex justify-between items-center">
-                <span className="font-semibold">Grand Total:</span>
-                <span className="text-xl font-bold text-primary">
-                  ${(totalCost / 100).toFixed(2)}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      );
-    }
+                  <div className="space-y-2">
+                    <h5 className="font-medium text-sm">Items in Order:</h5>
+                    <div className="max-h-32 overflow-y-auto space-y-1">
+                      {orderResults.items.slice(0, 5).map((item, index) => (
+                        <div key={index} className="flex justify-between text-sm bg-gray-50 rounded p-2">
+                          <span>{item.productName} (x{item.quantity})</span>
+                          <span className="font-medium">${(item.price / 100).toFixed(2)}</span>
+                        </div>
+                      ))}
+                      {orderResults.items.length > 5 && (
+                        <div className="text-xs text-gray-500 text-center">
+                          +{orderResults.items.length - 5} more items
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-    return null;
-  };
-
-  return (
-    <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
-      <Header title="Smart Auto-Order" />
-      
-      <main className="flex-1 overflow-y-auto p-4">
-        {/* Progress indicator */}
-        <div className="mb-6">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium">Step {currentStep + 1} of {steps.length}</span>
-            <span className="text-sm text-gray-500">{Math.round(((currentStep + 1) / steps.length) * 100)}%</span>
-          </div>
-          <Progress value={((currentStep + 1) / steps.length) * 100} className="h-2" />
-          <p className="text-sm text-gray-600 mt-2">{steps[currentStep]}</p>
-        </div>
-
-        {/* Content based on current step */}
-        {currentStep === 0 && (
-          <Card>
-            <CardContent className="p-6 text-center">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Initializing Smart Order</h3>
-              <p className="text-gray-600">Setting up your optimized shopping experience...</p>
-            </CardContent>
-          </Card>
-        )}
-
-        {currentStep === 1 && (
-          <Card>
-            <CardContent className="p-6 text-center">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Analyzing Best Deals</h3>
-              <p className="text-gray-600">Comparing prices across stores and finding the best options for your list...</p>
-            </CardContent>
-          </Card>
-        )}
-
-        {currentStep === 2 && renderPlanSelection()}
-
-        {currentStep === 3 && (
-          <Card>
-            <CardContent className="p-6 text-center">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Placing Your Orders</h3>
-              <p className="text-gray-600">
-                {selectedPlan === 'single' 
-                  ? 'Submitting your order to the selected retailer...'
-                  : 'Submitting orders to multiple retailers for best value...'}
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        {currentStep === 4 && renderOrderResults()}
-
-        {/* Action buttons */}
-        {currentStep === 4 && (
-          <div className="mt-6 space-y-3">
-            <Button 
-              onClick={() => navigate('/shopping-list')}
-              className="w-full"
-            >
-              Back to Shopping Lists
-            </Button>
-            <Button 
-              onClick={() => navigate('/dashboard')}
-              variant="outline"
-              className="w-full"
-            >
-              View Dashboard
-            </Button>
-          </div>
-        )}
-
-        {/* Error state */}
-        {(singleStoreMutation.isError || bestValueMutation.isError || balancedMutation.isError) && (
-          <Card className="mt-4 border-red-200">
-            <CardContent className="p-4">
-              <div className="flex items-center text-red-600">
-                <AlertCircle className="h-5 w-5 mr-2" />
-                <span className="text-sm">Failed to load optimization plans. Please try again.</span>
-              </div>
+            <div className="grid grid-cols-2 gap-3">
               <Button 
-                onClick={() => navigate('/shopping-list')}
                 variant="outline" 
-                className="w-full mt-3"
+                onClick={() => navigate(`/shopping-list`)}
+                className="w-full"
               >
-                Go Back
+                Back to List
+              </Button>
+
+              <Button 
+                onClick={handlePlaceOrder}
+                className="w-full bg-primary hover:bg-primary/90"
+              >
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                Place Order
+              </Button>
+            </div>
+
+            <Card className="bg-amber-50 border-amber-200">
+              <CardContent className="p-4">
+                <div className="flex items-start space-x-3">
+                  <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+                  <div className="text-sm">
+                    <div className="font-medium text-amber-800 mb-1">Next Steps</div>
+                    <div className="text-amber-700">
+                      You'll be redirected to complete your order at {orderResults.retailerName}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="p-6 text-center">
+              <AlertCircle className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Unable to Create Order</h3>
+              <p className="text-gray-600 mb-4">
+                There was an issue optimizing your shopping list. Please try again.
+              </p>
+              <Button onClick={() => window.location.reload()}>
+                Try Again
               </Button>
             </CardContent>
           </Card>
