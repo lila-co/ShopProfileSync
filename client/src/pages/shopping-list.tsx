@@ -1844,16 +1844,8 @@ const ShoppingListPage: React.FC = () => {
                         <Button 
                           className="w-full h-auto p-4 flex flex-col items-center space-y-2"
                           onClick={() => {
-                            // Check if user has optimization data available
-                            const hasOptimization = singleStoreOptimization.data || bestValueOptimization.data || balancedOptimization.data;
-
-                            if (hasOptimization) {
-                              // Navigate to auto-order with optimization plans
-                              navigate('/auto-order?listId=' + selectedList?.id + '&mode=online');
-                            } else {
-                              // Fallback to regular shop page if no optimization data
-                              navigate('/shop?listId=' + selectedList?.id + '&mode=online');
-                            }
+                            // Always navigate to auto-order for smart ordering
+                            navigate('/auto-order?listId=' + (selectedList?.id || defaultList?.id || '1') + '&mode=online');
                           }}
                         >
                           <ShoppingCart className="h-6 w-6" />
