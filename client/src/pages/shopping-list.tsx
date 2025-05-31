@@ -14,6 +14,10 @@ const ShoppingListPage: React.FC = () => {
     queryKey: ['/api/shopping-lists'],
   });
 
+  const { data: monthlySavings } = useQuery<number>({
+    queryKey: ['/api/insights/monthly-savings'],
+  });
+
   if (isLoading) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
@@ -43,10 +47,25 @@ const ShoppingListPage: React.FC = () => {
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
       <Header 
-        title={listName}
+        title="Home"
         user={user}
       />
       <main className="flex-1 overflow-y-auto">
+        {/* Welcome Section */}
+        <section className="p-4 bg-white border-b border-gray-100">
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Hello, {user?.firstName || 'there'}</h2>
+              <p className="text-gray-700 text-sm">Your shopping assistance is ready</p>
+            </div>
+            {monthlySavings !== undefined && monthlySavings > 0 && (
+              <div className="bg-primary/10 text-primary px-3 py-1 rounded-full font-medium text-sm">
+                ${monthlySavings} saved this month
+              </div>
+            )}
+          </div>
+        </section>
+        
         <ShoppingListComponent />
       </main>
       <BottomNavigation activeTab="lists" />
