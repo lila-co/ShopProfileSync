@@ -957,165 +957,119 @@ const ShoppingListComponent: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="optimize" className="space-y-4">
-          <h3 className="text-xl font-bold mb-2 text-gray-900">Shopping List Optimization</h3>
+          <h3 className="text-xl font-bold mb-2 text-gray-900">Shopping Plans</h3>
           <p className="text-base text-gray-700 mb-4 font-medium">
-            Set your preferences to optimize your shopping experience across multiple retailers.
+            Choose the best shopping plan for your needs. We'll optimize your list across retailers.
           </p>
 
-          <div className="space-y-6">
-            <Card>
-              <CardContent className="p-4 space-y-4">
-                <div>
-                  <h4 className="font-bold mb-4 text-gray-900 text-lg">What matters most to you?</h4>
-                  <RadioGroup 
-                    className="space-y-3" 
-                    value={optimizationPreference}
-                    onValueChange={setOptimizationPreference}
-                  >
-                    <div className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                      <RadioGroupItem value="cost" id="cost" />
-                      <Label htmlFor="cost" className="flex items-center cursor-pointer">
-                        <DollarSign className="h-5 w-5 mr-3 text-green-600" />
-                        <div>
-                          <span className="font-medium text-foreground">Cost Savings</span>
-                          <p className="text-sm text-muted-foreground">Prioritize getting the best prices, even if it means shopping at multiple stores</p>
-                        </div>
-                      </Label>
+          <div className="grid gap-4">
+            {/* Single Store Plan */}
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => {
+              const planData = encodeURIComponent(JSON.stringify({
+                type: 'single-store',
+                shoppingListId: defaultList?.id
+              }));
+              window.location.href = `/auto-order?listId=${defaultList?.id}&planData=${planData}`;
+            }}>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center">
+                    <div className="bg-blue-100 p-3 rounded-lg mr-4">
+                      <Clock className="h-6 w-6 text-blue-600" />
                     </div>
-
-                    <div className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                      <RadioGroupItem value="convenience" id="convenience" />
-                      <Label htmlFor="convenience" className="flex items-center cursor-pointer">
-                        <Clock className="h-5 w-5 mr-3 text-blue-600" />
-                        <div>
-                          <span className="font-medium text-foreground">Convenience</span>
-                          <p className="text-sm text-muted-foreground">Shop at a single store even if some items cost more</p>
-                        </div>
-                      </Label>
+                    <div>
+                      <h4 className="font-bold text-lg text-gray-900">Single Store</h4>
+                      <p className="text-sm text-gray-600 mt-1">Shop everything at one convenient location</p>
+                      <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                        <span>• Fastest shopping</span>
+                        <span>• One trip</span>
+                        <span>• Higher prices</span>
+                      </div>
                     </div>
-
-                    <div className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                      <RadioGroupItem value="quality" id="quality" />
-                      <Label htmlFor="quality" className="flex items-center cursor-pointer">
-                        <Check className="h-5 w-5 mr-3 text-purple-600" />
-                        <div>
-                          <span className="font-medium text-foreground">Quality</span>
-                          <p className="text-sm text-muted-foreground">Prioritize preferred brands and specialty stores</p>
-                        </div>
-                      </Label>
-                    </div>
-
-                    <div className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                      <RadioGroupItem value="sustainability" id="sustainability" />
-                      <Label htmlFor="sustainability" className="flex items-center cursor-pointer">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M18 8a5 5 0 0 0-5-5c-1.956 0-3.693.94-4.794 2.393A5 5 0 0 0 13 18a4.966 4.966 0 0 0 3.584-1.553A4.978 4.978 0 0 0 18 13h-6"></path>
-                        </svg>
-                        <div>
-                          <span className="font-medium text-foreground">Sustainability</span>
-                          <p className="text-sm text-muted-foreground">Prioritize eco-friendly products and locally sourced items</p>
-                        </div>
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <h4 className="font-bold mb-4 text-gray-900 text-lg">Select your preferred retailers <span className="text-sm font-normal text-gray-500">(optional)</span></h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    {retailers && retailers.map((retailer: any) => {
-                      const logoUrl = getCompanyLogo(retailer.name);
-
-                      return (
-                        <div key={retailer.id} className="flex items-center space-x-3 p-2 border border-gray-200 rounded-lg hover:bg-gray-50">
-                          <input 
-                            type="checkbox" 
-                            id={`retailer-${retailer.id}`}
-                            checked={selectedRetailers.includes(retailer.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedRetailers([...selectedRetailers, retailer.id]);
-                              } else {
-                                setSelectedRetailers(selectedRetailers.filter(id => id !== retailer.id));
-                              }
-                            }}
-                            className="h-5 w-5 text-primary rounded border-2 border-gray-400"
-                          />
-                          <div className="flex items-center">
-                            {logoUrl ? (
-                              <img 
-                                src={logoUrl} 
-                                alt={retailer.name} 
-                                className="h-6 w-6 mr-2 object-contain" 
-                              />
-                            ) : (
-                              <div 
-                                className="h-6 w-6 mr-2 rounded-full flex items-center justify-center"
-                                style={{backgroundColor: retailer.logoColor || '#4A7CFA'}}
-                              >
-                                <span className="text-sm text-white font-bold">
-                                  {retailer.name.charAt(0)}
-                                </span>
-                              </div>
-                            )}
-                            <Label htmlFor={`retailer-${retailer.id}`} className="text-sm font-semibold text-gray-900 cursor-pointer">
-                              {retailer.name}
-                            </Label>
-                          </div>
-                        </div>
-                      );
-                    })}
                   </div>
+                  <Badge variant="outline">~35 min</Badge>
                 </div>
-
-                <Button 
-                  className="w-full mt-2"
-                  onClick={() => {
-                    const retailerCount = selectedRetailers.length;
-                    const retailerText = retailerCount === 0 
-                      ? "all available retailers" 
-                      : `${retailerCount} selected retailers`;
-                    
-                    toast({
-                      title: "Shopping List Optimized",
-                      description: `Optimized for ${optimizationPreference} across ${retailerText}`
-                    });
-                  }}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14 13.341C14 14.793 10.848 15.643 9.5 15.643C8.152 15.643 5 14.793 5 13.341C5 11.89 8.152 11.04 9.5 11.04C10.848 11.04 14 11.89 14 13.341Z"/>
-                    <path d="M14 13.341V17.693C14 18.982 11.183 19.996 9.5 19.996C7.817 19.996 5 18.982 5 17.693V13.341"/>
-                    <path d="M18.71 7.314C18.71 8.936 15.143 9.914 13.5 9.914C11.857 9.914 8.29 8.936 8.29 7.314C8.29 5.692 11.857 4.714 13.5 4.714C15.143 4.714 18.71 5.692 18.71 7.314Z"/>
-                    <path d="M18.71 7.314V11.9C18.71 12.913 17.5 13.8 15.807 14.267"/>
-                    <path d="M13.5 9.914C11.857 9.914 8.29 8.936 8.29 7.314"/>
-                  </svg>
-                  Optimize Shopping List
-                </Button>
               </CardContent>
             </Card>
 
-            <Card>
+            {/* Best Value Plan */}
+            <Card className="cursor-pointer hover:shadow-md transition-shadow border-green-200" onClick={() => {
+              const planData = encodeURIComponent(JSON.stringify({
+                type: 'best-value',
+                shoppingListId: defaultList?.id
+              }));
+              window.location.href = `/auto-order?listId=${defaultList?.id}&planData=${planData}`;
+            }}>
               <CardContent className="p-4">
-                <h4 className="font-semibold mb-3">Expiring Deals Alert</h4>
-                <div className="space-y-3">
-                  {expiringDeals.map(deal => (
-                    <div key={deal.id} className="flex justify-between items-center border-b pb-2">
-                      <div>
-                        <p className="font-medium">{deal.product}</p>
-                        <div className="flex text-xs text-gray-500 space-x-3 mt-1">
-                          <span>{deal.retailer}</span>
-                          <span className="text-red-500">Expires: {deal.expires}</span>
-                        </div>
-                      </div>
-                      <Badge>{deal.discount} off</Badge>
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center">
+                    <div className="bg-green-100 p-3 rounded-lg mr-4">
+                      <DollarSign className="h-6 w-6 text-green-600" />
                     </div>
-                  ))}
+                    <div>
+                      <h4 className="font-bold text-lg text-gray-900">Best Value</h4>
+                      <p className="text-sm text-gray-600 mt-1">Maximum savings across multiple stores</p>
+                      <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                        <span>• Lowest prices</span>
+                        <span>• Multiple trips</span>
+                        <span>• Best deals</span>
+                      </div>
+                    </div>
+                  </div>
+                  <Badge className="bg-green-100 text-green-800">Most Savings</Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Balanced Plan */}
+            <Card className="cursor-pointer hover:shadow-md transition-shadow border-purple-200" onClick={() => {
+              const planData = encodeURIComponent(JSON.stringify({
+                type: 'balanced',
+                shoppingListId: defaultList?.id
+              }));
+              window.location.href = `/auto-order?listId=${defaultList?.id}&planData=${planData}`;
+            }}>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center">
+                    <div className="bg-purple-100 p-3 rounded-lg mr-4">
+                      <BarChart2 className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-lg text-gray-900">Balanced Plan</h4>
+                      <p className="text-sm text-gray-600 mt-1">Good savings with reasonable convenience</p>
+                      <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                        <span>• Moderate savings</span>
+                        <span>• 2-3 stores</span>
+                        <span>• Time efficient</span>
+                      </div>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="text-purple-700 border-purple-200">~45 min</Badge>
                 </div>
               </CardContent>
             </Card>
           </div>
+
+          <Card>
+            <CardContent className="p-4">
+              <h4 className="font-semibold mb-3">Expiring Deals Alert</h4>
+              <div className="space-y-3">
+                {expiringDeals.map(deal => (
+                  <div key={deal.id} className="flex justify-between items-center border-b pb-2">
+                    <div>
+                      <p className="font-medium">{deal.product}</p>
+                      <div className="flex text-xs text-gray-500 space-x-3 mt-1">
+                        <span>{deal.retailer}</span>
+                        <span className="text-red-500">Expires: {deal.expires}</span>
+                      </div>
+                    </div>
+                    <Badge>{deal.discount} off</Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="route" className="space-y-4">
