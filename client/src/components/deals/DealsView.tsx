@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,29 +14,47 @@ import type { StoreDeal, Retailer } from '@/lib/types';
 interface DealsViewProps {
   searchQuery?: string;
   activeFilter?: string | null;
+  retailerId?: number | null;
 }
 
-const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = null }) => {
+const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = null, retailerId = null }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedRetailerId, setSelectedRetailerId] = useState<number | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  
+
   const { data: retailers, isLoading: loadingRetailers } = useQuery<Retailer[]>({
     queryKey: ['/api/retailers'],
   });
-  
+
   // Determine effective category from either dropdown or quick filter
   const effectiveCategory = selectedCategory || (activeFilter && !['featured', 'nearby'].includes(activeFilter) ? activeFilter : null);
-  
+
   const { data: storeDeals, isLoading: loadingDeals } = useQuery<StoreDeal[]>({
-    queryKey: ['/api/deals', selectedRetailerId, effectiveCategory, searchQuery, activeFilter],
+    queryKey: ['/api/deals', { retailerId, category: activeFilter }],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (retailerId) {
+        params.append('retailerId', retailerId.toString());
+      }
+      if (activeFilter) {
+        params.append('category', activeFilter);
+      }
+
+      const response = await fetch(`/api/deals?${params.toString()}`, {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch deals');
+      }
+      return response.json();
+    },
   });
-  
+
   const { data: categories } = useQuery<string[]>({
     queryKey: ['/api/deals/categories'],
   });
-  
+
   const addToShoppingListMutation = useMutation({
     mutationFn: async (deal: StoreDeal) => {
       const response = await apiRequest('POST', '/api/shopping-list/items', {
@@ -55,7 +72,7 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
       });
     }
   });
-  
+
   const getRetailerColor = (retailerId: number) => {
     const retailer = retailers?.find(r => r.id === retailerId);
     const colorMap: Record<string, string> = {
@@ -140,15 +157,15 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
         <div className="space-y-3 pb-8">
           {storeDeals
             .filter(deal => {
-              // Apply quick filter logic
-              if (activeFilter === 'featured') {
-                return deal.featured || calculateSavings(deal.regularPrice, deal.salePrice) >= 30;
-              }
-              if (activeFilter === 'nearby') {
-                // For demo purposes, show deals from first 3 retailers as "nearby"
-                return deal.retailerId <= 3;
-              }
-              return true;
+              // Filter deals based on search query and special filters
+              const matchesSearch = searchQuery === '' || 
+                deal.productName.toLowerCase().includes(searchQuery.toLowerCase());
+
+              const matchesFilter = !activeFilter || 
+                (activeFilter === 'featured' && deal.salePrice < deal.regularPrice * 0.7) ||
+                (activeFilter === 'nearby' && deal.retailerId <= 3);
+
+              return matchesSearch && matchesFilter;
             })
             .map((deal) => (
             <Card key={deal.id} className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
@@ -164,7 +181,7 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
                     <h3 className="font-semibold text-gray-900 text-sm mb-1 line-clamp-2">
                       {deal.productName}
                     </h3>
-                    
+
                     {/* Store Info */}
                     <div className="flex items-center gap-2 mb-2">
                       <Avatar className={`h-5 w-5 ${getRetailerColor(deal.retailerId)}`}>

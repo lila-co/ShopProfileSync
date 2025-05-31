@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -14,6 +14,16 @@ import type { User } from '@/lib/types';
 const DealsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [selectedRetailerId, setSelectedRetailerId] = useState<number | null>(null);
+
+  // Check for retailer query parameter on mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const retailerId = urlParams.get('retailer');
+    if (retailerId) {
+      setSelectedRetailerId(parseInt(retailerId, 10));
+    }
+  }, []);
 
   const { data: user } = useQuery<User>({
     queryKey: ['/api/user/profile'],
@@ -149,7 +159,11 @@ const DealsPage: React.FC = () => {
 
         {/* Deals Content */}
         <div className="flex-1">
-          <DealsView searchQuery={searchQuery} activeFilter={activeFilter} />
+          <DealsView 
+            searchQuery={searchQuery} 
+            activeFilter={activeFilter}
+            retailerId={selectedRetailerId}
+          />
         </div>
       </main>
 

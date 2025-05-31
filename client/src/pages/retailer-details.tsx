@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams } from 'wouter';
+import { useParams, useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
@@ -17,6 +17,7 @@ interface Retailer {
 
 const RetailerDetailsPage: React.FC = () => {
   const { id } = useParams();
+  const [, navigate] = useLocation();
   const retailerId = parseInt(id || '0');
 
   const { data: retailer, isLoading, error } = useQuery<Retailer>({
@@ -78,11 +79,37 @@ const RetailerDetailsPage: React.FC = () => {
 
         {/* Store Actions */}
         <div className="space-y-3 mb-6">
-          <Button className="w-full" variant="default">
+          <Button 
+            className="w-full" 
+            variant="default"
+            onClick={() => navigate(`/deals?retailer=${retailer.id}`)}
+          >
             <Store className="h-4 w-4 mr-2" />
             View Current Deals
           </Button>
-          <Button className="w-full" variant="outline">
+          <Button 
+            className="w-full" 
+            variant="outline"
+            onClick={() => {
+              if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                  (position) => {
+                    const { latitude, longitude } = position.coords;
+                    const searchQuery = encodeURIComponent(`${retailer.name} store near me`);
+                    window.open(`https://www.google.com/maps/search/${searchQuery}/@${latitude},${longitude},15z`, '_blank');
+                  },
+                  (error) => {
+                    console.error('Error getting location:', error);
+                    // Fallback to generic search if location access is denied
+                    window.open(`https://www.google.com/maps/search/${encodeURIComponent(retailer.name)}+store+locations`, '_blank');
+                  }
+                );
+              } else {
+                // Fallback for browsers that don't support geolocation
+                window.open(`https://www.google.com/maps/search/${encodeURIComponent(retailer.name)}+store+locations`, '_blank');
+              }
+            }}
+          >
             <MapPin className="h-4 w-4 mr-2" />
             Find Store Locations
           </Button>
