@@ -8,7 +8,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Plus, ShoppingBag, FileText, Clock, Check, Trash2, AlertTriangle, DollarSign, MapPin, Car, BarChart2, Wand2, Pencil, Image } from 'lucide-react';
+import { Plus, ShoppingBag, FileText, Clock, Check, Trash2, AlertTriangle, DollarSign, MapPin, Car, BarChart2, Wand2, Pencil, Image, Star, TrendingDown, Percent } from 'lucide-react';
 import { getItemImage, getBestProductImage, getCompanyLogo } from '@/lib/imageUtils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -466,6 +466,62 @@ const ShoppingListComponent: React.FC = () => {
 
   const items = sortItemsByCategory(rawItems);
 
+  // Enhanced recommendations with more details for the recommendations tab
+  const enhancedRecommendations = [
+    {
+      id: 1,
+      productName: 'Organic Milk (Gallon)',
+      currentPrice: 459,
+      salePrice: 389,
+      savings: 70,
+      retailer: 'Whole Foods',
+      distance: '1.2 miles',
+      dealExpires: '2 days',
+      reason: 'You buy milk every 6 days. Stock up on this 15% off deal.',
+      rating: 4.8,
+      category: 'Dairy'
+    },
+    {
+      id: 2,
+      productName: 'Free-Range Eggs (Dozen)',
+      currentPrice: 349,
+      salePrice: 279,
+      savings: 70,
+      retailer: 'Target',
+      distance: '0.8 miles',
+      dealExpires: '1 day',
+      reason: 'Running low based on your purchase pattern. Great deal expires soon!',
+      rating: 4.6,
+      category: 'Dairy'
+    },
+    {
+      id: 3,
+      productName: 'Ground Turkey (1 lb)',
+      currentPrice: 599,
+      salePrice: 449,
+      savings: 150,
+      retailer: 'Walmart',
+      distance: '2.1 miles',
+      dealExpires: '4 days',
+      reason: 'Healthy protein alternative. 25% off this week.',
+      rating: 4.3,
+      category: 'Meat'
+    },
+    {
+      id: 4,
+      productName: 'Organic Bananas (3 lbs)',
+      currentPrice: 299,
+      salePrice: 199,
+      savings: 100,
+      retailer: 'Kroger',
+      distance: '1.5 miles',
+      dealExpires: '3 days',
+      reason: 'Your most purchased fruit. Stock up at lowest price this month.',
+      rating: 4.7,
+      category: 'Produce'
+    }
+  ];
+
   return (
     <div className="p-3 sm:p-4 pb-20">
 
@@ -504,7 +560,7 @@ const ShoppingListComponent: React.FC = () => {
           <Plus className="h-5 w-5 text-blue-600 mr-2" />
           <h3 className="text-lg font-semibold text-gray-900">Add New Item</h3>
         </div>
-        
+
         <form onSubmit={handleAddItem}>
           <div className="flex space-x-2 mb-3">
             <Input
@@ -582,7 +638,7 @@ const ShoppingListComponent: React.FC = () => {
       </div>
 
       <Tabs defaultValue="list" className="mt-2">
-        <TabsList className="grid w-full grid-cols-2 mb-3 h-10 bg-gray-100 border border-gray-300">
+        <TabsList className="grid w-full grid-cols-3 mb-3 h-10 bg-gray-100 border border-gray-300">
           <TabsTrigger value="list" className="flex items-center justify-center text-sm font-semibold py-2 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-700 hover:text-gray-900">
             <ShoppingBag className="h-4 w-4 mr-1" />
             List
@@ -590,6 +646,10 @@ const ShoppingListComponent: React.FC = () => {
           <TabsTrigger value="optimize" className="flex items-center justify-center text-sm font-semibold py-2 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-700 hover:text-gray-900">
             <BarChart2 className="h-4 w-4 mr-1" />
             Optimize
+          </TabsTrigger>
+           <TabsTrigger value="recommendations" className="flex items-center justify-center text-sm font-semibold py-2 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-700 hover:text-gray-900">
+            <BarChart2 className="h-4 w-4 mr-1" />
+            Recommendations
           </TabsTrigger>
         </TabsList>
 
@@ -801,7 +861,7 @@ const ShoppingListComponent: React.FC = () => {
           </ScrollArea>
         </TabsContent>
 
-        
+
 
         <TabsContent value="optimize" className="space-y-4">
           <h3 className="text-xl font-bold mb-2 text-gray-900">Shopping Plans</h3>
@@ -837,7 +897,7 @@ const ShoppingListComponent: React.FC = () => {
                     <span className="font-semibold text-blue-800">Walmart</span>
                     <span className="text-sm text-blue-600">{items.length} items</span>
                   </div>
-                  
+
                   <div className="space-y-2 mb-3">
                     <div className="text-sm">
                       <div className="flex justify-between">
@@ -905,7 +965,7 @@ const ShoppingListComponent: React.FC = () => {
                     <span className="font-semibold text-green-800">Multi-Store Plan</span>
                     <span className="text-sm text-green-600">3 stores</span>
                   </div>
-                  
+
                   <div className="space-y-2 mb-3">
                     <div className="text-sm">
                       <div className="flex justify-between">
@@ -976,7 +1036,7 @@ const ShoppingListComponent: React.FC = () => {
                     <span className="font-semibold text-purple-800">Balanced Plan</span>
                     <span className="text-sm text-purple-600">2 stores</span>
                   </div>
-                  
+
                   <div className="space-y-2 mb-3">
                     <div className="text-sm">
                       <div className="flex justify-between">
@@ -1042,7 +1102,80 @@ const ShoppingListComponent: React.FC = () => {
           </Card>
         </TabsContent>
 
-        
+        <TabsContent value="recommendations" className="space-y-4">
+          <h3 className="text-lg font-semibold mb-4">Smart Recommendations</h3>
+          <p className="text-gray-600 text-sm mb-4">Maximize savings on your typical purchases</p>
+
+          <div className="space-y-3">
+            {enhancedRecommendations.map((item) => (
+              <Card key={item.id} className="transition-all hover:shadow-md">
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-800 mb-1">{item.productName}</h4>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Star className="h-3 w-3 text-yellow-500 fill-current" />
+                        <span className="text-xs text-gray-600">{item.rating}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-500 line-through">
+                          ${(item.currentPrice / 100).toFixed(2)}
+                        </span>
+                        <span className="font-bold text-primary">
+                          ${(item.salePrice / 100).toFixed(2)}
+                        </span>
+                      </div>
+                      <Badge variant="secondary" className="bg-green-50 text-green-700 mt-1">
+                        <TrendingDown className="h-3 w-3 mr-1" />
+                        ${(item.savings / 100).toFixed(2)} off
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center text-sm text-gray-600">
+                      <MapPin className="h-3 w-3 mr-1" />
+                      {item.retailer} • {item.distance}
+                    </div>
+                    <div className="flex items-center text-sm text-orange-600">
+                      <Clock className="h-3 w-3 mr-1" />
+                      Deal expires in {item.dealExpires}
+                    </div>
+                    <p className="text-sm text-gray-600">{item.reason}</p>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Percent className="h-4 w-4 text-green-600 mr-1" />
+                      <span className="text-sm font-medium text-green-600">
+                        {Math.round((item.savings / item.currentPrice) * 100)}% off
+                      </span>
+                    </div>
+                    <Button 
+                      size="sm" 
+                      className="bg-primary hover:bg-primary/90"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addItemMutation.mutate({
+                          productName: item.productName,
+                          quantity: 1,
+                          unit: 'COUNT'
+                        });
+                      }}
+                      disabled={addItemMutation.isPending}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      {addItemMutation.isPending ? "Adding..." : "Add to List"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+
       </Tabs>
 
       {/* Recipe Dialog */}
