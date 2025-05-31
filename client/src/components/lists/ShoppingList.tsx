@@ -615,7 +615,7 @@ const ShoppingListComponent: React.FC = () => {
             variant="default" 
             size="lg" 
             onClick={() => previewGenerateMutation.mutate()}
-            className="flex items-center justify-center h-12 text-base font-semibold bg-primary text-white border-2 border-primary hover:bg-primary/90 shadow-md transition-all"
+            className="flex items-center justify-center h-12 text-base font-semibold bg-slate-700 text-white border-2 border-slate-700 hover:bg-slate-800 shadow-md transition-all"
             disabled={previewGenerateMutation.isPending}
           >
             <Wand2 className="h-5 w-5 mr-2" />
