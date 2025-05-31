@@ -555,13 +555,13 @@ const ShoppingListComponent: React.FC = () => {
           </Select>
         </div>
 
-        <div className="flex items-center space-x-2 mt-2 text-sm text-gray-600">
+        <div className="flex items-center space-x-2 mt-2 text-sm text-gray-800">
           <Switch 
             checked={autoDetectUnit} 
             onCheckedChange={setAutoDetectUnit}
             id="auto-detect"
           />
-          <Label htmlFor="auto-detect" className="cursor-pointer flex items-center">
+          <Label htmlFor="auto-detect" className="cursor-pointer flex items-center font-medium text-gray-800">
             <Wand2 className="h-3.5 w-3.5 mr-1.5" /> 
             Auto-detect best unit based on item name
           </Label>
@@ -569,21 +569,21 @@ const ShoppingListComponent: React.FC = () => {
       </form>
 
       <Tabs defaultValue="list" className="mt-2">
-        <TabsList className="grid w-full grid-cols-4 mb-3 h-8">
-          <TabsTrigger value="list" className="flex items-center justify-center text-xs font-medium py-1">
-            <ShoppingBag className="h-3 w-3 mr-1" />
+        <TabsList className="grid w-full grid-cols-4 mb-3 h-10 bg-gray-100 border border-gray-300">
+          <TabsTrigger value="list" className="flex items-center justify-center text-sm font-semibold py-2 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-700 hover:text-gray-900">
+            <ShoppingBag className="h-4 w-4 mr-1" />
             List
           </TabsTrigger>
-          <TabsTrigger value="price" className="flex items-center justify-center text-xs font-medium py-1">
-            <DollarSign className="h-3 w-3 mr-1" />
+          <TabsTrigger value="price" className="flex items-center justify-center text-sm font-semibold py-2 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-700 hover:text-gray-900">
+            <DollarSign className="h-4 w-4 mr-1" />
             Price
           </TabsTrigger>
-          <TabsTrigger value="optimize" className="flex items-center justify-center text-xs font-medium py-1">
-            <BarChart2 className="h-3 w-3 mr-1" />
+          <TabsTrigger value="optimize" className="flex items-center justify-center text-sm font-semibold py-2 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-700 hover:text-gray-900">
+            <BarChart2 className="h-4 w-4 mr-1" />
             Optimize
           </TabsTrigger>
-          <TabsTrigger value="route" className="flex items-center justify-center text-xs font-medium py-1">
-            <Car className="h-3 w-3 mr-1" />
+          <TabsTrigger value="route" className="flex items-center justify-center text-sm font-semibold py-2 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-700 hover:text-gray-900">
+            <Car className="h-4 w-4 mr-1" />
             Route
           </TabsTrigger>
         </TabsList>
@@ -940,8 +940,8 @@ const ShoppingListComponent: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="optimize" className="space-y-4">
-          <h3 className="text-lg font-semibold mb-2">Shopping List Optimization</h3>
-          <p className="text-sm text-gray-500 mb-4">
+          <h3 className="text-xl font-bold mb-2 text-gray-900">Shopping List Optimization</h3>
+          <p className="text-base text-gray-700 mb-4 font-medium">
             Set your preferences to optimize your shopping experience across multiple retailers.
           </p>
 
@@ -949,54 +949,54 @@ const ShoppingListComponent: React.FC = () => {
             <Card>
               <CardContent className="p-4 space-y-4">
                 <div>
-                  <h4 className="font-semibold mb-3">What matters most to you?</h4>
+                  <h4 className="font-bold mb-4 text-gray-900 text-lg">What matters most to you?</h4>
                   <RadioGroup 
-                    className="space-y-2" 
+                    className="space-y-3" 
                     value={optimizationPreference}
                     onValueChange={setOptimizationPreference}
                   >
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
                       <RadioGroupItem value="cost" id="cost" />
-                      <Label htmlFor="cost" className="flex items-center">
-                        <DollarSign className="h-4 w-4 mr-2 text-green-600" />
+                      <Label htmlFor="cost" className="flex items-center cursor-pointer">
+                        <DollarSign className="h-5 w-5 mr-3 text-green-600" />
                         <div>
-                          <span className="font-medium">Cost Savings</span>
-                          <p className="text-xs text-gray-500">Prioritize getting the best prices, even if it means shopping at multiple stores</p>
+                          <span className="font-semibold text-gray-900">Cost Savings</span>
+                          <p className="text-sm text-gray-700">Prioritize getting the best prices, even if it means shopping at multiple stores</p>
                         </div>
                       </Label>
                     </div>
 
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
                       <RadioGroupItem value="convenience" id="convenience" />
-                      <Label htmlFor="convenience" className="flex items-center">
-                        <Clock className="h-4 w-4 mr-2 text-blue-600" />
+                      <Label htmlFor="convenience" className="flex items-center cursor-pointer">
+                        <Clock className="h-5 w-5 mr-3 text-blue-600" />
                         <div>
-                          <span className="font-medium">Convenience</span>
-                          <p className="text-xs text-gray-500">Shop at a single store even if some items cost more</p>
+                          <span className="font-semibold text-gray-900">Convenience</span>
+                          <p className="text-sm text-gray-700">Shop at a single store even if some items cost more</p>
                         </div>
                       </Label>
                     </div>
 
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
                       <RadioGroupItem value="quality" id="quality" />
-                      <Label htmlFor="quality" className="flex items-center">
-                        <Check className="h-4 w-4 mr-2 text-purple-600" />
+                      <Label htmlFor="quality" className="flex items-center cursor-pointer">
+                        <Check className="h-5 w-5 mr-3 text-purple-600" />
                         <div>
-                          <span className="font-medium">Quality</span>
-                          <p className="text-xs text-gray-500">Prioritize preferred brands and specialty stores</p>
+                          <span className="font-semibold text-gray-900">Quality</span>
+                          <p className="text-sm text-gray-700">Prioritize preferred brands and specialty stores</p>
                         </div>
                       </Label>
                     </div>
 
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
                       <RadioGroupItem value="sustainability" id="sustainability" />
-                      <Label htmlFor="sustainability" className="flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <Label htmlFor="sustainability" className="flex items-center cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M18 8a5 5 0 0 0-5-5c-1.956 0-3.693.94-4.794 2.393A5 5 0 0 0 13 18a4.966 4.966 0 0 0 3.584-1.553A4.978 4.978 0 0 0 18 13h-6"></path>
                         </svg>
                         <div>
-                          <span className="font-medium">Sustainability</span>
-                          <p className="text-xs text-gray-500">Prioritize eco-friendly products and locally sourced items</p>
+                          <span className="font-semibold text-gray-900">Sustainability</span>
+                          <p className="text-sm text-gray-700">Prioritize eco-friendly products and locally sourced items</p>
                         </div>
                       </Label>
                     </div>
@@ -1006,13 +1006,13 @@ const ShoppingListComponent: React.FC = () => {
                 <Separator />
 
                 <div>
-                  <h4 className="font-semibold mb-3">Select your preferred retailers</h4>
-                  <div className="grid grid-cols-2 gap-2">
+                  <h4 className="font-bold mb-4 text-gray-900 text-lg">Select your preferred retailers</h4>
+                  <div className="grid grid-cols-2 gap-3">
                     {retailers && retailers.map((retailer: any) => {
                       const logoUrl = getCompanyLogo(retailer.name);
 
                       return (
-                        <div key={retailer.id} className="flex items-center space-x-2">
+                        <div key={retailer.id} className="flex items-center space-x-3 p-2 border border-gray-200 rounded-lg hover:bg-gray-50">
                           <input 
                             type="checkbox" 
                             id={`retailer-${retailer.id}`}
@@ -1024,26 +1024,26 @@ const ShoppingListComponent: React.FC = () => {
                                 setSelectedRetailers(selectedRetailers.filter(id => id !== retailer.id));
                               }
                             }}
-                            className="h-4 w-4 text-primary rounded"
+                            className="h-5 w-5 text-primary rounded border-2 border-gray-400"
                           />
                           <div className="flex items-center">
                             {logoUrl ? (
                               <img 
                                 src={logoUrl} 
                                 alt={retailer.name} 
-                                className="h-5 w-5 mr-2 object-contain" 
+                                className="h-6 w-6 mr-2 object-contain" 
                               />
                             ) : (
                               <div 
-                                className="h-5 w-5 mr-2 rounded-full flex items-center justify-center"
+                                className="h-6 w-6 mr-2 rounded-full flex items-center justify-center"
                                 style={{backgroundColor: retailer.logoColor || '#4A7CFA'}}
                               >
-                                <span className="text-xs text-white font-bold">
+                                <span className="text-sm text-white font-bold">
                                   {retailer.name.charAt(0)}
                                 </span>
                               </div>
                             )}
-                            <Label htmlFor={`retailer-${retailer.id}`} className="text-sm">
+                            <Label htmlFor={`retailer-${retailer.id}`} className="text-sm font-semibold text-gray-900 cursor-pointer">
                               {retailer.name}
                             </Label>
                           </div>
@@ -1098,15 +1098,15 @@ const ShoppingListComponent: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="route" className="space-y-4">
-          <h3 className="text-lg font-semibold mb-2">Shopping Route</h3>
-          <p className="text-sm text-gray-500 mb-4">
+          <h3 className="text-xl font-bold mb-2 text-gray-900">Shopping Route</h3>
+          <p className="text-base text-gray-700 mb-4 font-medium">
             Plan the optimal route for your shopping trip across multiple stores.
           </p>
 
           <Card>
             <CardContent className="p-4 space-y-4">
               <div className="flex items-center justify-between">
-                <h4 className="font-semibold">Map Route</h4>
+                <h4 className="font-bold text-gray-900 text-lg">Map Route</h4>
                 <Switch 
                   checked={showRouteMap} 
                   onCheckedChange={setShowRouteMap}
@@ -1114,7 +1114,7 @@ const ShoppingListComponent: React.FC = () => {
               </div>
 
               <div>
-                <h5 className="text-sm font-medium mb-2">Selected Retailers</h5>
+                <h5 className="text-base font-bold mb-3 text-gray-900">Selected Retailers</h5>
                 <div className="grid grid-cols-2 gap-2">
                   {retailers && retailers.map((retailer: any) => (
                     <div key={retailer.id} className="flex items-center space-x-2">
