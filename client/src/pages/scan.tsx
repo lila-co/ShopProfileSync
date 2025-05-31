@@ -1,3 +1,6 @@
+Applying mobile-first design and optimizing scan results display for mobile devices in the ScanPage component.
+```
+```replit_final_file
 import React from 'react';
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';

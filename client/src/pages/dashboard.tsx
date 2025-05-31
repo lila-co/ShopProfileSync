@@ -28,10 +28,10 @@ const Dashboard: React.FC = () => {
   });
 
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
+    <div className="max-w-md sm:max-w-4xl mx-auto bg-white min-h-screen flex flex-col">
       <Header user={user} />
 
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto p-3 sm:p-4 pb-20">
         <div className="p-4 pb-20">
           {/* Welcome Section */}
           <section className="mb-6">
