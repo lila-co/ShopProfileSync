@@ -143,7 +143,7 @@ const ShoppingListComponent: React.FC = () => {
       try {
         // Get AI categorization with count optimization
         const aiResult = await aiCategorizationService.categorizeProduct(productName, quantity, unit);
-        
+
         if (aiResult && aiResult.confidence > 0.7) {
           // Use AI suggestions if confidence is high
           if (aiResult.suggestedQuantity && aiResult.suggestedQuantity !== quantity) {
@@ -164,7 +164,7 @@ const ShoppingListComponent: React.FC = () => {
         }
       } catch (error) {
         console.warn('AI optimization failed, using fallback logic:', error);
-        
+
         // Fallback historical size preferences
         const lowerName = productName.toLowerCase();
         if (lowerName.includes('milk')) {
@@ -1159,7 +1159,7 @@ const ShoppingListComponent: React.FC = () => {
             </Card>
           </div>
 
-          
+
         </TabsContent>
 
         <TabsContent value="recommendations" className="space-y-4">
