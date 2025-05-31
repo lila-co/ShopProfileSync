@@ -582,7 +582,7 @@ const ShoppingListComponent: React.FC = () => {
       </div>
 
       <Tabs defaultValue="list" className="mt-2">
-        <TabsList className="grid w-full grid-cols-3 mb-3 h-10 bg-gray-100 border border-gray-300">
+        <TabsList className="grid w-full grid-cols-2 mb-3 h-10 bg-gray-100 border border-gray-300">
           <TabsTrigger value="list" className="flex items-center justify-center text-sm font-semibold py-2 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-700 hover:text-gray-900">
             <ShoppingBag className="h-4 w-4 mr-1" />
             List
@@ -590,10 +590,6 @@ const ShoppingListComponent: React.FC = () => {
           <TabsTrigger value="optimize" className="flex items-center justify-center text-sm font-semibold py-2 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-700 hover:text-gray-900">
             <BarChart2 className="h-4 w-4 mr-1" />
             Optimize
-          </TabsTrigger>
-          <TabsTrigger value="route" className="flex items-center justify-center text-sm font-semibold py-2 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-700 hover:text-gray-900">
-            <Car className="h-4 w-4 mr-1" />
-            Route
           </TabsTrigger>
         </TabsList>
 
@@ -1049,102 +1045,7 @@ const ShoppingListComponent: React.FC = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="route" className="space-y-4">
-          <h3 className="text-xl font-bold mb-2 text-foreground">Shopping Route</h3>
-          <p className="text-base text-gray-700 mb-4 font-medium">
-            Plan the optimal route for your shopping trip across multiple stores.
-          </p>
-
-          <Card>
-            <CardContent className="p-4 space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="font-bold text-foreground text-lg">Map Route</h4>
-                <Switch 
-                  checked={showRouteMap} 
-                  onCheckedChange={setShowRouteMap}
-                />
-              </div>
-
-              <div>
-                <h5 className="text-base font-bold mb-3 text-foreground">Selected Retailers</h5>
-                <div className="grid grid-cols-2 gap-2">
-                  {retailers && retailers.map((retailer: any) => (
-                    <div key={retailer.id} className="flex items-center space-x-2">
-                      <input 
-                        type="checkbox" 
-                        id={`route-retailer-${retailer.id}`}
-                        checked={selectedRetailers.includes(retailer.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedRetailers([...selectedRetailers, retailer.id]);
-                          } else {
-                            setSelectedRetailers(selectedRetailers.filter(id => id !== retailer.id));
-                          }
-                        }}
-                        className="h-4 w-4 text-primary rounded"
-                      />
-                      <Label htmlFor={`route-retailer-${retailer.id}`} className="text-sm">{retailer.name}</Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {showRouteMap && (
-                <div className="mt-4 border rounded-lg overflow-hidden relative h-64 bg-gray-200">
-                  {isLoadingRoute ? (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="h-8 w-8 border-4 border-t-primary border-gray-300 rounded-full animate-spin"></div>
-                    </div>
-                  ) : routeData ? (
-                    <div className="absolute inset-0">
-                      <div className="p-3 bg-white/80 backdrop-blur-sm z-10 absolute bottom-0 left-0 right-0">
-                        <div className="flex justify-between items-center mb-2">
-                          <h6 className="font-medium">Optimized Route</h6>
-                          <span className="text-sm text-gray-600">{routeData.totalDistance.toFixed(1)} miles</span>
-                        </div>
-                        <div className="flex space-x-2">
-                          {routeData.retailers.map((retailer: any, index: number) => (
-                            <div key={retailer.id} className="text-xs text-center">
-                              <div className="bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center mx-auto">
-                                {index + 1}
-                              </div>
-                              <span className="block mt-1">{retailer.name}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="h-full w-full bg-gray-100 flex items-center justify-center">
-                        <div className="text-center text-gray-400">
-                          <MapPin className="h-8 w-8 mx-auto mb-2" />
-                          <p className="text-sm">Map visualization would go here</p>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
-                      <Car className="h-8 w-8 mb-2" />
-                      <p>Select retailers to view route</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <Button 
-                className="w-full mt-2"
-                disabled={selectedRetailers.length < 2}
-                onClick={() => {
-                  toast({
-                    title: "Shopping Route Created",
-                    description: `Optimized route for ${selectedRetailers.length} stores`
-                  });
-                }}
-              >
-                <Car className="h-4 w-4 mr-2" />
-                Generate Shopping Route
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
+        
       </Tabs>
 
       {/* Recipe Dialog */}
