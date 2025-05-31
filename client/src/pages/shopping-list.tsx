@@ -1675,7 +1675,7 @@ const ShoppingListPage: React.FC = () => {
                                   }, `Single Store - ${singleStoreOptimization.data?.retailerName || "Loading..."}`)}
                                 >
                                   <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                                  View Full Shopping Plan
+                                  View List
                                 </Button>
                                 <Button 
                                   size="sm" 
@@ -1757,7 +1757,7 @@ const ShoppingListPage: React.FC = () => {
                                   }, "Best Value - Multi-Store")}
                                 >
                                   <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                                  View Full Shopping Plan
+                                  View List
                                 </Button>
                                 <Button 
                                   size="sm" 
@@ -1841,7 +1841,7 @@ const ShoppingListPage: React.FC = () => {
                                   }, `Balanced - ${balancedOptimization.data?.stores?.[0]?.retailerName || "Loading..."}`)}
                                 >
                                   <BarChart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                                  View Full Shopping Plan
+                                  View List
                                 </Button>
                                 <Button 
                                   size="sm" 
