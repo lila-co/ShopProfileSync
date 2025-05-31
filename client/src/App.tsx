@@ -18,6 +18,8 @@ import { queryClient } from '@/lib/queryClient';
 import Shop from '@/pages/shop'; // Import the Shop component
 import ShoppingRoute from '@/pages/shopping-route'; // Import the ShoppingRoute component
 import AutoOrder from './pages/auto-order';
+import RetailerDetailsPage from './pages/retailer-details';
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
