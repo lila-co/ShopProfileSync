@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import ShoppingListComponent from '@/components/lists/ShoppingList';
+import ShoppingListComponent from '@/components/lists/ShoppingListSimple';
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
 import type { ShoppingList as ShoppingListType, User } from '@/lib/types';

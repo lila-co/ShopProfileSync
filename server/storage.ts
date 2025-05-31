@@ -2606,12 +2606,7 @@ const [updatedUser] = await db
     return db.select()
       .from(shoppingLists)
       .where(
-        and(
-          eq(shoppingLists.userId, userId),
-          or(
-            ilike(shoppingLists.name, `%${query}%`)
-          )
-        )
+        eq(shoppingLists.userId, userId)
       );
   }
 
@@ -2749,4 +2744,4 @@ const [updatedUser] = await db
 }
 
 // Use database storage for persistence
-export const storage = new DatabaseStorage();
+export const storage = new MemStorage();
