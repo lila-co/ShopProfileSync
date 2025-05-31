@@ -648,8 +648,12 @@ const ShoppingListComponent: React.FC = () => {
               placeholder="What do you need to buy? (e.g., milk, bread, apples)"
               value={newItemName}
               onChange={(e) => setNewItemName(e.target.value)}
-              className="flex-1 bg-white border-2 border-gray-400 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium shadow-md hover:border-gray-500 transition-colors"
-              style={{ backgroundColor: 'white !important', boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.1)' }}
+              className="flex-1 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium transition-all"
+              style={{ 
+                backgroundColor: '#f8fafc !important',
+                border: '2px solid #cbd5e1',
+                boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.1)'
+              }}
             />
             <Button 
               type="submit" 
