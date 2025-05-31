@@ -16,7 +16,7 @@ const ShoppingListPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
+      <div className="max-w-md mx-auto bg-background min-h-screen flex flex-col">
         <Header user={user} />
         <main className="flex-1 overflow-y-auto p-4">
           <div className="animate-pulse space-y-4">
@@ -41,7 +41,7 @@ const ShoppingListPage: React.FC = () => {
   const listName = defaultList?.name || 'Shopping List';
 
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
+    <div className="max-w-md mx-auto bg-background min-h-screen flex flex-col">
       <Header 
         title={listName}
         user={user}
