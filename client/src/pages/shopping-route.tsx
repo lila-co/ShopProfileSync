@@ -21,7 +21,6 @@ import {
   CheckCircle2,
   Circle,
   Navigation,
-  Timer,
   Package
 } from 'lucide-react';
 import Header from '@/components/layout/Header';
@@ -42,8 +41,7 @@ const ShoppingRoute: React.FC = () => {
   const [selectedPlanData, setSelectedPlanData] = useState<any>(null);
   const [currentAisleIndex, setCurrentAisleIndex] = useState(0);
   const [completedItems, setCompletedItems] = useState<Set<number>>(new Set());
-  const [startTime, setStartTime] = useState<Date | null>(null);
-  const [elapsedTime, setElapsedTime] = useState(0);
+  
 
   // Fetch shopping list and items
   const { data: shoppingList, isLoading } = useQuery({
@@ -84,7 +82,6 @@ const ShoppingRoute: React.FC = () => {
         // Generate route from the selected plan instead of raw shopping list items
         const route = generateOptimizedShoppingRouteFromPlan(planData);
         setOptimizedRoute(route);
-        setStartTime(new Date());
       } catch (error) {
         console.error('Error parsing plan data:', error);
         // Fallback to original method if plan data is invalid
@@ -98,22 +95,10 @@ const ShoppingRoute: React.FC = () => {
       // Fallback to original method if no plan data is provided
       const route = generateOptimizedShoppingRoute(shoppingList.items);
       setOptimizedRoute(route);
-      setStartTime(new Date());
     }
   }, [shoppingList, planDataParam]);
 
-  // Timer effect
-  useEffect(() => {
-    if (startTime) {
-      const interval = setInterval(() => {
-        const now = new Date();
-        const elapsed = Math.floor((now.getTime() - startTime.getTime()) / 1000);
-        setElapsedTime(elapsed);
-      }, 1000);
-
-      return () => clearInterval(interval);
-    }
-  }, [startTime]);
+  
 
   // Generate optimized shopping route from selected plan data
   const generateOptimizedShoppingRouteFromPlan = (planData: any) => {
@@ -375,11 +360,7 @@ const ShoppingRoute: React.FC = () => {
     };
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  
 
   if (isLoading) {
     return (
@@ -435,10 +416,7 @@ const ShoppingRoute: React.FC = () => {
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Timer className="h-4 w-4" />
-                <span>{formatTime(elapsedTime)}</span>
-              </div>
+              
             </div>
 
             {/* Plan Summary */}
