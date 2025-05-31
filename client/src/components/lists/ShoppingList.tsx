@@ -476,15 +476,15 @@ const ShoppingListComponent: React.FC = () => {
         <div className="flex space-x-2">
           <Button 
             variant="ghost" 
-            size="sm" 
+            size="default" 
             onClick={() => previewGenerateMutation.mutate()}
-            className="text-xs px-2 h-8"
+            className="text-sm px-4 h-10"
           >
-            <Wand2 className="h-3 w-3 mr-1" />
+            <Wand2 className="h-4 w-4 mr-2" />
             Generate List
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => setRecipeDialogOpen(true)} className="text-xs px-2 h-8">
-            <FileText className="h-3 w-3 mr-1" />
+          <Button variant="ghost" size="default" onClick={() => setRecipeDialogOpen(true)} className="text-sm px-4 h-10">
+            <FileText className="h-4 w-4 mr-2" />
             Recipe
           </Button>
         </div>
