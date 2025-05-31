@@ -27,7 +27,7 @@ const ActionCard: React.FC<ActionCardProps> = ({
         {icon}
       </div>
       <span className="text-sm font-medium">{title}</span>
-      {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
+      {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
     </div>
   );
 };
