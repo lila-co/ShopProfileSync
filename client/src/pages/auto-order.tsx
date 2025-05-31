@@ -103,16 +103,35 @@ const AutoOrder: React.FC = () => {
   useEffect(() => {
     if (listId) {
       setCurrentStep(1);
-      Promise.all([
-        singleStoreMutation.mutateAsync(),
-        bestValueMutation.mutateAsync(),
-        balancedMutation.mutateAsync()
-      ]).then(() => {
-        setCurrentStep(2);
-      }).catch((error) => {
-        console.error('Error loading optimization plans:', error);
-        setCurrentStep(0);
+      
+      const loadPlans = async () => {
+        try {
+          await Promise.all([
+            singleStoreMutation.mutateAsync(),
+            bestValueMutation.mutateAsync(),
+            balancedMutation.mutateAsync()
+          ]);
+          setCurrentStep(2);
+        } catch (error) {
+          console.error('Error loading optimization plans:', error);
+          toast({
+            title: "Error Loading Plans",
+            description: "Failed to load optimization plans. Please try again.",
+            variant: "destructive"
+          });
+          setCurrentStep(2); // Still proceed to plan selection
+        }
+      };
+      
+      loadPlans();
+    } else {
+      // No list ID provided, show error
+      toast({
+        title: "Missing List",
+        description: "No shopping list specified for auto-order.",
+        variant: "destructive"
       });
+      navigate('/shopping-list');
     }
   }, [listId]);
 
@@ -239,39 +258,55 @@ const AutoOrder: React.FC = () => {
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">Choose Your Shopping Plan</h3>
         <div className="grid gap-4">
-          {plans.map((plan) => (
-            <Card 
-              key={plan.key}
-              className={`cursor-pointer border-2 transition-colors ${
-                selectedPlan === plan.key ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-gray-300'
-              }`}
-              onClick={() => setSelectedPlan(plan.key as any)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-4 h-4 rounded-full border-2 ${
-                      selectedPlan === plan.key ? 'border-primary bg-primary' : 'border-gray-300'
-                    }`} />
-                    <div>
-                      <h4 className="font-medium">{plan.title}</h4>
-                      <p className="text-sm text-gray-600">{plan.description}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-semibold">
-                      ${plan.data ? (plan.data.totalCost / 100).toFixed(2) : '0.00'}
-                    </div>
-                    {plan.data?.stores && (
-                      <div className="text-sm text-gray-500">
-                        {plan.data.stores.length} stores
+          {plans.map((plan) => {
+            const isLoading = plan.key === 'single' ? singleStoreMutation.isPending : 
+                            plan.key === 'best-value' ? bestValueMutation.isPending : 
+                            balancedMutation.isPending;
+            const hasError = plan.key === 'single' ? singleStoreMutation.isError : 
+                           plan.key === 'best-value' ? bestValueMutation.isError : 
+                           balancedMutation.isError;
+            
+            return (
+              <Card 
+                key={plan.key}
+                className={`cursor-pointer border-2 transition-colors ${
+                  selectedPlan === plan.key ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-gray-300'
+                } ${hasError ? 'opacity-50' : ''}`}
+                onClick={() => !hasError && setSelectedPlan(plan.key as any)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-4 h-4 rounded-full border-2 ${
+                        selectedPlan === plan.key ? 'border-primary bg-primary' : 'border-gray-300'
+                      }`} />
+                      <div>
+                        <h4 className="font-medium">{plan.title}</h4>
+                        <p className="text-sm text-gray-600">{plan.description}</p>
+                        {hasError && <p className="text-xs text-red-500">Failed to load</p>}
                       </div>
-                    )}
+                    </div>
+                    <div className="text-right">
+                      {isLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <div className="font-semibold">
+                            ${plan.data ? (plan.data.totalCost / 100).toFixed(2) : '0.00'}
+                          </div>
+                          {plan.data?.stores && (
+                            <div className="text-sm text-gray-500">
+                              {plan.data.stores.length} stores
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
         
         <Button 
@@ -470,19 +505,36 @@ const AutoOrder: React.FC = () => {
         )}
 
         {/* Error state */}
-        {(singleStoreMutation.isError || bestValueMutation.isError || balancedMutation.isError) && (
+        {(singleStoreMutation.isError || bestValueMutation.isError || balancedMutation.isError) && currentStep === 2 && (
           <Card className="mt-4 border-red-200">
             <CardContent className="p-4">
-              <div className="flex items-center text-red-600">
+              <div className="flex items-center text-red-600 mb-3">
                 <AlertCircle className="h-5 w-5 mr-2" />
-                <span className="text-sm">Failed to load optimization plans. Please try again.</span>
+                <span className="text-sm">Some optimization plans failed to load, but you can still proceed with available options.</span>
               </div>
               <Button 
-                onClick={() => navigate('/shopping-list')}
+                onClick={() => window.location.href = '/shopping-list'}
                 variant="outline" 
-                className="w-full mt-3"
+                className="w-full"
               >
-                Go Back
+                Go Back to Shopping Lists
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* No list ID error */}
+        {!listId && (
+          <Card className="border-red-200">
+            <CardContent className="p-4 text-center">
+              <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-red-700 mb-2">No Shopping List Selected</h3>
+              <p className="text-sm text-gray-600 mb-4">Please select a shopping list to create an auto-order.</p>
+              <Button 
+                onClick={() => window.location.href = '/shopping-list'}
+                className="w-full"
+              >
+                Back to Shopping Lists
               </Button>
             </CardContent>
           </Card>
