@@ -263,141 +263,58 @@ export class MemStorage implements IStorage {
       this.products.set(newProduct.id, newProduct);
     });
 
-    // Create a default shopping list
-    const defaultList: ShoppingList = {
-      id: this.shoppingListIdCounter++,
-      userId: defaultUser.id,
-      name: "My Shopping List",
-      isDefault: true
-    };
-    this.shoppingLists.set(defaultList.id, defaultList);
+    // Ensure only one master shopping list exists
+    this.cleanupShoppingLists();
 
-    // Add sample items to the default shopping list for demo purposes
-    const sampleItems = [
-      { productName: "Organic Milk (1 Gallon)", quantity: 1, unit: "GALLON" },
-      { productName: "Free-Range Eggs (Dozen)", quantity: 2, unit: "DOZEN" },
-      { productName: "Whole Wheat Bread", quantity: 1, unit: "LOAF" },
-      { productName: "Bananas", quantity: 3, unit: "LB" },
-      { productName: "Chicken Breast", quantity: 2, unit: "LB" },
-      { productName: "Greek Yogurt", quantity: 4, unit: "CONTAINER" },
-      { productName: "Baby Spinach", quantity: 1, unit: "BAG" },
-      { productName: "Roma Tomatoes", quantity: 2, unit: "LB" },
-      { productName: "Red Bell Peppers", quantity: 3, unit: "COUNT" },
-      { productName: "Avocados", quantity: 4, unit: "COUNT" },
-      { productName: "Ground Turkey", quantity: 1, unit: "LB" },
-      { productName: "Quinoa", quantity: 1, unit: "BAG" },
-      { productName: "Olive Oil", quantity: 1, unit: "BOTTLE" },
-      { productName: "Cheddar Cheese", quantity: 1, unit: "BLOCK" },
-      { productName: "Almond Butter", quantity: 1, unit: "JAR" }
-    ];
+    // Create or get the single master shopping list
+    const existingDefaultList = Array.from(this.shoppingLists.values()).find(list => list.isDefault);
 
-    sampleItems.forEach(item => {
-      const newItem: ShoppingListItem = {
-        id: this.shoppingListItemIdCounter++,
-        shoppingListId: defaultList.id,
-        productName: item.productName,
-        quantity: item.quantity,
-        isCompleted: false,
-        unit: item.unit,
-        suggestedRetailerId: Math.floor(Math.random() * 3) + 1, // Random retailer 1-3
-        suggestedPrice: Math.floor(Math.random() * 800) + 200, // Random price $2-10
-        dueDate: null
-      };
-      this.shoppingListItems.set(newItem.id, newItem);
-    });
-
-    // Add additional demo shopping lists with sample items
-    const additionalLists = [
-      { 
-        name: "Weekly Groceries", 
-        description: "Regular weekly shopping items",
-        items: [
-          { productName: "White Bread", quantity: 1, unit: "LOAF" },
-          { productName: "2% Milk", quantity: 1, unit: "GALLON" },
-          { productName: "Large Eggs", quantity: 1, unit: "DOZEN" },
-          { productName: "Ground Beef", quantity: 1, unit: "LB" }
-        ]
-      },
-      { 
-        name: "Bulk Shopping", 
-        description: "Monthly bulk shopping at warehouse stores",
-        items: [
-          { productName: "Paper Towels", quantity: 12, unit: "ROLL" },
-          { productName: "Toilet Paper", quantity: 24, unit: "ROLL" },
-          { productName: "Frozen Chicken", quantity: 5, unit: "LB" },
-          { productName: "Rice", quantity: 20, unit: "LB" }
-        ]
-      },
-      { 
-        name: "Organic Essentials", 
-        description: "Organic and natural products",
-        items: [
-          { productName: "Organic Spinach", quantity: 1, unit: "BAG" },
-          { productName: "Organic Apples", quantity: 2, unit: "LB" },
-          { productName: "Organic Whole Milk", quantity: 1, unit: "GALLON" },
-          { productName: "Organic Free-Range Eggs", quantity: 1, unit: "DOZEN" }
-        ]
-      },
-      { 
-        name: "Quick Meals", 
-        description: "Fast and easy meal ingredients",
-        items: [
-          { productName: "Pasta", quantity: 2, unit: "BOX" },
-          { productName: "Marinara Sauce", quantity: 2, unit: "JAR" },
-          { productName: "Pre-cooked Chicken", quantity: 1, unit: "PACKAGE" },
-          { productName: "Bagged Salad", quantity: 2, unit: "BAG" }
-        ]
-      },
-      { 
-        name: "Party Planning", 
-        description: "Items for upcoming party",
-        items: [
-          { productName: "Chips", quantity: 3, unit: "BAG" },
-          { productName: "Soda", quantity: 2, unit: "CASE" },
-          { productName: "Ice Cream", quantity: 2, unit: "PINT" },
-          { productName: "Paper Plates", quantity: 1, unit: "PACKAGE" }
-        ]
-      },
-      { 
-        name: "Health & Wellness", 
-        description: "Vitamins, supplements, and health foods",
-        items: [
-          { productName: "Vitamin D", quantity: 1, unit: "BOTTLE" },
-          { productName: "Protein Powder", quantity: 1, unit: "CONTAINER" },
-          { productName: "Greek Yogurt", quantity: 6, unit: "CUP" },
-          { productName: "Almonds", quantity: 1, unit: "BAG" }
-        ]
-      }
-    ];
-
-    additionalLists.forEach(listData => {
-      const list: ShoppingList = {
-        id: this.shoppingListIdCounter++,
+    if (!existingDefaultList) {
+      const defaultList: ShoppingList = {
+        id: 1,
         userId: defaultUser.id,
-        name: listData.name,
-        description: listData.description,
-        isDefault: false
+        name: 'My Shopping List',
+        description: 'Master shopping list',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isDefault: true
       };
-      this.shoppingLists.set(list.id, list);
+      this.shoppingLists.set(defaultList.id, defaultList);
 
-      // Add sample items to this list
-      listData.items.forEach(item => {
+      // Add sample items to the master shopping list for demo purposes
+      const sampleItems = [
+        { productName: "Organic Milk (1 Gallon)", quantity: 1, unit: "GALLON" },
+        { productName: "Free-Range Eggs (Dozen)", quantity: 2, unit: "DOZEN" },
+        { productName: "Whole Wheat Bread", quantity: 1, unit: "LOAF" },
+        { productName: "Bananas", quantity: 3, unit: "LB" },
+        { productName: "Chicken Breast", quantity: 2, unit: "LB" },
+        { productName: "Greek Yogurt", quantity: 4, unit: "CONTAINER" },
+        { productName: "Baby Spinach", quantity: 1, unit: "BAG" },
+        { productName: "Roma Tomatoes", quantity: 2, unit: "LB" },
+        { productName: "Red Bell Peppers", quantity: 3, unit: "COUNT" },
+        { productName: "Avocados", quantity: 4, unit: "COUNT" },
+        { productName: "Ground Turkey", quantity: 1, unit: "LB" },
+        { productName: "Quinoa", quantity: 1, unit: "BAG" },
+        { productName: "Olive Oil", quantity: 1, unit: "BOTTLE" },
+        { productName: "Cheddar Cheese", quantity: 1, unit: "BLOCK" },
+        { productName: "Almond Butter", quantity: 1, unit: "JAR" }
+      ];
+
+      sampleItems.forEach(item => {
         const newItem: ShoppingListItem = {
           id: this.shoppingListItemIdCounter++,
-          shoppingListId: list.id,
+          shoppingListId: defaultList.id,
           productName: item.productName,
           quantity: item.quantity,
           isCompleted: false,
           unit: item.unit,
-          suggestedRetailerId: Math.floor(Math.random() * 3) + 1,
-          suggestedPrice: Math.floor(Math.random() * 800) + 200,
+          suggestedRetailerId: Math.floor(Math.random() * 3) + 1, // Random retailer 1-3
+          suggestedPrice: Math.floor(Math.random() * 800) + 200, // Random price $2-10
           dueDate: null
         };
         this.shoppingListItems.set(newItem.id, newItem);
       });
-
-      console.log(`Added ${listData.items.length} items to shopping list: ${listData.name}`);
-    });
+    }
 
     // Add weekly circulars
     const circulars = [
@@ -485,8 +402,7 @@ export class MemStorage implements IStorage {
 
       // Trader Joe's deals
       { retailerId: 7, productName: "Organic Wine", regularPrice: 799, salePrice: 699, startDate: new Date(), endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), category: "Beverages", circularId: null, dealSource: "manual", imageUrl: "https://images.unsplash.com/photo-1510972527921-ce03766a1cf1?w=400" },
-      { retailerId: 7, productName: "Trail Mix", regularPrice: 499, salePrice: 399, startDate: new Date(), endDate:```text
- new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Snacks", circularId: null, dealSource: "manual", imageUrl: "https://images.unsplash.com/photo-1609501676725-7186f0544c5a?w=400" },
+      { retailerId: 7, productName: "Trail Mix", regularPrice: 499, salePrice: 399, startDate: new Date(), endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), category: "Snacks", circularId: null, dealSource: "manual", imageUrl: "https://images.unsplash.com/photo-1609501676725-7186f0544c5a?w=400" },
     ];
 
     deals.forEach(deal => {
@@ -509,6 +425,23 @@ export class MemStorage implements IStorage {
     this.createSamplePurchase(defaultUser.id, 1, now.getFullYear(), now.getMonth(), 2);
     this.createSamplePurchase(defaultUser.id, 3, now.getFullYear(), now.getMonth(), 10);
   }
+
+    // Cleanup methods
+    private cleanupShoppingLists() {
+        // Find and delete any non-default shopping lists
+        for (const [id, list] of this.shoppingLists.entries()) {
+            if (!list.isDefault) {
+                this.shoppingLists.delete(id);
+
+                // Also delete the shopping list items associated with this list
+                for (const [itemId, item] of this.shoppingListItems.entries()) {
+                    if (item.shoppingListId === list.id) {
+                        this.shoppingListItems.delete(itemId);
+                    }
+                }
+            }
+        }
+    }
 
   private createSamplePurchase(userId: number, retailerId: number, year: number, month: number, day: number) {
     const date = new Date(year, month, day);
@@ -767,12 +700,27 @@ export class MemStorage implements IStorage {
 
   // Shopping List methods
   async getShoppingLists(): Promise<ShoppingList[]> {
-    const lists = Array.from(this.shoppingLists.values());
-    // Add items to each list
-    return Promise.all(lists.map(async list => {
-      const items = await this.getShoppingListItems(list.id);
-      return { ...list, items };
-    }));
+      // Ensure we only return the master shopping list
+      const lists = Array.from(this.shoppingLists.values());
+      const masterList = lists.find(list => list.isDefault);
+
+      if (masterList) {
+          return [masterList];
+      }
+
+      // If no master list exists, create one
+      const defaultList: ShoppingList = {
+          id: 1,
+          userId: 1,
+          name: 'My Shopping List',
+          description: 'Master shopping list',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          isDefault: true
+      };
+      this.shoppingLists.set(defaultList.id, defaultList);
+
+      return [defaultList];
   }
 
   async getShoppingList(id: number): Promise<ShoppingList | undefined> {
@@ -783,11 +731,34 @@ export class MemStorage implements IStorage {
     return { ...list, items };
   }
 
-  async createShoppingList(list: InsertShoppingList): Promise<ShoppingList> {
-    const id = this.shoppingListIdCounter++;
-    const newList: ShoppingList = { ...list, id };
-    this.shoppingLists.set(id, newList);
-    return newList;
+  async createShoppingList(data: Omit<ShoppingList, 'id' | 'createdAt' | 'updatedAt'>): Promise<ShoppingList> {
+      // Only allow one master shopping list - return existing one or update it
+      const existingLists = Array.from(this.shoppingLists.values());
+      const masterList = existingLists.find(list => list.isDefault);
+
+      if (masterList) {
+          // Update the existing master list with new data if provided
+          const updatedList: ShoppingList = {
+              ...masterList,
+              name: data.name || masterList.name,
+              description: data.description || masterList.description,
+              updatedAt: new Date()
+          };
+          this.shoppingLists.set(masterList.id, updatedList);
+          return updatedList;
+      }
+
+      // Create the master list if it doesn't exist
+      const newList: ShoppingList = {
+          id: 1,
+          ...data,
+          isDefault: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+      };
+
+      this.shoppingLists.set(newList.id, newList);
+      return newList;
   }
 
   // Shopping List Item methods
@@ -1129,7 +1100,6 @@ export class MemStorage implements IStorage {
     return Math.floor(Math.random() * 45) + 5;
   }
 
-  // Cleanup methods
   async cleanupExpiredCirculars(): Promise<number> {
     const now = new Date();
     let cleanedCount = 0;
@@ -1297,19 +1267,6 @@ export class MemStorage implements IStorage {
     return newRetailer;
   }
 
-  async createShoppingList(data: any): Promise<ShoppingList> {
-      const id = this.shoppingListIdCounter++;
-      const newList: ShoppingList = {
-          id,
-          userId: data.userId,
-          name: data.name,
-          isDefault: data.isDefault || false,
-          description: data.description || null
-      };
-      this.shoppingLists.set(id, newList);
-      return newList;
-  }
-
   async updateShoppingList(id: number, data: any): Promise<ShoppingList> {
       const shoppingList = this.shoppingLists.get(id);
       if (!shoppingList) {
@@ -1399,7 +1356,6 @@ export class MemStorage implements IStorage {
     }
 
     async searchPurchases(filters: any): Promise<Purchase[]> {
-        ```text
         let results = Array.from(this.purchases.values());
 
         if (filters.userId) {
@@ -1442,21 +1398,6 @@ export class MemStorage implements IStorage {
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     return Array.from(this.users.values()).find(u => u.username === username);
-  }
-
-  async createPurchase(data: any): Promise<Purchase> {
-      const id = this.purchaseIdCounter++;
-      const newPurchase: Purchase = {
-          id,
-          userId: data.userId,
-          retailerId: data.retailerId,
-          purchaseDate: data.purchaseDate,
-          totalAmount: data.totalAmount,
-          receiptData: data.receiptData,
-          receiptImageUrl: data.receiptImageUrl || null
-      };
-      this.purchases.set(id, newPurchase);
-      return newPurchase;
   }
 
   async updatePurchase(id: number, data: any): Promise<Purchase> {
@@ -1786,7 +1727,9 @@ const [updatedUser] = await db
   // Shopping List methods
   async getShoppingLists(): Promise<ShoppingList[]> {
     try {
-      const lists = await db.select().from(shoppingLists);
+    // Ensure we only return the master shopping list
+    const result = await db.select().from(shoppingLists).where(eq(shoppingLists.isDefault, true)).limit(1);
+    return result;
     } catch (error) {
       console.error("Error getting shopping lists:", error);
       throw error;
@@ -1810,12 +1753,17 @@ const [updatedUser] = await db
     }
   }
 
-  async createShoppingList(listData: InsertShoppingList): Promise<ShoppingList> {
+  async createShoppingList(listData: any): Promise<ShoppingList> {
     try {
-      const [list] = await db.insert(shoppingLists).values(listData).returning();
+    // Check for and delete any existing default shopping lists
+    await db.delete(shoppingLists).where(eq(shoppingLists.isDefault, true));
 
-      // Initialize with empty items array
-      return { ...list, items: [] };
+    // Set the new list as the default and insert it
+    listData.isDefault = true; // Enforce default status
+    const [list] = await db.insert(shoppingLists).values(listData).returning();
+
+    // Initialize with empty items array
+    return { ...list, items: [] };
     } catch (error) {
       console.error("Error creating shopping list:", error);
       throw error;
@@ -2397,7 +2345,7 @@ const [updatedUser] = await db
 
   async deleteAffiliateProduct(id: number): Promise<void> {
     try {
-      await db.delete(aff affiliateProducts).where(eq(affiliateProducts.id, id));
+      await db.delete(affiliateProducts).where(eq(affiliateProducts.id, id));
     } catch (error) {
       console.error("Error deleting affiliate product:", error);
       throw error;
@@ -2477,106 +2425,7 @@ const [updatedUser] = await db
       console.error("Error updating affiliate conversion status:", error);
       throw error;
     }
-  }
-  async getShoppingLists() {
-    return db.select().from(shoppingLists);
-  }
-
-  async createShoppingList(data: any) {
-    const [newList] = await db.insert(shoppingLists).values(data).returning();
-    return newList;
-  }
-
-  async updateShoppingList(id: number, data: any) {
-    const [updatedList] = await db.update(shoppingLists)
-      .set(data)
-      .where(eq(shoppingLists.id, id))
-      .returning();
-    return updatedList;
-  }
-
-  async deleteShoppingList(id: number) {
-    // First delete all items in the list
-    await db.delete(shoppingListItems).where(eq(shoppingListItems.shoppingListId, id));
-    // Then delete the list itself
-    await db.delete(shoppingLists).where(eq(shoppingLists.id, id));
-  }
-
-  async authenticateUser(username: string, password: string) {
-    const [user] = await db.select()
-      .from(users)
-      .where(and(eq(users.username, username), eq(users.password, password)))
-      .limit(1);
-    return user;
-  }
-
-  async getUserByUsername(username: string) {
-    const [user] = await db.select()
-      .from(users)
-      .where(eq(users.username, username))
-      .limit(1);
-    return user;
-  }
-
-  async createUser(data: any) {
-    const [newUser] = await db.insert(users).values(data).returning();
-    return newUser;
-  }
-
-  async getPurchases(userId?: number, limit?: number, offset?: number) {
-    let query = db.select().from(purchases);
-
-    if (userId) {
-      query = query.where(eq(purchases.userId, userId));
     }
-
-    if (limit) {
-      query = query.limit(limit);
-    }
-
-    if (offset) {
-      query = query.offset(offset);
-    }
-
-    return query;
-  }
-
-  async createPurchase(data: any) {
-    const [newPurchase] = await db.insert(purchases).values(data).returning();
-    return newPurchase;
-  }
-
-  async updatePurchase(id: number, data: any) {
-    const [updatedPurchase] = await db.update(purchases)
-      .set(data)
-      .where(eq(purchases.id, id))
-      .returning();
-    return updatedPurchase;
-  }
-
-  async deletePurchase(id: number) {
-    await db.delete(purchases).where(eq(purchases.id, id));
-  }
-
-  async updateRetailerAccount(id: number, data: any) {
-    const [updatedAccount] = await db.update(retailerAccounts)
-      .set(data)
-      .where(eq(retailerAccounts.id, id))
-      .returning();
-    return updatedAccount;
-  }
-
-  async deleteRetailerAccount(id: number) {
-    await db.delete(retailerAccounts).where(eq(retailerAccounts.id, id));
-  }
-
-  async getRetailerAccount(id: number) {
-    const [account] = await db.select()
-      .from(retailerAccounts)
-      .where(eq(retailerAccounts.id, id))
-      .limit(1);
-    return account;
-  }
 
   async claimDeal(dealId: number, userId: number) {
     // In a real app, you'd have a separate table for claimed deals
@@ -2758,6 +2607,24 @@ const [updatedUser] = await db
       createdAt: new Date()
     };
   }
+   async cleanupShoppingLists(): Promise<void> {
+        try {
+            // Fetch all shopping lists, filter out the isDefault one, then delete the rest
+            const allShoppingLists = await db.select().from(shoppingLists);
+            const nonDefaultLists = allShoppingLists.filter(list => !list.isDefault);
+
+            for (const list of nonDefaultLists) {
+                // First delete items in shopping list
+                await db.delete(shoppingListItems).where(eq(shoppingListItems.shoppingListId, list.id));
+
+                // Delete shopping list
+                await db.delete(shoppingLists).where(eq(shoppingLists.id, list.id));
+            }
+        } catch (error) {
+            console.error('Error cleaning up shopping lists:', error);
+            throw error;
+        }
+    }
 }
 
 // Use database storage for persistence
