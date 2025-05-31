@@ -451,13 +451,13 @@ const Shop: React.FC = () => {
   }
   
   return (
-    <div className="container mx-auto p-4 flex flex-col min-h-screen">
-      <h1 className="text-2xl font-bold mb-6">Shop Now</h1>
+    <div className="container mx-auto p-3 sm:p-4 flex flex-col min-h-screen max-w-md sm:max-w-none">
+      <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Shop Now</h1>
       
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>Select Shopping List</CardTitle>
-          <CardDescription>Choose the shopping list you want to use</CardDescription>
+      <Card className="mb-3 sm:mb-4">
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="text-lg sm:text-xl">Select Shopping List</CardTitle>
+          <CardDescription className="text-sm">Choose the shopping list you want to use</CardDescription>
         </CardHeader>
         <CardContent>
           <Select
@@ -739,6 +739,7 @@ const Shop: React.FC = () => {
       
       <BottomNavigation activeTab="shop" />
     </div>
+  );
   );
 };
 

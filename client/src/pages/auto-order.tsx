@@ -114,32 +114,32 @@ const AutoOrder: React.FC = () => {
   useEffect(() => {
     if (listId && shoppingList && currentStep === 0) {
       console.log('Starting optimization process...');
-      
+
       // Step 1: Start analyzing
       setCurrentStep(1);
-      
+
       // Step 2: Move to price finding after 2 seconds
       const step2Timer = setTimeout(() => {
         console.log('Moving to step 2 - Finding best prices');
         setCurrentStep(2);
-        
+
         // Start the optimization mutations
         singleStoreMutation.mutate();
         bestValueMutation.mutate();
         balancedMutation.mutate();
       }, 2000);
-      
+
       // Step 3: Move to optimization after 4 seconds
       const step3Timer = setTimeout(() => {
         console.log('Moving to step 3 - Optimizing plan');
         setCurrentStep(3);
       }, 4000);
-      
+
       // Step 4: Complete and show results after 6 seconds
       const step4Timer = setTimeout(() => {
         console.log('Moving to step 4 - Preparing orders');
         setCurrentStep(4);
-        
+
         // Set sample order results
         const resultsTimer = setTimeout(() => {
           console.log('Setting order results');
@@ -151,10 +151,10 @@ const AutoOrder: React.FC = () => {
             estimatedTime: 35
           });
         }, 1500);
-        
+
         return () => clearTimeout(resultsTimer);
       }, 6000);
-      
+
       // Cleanup function to clear all timers
       return () => {
         clearTimeout(step2Timer);

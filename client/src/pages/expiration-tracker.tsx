@@ -1,4 +1,4 @@
-
+typescript
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Header from '@/components/layout/Header';
@@ -236,7 +236,7 @@ const ExpirationTrackerPage: React.FC = () => {
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
       <Header user={user} />
-      
+
       <main className="flex-1 overflow-y-auto">
         <div className="p-4 pb-20">
           {/* Header */}
@@ -279,7 +279,7 @@ const ExpirationTrackerPage: React.FC = () => {
               <RefreshCw className="h-4 w-4" />
               Refresh
             </Button>
-            
+
             {selectedItems.size > 0 && (
               <Button
                 variant="destructive"
@@ -292,7 +292,7 @@ const ExpirationTrackerPage: React.FC = () => {
                 Clear Selected ({selectedItems.size})
               </Button>
             )}
-            
+
             <Button
               variant="outline"
               size="sm"
@@ -347,7 +347,7 @@ const ExpirationTrackerPage: React.FC = () => {
                           onCheckedChange={() => toggleItemSelection(item.id)}
                           onClick={(e) => e.stopPropagation()}
                         />
-                        
+
                         <div className="flex-1">
                           <div className="flex justify-between items-start mb-2">
                             <h4 className="font-medium text-gray-800">{item.productName}</h4>
@@ -360,7 +360,7 @@ const ExpirationTrackerPage: React.FC = () => {
                               {item.status.replace('_', ' ')}
                             </Badge>
                           </div>
-                          
+
                           <div className="space-y-1 text-sm text-gray-600">
                             <div className="flex items-center">
                               {getLocationIcon(item.location)}
@@ -368,12 +368,12 @@ const ExpirationTrackerPage: React.FC = () => {
                               <span className="mx-2">•</span>
                               <span>{item.category}</span>
                             </div>
-                            
+
                             <div className="flex items-center">
                               <Calendar className="h-3 w-3 mr-1" />
                               Last purchased: {item.lastPurchaseDate.toLocaleDateString()}
                             </div>
-                            
+
                             <div className="flex items-center">
                               <Clock className="h-3 w-3 mr-1" />
                               {item.daysOverdue > 0 ? (
@@ -390,14 +390,14 @@ const ExpirationTrackerPage: React.FC = () => {
                                 </span>
                               )}
                             </div>
-                            
+
                             {item.status === 'expired' && (
                               <div className="text-red-600 text-xs font-medium">
                                 ⚠️ May have expired on {item.estimatedExpirationDate.toLocaleDateString()}
                               </div>
                             )}
                           </div>
-                          
+
                           <div className="mt-3 text-xs text-gray-500">
                             Typical repurchase cycle: {item.typicalRepurchaseDays} days
                           </div>
@@ -411,7 +411,7 @@ const ExpirationTrackerPage: React.FC = () => {
           </Tabs>
         </div>
       </main>
-      
+
       <BottomNavigation activeTab="lists" />
     </div>
   );
