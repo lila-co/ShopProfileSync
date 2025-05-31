@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { backgroundSync } from "./services/backgroundSync";
+import { initializeDemoDatabase } from "./initDemo";
 
 const app = express();
 app.use(express.json());
@@ -72,6 +73,16 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = 5000;
+
+  // Initialize demo database
+  initializeDemoDatabase().then(result => {
+    if (result.success) {
+      console.log("Demo database ready for development/testing");
+    } else {
+      console.error("Demo database initialization failed:", result.error);
+    }
+  });
+
   server.listen({
     port,
     host: "0.0.0.0",
