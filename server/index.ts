@@ -2,7 +2,6 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { backgroundSync } from "./services/backgroundSync";
-// import { initializeDemoDatabase } from "./initDemo";
 
 const app = express();
 app.use(express.json());
@@ -73,10 +72,6 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = 5000;
-
-  // Initialize demo database
-  console.log("Using in-memory storage for development");
-
   server.listen({
     port,
     host: "0.0.0.0",
