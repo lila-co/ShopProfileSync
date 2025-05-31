@@ -2,7 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { backgroundSync } from "./services/backgroundSync";
-import { initializeDemoDatabase } from "./initDemo";
+// import { initializeDemoDatabase } from "./initDemo";
 
 const app = express();
 app.use(express.json());
@@ -75,13 +75,7 @@ app.use((req, res, next) => {
   const port = 5000;
 
   // Initialize demo database
-  initializeDemoDatabase().then(result => {
-    if (result.success) {
-      console.log("Demo database ready for development/testing");
-    } else {
-      console.error("Demo database initialization failed:", result.error);
-    }
-  });
+  console.log("Using in-memory storage for development");
 
   server.listen({
     port,
