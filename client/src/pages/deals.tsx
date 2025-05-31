@@ -13,6 +13,7 @@ import type { User } from '@/lib/types';
 
 const DealsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
   const { data: user } = useQuery<User>({
     queryKey: ['/api/user/profile'],
@@ -86,21 +87,61 @@ const DealsPage: React.FC = () => {
         {/* Quick Filters */}
         <div className="px-4 mb-6">
           <div className="flex items-center gap-2 overflow-x-auto pb-2">
-            <Badge variant="default" className="whitespace-nowrap px-3 py-1.5">
+            <Badge 
+              variant={activeFilter === 'featured' ? "default" : "outline"} 
+              className={`whitespace-nowrap px-3 py-2 cursor-pointer transition-colors ${
+                activeFilter === 'featured' 
+                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              }`}
+              onClick={() => setActiveFilter(activeFilter === 'featured' ? null : 'featured')}
+            >
               <Star className="h-3 w-3 mr-1" />
               Featured
             </Badge>
-            <Badge variant="outline" className="whitespace-nowrap px-3 py-1.5">
+            <Badge 
+              variant={activeFilter === 'nearby' ? "default" : "outline"} 
+              className={`whitespace-nowrap px-3 py-2 cursor-pointer transition-colors ${
+                activeFilter === 'nearby' 
+                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              }`}
+              onClick={() => setActiveFilter(activeFilter === 'nearby' ? null : 'nearby')}
+            >
               <MapPin className="h-3 w-3 mr-1" />
               Nearby
             </Badge>
-            <Badge variant="outline" className="whitespace-nowrap px-3 py-1.5">
+            <Badge 
+              variant={activeFilter === 'Groceries' ? "default" : "outline"} 
+              className={`whitespace-nowrap px-3 py-2 cursor-pointer transition-colors ${
+                activeFilter === 'Groceries' 
+                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              }`}
+              onClick={() => setActiveFilter(activeFilter === 'Groceries' ? null : 'Groceries')}
+            >
               Groceries
             </Badge>
-            <Badge variant="outline" className="whitespace-nowrap px-3 py-1.5">
+            <Badge 
+              variant={activeFilter === 'Household' ? "default" : "outline"} 
+              className={`whitespace-nowrap px-3 py-2 cursor-pointer transition-colors ${
+                activeFilter === 'Household' 
+                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              }`}
+              onClick={() => setActiveFilter(activeFilter === 'Household' ? null : 'Household')}
+            >
               Household
             </Badge>
-            <Badge variant="outline" className="whitespace-nowrap px-3 py-1.5">
+            <Badge 
+              variant={activeFilter === 'Personal Care' ? "default" : "outline"} 
+              className={`whitespace-nowrap px-3 py-2 cursor-pointer transition-colors ${
+                activeFilter === 'Personal Care' 
+                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              }`}
+              onClick={() => setActiveFilter(activeFilter === 'Personal Care' ? null : 'Personal Care')}
+            >
               Personal Care
             </Badge>
           </div>
@@ -108,7 +149,7 @@ const DealsPage: React.FC = () => {
 
         {/* Deals Content */}
         <div className="flex-1">
-          <DealsView searchQuery={searchQuery} />
+          <DealsView searchQuery={searchQuery} activeFilter={activeFilter} />
         </div>
       </main>
 
