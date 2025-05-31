@@ -521,7 +521,6 @@ export class MemStorage implements IStorage {
         createdAt: new Date()
       },
       { 
-```python
         retailerId: 4, 
         title: "Kroger Weekly Savings", 
         description: "Save on fresh produce and more", 
@@ -2610,8 +2609,7 @@ const [updatedUser] = await db
         and(
           eq(shoppingLists.userId, userId),
           or(
-            ilike(shoppingLists.name, `%${query}%`),
-            ilike(shoppingLists.description, `%${query}%`)
+            ilike(shoppingLists.name, `%${query}%`)
           )
         )
       );
