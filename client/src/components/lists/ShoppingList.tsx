@@ -473,7 +473,7 @@ const ShoppingListComponent: React.FC = () => {
       {/* Header */}
       <div className="mb-4">
         <h2 className="text-xl font-bold mb-4 text-gray-900">Shopping List</h2>
-        
+
         {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-3 mb-4">
           <Button 
@@ -689,7 +689,7 @@ const ShoppingListComponent: React.FC = () => {
                           <div className="flex items-center space-x-2 mt-4 mb-2">
                             <span className="text-lg">{getCategoryIcon(category)}</span>
                             <h4 className="font-semibold text-gray-700">{category}</h4>
-                            <div className="flex-1 h-px bg-gray-200"></div>
+                            <div className="flex-1 h-px bg-gray-300"></div>
                             <span className="text-xs text-gray-500">{categoryItems.length} items</span>
                           </div>
                           {categoryItems.map((item) => (
@@ -748,7 +748,7 @@ const ShoppingListComponent: React.FC = () => {
                           <div className="flex items-center space-x-2 mb-3">
                             <Check className="h-5 w-5 text-green-600" />
                             <h4 className="font-semibold text-gray-700">Completed</h4>
-                            <div className="flex-1 h-px bg-gray-200"></div>
+                            <div className="flex-1 h-px bg-gray-300"></div>
                             <span className="text-xs text-gray-500">{completedItems.length} items</span>
                           </div>
                           <div className="space-y-2">
@@ -762,7 +762,7 @@ const ShoppingListComponent: React.FC = () => {
                                       onChange={() => handleToggleItem(item.id, item.isCompleted)}
                                       className="h-5 w-5 text-primary rounded mr-4 flex-shrink-0 cursor-pointer"
                                     />
-                                    <div className="flex-1 min-w-0">
+                                                                   <div className="flex-1 min-w-0">
                                       <div className="flex items-center flex-wrap gap-2">
                                         <span className="font-medium line-through text-gray-500 text-base item-text">
                                           {item.productName}
