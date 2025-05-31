@@ -23,8 +23,8 @@
   --secondary: 148 163 184;
   --secondary-foreground: 255 255 255;
 
-  /* Accent: Professional teal for positive actions */
-  --accent: 20 184 166;
+  /* Accent: Professional blue for positive actions */
+  --accent: 59 130 246;
   --accent-foreground: 255 255 255;
 
   --destructive: 239 68 68;
@@ -176,14 +176,14 @@
 
   /* Success/positive action buttons */
   .btn-success {
-    background-color: hsl(var(--accent));
+    background-color: hsl(var(--primary));
     color: white;
-    border: 1px solid hsl(var(--accent));
+    border: 1px solid hsl(var(--primary));
     font-weight: 500;
   }
 
   .btn-success:hover {
-    background-color: hsl(var(--accent) / 0.9);
+    background-color: hsl(var(--primary) / 0.9);
     box-shadow: var(--shadow-md);
   }
 
@@ -250,11 +250,11 @@
 
   /* Professional badge styles */
   .badge-savings {
-    @apply bg-teal-50 text-teal-700 border border-teal-200 font-medium px-3 py-1 rounded-full text-xs;
+    @apply bg-blue-50 text-blue-700 border border-blue-200 font-medium px-3 py-1 rounded-full text-xs;
   }
 
   .badge-deal {
-    @apply bg-blue-50 text-blue-700 border border-blue-200 font-medium px-3 py-1 rounded-full text-xs;
+    @apply bg-slate-50 text-slate-700 border border-slate-200 font-medium px-3 py-1 rounded-full text-xs;
   }
 
   .badge-featured {
@@ -368,15 +368,15 @@
 
   /* Gradient backgrounds for visual interest */
   .gradient-primary {
-    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 100%);
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.8) 100%);
   }
 
   .gradient-secondary {
-    background: linear-gradient(135deg, hsl(var(--secondary)) 0%, hsl(var(--secondary)) 100%);
+    background: linear-gradient(135deg, hsl(var(--secondary)) 0%, hsl(var(--secondary) / 0.8) 100%);
   }
 
   .gradient-accent {
-    background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(var(--accent)) 100%);
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.7) 100%);
   }
 }
 

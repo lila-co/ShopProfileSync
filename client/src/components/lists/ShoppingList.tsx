@@ -699,7 +699,7 @@ const ShoppingListComponent: React.FC = () => {
                                       <span className="font-medium text-gray-800 text-base item-text">
                                         {item.productName}
                                       </span>
-                                      <span className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-full whitespace-nowrap font-medium">
+                                      <span className="text-sm bg-slate-100 text-slate-700 px-3 py-1 rounded-full whitespace-nowrap font-medium border border-slate-200">
                                         {item.quantity} {item.unit && item.unit !== "COUNT" ? item.unit.toLowerCase() : ""}
                                       </span>
                                     </div>
@@ -759,7 +759,7 @@ const ShoppingListComponent: React.FC = () => {
                                         <span className="font-medium line-through text-gray-500 text-base item-text">
                                           {item.productName}
                                         </span>
-                                        <span className="text-sm bg-gray-200 px-3 py-1 rounded-full whitespace-nowrap">
+                                        <span className="text-sm bg-gray-100 text-gray-500 px-3 py-1 rounded-full whitespace-nowrap border border-gray-200">
                                           {item.quantity} {item.unit && item.unit !== "COUNT" ? item.unit.toLowerCase() : ""}
                                         </span>
                                       </div>
