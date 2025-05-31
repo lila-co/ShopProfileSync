@@ -497,7 +497,8 @@ const ShoppingListComponent: React.FC = () => {
             placeholder="Add an item..."
             value={newItemName}
             onChange={(e) => setNewItemName(e.target.value)}
-            className="flex-1"
+            className="flex-1 bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+            style={{ backgroundColor: 'white !important' }}
           />
           <Button 
             type="submit" 
@@ -516,7 +517,8 @@ const ShoppingListComponent: React.FC = () => {
               min="1"
               defaultValue="1"
               onChange={(e) => setNewItemQuantity(parseInt(e.target.value) || 1)}
-              className="w-full"
+              className="w-full bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+              style={{ backgroundColor: 'white !important' }}
             />
           </div>
 
@@ -683,7 +685,7 @@ const ShoppingListComponent: React.FC = () => {
                             <span className="text-xs text-gray-500">{categoryItems.length} items</span>
                           </div>
                           {categoryItems.map((item) => (
-                            <div key={`incomplete-category-${category}-item-${item.id}`} className="mobile-shopping-item border-2 border-gray-200 rounded-xl p-4 ml-2 bg-white">
+                            <div key={`incomplete-${category}-${item.id}`} className="mobile-shopping-item border-2 border-slate-200 rounded-xl p-4 ml-2 bg-white">
                               <div className="flex justify-between items-center">
                                 <div className="flex items-center flex-1">
                                   <input
@@ -1202,6 +1204,8 @@ const ShoppingListComponent: React.FC = () => {
                 placeholder="https://example.com/recipe" 
                 value={recipeUrl}
                 onChange={(e) => setRecipeUrl(e.target.value)}
+                className="bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                style={{ backgroundColor: 'white !important' }}
               />
 
               <Label htmlFor="servings">Servings</Label>
@@ -1252,7 +1256,8 @@ const ShoppingListComponent: React.FC = () => {
                 placeholder="Item name" 
                 value={editItemName}
                 onChange={(e) => setEditItemName(e.target.value)}
-                className="w-full"
+                className="w-full bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                style={{ backgroundColor: 'white !important' }}
               />
 
               <div className="flex space-x-2">
@@ -1264,7 +1269,8 @@ const ShoppingListComponent: React.FC = () => {
                     min="1"
                     value={editItemQuantity}
                     onChange={(e) => setEditItemQuantity(parseInt(e.target.value) || 1)}
-                    className="w-full"
+                    className="w-full bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                    style={{ backgroundColor: 'white !important' }}
                   />
                 </div>
 

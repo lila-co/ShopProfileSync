@@ -4,33 +4,33 @@
 @tailwind utilities;
 
 :root {
-  /* Modern Retail Color Scheme - Inspired by Target, Amazon, Walmart */
-  --background: 255 255 255;
-  --foreground: 17 24 39;
-  --muted: 249 250 251;
-  --muted-foreground: 107 114 128;
-  --popover: 255 255 255;
-  --popover-foreground: 17 24 39;
-  --card: 255 255 255;
-  --card-foreground: 17 24 39;
-  --border: 229 231 235;
-  --input: 243 244 246;
+  /* Mobile-Optimized Dark Color Scheme for Eye Comfort */
+  --background: 16 16 20;
+  --foreground: 230 230 235;
+  --muted: 24 24 28;
+  --muted-foreground: 161 161 170;
+  --popover: 24 24 28;
+  --popover-foreground: 230 230 235;
+  --card: 24 24 28;
+  --card-foreground: 230 230 235;
+  --border: 39 39 42;
+  --input: 32 32 36;
 
-  /* Primary: Modern blue for trust and reliability */
-  --primary: 59 130 246;
-  --primary-foreground: 255 255 255;
+  /* Primary: Muted teal for professional, calm appearance */
+  --primary: 20 184 166;
+  --primary-foreground: 16 16 20;
 
-  /* Secondary: Fresh green for savings and success */
-  --secondary: 34 197 94;
-  --secondary-foreground: 255 255 255;
+  /* Secondary: Sophisticated gray for subtle actions */
+  --secondary: 63 63 70;
+  --secondary-foreground: 230 230 235;
 
-  /* Accent: Warm orange for deals and highlights */
-  --accent: 249 115 22;
-  --accent-foreground: 255 255 255;
+  /* Accent: Soft green for positive actions */
+  --accent: 34 197 94;
+  --accent-foreground: 16 16 20;
 
   --destructive: 239 68 68;
   --destructive-foreground: 255 255 255;
-  --ring: 59 130 246;
+  --ring: 20 184 166;
   --radius: 0.75rem;
 
   /* Enhanced spacing scale */
@@ -57,25 +57,25 @@
 }
 
 .dark {
-  --background: 17 24 39;
-  --foreground: 243 244 246;
-  --muted: 31 41 55;
-  --muted-foreground: 156 163 175;
-  --popover: 17 24 39;
-  --popover-foreground: 243 244 246;
-  --card: 31 41 55;
-  --card-foreground: 243 244 246;
-  --border: 55 65 81;
-  --input: 55 65 81;
-  --primary: 59 130 246;
-  --primary-foreground: 255 255 255;
-  --secondary: 34 197 94;
-  --secondary-foreground: 255 255 255;
-  --accent: 249 115 22;
-  --accent-foreground: 255 255 255;
+  --background: 8 8 12;
+  --foreground: 240 240 245;
+  --muted: 16 16 20;
+  --muted-foreground: 161 161 170;
+  --popover: 16 16 20;
+  --popover-foreground: 240 240 245;
+  --card: 16 16 20;
+  --card-foreground: 240 240 245;
+  --border: 32 32 36;
+  --input: 24 24 28;
+  --primary: 14 165 233;
+  --primary-foreground: 8 8 12;
+  --secondary: 52 52 56;
+  --secondary-foreground: 240 240 245;
+  --accent: 16 185 129;
+  --accent-foreground: 8 8 12;
   --destructive: 239 68 68;
   --destructive-foreground: 255 255 255;
-  --ring: 59 130 246;
+  --ring: 14 165 233;
 }
 
 @layer base {
@@ -107,15 +107,98 @@
     border-radius: 4px;
   }
 
+  /* Enhanced input styling for dark mobile theme */
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="password"],
+  select,
+  textarea {
+    background-color: hsl(var(--input)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 0.75rem !important;
+    padding: 0.75rem !important;
+    transition: all 0.2s ease !important;
+    color: hsl(var(--foreground)) !important;
+  }
+
+  input[type="text"]:focus,
+  input[type="number"]:focus,
+  input[type="email"]:focus,
+  input[type="password"]:focus,
+  select:focus,
+  textarea:focus {
+    border-color: hsl(var(--primary)) !important;
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2) !important;
+    outline: none !important;
+    background-color: hsl(var(--input)) !important;
+  }
+
   /* Better line heights */
   p, li, span {
     line-height: 1.6;
   }
 
-  /* Modern button focus states */
+  /* Action-oriented button styles */
   button:focus-visible {
     outline: 2px solid hsl(var(--primary));
     outline-offset: 2px;
+  }
+
+  /* Primary action buttons - optimized for mobile dark theme */
+  .btn-primary {
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border: 1px solid hsl(var(--primary));
+    font-weight: 600;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px hsl(var(--primary) / 0.2);
+  }
+
+  .btn-primary:hover {
+    background-color: hsl(var(--primary) / 0.9);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px hsl(var(--primary) / 0.3);
+  }
+
+  /* Secondary action buttons - improved contrast for dark theme */
+  .btn-secondary {
+    background-color: hsl(var(--secondary));
+    color: hsl(var(--secondary-foreground));
+    border: 1px solid hsl(var(--secondary));
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .btn-secondary:hover {
+    background-color: hsl(var(--secondary) / 0.8);
+    border-color: hsl(var(--secondary) / 0.9);
+  }
+
+  /* Success/positive action buttons */
+  .btn-success {
+    background-color: hsl(var(--accent));
+    color: white;
+    border: 2px solid hsl(var(--accent));
+    font-weight: 600;
+  }
+
+  .btn-success:hover {
+    background-color: hsl(var(--accent) / 0.9);
+    box-shadow: 0 2px 8px hsl(var(--accent) / 0.3);
+  }
+
+  /* Destructive action buttons - clear warning */
+  .btn-destructive {
+    background-color: hsl(var(--destructive));
+    color: hsl(var(--destructive-foreground));
+    border: 2px solid hsl(var(--destructive));
+    font-weight: 600;
+  }
+
+  .btn-destructive:hover {
+    background-color: hsl(var(--destructive) / 0.9);
+    box-shadow: 0 2px 8px hsl(var(--destructive) / 0.3);
   }
 
   /* Enhanced link accessibility */
@@ -151,17 +234,36 @@
     font-size: 16px; /* Prevents zoom on iOS */
   }
 
-  /* Retail-style badges */
+  /* Fix auto-fill styling for dark theme */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px hsl(var(--input)) inset !important;
+    -webkit-text-fill-color: hsl(var(--foreground)) !important;
+    background-color: hsl(var(--input)) !important;
+    border-radius: 0.75rem !important;
+  }
+
+  input:-webkit-autofill::first-line {
+    font-family: inherit !important;
+  }
+
+  /* Accessible badge styles */
   .badge-savings {
-    @apply bg-green-100 text-green-800 font-semibold px-2 py-1 rounded-full text-xs;
+    @apply bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold px-3 py-1 rounded-full text-xs;
   }
 
   .badge-deal {
-    @apply bg-red-100 text-red-800 font-semibold px-2 py-1 rounded-full text-xs;
+    @apply bg-rose-50 text-rose-700 border border-rose-200 font-semibold px-3 py-1 rounded-full text-xs;
   }
 
   .badge-featured {
-    @apply bg-blue-100 text-blue-800 font-semibold px-2 py-1 rounded-full text-xs;
+    @apply bg-blue-50 text-blue-700 border border-blue-200 font-semibold px-3 py-1 rounded-full text-xs;
+  }
+
+  .badge-neutral {
+    @apply bg-slate-50 text-slate-700 border border-slate-200 font-medium px-3 py-1 rounded-full text-xs;
   }
 }
 
@@ -279,29 +381,39 @@
   }
 }
 
-/* Mobile Shopping List Optimizations */
+/* Mobile Shopping List Optimizations - Dark Theme */
 .mobile-shopping-item {
-  @apply cursor-pointer transition-all duration-200 touch-manipulation min-h-[72px] p-4 rounded-xl bg-white border-0 shadow-sm;
+  @apply cursor-pointer transition-all duration-200 touch-manipulation min-h-[72px] p-4 rounded-xl;
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .mobile-shopping-item:hover {
-  @apply shadow-lg -translate-y-1 border-primary/20;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+  border-color: hsl(var(--border) / 0.8);
+  background-color: hsl(var(--muted));
 }
 
 .mobile-shopping-item:active {
-  @apply scale-[0.98] shadow-sm;
+  @apply scale-[0.98];
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .mobile-shopping-item:focus-within {
-  @apply ring-2 ring-primary ring-offset-2;
+  @apply ring-2 ring-offset-2;
+  ring-color: hsl(var(--primary) / 0.3);
+  border-color: hsl(var(--primary) / 0.5);
+  ring-offset-color: hsl(var(--background));
 }
 
 .mobile-shopping-item input[type="checkbox"] {
-  @apply w-5 h-5 rounded border-2 border-gray-300 focus:ring-2 focus:ring-primary cursor-pointer transition-all duration-150;
+  @apply w-5 h-5 rounded border-2 border-gray-300 focus:ring-2 focus:ring-blue-500/30 cursor-pointer transition-all duration-150;
+  background-color: white !important;
 }
 
 .mobile-shopping-item input[type="checkbox"]:checked {
-  @apply bg-primary border-primary;
+  @apply bg-blue-600 border-blue-600;
 }
 
 .mobile-shopping-item input[type="checkbox"]:checked + div .item-text {
