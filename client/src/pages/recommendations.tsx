@@ -153,9 +153,9 @@ const RecommendationsPage: React.FC = () => {
       <main className="flex-1 overflow-y-auto">
         <div className="p-4 pb-20">
           {/* Header */}
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">Smart Recommendations</h1>
-            <p className="text-gray-600">Maximize savings on your typical purchases</p>
+          <div className="mb-4">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Smart Recommendations</h1>
+            <p className="text-sm sm:text-base text-gray-600">Maximize savings on your typical purchases</p>
           </div>
 
           
@@ -180,63 +180,63 @@ const RecommendationsPage: React.FC = () => {
                   {items.map((item) => (
                     <Card 
                       key={item.id} 
-                      className="transition-all hover:shadow-md"
+                      className="transition-all hover:shadow-md touch-target"
                     >
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start mb-3">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-gray-800 mb-1">{item.productName}</h4>
-                            <div className="flex items-center space-x-2 mb-2">
-                              <Star className="h-3 w-3 text-yellow-500 fill-current" />
+                      <CardContent className="p-3">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-sm text-gray-800 mb-1 truncate">{item.productName}</h4>
+                            <div className="flex items-center space-x-2 mb-1">
+                              <Star className="h-3 w-3 text-yellow-500 fill-current flex-shrink-0" />
                               <span className="text-xs text-gray-600">{item.rating}</span>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="flex items-center space-x-2">
-                              <span className="text-sm text-gray-500 line-through">
+                          <div className="text-right flex-shrink-0 ml-2">
+                            <div className="flex items-center space-x-1">
+                              <span className="text-xs text-gray-500 line-through">
                                 ${(item.currentPrice / 100).toFixed(2)}
                               </span>
-                              <span className="font-bold text-primary">
+                              <span className="font-bold text-primary text-sm">
                                 ${(item.salePrice / 100).toFixed(2)}
                               </span>
                             </div>
-                            <Badge variant="secondary" className="bg-green-50 text-green-700 mt-1">
-                              <TrendingDown className="h-3 w-3 mr-1" />
+                            <Badge variant="secondary" className="bg-green-50 text-green-700 mt-1 text-xs">
+                              <TrendingDown className="h-2 w-2 mr-1" />
                               ${(item.savings / 100).toFixed(2)} off
                             </Badge>
                           </div>
                         </div>
 
-                        <div className="space-y-2">
-                          <div className="flex items-center text-sm text-gray-600">
-                            <MapPin className="h-3 w-3 mr-1" />
-                            {item.retailer} • {item.distance}
+                        <div className="space-y-1 mb-3">
+                          <div className="flex items-center text-xs text-gray-600">
+                            <MapPin className="h-3 w-3 mr-1 flex-shrink-0" />
+                            <span className="truncate">{item.retailer} • {item.distance}</span>
                           </div>
-                          <div className="flex items-center text-sm text-orange-600">
-                            <Clock className="h-3 w-3 mr-1" />
-                            Deal expires in {item.dealExpires}
+                          <div className="flex items-center text-xs text-orange-600">
+                            <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
+                            <span className="truncate">Deal expires in {item.dealExpires}</span>
                           </div>
-                          <p className="text-sm text-gray-600">{item.reason}</p>
+                          <p className="text-xs text-gray-600 line-clamp-2">{item.reason}</p>
                         </div>
 
-                        <div className="mt-3 flex items-center justify-between">
+                        <div className="flex items-center justify-between">
                           <div className="flex items-center">
-                            <Percent className="h-4 w-4 text-green-600 mr-1" />
-                            <span className="text-sm font-medium text-green-600">
+                            <Percent className="h-3 w-3 text-green-600 mr-1" />
+                            <span className="text-xs font-medium text-green-600">
                               {Math.round((item.savings / item.currentPrice) * 100)}% off
                             </span>
                           </div>
                           <Button 
                             size="sm" 
-                            className="bg-primary hover:bg-primary/90"
+                            className="bg-primary hover:bg-primary/90 h-8 text-xs px-3"
                             onClick={(e) => {
                               e.stopPropagation();
                               addToShoppingListMutation.mutate(item);
                             }}
                             disabled={addToShoppingListMutation.isPending}
                           >
-                            <Plus className="h-4 w-4 mr-1" />
-                            {addToShoppingListMutation.isPending ? "Adding..." : "Add to List"}
+                            <Plus className="h-3 w-3 mr-1" />
+                            {addToShoppingListMutation.isPending ? "Adding..." : "Add"}
                           </Button>
                         </div>
                       </CardContent>
