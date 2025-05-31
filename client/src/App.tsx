@@ -8,7 +8,6 @@ import ProfilePage from '@/pages/profile';
 import NotFound from '@/pages/not-found';
 import DealsPage from '@/pages/deals';
 import RetailersPage from '@/pages/retailers';
-import InsightsPage from '@/pages/insights';
 import RecommendationsPage from '@/pages/recommendations';
 import InternalAnalytics from '@/pages/internal-analytics';
 import AdminSettings from '@/pages/admin-settings';
@@ -34,7 +33,6 @@ function App() {
             <Route path="/deals" component={DealsPage} />
             <Route path="/retailers" component={RetailersPage} />
             <Route path="/retailers/:id" component={RetailerDetailsPage} />
-            <Route path="/insights" component={InsightsPage} />
             <Route path="/recommendations" component={RecommendationsPage} />
             <Route path="/internal/analytics" component={InternalAnalytics} />
             <Route path="/admin-settings" component={AdminSettings} />
