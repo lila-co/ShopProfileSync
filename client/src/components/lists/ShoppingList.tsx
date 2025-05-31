@@ -704,61 +704,52 @@ const ShoppingListComponent: React.FC = () => {
                           <div className="flex-1 h-px bg-gray-200"></div>
                           <span className="text-xs text-gray-500">{categoryItems.length} items</span>
                         </div>
-                        <Card key={item.id} className="ml-2">
-                            <CardContent className="p-3">
-                              <div className="flex justify-between items-center">
-                                <div className="flex items-center flex-1">
-                                  <input
-                                    type="checkbox"
-                                    checked={item.isCompleted}
-                                    onChange={() => handleToggleItem(item.id, item.isCompleted)}
-                                    className="h-5 w-5 text-primary rounded mr-3"
-                                  />
-                                  <div className="flex-1">
-                                    <div className="flex items-center">
-                                      <span className="font-medium text-gray-800">
-                                        {item.productName}
-                                      </span>
-                                      <span className="ml-2 text-sm bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
-                                        Qty: {item.quantity} {item.unit && item.unit !== "COUNT" && (
-                                          <span className="text-xs text-gray-500">{item.unit.toLowerCase()}</span>
-                                        )}
+                        {categoryItems.map((item) => (
+                          <div key={item.id} className="border border-gray-200 rounded-lg p-3 ml-2 bg-white hover:shadow-sm transition-shadow">
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center flex-1">
+                                <input
+                                  type="checkbox"
+                                  checked={item.isCompleted}
+                                  onChange={() => handleToggleItem(item.id, item.isCompleted)}
+                                  className="h-4 w-4 text-primary rounded mr-3 flex-shrink-0"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center flex-wrap gap-2">
+                                    <span className="font-medium text-gray-800 text-sm">
+                                      {item.productName}
+                                    </span>
+                                    <span className="text-xs bg-gray-100 px-2 py-1 rounded-full whitespace-nowrap">
+                                      {item.quantity} {item.unit && item.unit !== "COUNT" ? item.unit.toLowerCase() : ""}
+                                    </span>
+                                  </div>
+                                  {item.suggestedRetailerId && item.suggestedPrice && (
+                                    <div className="flex items-center text-xs text-gray-500 mt-1">
+                                      <span>
+                                        Best: ${(item.suggestedPrice / 100).toFixed(2)}
                                       </span>
                                     </div>
-                                    {item.suggestedRetailerId && item.suggestedPrice && (
-                                      <div className="flex items-center text-xs text-gray-500 mt-1">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                          <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/>
-                                          <path d="M3 9V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4"/>
-                                        </svg>
-                                        <span>
-                                          Best price: ${(item.suggestedPrice / 100).toFixed(2)} at Retailer #{item.suggestedRetailerId}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                                <div className="flex space-x-2">
-                                  <button
-                                    onClick={() => handleEditItem(item)}
-                                    className="text-gray-400 hover:text-blue-500"
-                                    aria-label="Edit item"
-                                    title="Edit item"
-                                  >
-                                    <Pencil className="h-5 w-5" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteItem(item.id)}
-                                    className="text-gray-400 hover:text-red-500"
-                                    aria-label="Delete item"
-                                    title="Delete item"
-                                  >
-                                    <Trash2 className="h-5 w-5" />
-                                  </button>
+                                  )}
                                 </div>
                               </div>
-                            </CardContent>
-                          </Card>
+                              <div className="flex space-x-1 ml-2">
+                                <button
+                                  onClick={() => handleEditItem(item)}
+                                  className="text-gray-400 hover:text-blue-500 p-1"
+                                  aria-label="Edit item"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteItem(item.id)}
+                                  className="text-gray-400 hover:text-red-500 p-1"
+                                  aria-label="Delete item"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
                         ))}
                       </div>
                     ))}
@@ -774,42 +765,37 @@ const ShoppingListComponent: React.FC = () => {
                         </div>
                         <div className="space-y-2">
                           {completedItems.map((item: ShoppingListItem) => (
-<Card key={item.id} className="opacity-60 ml-2">
-                              <CardContent className="p-3">
-                                <div className="flex justify-between items-center">
-                                  <div className="flex items-center flex-1">
-                                    <input
-                                      type="checkbox"
-                                      checked={item.isCompleted}
-                                      onChange={() => handleToggleItem(item.id, item.isCompleted)}
-                                      className="h-5 w-5 text-primary rounded mr-3"
-                                    />
-                                    <div className="flex-1">
-                                      <div className="flex items-center">
-                                        <span className="font-medium line-through text-gray-500">
-                                          {item.productName}
-                                        </span>
-                                        <span className="ml-2 text-sm bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
-                                          Qty: {item.quantity} {item.unit && item.unit !== "COUNT" && (
-                                            <span className="text-xs text-gray-500">{item.unit.toLowerCase()}</span>
-                                          )}
-                                        </span>
-                                      </div>
+                            <div key={item.id} className="border border-gray-200 rounded-lg p-3 ml-2 bg-gray-50 opacity-70">
+                              <div className="flex justify-between items-center">
+                                <div className="flex items-center flex-1">
+                                  <input
+                                    type="checkbox"
+                                    checked={item.isCompleted}
+                                    onChange={() => handleToggleItem(item.id, item.isCompleted)}
+                                    className="h-4 w-4 text-primary rounded mr-3 flex-shrink-0"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center flex-wrap gap-2">
+                                      <span className="font-medium line-through text-gray-500 text-sm">
+                                        {item.productName}
+                                      </span>
+                                      <span className="text-xs bg-gray-200 px-2 py-1 rounded-full whitespace-nowrap">
+                                        {item.quantity} {item.unit && item.unit !== "COUNT" ? item.unit.toLowerCase() : ""}
+                                      </span>
                                     </div>
                                   </div>
-                                  <div className="flex space-x-2">
-                                    <button
-                                      onClick={() => handleDeleteItem(item.id)}
-                                      className="text-gray-400 hover:text-red-500"
-                                      aria-label="Delete item"
-                                      title="Delete item"
-                                    >
-                                      <Trash2 className="h-5 w-5" />
-                                    </button>
-                                  </div>
                                 </div>
-                              </CardContent>
-                            </Card>
+                                <div className="ml-2">
+                                  <button
+                                    onClick={() => handleDeleteItem(item.id)}
+                                    className="text-gray-400 hover:text-red-500 p-1"
+                                    aria-label="Delete item"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
                           ))}
                         </div>
                       </div>
