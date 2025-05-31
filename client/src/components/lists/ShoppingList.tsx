@@ -1093,69 +1093,7 @@ const ShoppingListComponent: React.FC = () => {
             </Card>
           </div>
 
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-semibold">Expiring Deals Alert</h4>
-                <Badge variant="destructive" className="text-xs">
-                  {getExpiringDeals().length} urgent
-                </Badge>
-              </div>
-              <div className="space-y-3">
-                {getExpiringDeals().length === 0 ? (
-                  <div className="text-center py-4 text-gray-500">
-                    <Clock className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                    <p className="text-sm">No urgent deals expiring soon</p>
-                    <p className="text-xs text-gray-400 mt-1">Check the Recommendations tab for all available deals</p>
-                  </div>
-                ) : (
-                  getExpiringDeals().map(deal => (
-                    <div key={deal.id} className="flex justify-between items-center border-b pb-2 last:border-b-0">
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{deal.product}</p>
-                        <div className="flex text-xs text-gray-500 space-x-3 mt-1">
-                          <span className="flex items-center">
-                            <MapPin className="h-3 w-3 mr-1" />
-                            {deal.retailer}
-                          </span>
-                          <span className="text-red-500 flex items-center">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            Expires: {deal.expires}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between mt-2">
-                          <span className="text-xs text-green-600 font-medium">
-                            Save ${(deal.originalItem.savings / 100).toFixed(2)} • {deal.discount} off
-                          </span>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            className="h-6 px-2 text-xs"
-                            onClick={() => addItemMutation.mutate({
-                              productName: deal.originalItem.productName,
-                              quantity: 1,
-                              unit: 'COUNT'
-                            })}
-                            disabled={addItemMutation.isPending}
-                          >
-                            <Plus className="h-3 w-3 mr-1" />
-                            Add
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-              {getExpiringDeals().length > 0 && (
-                <div className="mt-3 pt-3 border-t border-gray-200">
-                  <p className="text-xs text-gray-500 text-center">
-                    💡 More deals available in the Recommendations tab
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          
         </TabsContent>
 
         <TabsContent value="recommendations" className="space-y-4">
