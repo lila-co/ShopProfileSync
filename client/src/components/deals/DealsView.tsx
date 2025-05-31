@@ -14,9 +14,10 @@ import type { StoreDeal, Retailer } from '@/lib/types';
 
 interface DealsViewProps {
   searchQuery?: string;
+  activeFilter?: string | null;
 }
 
-const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '' }) => {
+const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = null }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedRetailerId, setSelectedRetailerId] = useState<number | null>(null);
@@ -26,8 +27,11 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '' }) => {
     queryKey: ['/api/retailers'],
   });
   
+  // Determine effective category from either dropdown or quick filter
+  const effectiveCategory = selectedCategory || (activeFilter && !['featured', 'nearby'].includes(activeFilter) ? activeFilter : null);
+  
   const { data: storeDeals, isLoading: loadingDeals } = useQuery<StoreDeal[]>({
-    queryKey: ['/api/deals', selectedRetailerId, selectedCategory, searchQuery],
+    queryKey: ['/api/deals', selectedRetailerId, effectiveCategory, searchQuery, activeFilter],
   });
   
   const { data: categories } = useQuery<string[]>({
@@ -134,7 +138,19 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '' }) => {
       {/* Deals Grid */}
       {storeDeals && storeDeals.length > 0 ? (
         <div className="space-y-3 pb-8">
-          {storeDeals.map((deal) => (
+          {storeDeals
+            .filter(deal => {
+              // Apply quick filter logic
+              if (activeFilter === 'featured') {
+                return deal.featured || calculateSavings(deal.regularPrice, deal.salePrice) >= 30;
+              }
+              if (activeFilter === 'nearby') {
+                // For demo purposes, show deals from first 3 retailers as "nearby"
+                return deal.retailerId <= 3;
+              }
+              return true;
+            })
+            .map((deal) => (
             <Card key={deal.id} className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
               <CardContent className="p-4">
                 <div className="flex gap-4">
