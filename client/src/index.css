@@ -383,7 +383,7 @@
 /* Mobile Shopping List Optimizations - Professional Theme */
 .mobile-shopping-item {
   @apply cursor-pointer transition-all duration-200 touch-manipulation min-h-[72px] p-4 rounded-xl;
-  background-color: hsl(var(--card));
+  background-color: white;
   border: 1px solid hsl(var(--border));
   box-shadow: var(--shadow-sm);
 }
