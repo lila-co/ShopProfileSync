@@ -472,7 +472,7 @@ const ShoppingListComponent: React.FC = () => {
 
       {/* Header */}
       <div className="mb-4">
-        <h2 className="text-xl font-bold mb-4 text-foreground">Shopping List</h2>
+        <h2 className="text-xl font-bold mb-4 text-gray-900">Shopping List</h2>
 
         {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-3 mb-4">
@@ -570,19 +570,19 @@ const ShoppingListComponent: React.FC = () => {
 
       <Tabs defaultValue="list" className="mt-2">
         <TabsList className="grid w-full grid-cols-4 mb-3 h-10 bg-gray-100 border border-gray-300">
-          <TabsTrigger value="list" className="flex items-center justify-center text-sm font-semibold py-2 data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-sm text-gray-700 hover:text-foreground">
+          <TabsTrigger value="list" className="flex items-center justify-center text-sm font-semibold py-2 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-700 hover:text-gray-900">
             <ShoppingBag className="h-4 w-4 mr-1" />
             List
           </TabsTrigger>
-          <TabsTrigger value="price" className="flex items-center justify-center text-sm font-semibold py-2 data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-sm text-gray-700 hover:text-foreground">
+          <TabsTrigger value="price" className="flex items-center justify-center text-sm font-semibold py-2 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-700 hover:text-gray-900">
             <DollarSign className="h-4 w-4 mr-1" />
             Price
           </TabsTrigger>
-          <TabsTrigger value="optimize" className="flex items-center justify-center text-sm font-semibold py-2 data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-sm text-gray-700 hover:text-foreground">
+          <TabsTrigger value="optimize" className="flex items-center justify-center text-sm font-semibold py-2 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-700 hover:text-gray-900">
             <BarChart2 className="h-4 w-4 mr-1" />
             Optimize
           </TabsTrigger>
-          <TabsTrigger value="route" className="flex items-center justify-center text-sm font-semibold py-2 data-[state=active]:bg-white data-[state=active]:text-foreground data-[state=active]:shadow-sm text-gray-700 hover:text-foreground">
+          <TabsTrigger value="route" className="flex items-center justify-center text-sm font-semibold py-2 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-700 hover:text-gray-900">
             <Car className="h-4 w-4 mr-1" />
             Route
           </TabsTrigger>
@@ -688,7 +688,7 @@ const ShoppingListComponent: React.FC = () => {
                         <div key={`incomplete-${category}`} className="space-y-2">
                           <div className="flex items-center space-x-2 mt-4 mb-2">
                             <span className="text-lg">{getCategoryIcon(category)}</span>
-                            <h4 className="font-semibold text-foreground">{category}</h4>
+                            <h4 className="font-semibold text-gray-700">{category}</h4>
                             <div className="flex-1 h-px bg-gray-300"></div>
                             <span className="text-xs text-gray-500">{categoryItems.length} items</span>
                           </div>
@@ -747,7 +747,7 @@ const ShoppingListComponent: React.FC = () => {
                         <div className="mt-6">
                           <div className="flex items-center space-x-2 mb-3">
                             <Check className="h-5 w-5 text-green-600" />
-                            <h4 className="font-semibold text-foreground">Completed</h4>
+                            <h4 className="font-semibold text-gray-700">Completed</h4>
                             <div className="flex-1 h-px bg-gray-300"></div>
                             <span className="text-xs text-gray-500">{completedItems.length} items</span>
                           </div>
@@ -940,7 +940,7 @@ const ShoppingListComponent: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="optimize" className="space-y-4">
-          <h3 className="text-xl font-bold mb-2 text-foreground">Shopping List Optimization</h3>
+          <h3 className="text-xl font-bold mb-2 text-gray-900">Shopping List Optimization</h3>
           <p className="text-base text-gray-700 mb-4 font-medium">
             Set your preferences to optimize your shopping experience across multiple retailers.
           </p>
@@ -949,7 +949,7 @@ const ShoppingListComponent: React.FC = () => {
             <Card>
               <CardContent className="p-4 space-y-4">
                 <div>
-                  <h4 className="font-bold mb-4 text-foreground text-lg">What matters most to you?</h4>
+                  <h4 className="font-bold mb-4 text-gray-900 text-lg">What matters most to you?</h4>
                   <RadioGroup 
                     className="space-y-3" 
                     value={optimizationPreference}
@@ -1006,7 +1006,7 @@ const ShoppingListComponent: React.FC = () => {
                 <Separator />
 
                 <div>
-                  <h4 className="font-bold mb-4 text-foreground text-lg">Select your preferred retailers</h4>
+                  <h4 className="font-bold mb-4 text-gray-900 text-lg">Select your preferred retailers</h4>
                   <div className="grid grid-cols-2 gap-3">
                     {retailers && retailers.map((retailer: any) => {
                       const logoUrl = getCompanyLogo(retailer.name);
@@ -1043,7 +1043,7 @@ const ShoppingListComponent: React.FC = () => {
                                 </span>
                               </div>
                             )}
-                            <Label htmlFor={`retailer-${retailer.id}`} className="text-sm font-semibold text-foreground cursor-pointer">
+                            <Label htmlFor={`retailer-${retailer.id}`} className="text-sm font-semibold text-gray-900 cursor-pointer">
                               {retailer.name}
                             </Label>
                           </div>

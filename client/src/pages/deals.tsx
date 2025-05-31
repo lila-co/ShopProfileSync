@@ -30,7 +30,7 @@ const DealsPage: React.FC = () => {
       <main className="flex-1 overflow-y-auto">
         {/* Hero Section */}
         <div className="px-4 pt-6 pb-4">
-          <h1 className="text-2xl font-bold text-foreground mb-2">Deals & Offers</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Deals & Offers</h1>
           <p className="text-sm text-gray-600">Find the best prices near you</p>
         </div>
 

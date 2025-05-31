@@ -37,7 +37,7 @@ const Dashboard: React.FC = () => {
           <section className="mb-6">
             <div className="flex justify-between items-start">
               <div>
-                <h2 className="text-xl font-bold text-foreground">Hello, {user?.firstName || 'there'}</h2>
+                <h2 className="text-xl font-bold text-gray-900">Hello, {user?.firstName || 'there'}</h2>
                 <p className="text-gray-700 text-sm">Your shopping assistance is ready</p>
               </div>
               {monthlySavings !== undefined && monthlySavings > 0 && (
