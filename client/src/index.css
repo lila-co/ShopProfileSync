@@ -16,16 +16,16 @@
   --border: 229 231 235;
   --input: 243 244 246;
 
-  /* Primary: Modern blue for trust and reliability */
-  --primary: 59 130 246;
+  /* Primary: Softer blue for better mobile readability */
+  --primary: 37 99 235;
   --primary-foreground: 255 255 255;
 
-  /* Secondary: Fresh green for savings and success */
-  --secondary: 34 197 94;
+  /* Secondary: Calming green for savings and success */
+  --secondary: 16 185 129;
   --secondary-foreground: 255 255 255;
 
-  /* Accent: Warm orange for deals and highlights */
-  --accent: 249 115 22;
+  /* Accent: Balanced orange for deals and highlights */
+  --accent: 245 101 101;
   --accent-foreground: 255 255 255;
 
   --destructive: 239 68 68;
@@ -107,6 +107,32 @@
     border-radius: 4px;
   }
 
+  /* Enhanced input styling */
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="password"],
+  select,
+  textarea {
+    background-color: white !important;
+    border: 1px solid rgb(229 231 235) !important;
+    border-radius: 0.75rem !important;
+    padding: 0.75rem !important;
+    transition: all 0.2s ease !important;
+  }
+
+  input[type="text"]:focus,
+  input[type="number"]:focus,
+  input[type="email"]:focus,
+  input[type="password"]:focus,
+  select:focus,
+  textarea:focus {
+    border-color: hsl(var(--primary)) !important;
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1) !important;
+    outline: none !important;
+    background-color: white !important;
+  }
+
   /* Better line heights */
   p, li, span {
     line-height: 1.6;
@@ -149,6 +175,21 @@
   .input-modern {
     @apply h-12 px-4 bg-gray-50 border-0 rounded-xl text-base placeholder:text-gray-500;
     font-size: 16px; /* Prevents zoom on iOS */
+  }
+
+  /* Fix auto-fill styling */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px white inset !important;
+    -webkit-text-fill-color: hsl(var(--foreground)) !important;
+    background-color: white !important;
+    border-radius: 0.75rem !important;
+  }
+
+  input:-webkit-autofill::first-line {
+    font-family: inherit !important;
   }
 
   /* Retail-style badges */
@@ -281,11 +322,11 @@
 
 /* Mobile Shopping List Optimizations */
 .mobile-shopping-item {
-  @apply cursor-pointer transition-all duration-200 touch-manipulation min-h-[72px] p-4 rounded-xl bg-white border-0 shadow-sm;
+  @apply cursor-pointer transition-all duration-200 touch-manipulation min-h-[72px] p-4 rounded-xl bg-white border border-gray-100 shadow-sm;
 }
 
 .mobile-shopping-item:hover {
-  @apply shadow-lg -translate-y-1 border-primary/20;
+  @apply shadow-md border-blue-200 bg-blue-50/30;
 }
 
 .mobile-shopping-item:active {
@@ -293,15 +334,16 @@
 }
 
 .mobile-shopping-item:focus-within {
-  @apply ring-2 ring-primary ring-offset-2;
+  @apply ring-2 ring-blue-500/30 ring-offset-2 border-blue-300;
 }
 
 .mobile-shopping-item input[type="checkbox"] {
-  @apply w-5 h-5 rounded border-2 border-gray-300 focus:ring-2 focus:ring-primary cursor-pointer transition-all duration-150;
+  @apply w-5 h-5 rounded border-2 border-gray-300 focus:ring-2 focus:ring-blue-500/30 cursor-pointer transition-all duration-150;
+  background-color: white !important;
 }
 
 .mobile-shopping-item input[type="checkbox"]:checked {
-  @apply bg-primary border-primary;
+  @apply bg-blue-600 border-blue-600;
 }
 
 .mobile-shopping-item input[type="checkbox"]:checked + div .item-text {
