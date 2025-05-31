@@ -290,12 +290,10 @@ const Shop: React.FC = () => {
   
   if (isLoadingLists || isLoadingRetailers) {
     return (
-      <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
-        <div className="p-4 pb-20">
-          <h1 className="text-xl sm:text-2xl font-bold mb-4">Shop Now</h1>
-          <div className="flex items-center justify-center flex-grow py-12">
-            <p>Loading...</p>
-          </div>
+      <div className="container mx-auto p-4 flex flex-col min-h-screen">
+        <h1 className="text-2xl font-bold mb-6">Shop Now</h1>
+        <div className="flex items-center justify-center flex-grow">
+          <p>Loading...</p>
         </div>
         <BottomNavigation activeTab="shop" />
       </div>
@@ -305,9 +303,8 @@ const Shop: React.FC = () => {
   if (orderCompleted && shoppingRoute) {
     // Show confirmation and shopping route/order details
     return (
-      <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
-        <div className="p-4 pb-20">
-          <h1 className="text-xl sm:text-2xl font-bold mb-2">Shop Now</h1>
+      <div className="container mx-auto p-4 flex flex-col min-h-screen">
+        <h1 className="text-2xl font-bold mb-2">Shop Now</h1>
         
         <Card className="mb-4 border-green-500">
           <CardHeader className="bg-green-50 dark:bg-green-900/20">
@@ -454,15 +451,14 @@ const Shop: React.FC = () => {
   }
   
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
-      <div className="p-4 pb-20">
-        <h1 className="text-xl sm:text-2xl font-bold mb-4">Shop Now</h1>
+    <div className="container mx-auto p-4 flex flex-col min-h-screen">
+      <h1 className="text-2xl font-bold mb-6">Shop Now</h1>
       
       <Card className="mb-4">
-          <CardHeader>
-            <CardTitle className="text-lg">Select Shopping List</CardTitle>
-            <CardDescription>Choose the shopping list you want to use</CardDescription>
-          </CardHeader>
+        <CardHeader>
+          <CardTitle>Select Shopping List</CardTitle>
+          <CardDescription>Choose the shopping list you want to use</CardDescription>
+        </CardHeader>
         <CardContent>
           <Select
             value={selectedList?.toString()}
@@ -726,20 +722,19 @@ const Shop: React.FC = () => {
         </Alert>
       )}
       
-      <div className="mt-6">
-          <Button 
-            className="w-full h-12 touch-target"
-            size="lg"
-            onClick={handleSubmit}
-            disabled={isSubmitting || !selectedList || !selectedRetailer || listItems?.length === 0}
-          >
-            {isSubmitting ? 'Processing...' : (
-              shoppingMode === 'instore' ? 'Create Shopping Route' : 
-              shoppingMode === 'pickup' ? 'Place Pickup Order' : 
-              'Place Delivery Order'
-            )}
-          </Button>
-        </div>
+      <div className="mt-auto mb-20">
+        <Button 
+          className="w-full"
+          size="lg"
+          onClick={handleSubmit}
+          disabled={isSubmitting || !selectedList || !selectedRetailer || listItems?.length === 0}
+        >
+          {isSubmitting ? 'Processing...' : (
+            shoppingMode === 'instore' ? 'Create Shopping Route' : 
+            shoppingMode === 'pickup' ? 'Place Pickup Order' : 
+            'Place Delivery Order'
+          )}
+        </Button>
       </div>
       
       <BottomNavigation activeTab="shop" />
