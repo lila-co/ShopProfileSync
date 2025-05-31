@@ -859,8 +859,7 @@ const ShoppingListComponent: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-3">
                   <Button 
-                    variant="outline" 
-                    className="w-full"
+                    className="w-full bg-gray-700 hover:bg-gray-800 text-white"
                     onClick={() => {
                       window.location.href = `/plan-details?listId=${defaultList?.id}&planType=single-store&mode=online`;
                     }}
@@ -931,8 +930,7 @@ const ShoppingListComponent: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-3">
                   <Button 
-                    variant="outline" 
-                    className="w-full"
+                    className="w-full bg-gray-700 hover:bg-gray-800 text-white"
                     onClick={() => {
                       window.location.href = `/plan-details?listId=${defaultList?.id}&planType=best-value&mode=online`;
                     }}
@@ -1003,8 +1001,7 @@ const ShoppingListComponent: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-3">
                   <Button 
-                    variant="outline" 
-                    className="w-full"
+                    className="w-full bg-gray-700 hover:bg-gray-800 text-white"
                     onClick={() => {
                       window.location.href = `/plan-details?listId=${defaultList?.id}&planType=balanced&mode=online`;
                     }}
