@@ -865,13 +865,13 @@ const ShoppingListComponent: React.FC = () => {
                           </div>
 
                           <Button 
-                            className="w-full mt-1 text-sm h-8"
-                            variant="outline"
+                            className="w-full mt-1 text-sm h-10 bg-blue-600 hover:bg-blue-700 text-white font-semibold border-2 border-blue-600 shadow-md transition-all duration-200"
+                            variant="default"
                             onClick={() => {
                               window.location.href = `/shop?retailerId=${store.retailerId}&listId=${defaultList?.id}`;
                             }}
                           >
-                            <ShoppingBag className="mr-2 h-3.5 w-3.5" />
+                            <ShoppingBag className="mr-2 h-4 w-4" />
                             Shop at {store.retailerName}
                           </Button>
                         </div>
@@ -912,13 +912,17 @@ const ShoppingListComponent: React.FC = () => {
                       </div>
 
                       <Button 
-                        className="w-full mt-4"
+                        className={`w-full mt-4 h-12 font-semibold text-base border-2 shadow-md transition-all duration-200 ${
+                          index === 0 
+                            ? "bg-green-600 hover:bg-green-700 text-white border-green-600" 
+                            : "bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
+                        }`}
                         onClick={() => {
                           window.location.href = `/shop?retailerId=${store.retailerId}&listId=${defaultList?.id}`;
                         }}
-                        variant={index === 0 ? "default" : "outline"}
+                        variant="default"
                       >
-                        <ShoppingBag className="mr-2 h-4 w-4" />
+                        <ShoppingBag className="mr-2 h-5 w-5" />
                         Shop at {store.retailerName}
                       </Button>
 
