@@ -4,32 +4,32 @@
 
 :root {
   /* Professional Light Color Scheme for Mobile */
-  --background: 255 255 255;
-  --foreground: 15 23 42;
-  --muted: 248 250 252;
-  --muted-foreground: 15 23 42;
-  --popover: 255 255 255;
-  --popover-foreground: 15 23 42;
-  --card: 255 255 255;
-  --card-foreground: 15 23 42;
-  --border: 226 232 240;
-  --input: 248 250 252;
+  --background: 255, 255, 255;
+  --foreground: 15, 23, 42;
+  --muted: 248, 250, 252;
+  --muted-foreground: 15, 23, 42;
+  --popover: 255, 255, 255;
+  --popover-foreground: 15, 23, 42;
+  --card: 255, 255, 255;
+  --card-foreground: 15, 23, 42;
+  --border: 226, 232, 240;
+  --input: 248, 250, 252;
 
   /* Primary: Professional blue for trust and clarity */
-  --primary: 59 130 246;
-  --primary-foreground: 255 255 255;
+  --primary: 59, 130, 246;
+  --primary-foreground: 255, 255, 255;
 
   /* Secondary: Neutral gray for secondary actions */
-  --secondary: 148 163 184;
-  --secondary-foreground: 255 255 255;
+  --secondary: 148, 163, 184;
+  --secondary-foreground: 255, 255, 255;
 
   /* Accent: Professional blue for positive actions */
-  --accent: 59 130 246;
-  --accent-foreground: 255 255 255;
+  --accent: 59, 130, 246;
+  --accent-foreground: 255, 255, 255;
 
-  --destructive: 239 68 68;
-  --destructive-foreground: 255 255 255;
-  --ring: 59 130 246;
+  --destructive: 239, 68, 68;
+  --destructive-foreground: 255, 255, 255;
+  --ring: 59, 130, 246;
   --radius: 0.75rem;
 
   /* Enhanced spacing scale */
@@ -56,25 +56,25 @@
 }
 
 .dark {
-  --background: 15 23 42;
-  --foreground: 248 250 252;
-  --muted: 30 41 59;
-  --muted-foreground: 203 213 225;
-  --popover: 30 41 59;
-  --popover-foreground: 248 250 252;
-  --card: 30 41 59;
-  --card-foreground: 248 250 252;
-  --border: 51 65 85;
-  --input: 51 65 85;
-  --primary: 99 102 241;
-  --primary-foreground: 255 255 255;
-  --secondary: 71 85 105;
-  --secondary-foreground: 248 250 252;
-  --accent: 59 130 246;
-  --accent-foreground: 255 255 255;
-  --destructive: 239 68 68;
-  --destructive-foreground: 255 255 255;
-  --ring: 99 102 241;
+  --background: 15, 23, 42;
+  --foreground: 248, 250, 252;
+  --muted: 30, 41, 59;
+  --muted-foreground: 203, 213, 225;
+  --popover: 30, 41, 59;
+  --popover-foreground: 248, 250, 252;
+  --card: 30, 41, 59;
+  --card-foreground: 248, 250, 252;
+  --border: 51, 65, 85;
+  --input: 51, 65, 85;
+  --primary: 99, 102, 241;
+  --primary-foreground: 255, 255, 255;
+  --secondary: 71, 85, 105;
+  --secondary-foreground: 248, 250, 252;
+  --accent: 59, 130, 246;
+  --accent-foreground: 255, 255, 255;
+  --destructive: 239, 68, 68;
+  --destructive-foreground: 255, 255, 255;
+  --ring: 99, 102, 241;
 }
 
 @layer base {
@@ -83,10 +83,29 @@
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply font-sans antialiased text-foreground;
+    background-color: rgb(var(--background));
+    color: rgb(var(--foreground));
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+  
+  /* Ensure proper background colors for mobile Safari */
+  html {
+    background-color: white;
+  }
+  
+  .bg-background {
+    background-color: rgb(var(--background)) !important;
+  }
+  
+  .bg-card {
+    background-color: rgb(var(--card)) !important;
+  }
+  
+  .bg-muted {
+    background-color: rgb(var(--muted)) !important;
   }
 
   /* Enhanced typography */
