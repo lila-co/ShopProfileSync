@@ -740,7 +740,6 @@ const Shop: React.FC = () => {
       <BottomNavigation activeTab="shop" />
     </div>
   );
-  );
 };
 
 export default Shop;
