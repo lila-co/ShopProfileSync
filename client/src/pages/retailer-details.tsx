@@ -78,11 +78,19 @@ const RetailerDetailsPage: React.FC = () => {
 
         {/* Store Actions */}
         <div className="space-y-3 mb-6">
-          <Button className="w-full" variant="default">
+          <Button 
+            className="w-full" 
+            variant="default"
+            onClick={() => navigate(`/deals?retailer=${retailer.id}`)}
+          >
             <Store className="h-4 w-4 mr-2" />
             View Current Deals
           </Button>
-          <Button className="w-full" variant="outline">
+          <Button 
+            className="w-full" 
+            variant="outline"
+            onClick={() => window.open(`https://www.google.com/maps/search/${encodeURIComponent(retailer.name)}+store+locations`, '_blank')}
+          >
             <MapPin className="h-4 w-4 mr-2" />
             Find Store Locations
           </Button>
