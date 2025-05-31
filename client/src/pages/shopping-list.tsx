@@ -47,7 +47,7 @@ const ShoppingListPage: React.FC = () => {
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
       <Header 
-        title={listName}
+        title="Home"
         user={user}
       />
       <main className="flex-1 overflow-y-auto">
