@@ -1,4 +1,4 @@
-import { eq, and, gte, lt, ilike, or, desc, isNotNull, lte } from "drizzle-orm";
+import { eq, and, gte, lt, ilike, or } from "drizzle-orm";
 import { db } from "./db";
 import { 
   users, retailers, retailerAccounts, products, purchases, purchaseItems,
@@ -508,8 +508,6 @@ export class MemStorage implements IStorage {
       return { ...account, retailer };
     }));
   }
-
-  ```python
 
   async getRetailerAccount(id: number): Promise<RetailerAccount | undefined> {
     return this.retailerAccounts.get(id);
@@ -1271,10 +1269,10 @@ export class MemStorage implements IStorage {
         }
         return results;
     }
-
+    
     async searchPurchases(filters: any): Promise<Purchase[]> {
         let results = Array.from(this.purchases.values());
-
+    
         if (filters.userId) {
             results = results.filter(purchase => purchase.userId === filters.userId);
         }
@@ -1291,7 +1289,7 @@ export class MemStorage implements IStorage {
         }
         return results;
     }
-
+    
     async getUserStatistics(userId: number): Promise<any> {
         // Mock statistics for demo
         return {
@@ -1833,42 +1831,41 @@ const [updatedUser] = await db
     }
   }
 
-  async getDealCategories() {
-    const categories = await this.db
-      .select({ category: storeDeals.category })
-      .from(storeDeals)
-      .where(isNotNull(storeDeals.category))
-      .groupBy(storeDeals.category);
+  async getDealCategories(): Promise<string[]> {
+    try {
+      const deals = await this.getDeals();
+      const categories = new Set<string>();
 
-    return categories.map(c => c.category).filter(Boolean);
+      deals.forEach(deal => {
+        if (deal.category) {
+          categories.add(deal.category);
+        }
+      });
+
+      return Array.from(categories);
+    } catch (error) {
+      console.error("Error getting deal categories:", error);
+      throw error;
+    }
   }
 
-  async getStoreDeals(retailerId?: number) {
-    let query = this.db
-      .select({
-        id: storeDeals.id,
-        retailerId: storeDeals.retailerId,
-        productName: storeDeals.productName,
-        regularPrice: storeDeals.regularPrice,
-        salePrice: storeDeals.salePrice,
-        category: storeDeals.category,
-        startDate: storeDeals.startDate,
-        endDate: storeDeals.endDate,
-        price: storeDeals.salePrice
-      })
-      .from(storeDeals)
-      .where(
-        and(
-          gte(storeDeals.endDate, new Date().toISOString().split('T')[0]),
-          lte(storeDeals.startDate, new Date().toISOString().split('T')[0])
-        )
-      );
-
-    if (retailerId) {
-      query = query.where(eq(storeDeals.retailerId, retailerId));
+  async createDeal(dealData: {
+    retailerId: number;
+    productName: string;
+    category: string;
+    regularPrice: number;
+    salePrice: number;
+    imageUrl?: string;
+    startDate: Date;
+    endDate: Date;
+  }): Promise<StoreDeal> {
+    try {
+      const [deal] = await db.insert(storeDeals).values(dealData).returning();
+      return deal;
+    } catch (error) {
+      console.error("Error creating deal:", error);
+      throw error;
     }
-
-    return query.orderBy(desc(storeDeals.startDate));
   }
 
   async getWeeklyCirculars(retailerId?: number): Promise<WeeklyCircular[]> {
@@ -1883,8 +1880,9 @@ const [updatedUser] = await db
       query = query.where(
         and(
           eq(weeklyCirculars.isActive, true),
-          gte(weeklyCirculars.endDate, new Date()))
-        );
+          gte(weeklyCirculars.endDate, new Date())
+        )
+      );
 
       return query;
     } catch (error) {
