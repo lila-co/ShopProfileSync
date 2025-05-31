@@ -2546,7 +2546,7 @@ const [updatedUser] = await db
       console.error("Error updating affiliate conversion status:", error);
       throw error;
     }
-    }
+  }
 
   async claimDeal(dealId: number, userId: number) {
     // In a real app, you'd have a separate table for claimed deals
