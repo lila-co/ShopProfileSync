@@ -1664,18 +1664,31 @@ const ShoppingListPage: React.FC = () => {
                                   +{singleStoreOptimization.data.items.length - 3} more items
                                 </div>
                               )}
-                              <Button 
-                                size="sm" 
-                                variant="default" 
-                                className="w-full text-xs sm:text-sm mt-2"
-                                onClick={() => handleViewShoppingPlan({
-                                  ...singleStoreOptimization.data,
-                                  planType: "Single Store"
-                                }, `Single Store - ${singleStoreOptimization.data?.retailerName || "Loading..."}`)}
-                              >
-                                <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                                View Full Shopping Plan
-                              </Button>
+                              <div className="grid grid-cols-2 gap-2">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  className="w-full text-xs sm:text-sm"
+                                  onClick={() => handleViewShoppingPlan({
+                                    ...singleStoreOptimization.data,
+                                    planType: "Single Store"
+                                  }, `Single Store - ${singleStoreOptimization.data?.retailerName || "Loading..."}`)}
+                                >
+                                  <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                  View Full Shopping Plan
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="default"
+                                  className="w-full text-xs sm:text-sm"
+                                  onClick={() => {
+                                    navigate('/auto-order?listId=' + (selectedList?.id || defaultList?.id || '1') + '&mode=online');
+                                  }}
+                                >
+                                  <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                  Order Online
+                                </Button>
+                              </div>
                             </div>
                           ) : (
                             <Button 
@@ -1733,18 +1746,31 @@ const ShoppingListPage: React.FC = () => {
                                   </div>
                                 </div>
                               ))}
-                              <Button 
-                                size="sm" 
-                                variant="default" 
-                                className="w-full text-xs sm:text-sm mt-2"
-                                onClick={() => handleViewShoppingPlan({
-                                  ...bestValueOptimization.data,
-                                  planType: "Best Value Multi-Store"
-                                }, "Best Value - Multi-Store")}
-                              >
-                                <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                                View Full Shopping Plan
-                              </Button>
+                              <div className="grid grid-cols-2 gap-2 mt-2">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  className="w-full text-xs sm:text-sm"
+                                  onClick={() => handleViewShoppingPlan({
+                                    ...bestValueOptimization.data,
+                                    planType: "Best Value Multi-Store"
+                                  }, "Best Value - Multi-Store")}
+                                >
+                                  <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                  View Full Shopping Plan
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="default"
+                                  className="w-full text-xs sm:text-sm"
+                                  onClick={() => {
+                                    navigate('/auto-order?listId=' + (selectedList?.id || defaultList?.id || '1') + '&mode=online');
+                                  }}
+                                >
+                                  <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                  Order Online
+                                </Button>
+                              </div>
                             </div>
                           ) : (
                             <Button 
@@ -1804,18 +1830,31 @@ const ShoppingListPage: React.FC = () => {
                                   +{(balancedOptimization.data.stores?.[0]?.items?.length || 0) - 3} more items
                                 </div>
                               )}
-                              <Button 
-                                size="sm" 
-                                variant="default" 
-                                className="w-full text-xs sm:text-sm mt-2"
-                                onClick={() => handleViewShoppingPlan({
-                                  ...balancedOptimization.data,
-                                  planType: "Balanced"
-                                }, `Balanced - ${balancedOptimization.data?.stores?.[0]?.retailerName || "Loading..."}`)}
-                              >
-                                <BarChart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                                View Full Shopping Plan
-                              </Button>
+                              <div className="grid grid-cols-2 gap-2 mt-2">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  className="w-full text-xs sm:text-sm"
+                                  onClick={() => handleViewShoppingPlan({
+                                    ...balancedOptimization.data,
+                                    planType: "Balanced"
+                                  }, `Balanced - ${balancedOptimization.data?.stores?.[0]?.retailerName || "Loading..."}`)}
+                                >
+                                  <BarChart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                  View Full Shopping Plan
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="default"
+                                  className="w-full text-xs sm:text-sm"
+                                  onClick={() => {
+                                    navigate('/auto-order?listId=' + (selectedList?.id || defaultList?.id || '1') + '&mode=online');
+                                  }}
+                                >
+                                  <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                  Order Online
+                                </Button>
+                              </div>
                             </div>
                           ) : (
                             <Button 
@@ -1837,40 +1876,7 @@ const ShoppingListPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Go Shopping Section */}
-                    <div className="border-t pt-4 mt-4">
-                      <h4 className="font-medium text-sm sm:text-base mb-3">Ready to Shop?</h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <Button 
-                          className="w-full h-auto p-4 flex flex-col items-center space-y-2"
-                          onClick={() => {
-                            // Always navigate to auto-order for smart ordering
-                            navigate('/auto-order?listId=' + (selectedList?.id || defaultList?.id || '1') + '&mode=online');
-                          }}
-                        >
-                          <ShoppingCart className="h-6 w-6" />
-                          <div className="text-center">
-                            <div className="font-medium">Shop Online</div>
-                            <div className="text-xs text-white/80">Place optimized orders automatically</div>
-                          </div>
-                        </Button>
-
-                        <Button 
-                          variant="outline"
-                          className="w-full h-auto p-4 flex flex-col items-center space-y-2"
-                          onClick={() => {
-                            navigate('/shop?listId=' + selectedList?.id + '&mode=pickup');
-                          }}
-                        >
-                          <StoreIcon className="h-6 w-6" />
-
-                          <div className="text-center">
-                            <div className="font-medium">Order for Delivery/Pickup</div>
-                            <div className="text-xs text-gray-500">Place orders for pickup or delivery</div>
-                          </div>
-                        </Button>
-                      </div>
-                    </div>
+                    
 
                     {/* Special Deals Section */}
                     <div className="border-t pt-4 mt-4">
