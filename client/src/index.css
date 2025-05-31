@@ -23,8 +23,8 @@
   --secondary: 148 163 184;
   --secondary-foreground: 255 255 255;
 
-  /* Accent: Success green for positive actions */
-  --accent: 34 197 94;
+  /* Accent: Professional teal for positive actions */
+  --accent: 20 184 166;
   --accent-foreground: 255 255 255;
 
   --destructive: 239 68 68;
@@ -178,13 +178,13 @@
   .btn-success {
     background-color: hsl(var(--accent));
     color: white;
-    border: 2px solid hsl(var(--accent));
-    font-weight: 600;
+    border: 1px solid hsl(var(--accent));
+    font-weight: 500;
   }
 
   .btn-success:hover {
     background-color: hsl(var(--accent) / 0.9);
-    box-shadow: 0 2px 8px hsl(var(--accent) / 0.3);
+    box-shadow: var(--shadow-md);
   }
 
   /* Destructive action buttons - clear warning */
@@ -248,21 +248,21 @@
     font-family: inherit !important;
   }
 
-  /* Accessible badge styles */
+  /* Professional badge styles */
   .badge-savings {
-    @apply bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold px-3 py-1 rounded-full text-xs;
+    @apply bg-teal-50 text-teal-700 border border-teal-200 font-medium px-3 py-1 rounded-full text-xs;
   }
 
   .badge-deal {
-    @apply bg-rose-50 text-rose-700 border border-rose-200 font-semibold px-3 py-1 rounded-full text-xs;
+    @apply bg-blue-50 text-blue-700 border border-blue-200 font-medium px-3 py-1 rounded-full text-xs;
   }
 
   .badge-featured {
-    @apply bg-blue-50 text-blue-700 border border-blue-200 font-semibold px-3 py-1 rounded-full text-xs;
+    @apply bg-indigo-50 text-indigo-700 border border-indigo-200 font-medium px-3 py-1 rounded-full text-xs;
   }
 
   .badge-neutral {
-    @apply bg-slate-50 text-slate-700 border border-slate-200 font-medium px-3 py-1 rounded-full text-xs;
+    @apply bg-gray-50 text-gray-700 border border-gray-200 font-medium px-3 py-1 rounded-full text-xs;
   }
 }
 
@@ -380,17 +380,17 @@
   }
 }
 
-/* Mobile Shopping List Optimizations - Dark Theme */
+/* Mobile Shopping List Optimizations - Professional Theme */
 .mobile-shopping-item {
   @apply cursor-pointer transition-all duration-200 touch-manipulation min-h-[72px] p-4 rounded-xl;
   background-color: hsl(var(--card));
   border: 1px solid hsl(var(--border));
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-sm);
 }
 
 .mobile-shopping-item:hover {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
-  border-color: hsl(var(--border) / 0.8);
+  box-shadow: var(--shadow-md);
+  border-color: hsl(var(--primary) / 0.2);
   background-color: hsl(var(--muted));
 }
 
