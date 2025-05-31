@@ -6,7 +6,7 @@ import { ShoppingList as ShoppingListType, ShoppingListItem } from '@/lib/types'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-
+import { aiCategorizationService } from '@/lib/aiCategorization';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Plus, ShoppingBag, FileText, Clock, Check, Trash2, AlertTriangle, DollarSign, MapPin, Car, BarChart2, Wand2, Pencil, Image, Star, TrendingDown, Percent } from 'lucide-react';
@@ -140,19 +140,45 @@ const ShoppingListComponent: React.FC = () => {
       let optimizedQuantity = quantity;
       let optimizedUnit = unit;
 
-      // Simple unit optimization logic
-      const lowerName = productName.toLowerCase();
-      if (lowerName.includes('milk')) {
-        optimizedUnit = 'GALLON';
-        optimizedQuantity = 1;
-      } else if (lowerName.includes('egg')) {
-        optimizedUnit = 'DOZEN';
-        optimizedQuantity = 1;
-      } else if (lowerName.includes('bread')) {
-        optimizedUnit = 'LOAF';
-      } else if (lowerName.includes('cheese')) {
-        optimizedUnit = 'OZ';
-        optimizedQuantity = 8;
+      try {
+        // Get AI categorization with count optimization
+        const aiResult = await aiCategorizationService.categorizeProduct(productName, quantity, unit);
+
+        if (aiResult && aiResult.confidence > 0.7) {
+          // Use AI suggestions if confidence is high
+          if (aiResult.suggestedQuantity && aiResult.suggestedQuantity !== quantity) {
+            optimizedQuantity = aiResult.suggestedQuantity;
+          }
+          if (aiResult.suggestedUnit && aiResult.suggestedUnit !== unit) {
+            optimizedUnit = aiResult.suggestedUnit;
+          }
+        } else {
+          // Fallback to quick categorization optimization
+          const quickResult = aiCategorizationService.getQuickCategory(productName, quantity, unit);
+          if (quickResult.suggestedQuantity) {
+            optimizedQuantity = quickResult.suggestedQuantity;
+          }
+          if (quickResult.suggestedUnit) {
+            optimizedUnit = quickResult.suggestedUnit;
+          }
+        }
+      } catch (error) {
+        console.warn('AI optimization failed, using fallback logic:', error);
+
+        // Fallback historical size preferences
+        const lowerName = productName.toLowerCase();
+        if (lowerName.includes('milk')) {
+          optimizedUnit = 'GALLON';
+          optimizedQuantity = 1;
+        } else if (lowerName.includes('egg')) {
+          optimizedUnit = 'DOZEN';
+          optimizedQuantity = 1;
+        } else if (lowerName.includes('bread')) {
+          optimizedUnit = 'LOAF';
+        } else if (lowerName.includes('cheese')) {
+          optimizedUnit = 'OZ';
+          optimizedQuantity = 8;
+        }
       }
 
       const response = await apiRequest('POST', '/api/shopping-list/items', {
@@ -454,7 +480,7 @@ const ShoppingListComponent: React.FC = () => {
       for (const item of items) {
         if (!newCategories.has(item.productName)) {
           // Use quick fallback first for immediate UI response
-          // Quick categorization would be implemented here
+          const quickResult = aiCategorizationService.getQuickCategory(item.productName);
           newCategories.set(item.productName, quickResult.category);
           hasUpdates = true;
 
