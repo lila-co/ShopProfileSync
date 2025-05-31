@@ -498,75 +498,88 @@ const ShoppingListComponent: React.FC = () => {
         </div>
       </div>
 
-      <form onSubmit={handleAddItem} className="mb-6">
-        <div className="flex space-x-2 mb-2">
-          <Input
-            type="text"
-            placeholder="Add an item..."
-            value={newItemName}
-            onChange={(e) => setNewItemName(e.target.value)}
-            className="flex-1 bg-gray-50 border border-gray-200 rounded-l-lg px-3 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
-            style={{ backgroundColor: 'white !important' }}
-          />
-          <Button 
-            type="submit" 
-            className="bg-primary text-white"
-            disabled={addItemMutation.isPending}
-          >
-            Add
-          </Button>
+      {/* Manual Add Item Section - Enhanced Visibility */}
+      <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4 shadow-sm">
+        <div className="flex items-center mb-3">
+          <Plus className="h-5 w-5 text-blue-600 mr-2" />
+          <h3 className="text-lg font-semibold text-gray-900">Add New Item</h3>
         </div>
-
-        <div className="flex space-x-2">
-          <div className="w-20">
+        
+        <form onSubmit={handleAddItem}>
+          <div className="flex space-x-2 mb-3">
             <Input
-              type="number"
-              placeholder="Qty"
-              min="1"
-              defaultValue="1"
-              onChange={(e) => setNewItemQuantity(parseInt(e.target.value) || 1)}
-              className="w-16 bg-gray-50 border border-gray-200 rounded text-gray-800 text-center text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent px-2 py-1"
+              type="text"
+              placeholder="What do you need to buy?"
+              value={newItemName}
+              onChange={(e) => setNewItemName(e.target.value)}
+              className="flex-1 bg-white border-2 border-blue-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium shadow-sm"
               style={{ backgroundColor: 'white !important' }}
             />
+            <Button 
+              type="submit" 
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 font-semibold text-base shadow-md transition-all duration-200 rounded-lg"
+              disabled={addItemMutation.isPending}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add
+            </Button>
           </div>
 
-          <Select 
-            value={newItemUnit} 
-            onValueChange={setNewItemUnit}
-            disabled={autoDetectUnit}
-          >
-            <SelectTrigger className={`flex-1 ${autoDetectUnit ? 'opacity-60' : ''}`}>
-              <SelectValue placeholder="Unit" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="COUNT">Count</SelectItem>
-              <SelectItem value="LB">lb (Pounds)</SelectItem>
-              <SelectItem value="OZ">oz (Ounces)</SelectItem>
-              <SelectItem value="GALLON">Gallon</SelectItem>
-              <SelectItem value="LOAF">Loaf</SelectItem>
-              <SelectItem value="PKG">Package</SelectItem>
-              <SelectItem value="ROLL">Rolls</SelectItem>
-              <SelectItem value="BOX">Box</SelectItem>
-              <SelectItem value="CAN">Can</SelectItem>
-              <SelectItem value="BOTTLE">Bottle</SelectItem>
-              <SelectItem value="JAR">Jar</SelectItem>
-              <SelectItem value="BUNCH">Bunch</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+          <div className="flex space-x-3 mb-3">
+            <div className="w-24">
+              <Label className="text-sm font-medium text-gray-700 mb-1 block">Quantity</Label>
+              <Input
+                type="number"
+                placeholder="1"
+                min="1"
+                defaultValue="1"
+                onChange={(e) => setNewItemQuantity(parseInt(e.target.value) || 1)}
+                className="w-full bg-white border-2 border-gray-300 rounded-lg text-gray-900 text-center text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-3 py-2 font-medium"
+                style={{ backgroundColor: 'white !important' }}
+              />
+            </div>
 
-        <div className="flex items-center space-x-2 mt-2 text-sm text-gray-800">
-          <Switch 
-            checked={autoDetectUnit} 
-            onCheckedChange={setAutoDetectUnit}
-            id="auto-detect"
-          />
-          <Label htmlFor="auto-detect" className="cursor-pointer flex items-center font-medium text-gray-800">
-            <Wand2 className="h-3.5 w-3.5 mr-1.5" /> 
-            Auto-detect best unit based on item name
-          </Label>
-        </div>
-      </form>
+            <div className="flex-1">
+              <Label className="text-sm font-medium text-gray-700 mb-1 block">Unit</Label>
+              <Select 
+                value={newItemUnit} 
+                onValueChange={setNewItemUnit}
+                disabled={autoDetectUnit}
+              >
+                <SelectTrigger className={`w-full border-2 ${autoDetectUnit ? 'border-gray-200 opacity-60' : 'border-gray-300'} bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg py-2`}>
+                  <SelectValue placeholder="Select unit" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="COUNT">Count</SelectItem>
+                  <SelectItem value="LB">lb (Pounds)</SelectItem>
+                  <SelectItem value="OZ">oz (Ounces)</SelectItem>
+                  <SelectItem value="GALLON">Gallon</SelectItem>
+                  <SelectItem value="LOAF">Loaf</SelectItem>
+                  <SelectItem value="PKG">Package</SelectItem>
+                  <SelectItem value="ROLL">Rolls</SelectItem>
+                  <SelectItem value="BOX">Box</SelectItem>
+                  <SelectItem value="CAN">Can</SelectItem>
+                  <SelectItem value="BOTTLE">Bottle</SelectItem>
+                  <SelectItem value="JAR">Jar</SelectItem>
+                  <SelectItem value="BUNCH">Bunch</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2 text-sm">
+            <Switch 
+              checked={autoDetectUnit} 
+              onCheckedChange={setAutoDetectUnit}
+              id="auto-detect"
+            />
+            <Label htmlFor="auto-detect" className="cursor-pointer flex items-center font-medium text-gray-800">
+              <Wand2 className="h-4 w-4 mr-2 text-blue-600" /> 
+              Smart unit detection based on item name
+            </Label>
+          </div>
+        </form>
+      </div>
 
       <Tabs defaultValue="list" className="mt-2">
         <TabsList className="grid w-full grid-cols-4 mb-3 h-10 bg-gray-100 border border-gray-300">
