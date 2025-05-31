@@ -275,3 +275,4 @@ const InsightsPage: React.FC = () => {
 };
 
 export default InsightsPage;
+`
