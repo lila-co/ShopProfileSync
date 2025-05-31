@@ -27,7 +27,7 @@ function App() {
       <Router>
         <div className="App">
           <Switch>
-            <Route path="/" component={() => <Redirect to="/dashboard" />} />
+            <Route path="/" component={ShoppingListPage} />
             <Route path="/dashboard" component={Dashboard} />
             <Route path="/shopping-list" component={ShoppingListPage} />
             <Route path="/profile" component={ProfilePage} />

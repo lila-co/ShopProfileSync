@@ -19,8 +19,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [location] = useLocation();
 
   const navigation = [
-    { name: 'Dashboard', href: '/', icon: HomeIcon },
-    { name: 'Shopping Lists', href: '/lists', icon: ListChecksIcon },
+    { name: 'Shopping Lists', href: '/', icon: ListChecksIcon },
+    { name: 'Insights', href: '/dashboard', icon: HomeIcon },
     { name: 'Scan Receipt', href: '/scan', icon: ScanIcon },
     { name: 'Deals', href: '/deals', icon: TagIcon },
     { name: 'Weekly Circulars', href: '/circulars', icon: NewspaperIcon },

@@ -337,7 +337,7 @@ const ShoppingRoute: React.FC = () => {
           <Card>
             <CardContent className="p-6 text-center">
               <p className="text-gray-500 mb-4">No shopping route available</p>
-              <Button onClick={() => navigate('/shopping-list')}>
+              <Button onClick={() => navigate('/')}>
                 Go Back to Shopping List
               </Button>
             </CardContent>
@@ -497,7 +497,7 @@ const ShoppingRoute: React.FC = () => {
                           description: "Great job! All aisles completed.",
                           duration: 5000
                         });
-                        setTimeout(() => navigate('/shopping-list'), 2000);
+                        setTimeout(() => navigate('/'), 2000);
                       }}
                     >
                       <Check className="h-4 w-4 mr-2" />
