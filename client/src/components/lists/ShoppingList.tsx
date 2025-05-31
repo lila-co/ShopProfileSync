@@ -486,29 +486,31 @@ const ShoppingListComponent: React.FC = () => {
   return (
     <div className="p-4 pb-20">
       <div className="mb-8 w-full border-2 border-primary shadow-lg rounded-lg overflow-hidden">
-        <div className="bg-primary text-white px-4 py-2 text-lg font-bold text-center">
+        <div className="bg-primary text-white px-4 py-2 text-base sm:text-lg font-bold text-center">
           Generate Your Shopping List
         </div>
-        <div className="p-4 bg-primary/5">
-          <p className="text-center mb-4 text-sm">Our AI analyzes your purchase history to create personalized shopping lists</p>
+        <div className="p-3 sm:p-4 bg-primary/5">
+          <p className="text-center mb-3 sm:mb-4 text-xs sm:text-sm">Our AI analyzes your purchase history to create personalized shopping lists</p>
           <Button 
             variant="default" 
             onClick={() => previewGenerateMutation.mutate()}
-            size="lg"
-            className="w-full bg-primary hover:bg-primary/90 text-white py-6 text-lg font-bold"
+            size="default"
+            className="w-full bg-primary hover:bg-primary/90 text-white py-4 sm:py-6 text-sm sm:text-lg font-bold"
           >
-            <Wand2 className="h-5 w-5 mr-2" />
-            GENERATE SHOPPING LIST
+            <Wand2 className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+            <span className="hidden sm:inline">GENERATE SHOPPING LIST</span>
+            <span className="sm:hidden">GENERATE LIST</span>
           </Button>
         </div>
       </div>
       
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold">Shopping List</h2>
-        <div className="flex space-x-2">
-          <Button variant="outline" onClick={() => setRecipeDialogOpen(true)}>
-            <FileText className="h-4 w-4 mr-2" />
-            Import Recipe
+        <h2 className="text-lg sm:text-xl font-bold">Shopping List</h2>
+        <div className="flex space-x-1 sm:space-x-2">
+          <Button variant="outline" size="sm" onClick={() => setRecipeDialogOpen(true)} className="text-xs sm:text-sm px-2 sm:px-3">
+            <FileText className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Import Recipe</span>
+            <span className="sm:hidden">Recipe</span>
           </Button>
         </div>
       </div>
@@ -581,22 +583,24 @@ const ShoppingListComponent: React.FC = () => {
         </div>
       </form>
       
-      <div className="mb-6 mt-4 flex flex-col sm:flex-row gap-4">
+      <div className="mb-6 mt-4 flex flex-col sm:flex-row gap-2 sm:gap-4">
         <Button
           variant="default"
           onClick={() => previewGenerateMutation.mutate()}
           disabled={previewGenerateMutation.isPending || generateListMutation.isPending}
-          className="flex items-center justify-center gap-2 bg-primary text-white py-6 text-lg font-bold w-full"
-          size="lg"
+          className="flex items-center justify-center gap-2 bg-primary text-white py-3 sm:py-6 text-sm sm:text-lg font-bold w-full"
+          size="sm"
         >
-          <Wand2 className="h-5 w-5" />
-          <span>GENERATE SHOPPING LIST</span>
+          <Wand2 className="h-4 w-4 sm:h-5 sm:w-5" />
+          <span className="hidden sm:inline">GENERATE SHOPPING LIST</span>
+          <span className="sm:hidden">GENERATE LIST</span>
         </Button>
         
         <Button
           variant="outline"
           onClick={() => setRecipeDialogOpen(true)}
-          className="flex items-center justify-center gap-2"
+          className="flex items-center justify-center gap-2 py-3 sm:py-4 text-sm sm:text-base"
+          size="sm"
         >
           <FileText className="h-4 w-4" />
           <span>Import Recipe</span>
