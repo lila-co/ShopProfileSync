@@ -5,97 +5,44 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// Smart unit detection based on item name
 export function detectUnitFromItemName(itemName: string): string {
-  // Convert to lowercase for consistent matching
   const name = itemName.toLowerCase();
 
-  // Items typically measured by weight (pounds/lb)
-  const weightItems = [
-    'apple', 'apples', 'potato', 'potatoes', 'onion', 'onions', 
-    'beef', 'chicken', 'pork', 'steak', 'meat', 'fish', 'salmon', 'tuna',
-    'ground beef', 'ground turkey', 'ground chicken',
-    'banana', 'bananas', 'orange', 'oranges', 'grape', 'grapes',
-    'tomato', 'tomatoes', 'carrot', 'carrots',
-    'flour', 'sugar', 'rice', 'beans', 'lentil', 'lentils'
-  ];
+  // Specific product patterns
+  if (name.includes('dozen') || name.includes('12 pack') || name.includes('eggs')) return 'DOZEN';
+  if (name.includes('gallon') || (name.includes('milk') && !name.includes('almond') && !name.includes('coconut'))) return 'GALLON';
+  if (name.includes('loaf') || name.includes('bread')) return 'LOAF';
+  if (name.includes('bunch') || name.includes('bananas') || name.includes('spinach')) return 'BUNCH';
+  if (name.includes('bag') || name.includes('chips') || name.includes('rice') || name.includes('flour')) return 'BAG';
 
-  // Items typically measured by count
-  const countItems = [
-    'egg', 'eggs', 'bread', 'loaf', 'bagel', 'bagels',
-    'cereal', 'toy', 'book', 'plate', 'cup', 'spoon', 'fork', 'knife',
-    'box', 'package', 'can', 'bottle', 'jar',
-    'shirt', 'pants', 'socks', 'shoe', 'shoes'
-  ];
+  // Beverages - prioritize bottle/can over gallon for most drinks
+  if (name.includes('sparkling water') || name.includes('seltzer') || name.includes('carbonated water')) return 'BOTTLE';
+  if (name.includes('water') && (name.includes('bottle') || name.includes('pack'))) return 'BOTTLE';
+  if (name.includes('soda') || name.includes('cola') || name.includes('pepsi') || name.includes('coke')) return 'BOTTLE';
+  if (name.includes('juice') && !name.includes('gallon')) return 'BOTTLE';
+  if (name.includes('beer') || name.includes('wine')) return 'BOTTLE';
+  if (name.includes('bottle')) return 'BOTTLE';
 
-  // Items typically measured by ounces
-  const ounceItems = [
-    'cheese', 'yogurt', 'cream cheese', 'sour cream',
-    'dip', 'hummus', 'sauce', 'dressing'
-  ];
+  if (name.includes('jar') || name.includes('peanut butter') || name.includes('jam')) return 'JAR';
+  if (name.includes('can') || name.includes('soup') || name.includes('beans') || name.includes('tuna')) return 'CAN';
+  if (name.includes('box') || name.includes('cereal') || name.includes('pasta')) return 'BOX';
+  if (name.includes('pack') || name.includes('gum') || name.includes('batteries')) return 'PACK';
+  if (name.includes('roll') || name.includes('toilet paper') || name.includes('paper towel')) return 'ROLL';
 
-  // Items typically sold in packages
-  const packageItems = [
-    'cookie', 'cookies', 'cracker', 'crackers', 
-    'chip', 'chips', 'snack', 'candy', 'chocolate',
-    'frozen', 'waffles', 'pancakes', 'dinner', 'entree'
-  ];
+  // Weight-based items
+  if (name.includes('lb') || name.includes('pound') || 
+      name.includes('meat') || name.includes('chicken') || name.includes('beef') || 
+      name.includes('fish') || name.includes('salmon') || name.includes('turkey') ||
+      name.includes('cheese') || name.includes('deli')) return 'LB';
 
-    const gallonItems = ['milk', 'juice', 'water'];
+  // Produce items typically sold by weight or count
+  if (name.includes('apple') || name.includes('orange') || name.includes('lemon') || 
+      name.includes('lime') || name.includes('onion') || name.includes('potato') ||
+      name.includes('avocado') || name.includes('bell pepper')) return 'COUNT';
 
-  // Specific packaging types
-  const rollItems = ['toilet paper', 'paper towel', 'paper towels', 'tissue'];
-  const boxItems = ['cereal', 'pasta', 'rice', 'crackers', 'detergent', 'tissues'];
-  const canItems = ['soup', 'beans', 'corn', 'peas', 'tuna', 'sauce', 'soda', 'beer'];
-  const bottleItems = ['water', 'soda', 'juice', 'milk', 'wine', 'beer', 'oil', 'vinegar', 'ketchup', 'mustard', 'syrup'];
-  const jarItems = ['jam', 'jelly', 'peanut butter', 'salsa', 'sauce', 'pickles', 'olives'];
-  const bunchItems = ['banana', 'bananas', 'asparagus', 'kale', 'cilantro', 'parsley', 'mint', 'herb', 'herbs', 'green onion', 'green onions'];
+  if (name.includes('tomato') || name.includes('carrot') || name.includes('grape') ||
+      name.includes('strawberry') || name.includes('blueberry')) return 'LB';
 
-  // Check for specific matches first
-  for (const item of gallonItems) {
-    if (name.includes(item)) {
-      return 'GALLON';
-    }
-  }
-
-  for (const item of weightItems) {
-    if (name.includes(item)) {
-      return 'LB';
-    }
-  }
-
-  for (const item of countItems) {
-    if (name.includes(item)) {
-      return 'COUNT';
-    }
-  }
-
-  for (const item of ounceItems) {
-    if (name.includes(item)) {
-      return 'OZ';
-    }
-  }
-
-  for (const item of packageItems) {
-    if (name.includes(item)) {
-      return 'PKG';
-    }
-  }
-
-  // Check item name against our lists
-  for (const word of name.split(' ')) {
-    if (rollItems.some(item => name.includes(item))) return 'ROLL';
-    if (boxItems.some(item => name.includes(item))) return 'BOX';
-    if (canItems.some(item => name.includes(item))) return 'CAN';
-    if (bottleItems.some(item => name.includes(item))) return 'BOTTLE';
-    if (jarItems.some(item => name.includes(item))) return 'JAR';
-    if (bunchItems.some(item => name.includes(item))) return 'BUNCH';
-    if (packageItems.some(item => name.includes(item))) return 'PKG';
-    if (ounceItems.some(item => name.includes(item))) return 'OZ';
-    if (weightItems.some(item => name.includes(item))) return 'LB';
-    if (countItems.some(item => name.includes(item))) return 'COUNT';
-  }
-
-  // Default to COUNT if no match is found
+  // Default
   return 'COUNT';
 }
