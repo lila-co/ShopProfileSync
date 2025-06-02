@@ -19,6 +19,7 @@ import ShoppingRoute from '@/pages/shopping-route'; // Import the ShoppingRoute 
 import AutoOrder from './pages/auto-order';
 import PlanDetails from './pages/plan-details';
 import RetailerDetailsPage from './pages/retailer-details';
+import AuthPage from './pages/auth';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
       <Router>
         <div className="App">
           <Switch>
+            <Route path="/auth" component={AuthPage} />
             <Route path="/" component={ShoppingListPage} />
             <Route path="/dashboard" component={Dashboard} />
             <Route path="/shopping-list" component={ShoppingListPage} />
