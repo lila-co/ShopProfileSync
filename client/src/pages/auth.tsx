@@ -33,7 +33,7 @@ import {
 
 // Authentication form schemas
 const loginSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
+  username: z.string().min(1, { message: "Please enter a username" }),
   password: z.string().min(8, {
     message: "Password must be at least 8 characters",
   }),
@@ -63,7 +63,7 @@ const AuthPage: React.FC = () => {
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "",
+      username: "",
       password: "",
     },
   });
@@ -82,14 +82,20 @@ const AuthPage: React.FC = () => {
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (data: z.infer<typeof loginSchema>) => {
-      // In a real app, you would make a POST request to your login endpoint
-      // For now, we're simulating a successful login
-      return await new Promise((resolve) => {
-        // Simulate API delay
-        setTimeout(() => {
-          resolve({ success: true, user: { email: data.email, name: "John Doe" } });
-        }, 1000);
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Login failed');
+      }
+
+      return response.json();
     },
     onSuccess: (data: any) => {
       toast({
@@ -205,14 +211,14 @@ const AuthPage: React.FC = () => {
                 <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
                   <FormField
                     control={loginForm.control}
-                    name="email"
+                    name="username"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email</FormLabel>
+                        <FormLabel>Username</FormLabel>
                         <FormControl>
                           <Input 
-                            placeholder="you@example.com" 
-                            type="email"
+                            placeholder="Enter your username" 
+                            type="text"
                             {...field} 
                           />
                         </FormControl>
