@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import Header from '@/components/layout/Header';
+import AuthenticatedHeader from '@/components/layout/AuthenticatedHeader';
 import BottomNavigation from '@/components/layout/BottomNavigation';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -35,7 +35,7 @@ const DealsPage: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
-      <Header user={user} />
+      <AuthenticatedHeader user={user} />
 
       <main className="flex-1 overflow-y-auto">
         {/* Hero Section */}
@@ -150,7 +150,7 @@ const DealsPage: React.FC = () => {
                   ? 'bg-blue-600 text-white hover:bg-blue-700' 
                   : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
               }`}
-              onClick={() => setActiveFilter(activeFilter === 'Personal Care' ? null : 'Personal Care')}
+              onClick={()={() => setActiveFilter(activeFilter === 'Personal Care' ? null : 'Personal Care')}
             >
               Personal Care
             </Badge>
