@@ -91,6 +91,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null);
   };
 
+  // Helper method to clear auth state completely (useful for debugging)
+  const clearAuthState = () => {
+    localStorage.removeItem('auth_token');
+    setUser(null);
+    setIsLoading(false);
+  };
+
   useEffect(() => {
     checkAuth();
   }, []);
