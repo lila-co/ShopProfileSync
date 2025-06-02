@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { aiCategorizationService } from '@/lib/aiCategorization';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Plus, ShoppingBag, FileText, Clock, Check, Trash2, AlertTriangle, DollarSign, MapPin, Car, BarChart2, Wand2, Pencil, Image, Star, TrendingDown, Percent } from 'lucide-react';
+import { Plus, ShoppingBag, FileText, Clock, Check, Trash2, AlertTriangle, DollarSign, MapPin, Car, BarChart2, Wand2, Pencil, Image, Star, TrendingDown, Percent, Circle, CheckCircle2 } from 'lucide-react';
 import { getItemImage, getBestProductImage, getCompanyLogo } from '@/lib/imageUtils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
