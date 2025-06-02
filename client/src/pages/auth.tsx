@@ -96,7 +96,7 @@ const AuthPage: React.FC = () => {
         title: "Login successful",
         description: `Welcome back, ${data.user.name}!`,
       });
-      navigate("/");
+      navigate("/shopping-list");
     },
     onError: (error: any) => {
       toast({
@@ -124,7 +124,7 @@ const AuthPage: React.FC = () => {
         title: "Registration successful",
         description: `Welcome to SavvyCart, ${data.user.name}!`,
       });
-      navigate("/");
+      navigate("/shopping-list");
     },
     onError: (error: any) => {
       toast({
@@ -158,7 +158,7 @@ const AuthPage: React.FC = () => {
         title: "Login successful",
         description: `You've been authenticated with ${provider}`,
       });
-      navigate("/");
+      navigate("/shopping-list");
     }, 1500);
   };
 

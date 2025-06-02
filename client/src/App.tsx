@@ -27,10 +27,9 @@ function App() {
       <Router>
         <div className="App">
           <Switch>
-            <Route path="/auth" component={AuthPage} />
-            <Route path="/" component={ShoppingListPage} />
-            <Route path="/dashboard" component={Dashboard} />
+            <Route path="/" component={AuthPage} />
             <Route path="/shopping-list" component={ShoppingListPage} />
+            <Route path="/dashboard" component={Dashboard} />
             <Route path="/profile" component={ProfilePage} />
             <Route path="/deals" component={DealsPage} />
             <Route path="/retailers" component={RetailersPage} />
