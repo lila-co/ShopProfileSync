@@ -12,6 +12,7 @@ interface HeaderProps {
   showNotifications?: boolean;
   onBack?: () => void;
   showAuth?: boolean;
+  rightContent?: React.ReactNode;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -20,7 +21,8 @@ const Header: React.FC<HeaderProps> = ({
   showSearch = false, 
   showNotifications = true,
   showAuth = false,
-  onBack
+  onBack,
+  rightContent
 }) => {
   if (showAuth) {
     return <AuthenticatedHeader />;
@@ -46,7 +48,18 @@ const Header: React.FC<HeaderProps> = ({
         )}
         <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
       </div>
-      {rightContent && <div>{rightContent}</div>}
+      <div className="flex items-center space-x-2">
+        {showSearch && (
+          <Button variant="ghost" size="sm">
+            <Search className="h-5 w-5" />
+          </Button>
+        )}
+        {showNotifications && (
+          <Button variant="ghost" size="sm">
+            <Bell className="h-5 w-5" />
+          </Button>
+        )}
+      </div>
     </header>
   );
 };
