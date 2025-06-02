@@ -28,7 +28,7 @@ function AppContent() {
         {isAuthenticated ? <ShoppingListPage /> : <Redirect to="/" />}
       </Route>
       <Route path="/">
-        {isAuthenticated ? <Redirect to="/dashboard" /> : <AuthPage />}
+        {isAuthenticated ? <Redirect to="/shopping-list" /> : <AuthPage />}
       </Route>
     </Switch>
   );

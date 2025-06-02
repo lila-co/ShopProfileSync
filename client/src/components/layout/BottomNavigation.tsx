@@ -1,5 +1,6 @@
 import React from 'react';
 import { Home, List, User, Store, Tag } from 'lucide-react';
+import { Link } from 'wouter';
 
 interface BottomNavigationProps {
   activeTab: 'lists' | 'profile' | 'stores' | 'deals';
@@ -21,9 +22,9 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab }) => {
           const isActive = activeTab === tab.id;
 
           return (
-            <a
+            <Link
               key={tab.id}
-              href={tab.href}
+              to={tab.href}
               className={`flex flex-col items-center justify-center flex-1 py-2 px-1 rounded-lg transition-all duration-200 ${
                 isActive 
                   ? 'text-primary bg-primary/10 scale-105' 
@@ -41,7 +42,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab }) => {
               {isActive && (
                 <div className="w-4 h-0.5 bg-primary rounded-full mt-1 animate-pulse"></div>
               )}
-            </a>
+            </Link>
           );
         })}
       </div>
