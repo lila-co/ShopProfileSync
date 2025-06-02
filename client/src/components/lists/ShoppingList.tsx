@@ -30,6 +30,36 @@ const ShoppingListComponent: React.FC = () => {
   const [generationSteps, setGenerationSteps] = useState<string[]>([]);
   const [currentStep, setCurrentStep] = useState(-1);
 
+  const importRecipeMutation = useMutation({
+    mutationFn: async () => {
+      const defaultList = shoppingLists?.[0];
+      if (!defaultList) throw new Error('No shopping list found');
+      
+      const response = await apiRequest('POST', '/api/shopping-lists/recipe', {
+        recipeUrl,
+        shoppingListId: defaultList.id,
+        servings: parseInt(servings)
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      setRecipeDialogOpen(false);
+      setRecipeUrl('');
+      toast({
+        title: "Recipe Imported",
+        description: "Ingredients have been added to your shopping list"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to import recipe ingredients",
+        variant: "destructive"
+      });
+    }
+  });
+
   const { data: shoppingLists, isLoading } = useQuery<ShoppingListType[]>({
     queryKey: ['/api/shopping-lists'],
   });
@@ -204,6 +234,17 @@ const ShoppingListComponent: React.FC = () => {
     }
   };
 
+  const handleRegenerateList = () => {
+    localStorage.setItem('forceShowAnimation', 'true');
+    window.location.reload();
+  };
+
+  const handleImportRecipe = () => {
+    if (recipeUrl.trim()) {
+      importRecipeMutation.mutate();
+    }
+  };
+
   // Show AI generation animation
   if (isGeneratingList) {
     return (
@@ -288,7 +329,7 @@ const ShoppingListComponent: React.FC = () => {
     <div className="p-4 pb-20">
       <h2 className="text-xl font-bold mb-4">Shopping List</h2>
       
-      <form onSubmit={handleAddItem} className="flex space-x-2 mb-6">
+      <form onSubmit={handleAddItem} className="flex space-x-2 mb-4">
         <Input
           type="text"
           placeholder="Add an item..."
@@ -300,6 +341,26 @@ const ShoppingListComponent: React.FC = () => {
           <Plus className="h-4 w-4" />
         </Button>
       </form>
+
+      <div className="mb-6 flex gap-2">
+        <Button
+          variant="outline"
+          onClick={() => setRecipeDialogOpen(true)}
+          className="flex items-center gap-1"
+        >
+          <FileText className="h-4 w-4" />
+          <span>Import Recipe</span>
+        </Button>
+        
+        <Button
+          variant="outline"
+          onClick={handleRegenerateList}
+          className="flex items-center gap-1"
+        >
+          <Wand2 className="h-4 w-4" />
+          <span>Regenerate List</span>
+        </Button>
+      </div>
 
       <div className="space-y-2">
         {items.map((item) => (
@@ -355,6 +416,48 @@ const ShoppingListComponent: React.FC = () => {
           <p className="text-sm">Add items above to get started</p>
         </div>
       )}
+
+      {/* Recipe Import Dialog */}
+      <Dialog open={recipeDialogOpen} onOpenChange={setRecipeDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Import Recipe</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="recipe-url">Recipe URL</Label>
+              <Input
+                id="recipe-url"
+                placeholder="https://example.com/recipe"
+                value={recipeUrl}
+                onChange={(e) => setRecipeUrl(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="servings">Servings</Label>
+              <Input
+                id="servings"
+                type="number"
+                value={servings}
+                onChange={(e) => setServings(e.target.value)}
+                min="1"
+                max="20"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRecipeDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleImportRecipe} 
+              disabled={importRecipeMutation.isPending || !recipeUrl.trim()}
+            >
+              {importRecipeMutation.isPending ? "Importing..." : "Import Recipe"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Item Dialog */}
       <Dialog open={!!editingItem} onOpenChange={() => setEditingItem(null)}>
