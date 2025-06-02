@@ -4,7 +4,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/contexts/AuthContext";
 import { useMutation } from "@tanstack/react-query";
 
 import {
@@ -58,13 +58,21 @@ const AuthPage: React.FC = () => {
   const [, navigate] = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
+  const { login, isAuthenticated } = useAuth();
+
+  // Redirect if already authenticated
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/shopping-list");
+    }
+  }, [isAuthenticated, navigate]);
 
   // Login form setup
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: "",
-      password: "",
+      username: "johndoe",
+      password: "password123",
     },
   });
 
@@ -82,29 +90,17 @@ const AuthPage: React.FC = () => {
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (data: z.infer<typeof loginSchema>) => {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
-      }
-
-      return response.json();
+      await login(data.username, data.password);
     },
-    onSuccess: (data: any) => {
+    onSuccess: () => {
       toast({
         title: "Login successful",
-        description: `Welcome back, ${data.user.name}!`,
+        description: "Welcome back!",
       });
       navigate("/shopping-list");
     },
     onError: (error: any) => {
+      console.error("Login mutation error:", error);
       toast({
         title: "Login failed",
         description: error.message || "Please check your credentials and try again",

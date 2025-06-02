@@ -2642,5 +2642,5 @@ return query;
     }
 }
 
-// Use database storage for persistence
-export const storage = new DatabaseStorage();
+// Use memory storage for demo with pre-initialized users
+export const storage = new MemStorage();

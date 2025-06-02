@@ -1,14 +1,30 @@
 import React from 'react';
-import { useLocation } from 'wouter';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Bell, Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import AuthenticatedHeader from './AuthenticatedHeader';
 
 interface HeaderProps {
   title: string;
-  rightContent?: React.ReactNode;
   showBackButton?: boolean;
+  showSearch?: boolean;
+  showNotifications?: boolean;
+  onBack?: () => void;
+  showAuth?: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ title, rightContent, showBackButton = false }) => {
+const Header: React.FC<HeaderProps> = ({ 
+  title, 
+  showBackButton = false, 
+  showSearch = false, 
+  showNotifications = true,
+  showAuth = false,
+  onBack
+}) => {
+  if (showAuth) {
+    return <AuthenticatedHeader />;
+  }
+
   const [, navigate] = useLocation();
 
   const handleBack = () => {
