@@ -97,9 +97,13 @@ const AuthPage: React.FC = () => {
         title: "Login successful",
         description: "Welcome back!",
       });
-      navigate("/shopping-list");
+      // Small delay to ensure state updates are processed
+      setTimeout(() => {
+        navigate("/shopping-list");
+      }, 100);
     },
     onError: (error: any) => {
+      console.error("Login mutation error:", error);
       toast({
         title: "Login failed",
         description: error.message || "Please check your credentials and try again",
