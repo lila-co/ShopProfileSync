@@ -30,6 +30,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(userData: Partial<User>): Promise<User>;
+  authenticateUser(username: string, password: string): Promise<User | undefined>;
 
   // Retailer methods
   getRetailers(): Promise<Retailer[]>;
@@ -479,7 +480,7 @@ export class MemStorage implements IStorage {
       };
       this.purchaseItems.set(purchaseItem.id, purchaseItem);
     }
-  }
+    }
 
   // User methods
   async getDefaultUser(): Promise<User> {
@@ -1527,6 +1528,16 @@ const [updatedUser] = await db
     }
   }
 
+  async authenticateUser(username: string, password: string): Promise<User | undefined> {
+    try {
+      const [user] = await db.select().from(users).where(and(eq(users.username, username), eq(users.password, password)));
+      return user || undefined;
+    } catch (error) {
+      console.error("Error authenticating user:", error);
+      throw error;
+    }
+  }
+
   // Retailer methods
   async getRetailers(): Promise<Retailer[]> {
     try {
@@ -2409,7 +2420,7 @@ const [updatedUser] = await db
         query = query.where(eq(affiliateConversions.status, status));
       }
 
-      return query;
+return query;
     } catch (error) {
       console.error("Error getting affiliate conversions:", error);
       throw error;
