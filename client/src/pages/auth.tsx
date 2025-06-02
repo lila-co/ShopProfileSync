@@ -71,8 +71,8 @@ const AuthPage: React.FC = () => {
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: "",
-      password: "",
+      username: "johndoe",
+      password: "password123",
     },
   });
 
@@ -97,10 +97,7 @@ const AuthPage: React.FC = () => {
         title: "Login successful",
         description: "Welcome back!",
       });
-      // Small delay to ensure state updates are processed
-      setTimeout(() => {
-        navigate("/shopping-list");
-      }, 100);
+      navigate("/shopping-list");
     },
     onError: (error: any) => {
       console.error("Login mutation error:", error);
