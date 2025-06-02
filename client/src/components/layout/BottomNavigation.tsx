@@ -8,7 +8,7 @@ interface BottomNavigationProps {
 
 const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab }) => {
   const tabs = [
-    { id: 'lists', label: 'Home', icon: Home, href: '/shopping-list' },
+    { id: 'lists', label: 'Home', icon: Home, href: '/' },
     { id: 'deals', label: 'Deals', icon: Tag, href: '/deals' },
     { id: 'stores', label: 'Stores', icon: Store, href: '/retailers' },
     { id: 'profile', label: 'Profile', icon: User, href: '/profile' },
