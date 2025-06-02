@@ -256,10 +256,6 @@ const AuthPage: React.FC = () => {
                     type="submit"
                     className="w-full"
                     disabled={loginMutation.isPending}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      loginForm.handleSubmit(onLoginSubmit)();
-                    }}
                   >
                     {loginMutation.isPending ? "Signing in..." : "Sign In"}
                   </Button>
@@ -412,10 +408,6 @@ const AuthPage: React.FC = () => {
                     type="submit"
                     className="w-full"
                     disabled={registerMutation.isPending}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      registerForm.handleSubmit(onRegisterSubmit)();
-                    }}
                   >
                     {registerMutation.isPending ? "Creating account..." : "Create Account"}
                   </Button>
