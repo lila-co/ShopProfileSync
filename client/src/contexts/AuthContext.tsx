@@ -9,6 +9,7 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   checkAuth: () => Promise<void>;
+  clearAuthState: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -111,7 +112,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       isLoading,
       login,
       logout,
-      checkAuth
+      checkAuth,
+      clearAuthState
     }}>
       {children}
     </AuthContext.Provider>
