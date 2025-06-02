@@ -24,6 +24,9 @@ function AppContent() {
 
   return (
     <Switch>
+      <Route path="/shopping-list">
+        {isAuthenticated ? <ShoppingListPage /> : <Redirect to="/" />}
+      </Route>
       <Route path="/dashboard">
         {isAuthenticated ? <Dashboard /> : <Redirect to="/" />}
       </Route>
@@ -37,7 +40,7 @@ function AppContent() {
         {isAuthenticated ? <ProfilePage /> : <Redirect to="/" />}
       </Route>
       <Route path="/">
-        {isAuthenticated ? <ShoppingListPage /> : <AuthPage />}
+        {isAuthenticated ? <Redirect to="/shopping-list" /> : <AuthPage />}
       </Route>
     </Switch>
   );
