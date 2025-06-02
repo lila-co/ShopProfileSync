@@ -21,17 +21,14 @@ function AppContent() {
 
   return (
     <Switch>
-      <Route path="/login">
-        {isAuthenticated ? <Redirect to="/dashboard" /> : <AuthPage />}
-      </Route>
       <Route path="/dashboard">
-        {isAuthenticated ? <Dashboard /> : <Redirect to="/login" />}
+        {isAuthenticated ? <Dashboard /> : <Redirect to="/" />}
       </Route>
       <Route path="/shopping-list">
-        {isAuthenticated ? <ShoppingListPage /> : <Redirect to="/login" />}
+        {isAuthenticated ? <ShoppingListPage /> : <Redirect to="/" />}
       </Route>
       <Route path="/">
-        {isAuthenticated ? <Redirect to="/dashboard" /> : <Redirect to="/login" />}
+        {isAuthenticated ? <Redirect to="/dashboard" /> : <AuthPage />}
       </Route>
     </Switch>
   );
