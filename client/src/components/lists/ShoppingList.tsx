@@ -389,7 +389,7 @@ const ShoppingListComponent: React.FC = () => {
     }
   };
 
-  
+
 
   const handleImportRecipe = () => {
     if (recipeUrl.trim()) {
