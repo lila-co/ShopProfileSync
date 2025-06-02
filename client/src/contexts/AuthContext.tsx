@@ -72,21 +72,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         body: JSON.stringify({ username, password }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Login failed' }));
-        throw new Error(errorData.message || 'Login failed');
+        throw new Error(data.message || 'Login failed');
       }
 
-      const data = await response.json();
-      
-      if (data.token) {
+      if (data.token && data.user) {
         localStorage.setItem('auth_token', data.token);
-      }
-      
-      if (data.user) {
         setUser(data.user);
       } else {
-        throw new Error('Invalid response from server');
+        throw new Error('Invalid login response');
       }
     } catch (error) {
       console.error('Login error:', error);
