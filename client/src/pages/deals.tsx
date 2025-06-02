@@ -150,7 +150,7 @@ const DealsPage: React.FC = () => {
                   ? 'bg-blue-600 text-white hover:bg-blue-700' 
                   : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
               }`}
-              onClick={()={() => setActiveFilter(activeFilter === 'Personal Care' ? null : 'Personal Care')}
+              onClick={() => setActiveFilter(activeFilter === 'Personal Care' ? null : 'Personal Care')}
             >
               Personal Care
             </Badge>
