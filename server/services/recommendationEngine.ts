@@ -369,10 +369,50 @@ export async function generateRecommendations(
   // Step 1: Analyze purchase patterns
   const patterns = analyzePurchasePatterns(purchases);
   
-  // Step 2: Find the best deals for products that need to be repurchased soon
-  const recommendations = generateProductRecommendations(patterns, user);
+  // Step 2: Filter out recently purchased items (within configurable threshold)
+  const filteredPatterns = filterRecentlyPurchasedItems(patterns, purchases);
+  
+  // Step 3: Find the best deals for products that need to be repurchased soon
+  const recommendations = generateProductRecommendations(filteredPatterns, user);
   
   return recommendations;
+}
+
+// New function to filter out recently purchased items
+function filterRecentlyPurchasedItems(
+  patterns: ProductPurchasePattern[],
+  purchases: Purchase[],
+  dayThreshold: number = 3 // Don't recommend items purchased within last 3 days
+): ProductPurchasePattern[] {
+  const now = new Date();
+  const recentPurchaseThreshold = new Date(now.getTime() - (dayThreshold * 24 * 60 * 60 * 1000));
+  
+  // Get all items purchased recently
+  const recentlyPurchasedItems = new Set<string>();
+  
+  purchases.forEach(purchase => {
+    const purchaseDate = new Date(purchase.purchaseDate);
+    if (purchaseDate >= recentPurchaseThreshold) {
+      const items = purchase.items || [];
+      items.forEach(item => {
+        recentlyPurchasedItems.add(item.productName.toLowerCase().trim());
+      });
+    }
+  });
+  
+  // Filter patterns to exclude recently purchased items
+  const filteredPatterns = patterns.filter(pattern => {
+    const productName = pattern.productName.toLowerCase().trim();
+    const wasRecentlyPurchased = recentlyPurchasedItems.has(productName);
+    
+    if (wasRecentlyPurchased) {
+      console.log(`Filtering out "${pattern.productName}" - purchased within last ${dayThreshold} days`);
+    }
+    
+    return !wasRecentlyPurchased;
+  });
+  
+  return filteredPatterns;
 }
 
 export function analyzePurchasePatterns(purchases: Purchase[]): ProductPurchasePattern[] {

@@ -46,6 +46,7 @@ const ShoppingListComponent: React.FC = () => {
   // Generate list state
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
   const [generatedItems, setGeneratedItems] = useState<any[]>([]);
+  const [filteredItems, setFilteredItems] = useState<any[]>([]);
 
   // Optimization state
   const [optimizationPreference, setOptimizationPreference] = useState('cost');
@@ -259,6 +260,19 @@ const ShoppingListComponent: React.FC = () => {
 
       setGeneratedItems(enhancedItems);
       }
+      
+      // Store filtered items info to show to user
+      if (data.filteredItems && data.filteredItems.length > 0) {
+        setFilteredItems(data.filteredItems);
+        toast({
+          title: "Smart Filtering Applied",
+          description: `${data.filteredCount} items skipped because you purchased them recently: ${data.filteredItems.map((item: any) => item.productName).join(', ')}`,
+          duration: 5000
+        });
+      } else {
+        setFilteredItems([]);
+      }
+      
       setGenerateDialogOpen(true);
     },
     onError: (error) => {
@@ -1399,7 +1413,7 @@ const ShoppingListComponent: React.FC = () => {
 
       {/* Generate List Preview Dialog */}
       <Dialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>AI Generated Shopping List</DialogTitle>
           </DialogHeader>
@@ -1407,19 +1421,66 @@ const ShoppingListComponent: React.FC = () => {
             <p className="text-sm text-gray-500">
               Based on your purchase history, here are suggested items for your shopping list:
             </p>
-            <div className="max-h-64 overflow-y-auto">
-              {generatedItems.map((item, index) => (
-                <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
-                  <div>
-                    <span className="font-medium">{item.productName}</span>
-                    <span className="text-sm text-gray-500 block">{item.reason}</span>
-                  </div>
-                  <span className="text-sm text-gray-600">
-                    {item.quantity} {item.detectedUnit && item.detectedUnit !== "COUNT" ? item.detectedUnit.toLowerCase() : ""}
-                  </span>
+            
+            {/* Suggested Items */}
+            {generatedItems.length > 0 && (
+              <div>
+                <h4 className="font-medium text-gray-700 mb-2">Items to Add</h4>
+                <div className="max-h-48 overflow-y-auto">
+                  {generatedItems.map((item, index) => (
+                    <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
+                      <div>
+                        <span className="font-medium">{item.productName}</span>
+                        <span className="text-sm text-gray-500 block">{item.reason}</span>
+                      </div>
+                      <span className="text-sm text-gray-600">
+                        {item.quantity} {item.detectedUnit && item.detectedUnit !== "COUNT" ? item.detectedUnit.toLowerCase() : ""}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
+            
+            {/* Filtered Items */}
+            {filteredItems.length > 0 && (
+              <div className="border-t border-gray-200 pt-4">
+                <h4 className="font-medium text-orange-600 mb-2 flex items-center">
+                  <AlertTriangle className="h-4 w-4 mr-1" />
+                  Recently Purchased (Skipped)
+                </h4>
+                <div className="max-h-32 overflow-y-auto">
+                  {filteredItems.map((item, index) => (
+                    <div key={index} className="flex justify-between items-center py-1 text-sm">
+                      <div>
+                        <span className="text-gray-600">{item.productName}</span>
+                        <span className="text-xs text-orange-600 block">{item.reason}</span>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="text-xs h-6 px-2"
+                        onClick={() => {
+                          setGeneratedItems(prev => [...prev, {
+                            productName: item.productName,
+                            quantity: 1,
+                            unit: detectUnitFromItemName(item.productName),
+                            reason: 'Added despite recent purchase',
+                            detectedUnit: detectUnitFromItemName(item.productName)
+                          }]);
+                          setFilteredItems(prev => prev.filter((_, i) => i !== index));
+                        }}
+                      >
+                        Add Anyway
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  These items were recently purchased and automatically filtered out. Click "Add Anyway" if you still need them.
+                </p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button 
