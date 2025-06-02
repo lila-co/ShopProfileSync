@@ -38,17 +38,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return;
       }
 
-      // Since the /api/auth/me endpoint doesn't exist in the backend,
-      // we'll assume the token is valid if it exists and create a mock user
-      if (token === 'demo-token') {
-        setUser({
-          id: 1,
-          username: 'johndoe',
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john@example.com',
-          role: 'user'
-        });
+      const response = await fetch('/api/auth/me', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.user);
       } else {
         localStorage.removeItem('auth_token');
         setUser(null);

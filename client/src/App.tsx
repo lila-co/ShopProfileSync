@@ -31,8 +31,12 @@ function App() {
         <Router>
           <div className="App">
             <Switch>
-              <Route path="/" component={AuthPage} />
               <Route path="/login" component={AuthPage} />
+              <Route path="/">
+                <ProtectedRoute>
+                  <ShoppingListPage />
+                </ProtectedRoute>
+              </Route>
               <Route path="/shopping-list">
                 <ProtectedRoute>
                   <ShoppingListPage />
