@@ -22,26 +22,19 @@ function AppContent() {
     );
   }
 
+  if (!isAuthenticated) {
+    return <AuthPage />;
+  }
+
   return (
     <Switch>
-      <Route path="/shopping-list">
-        {isAuthenticated ? <ShoppingListPage /> : <Redirect to="/" />}
-      </Route>
-      <Route path="/dashboard">
-        {isAuthenticated ? <Dashboard /> : <Redirect to="/" />}
-      </Route>
-      <Route path="/deals">
-        {isAuthenticated ? <DealsPage /> : <Redirect to="/" />}
-      </Route>
-      <Route path="/retailers">
-        {isAuthenticated ? <RetailersPage /> : <Redirect to="/" />}
-      </Route>
-      <Route path="/profile">
-        {isAuthenticated ? <ProfilePage /> : <Redirect to="/" />}
-      </Route>
-      <Route path="/">
-        {isAuthenticated ? <Redirect to="/shopping-list" /> : <AuthPage />}
-      </Route>
+      <Route path="/shopping-list" component={ShoppingListPage} />
+      <Route path="/dashboard" component={Dashboard} />
+      <Route path="/deals" component={DealsPage} />
+      <Route path="/retailers" component={RetailersPage} />
+      <Route path="/profile" component={ProfilePage} />
+      <Route path="/" component={() => <Redirect to="/shopping-list" />} />
+      <Route component={() => <Redirect to="/shopping-list" />} />
     </Switch>
   );
 }
