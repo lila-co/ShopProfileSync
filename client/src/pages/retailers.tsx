@@ -1,5 +1,4 @@
 import React, { useState, startTransition } from 'react';
-import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +10,7 @@ import { useLocation } from 'wouter';
 import { Store, ExternalLink, CheckCircle, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import AuthenticatedHeader from '@/components/layout/AuthenticatedHeader';
 
 interface Retailer {
   id: number;
@@ -102,7 +102,7 @@ const RetailersPage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
-        <Header title="Retailers" />
+        <AuthenticatedHeader />
         <main className="flex-1 overflow-y-auto p-4">
           <div>Loading retailers...</div>
         </main>
@@ -113,7 +113,7 @@ const RetailersPage: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
-      <Header title="Retailers" />
+      <AuthenticatedHeader />
 
       <main className="flex-1 overflow-y-auto p-4 pb-20">
         <h2 className="text-xl font-bold mb-4">Partner Retailers</h2>
