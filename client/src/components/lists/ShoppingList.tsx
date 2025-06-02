@@ -65,29 +65,6 @@ const ShoppingListComponent: React.FC = () => {
   const [showRouteMap, setShowRouteMap] = useState(false);
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
 
-  // Filter recommendations for expiring deals (expires in 2 days or less)
-  const getExpiringDeals = () => {
-    return enhancedRecommendations
-      .filter(item => {
-        const daysUntilExpiry = parseInt(item.dealExpires.split(' ')[0]);
-        return daysUntilExpiry <= 2;
-      })
-      .map(item => ({
-        id: item.id,
-        retailer: item.retailer,
-        product: item.productName,
-        expires: item.dealExpires,
-        discount: `${Math.round((item.savings / item.currentPrice) * 100)}%`,
-        originalItem: item
-      }));
-  };
-
-  // Get user location on component mount
-  useEffect(() => {
-    // For demo purposes, use San Francisco as default location
-    setUserLocation({ lat: 37.7749, lng: -122.4194 });
-  }, []);
-
   const { data: shoppingLists, isLoading, refetch: refetchShoppingLists } = useQuery<ShoppingListType[]>({
     queryKey: ['/api/shopping-lists'],
   });
@@ -271,7 +248,7 @@ const ShoppingListComponent: React.FC = () => {
 
       setGeneratedItems(enhancedItems);
       }
-      
+
       // Store filtered items info to show to user
       if (data.filteredItems && data.filteredItems.length > 0) {
         setFilteredItems(data.filteredItems);
@@ -283,7 +260,7 @@ const ShoppingListComponent: React.FC = () => {
       } else {
         setFilteredItems([]);
       }
-      
+
       // If auto-generating, automatically add items without showing dialog
       if (isAutoGenerating) {
         setTimeout(() => {
@@ -342,11 +319,11 @@ const ShoppingListComponent: React.FC = () => {
     if (shoppingLists && shoppingLists.length > 0 && !isAutoGenerating && !previewGenerateMutation.isPending) {
       const defaultList = shoppingLists[0];
       const hasItems = defaultList?.items && defaultList.items.length > 0;
-      
+
       // Always run AI analysis animation on page load
       setIsAutoGenerating(true);
       setGenerationStep(0);
-      
+
       // Animate through generation steps
       const stepInterval = setInterval(() => {
         setGenerationStep(prev => {
@@ -505,6 +482,13 @@ const ShoppingListComponent: React.FC = () => {
     }
   };
 
+  // Get the default shopping list and its items
+  const defaultList = shoppingLists?.[0];
+  const rawItems = defaultList?.items ?? [];
+
+  // AI-powered categorization with caching for better performance
+  const [itemCategories, setItemCategories] = useState<Map<string, string>>(new Map());
+
   // Show loading state
   if (isLoading) {
     return (
@@ -538,10 +522,10 @@ const ShoppingListComponent: React.FC = () => {
               <Wand2 className="h-8 w-8 text-blue-600 animate-pulse" />
             </div>
           </div>
-          
+
           <h2 className="text-xl font-bold text-gray-900 mb-2">AI is analyzing your shopping list</h2>
           <p className="text-gray-600 mb-6">Optimizing your list based on shopping patterns and preferences</p>
-          
+
           <div className="space-y-3 max-w-md mx-auto">
             {generationSteps.map((step, index) => (
               <div key={index} className={`flex items-center space-x-3 p-3 rounded-lg transition-all duration-500 ${
@@ -560,7 +544,7 @@ const ShoppingListComponent: React.FC = () => {
               </div>
             ))}
           </div>
-          
+
           <div className="mt-8">
             <Progress value={(generationStep + 1) / generationSteps.length * 100} className="w-full max-w-md mx-auto" />
             <p className="text-xs text-gray-500 mt-2">
@@ -572,12 +556,6 @@ const ShoppingListComponent: React.FC = () => {
     );
   }
 
-  // Get the default shopping list and its items
-  const defaultList = shoppingLists?.[0];
-  const rawItems = defaultList?.items ?? [];
-
-  // AI-powered categorization with caching for better performance
-  const [itemCategories, setItemCategories] = useState<Map<string, string>>(new Map());
 
   // Sort items by category using AI categorization
   const sortItemsByCategory = (items: ShoppingListItem[]) => {
@@ -721,6 +699,23 @@ const ShoppingListComponent: React.FC = () => {
       category: 'Produce'
     }
   ];
+  
+    // Filter recommendations for expiring deals (expires in 2 days or less)
+    const getExpiringDeals = () => {
+      return enhancedRecommendations
+        .filter(item => {
+          const daysUntilExpiry = parseInt(item.dealExpires.split(' ')[0]);
+          return daysUntilExpiry <= 2;
+        })
+        .map(item => ({
+          id: item.id,
+          retailer: item.retailer,
+          product: item.productName,
+          expires: item.dealExpires,
+          discount: `${Math.round((item.savings / item.currentPrice) * 100)}%`,
+          originalItem: item
+        }));
+    };
 
   return (
     <div className="p-3 sm:p-4 pb-20">
@@ -759,7 +754,7 @@ const ShoppingListComponent: React.FC = () => {
       {/* Manual Add Item Section - Enhanced Visibility */}
       <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4 shadow-sm">
         <div className="flex items-center mb-3">
-          
+
           <h3 className="text-lg font-semibold text-gray-900">Add New Item</h3>
         </div>
 
@@ -1529,7 +1524,7 @@ const ShoppingListComponent: React.FC = () => {
             <p className="text-sm text-gray-500">
               Based on your purchase history, here are suggested items for your shopping list:
             </p>
-            
+
             {/* Suggested Items */}
             {generatedItems.length > 0 && (
               <div>
@@ -1549,7 +1544,7 @@ const ShoppingListComponent: React.FC = () => {
                 </div>
               </div>
             )}
-            
+
             {/* Filtered Items */}
             {filteredItems.length > 0 && (
               <div className="border-t border-gray-200 pt-4">
@@ -1612,4 +1607,5 @@ const ShoppingListComponent: React.FC = () => {
   );
 };
 
+// Move helper functions and data processing after all hooks to prevent "Rendered fewer hooks than expected" error.
 export { ShoppingListComponent as default, ShoppingListComponent as ShoppingList };
