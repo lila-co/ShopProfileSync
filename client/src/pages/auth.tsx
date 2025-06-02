@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useLocation } from "wouter";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -55,17 +54,11 @@ const registerSchema = z.object({
 
 const AuthPage: React.FC = () => {
   const { toast } = useToast();
-  const [, navigate] = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
   const { login, isAuthenticated } = useAuth();
 
-  // Redirect if already authenticated
-  React.useEffect(() => {
-    if (isAuthenticated) {
-      navigate("/shopping-list");
-    }
-  }, [isAuthenticated, navigate]);
+  // No need to redirect here - ProtectedRoute handles this
 
   // Login form setup
   const loginForm = useForm<z.infer<typeof loginSchema>>({
@@ -97,7 +90,7 @@ const AuthPage: React.FC = () => {
         title: "Login successful",
         description: "Welcome back!",
       });
-      navigate("/shopping-list");
+      // Navigation will be handled by ProtectedRoute after login
     },
     onError: (error: any) => {
       console.error("Login mutation error:", error);
@@ -126,7 +119,7 @@ const AuthPage: React.FC = () => {
         title: "Registration successful",
         description: `Welcome to SavvyCart, ${data.user.name}!`,
       });
-      navigate("/shopping-list");
+      // Navigation will be handled by ProtectedRoute after registration
     },
     onError: (error: any) => {
       toast({
@@ -160,7 +153,7 @@ const AuthPage: React.FC = () => {
         title: "Login successful",
         description: `You've been authenticated with ${provider}`,
       });
-      navigate("/shopping-list");
+      // Navigation will be handled by ProtectedRoute after login
     }, 1500);
   };
 
