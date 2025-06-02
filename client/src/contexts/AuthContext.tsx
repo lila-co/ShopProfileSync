@@ -32,27 +32,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const checkAuth = async () => {
     try {
-      const token = localStorage.getItem('auth_token');
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
-
-      // For demo purposes, if we have a token, assume the user is logged in
-      // In a real app, you'd validate the token with the server
-      const demoUser = {
-        id: 1,
-        username: 'johndoe',
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'johndoe@example.com',
-        role: 'user'
-      };
-      
-      setUser(demoUser);
+      // Clear any existing tokens to start fresh
+      localStorage.removeItem('auth_token');
+      setUser(null);
     } catch (error) {
       console.error('Auth check failed:', error);
-      localStorage.removeItem('auth_token');
       setUser(null);
     } finally {
       setIsLoading(false);
