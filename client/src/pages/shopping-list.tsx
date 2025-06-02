@@ -65,7 +65,7 @@ const ShoppingListPage: React.FC = () => {
             )}
           </div>
         </section>
-        
+
         <ShoppingListComponent />
       </main>
       <BottomNavigation activeTab="lists" />
