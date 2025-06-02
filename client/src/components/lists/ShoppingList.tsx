@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -34,7 +33,7 @@ const ShoppingListComponent: React.FC = () => {
     mutationFn: async () => {
       const defaultList = shoppingLists?.[0];
       if (!defaultList) throw new Error('No shopping list found');
-      
+
       const response = await apiRequest('POST', '/api/shopping-lists/recipe', {
         recipeUrl,
         shoppingListId: defaultList.id,
@@ -74,7 +73,7 @@ const ShoppingListComponent: React.FC = () => {
     if (shoppingLists && shoppingLists.length > 0) {
       const shouldShowAnimation = !localStorage.getItem('listGenerationShown') || 
                                  localStorage.getItem('forceShowAnimation') === 'true';
-      
+
       if (shouldShowAnimation) {
         setIsGeneratingList(true);
         const steps = [
@@ -84,10 +83,10 @@ const ShoppingListComponent: React.FC = () => {
           "Optimizing your shopping route...",
           "Generating personalized recommendations..."
         ];
-        
+
         setGenerationSteps(steps);
         setCurrentStep(0);
-        
+
         const interval = setInterval(() => {
           setCurrentStep((prev) => {
             if (prev >= steps.length - 1) {
@@ -102,7 +101,7 @@ const ShoppingListComponent: React.FC = () => {
             return prev + 1;
           });
         }, 1500);
-        
+
         return () => clearInterval(interval);
       }
     }
@@ -112,7 +111,7 @@ const ShoppingListComponent: React.FC = () => {
     mutationFn: async (itemName: string) => {
       const defaultList = shoppingLists?.[0];
       if (!defaultList) throw new Error('No shopping list found');
-      
+
       const response = await apiRequest('POST', `/api/shopping-lists/${defaultList.id}/items`, {
         productName: itemName,
         quantity: 1,
@@ -328,7 +327,7 @@ const ShoppingListComponent: React.FC = () => {
   return (
     <div className="p-4 pb-20">
       <h2 className="text-xl font-bold mb-4">Shopping List</h2>
-      
+
       <form onSubmit={handleAddItem} className="flex space-x-2 mb-4">
         <Input
           type="text"
@@ -351,7 +350,7 @@ const ShoppingListComponent: React.FC = () => {
           <FileText className="h-4 w-4" />
           <span>Import Recipe</span>
         </Button>
-        
+
         <Button
           variant="outline"
           onClick={handleRegenerateList}
