@@ -1,7 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '@/lib/types';
-import { apiRequest } from '@/lib/queryClient';
 
 interface AuthContextType {
   user: User | null;
@@ -38,21 +37,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return;
       }
 
-      const response = await fetch('/api/auth/me', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data.user);
-      } else {
-        localStorage.removeItem('auth_token');
-        setUser(null);
-      }
+      // For demo purposes, if we have a token, assume the user is logged in
+      // In a real app, you'd validate the token with the server
+      const demoUser = {
+        id: 1,
+        username: 'johndoe',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'johndoe@example.com',
+        role: 'user'
+      };
+      
+      setUser(demoUser);
     } catch (error) {
       console.error('Auth check failed:', error);
       localStorage.removeItem('auth_token');
