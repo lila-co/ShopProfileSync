@@ -240,7 +240,11 @@ const ShoppingListComponent: React.FC = () => {
 
   const deleteItemMutation = useMutation({
     mutationFn: async (itemId: number) => {
-      await apiRequest('DELETE', `/api/shopping-lists/items/${itemId}`);
+      const response = await apiRequest('DELETE', `/api/shopping-lists/items/${itemId}`);
+      if (!response.ok) {
+        throw new Error('Failed to delete item');
+      }
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
