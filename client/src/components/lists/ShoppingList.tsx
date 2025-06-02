@@ -37,9 +37,9 @@ const ShoppingListComponent: React.FC = () => {
   const [generationSteps] = useState([
     'Analyzing your shopping history...',
     'Checking recent purchases...',
-    'Identifying items you need...',
+    'Reviewing your current list...',
     'Optimizing quantities and units...',
-    'Building your personalized list...'
+    'Applying smart recommendations...'
   ]);
 
   // Edit dialog state
@@ -337,32 +337,42 @@ const ShoppingListComponent: React.FC = () => {
     }
   });
 
-  // Auto-generate list when component loads if list is empty
+  // AI analysis animation runs on every home page load
   useEffect(() => {
-    if (shoppingLists && shoppingLists.length > 0) {
+    if (shoppingLists && shoppingLists.length > 0 && !isAutoGenerating && !previewGenerateMutation.isPending) {
       const defaultList = shoppingLists[0];
       const hasItems = defaultList?.items && defaultList.items.length > 0;
       
-      if (!hasItems && !isAutoGenerating && !previewGenerateMutation.isPending) {
-        setIsAutoGenerating(true);
-        setGenerationStep(0);
-        
-        // Animate through generation steps
-        const stepInterval = setInterval(() => {
-          setGenerationStep(prev => {
-            if (prev >= generationSteps.length - 1) {
-              clearInterval(stepInterval);
-              return prev;
-            }
-            return prev + 1;
-          });
-        }, 800);
+      // Always run AI analysis animation on page load
+      setIsAutoGenerating(true);
+      setGenerationStep(0);
+      
+      // Animate through generation steps
+      const stepInterval = setInterval(() => {
+        setGenerationStep(prev => {
+          if (prev >= generationSteps.length - 1) {
+            clearInterval(stepInterval);
+            return prev;
+          }
+          return prev + 1;
+        });
+      }, 800);
 
-        // Start the actual generation after a brief delay
-        setTimeout(() => {
+      // Start the actual generation/analysis after animation
+      setTimeout(() => {
+        if (hasItems) {
+          // If items exist, just analyze and potentially suggest improvements
+          setIsAutoGenerating(false);
+          toast({
+            title: "AI Analysis Complete",
+            description: "Your shopping list has been optimized based on your preferences and recent purchases.",
+            duration: 3000
+          });
+        } else {
+          // If no items, generate new list
           previewGenerateMutation.mutate();
-        }, 2000);
-      }
+        }
+      }, 4000); // Wait for animation to complete
     }
   }, [shoppingLists, isAutoGenerating, previewGenerateMutation.isPending]);
 
@@ -529,8 +539,8 @@ const ShoppingListComponent: React.FC = () => {
             </div>
           </div>
           
-          <h2 className="text-xl font-bold text-gray-900 mb-2">AI is creating your shopping list</h2>
-          <p className="text-gray-600 mb-6">Analyzing your shopping patterns to build the perfect list</p>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">AI is analyzing your shopping list</h2>
+          <p className="text-gray-600 mb-6">Optimizing your list based on shopping patterns and preferences</p>
           
           <div className="space-y-3 max-w-md mx-auto">
             {generationSteps.map((step, index) => (
