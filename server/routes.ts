@@ -34,6 +34,92 @@ const handleError = (res: Response, error: any) => {
   return res.status(500).json({ message: error.message || 'Internal server error' });
 };
 
+// Helper function to get recently purchased items
+function getRecentlyPurchasedItems(purchases: any[], dayThreshold: number = 3): Set<string> {
+  const now = new Date();
+  const recentPurchaseThreshold = new Date(now.getTime() - (dayThreshold * 24 * 60 * 60 * 1000));
+  const recentlyPurchasedItems = new Set<string>();
+  
+  purchases.forEach(purchase => {
+    const purchaseDate = new Date(purchase.purchaseDate);
+    if (purchaseDate >= recentPurchaseThreshold) {
+      const items = purchase.items || [];
+      items.forEach((item: any) => {
+        recentlyPurchasedItems.add(item.productName.toLowerCase().trim());
+      });
+    }
+  });
+  
+  return recentlyPurchasedItems;
+}
+
+// Helper function to check if item was recently purchased
+function wasItemRecentlyPurchased(itemName: string, recentItems: Set<string>): boolean {
+  const normalizedName = itemName.toLowerCase().trim();
+  
+  // Check exact match
+  if (recentItems.has(normalizedName)) {
+    return true;
+  }
+  
+  // Check partial matches for similar items
+  for (const recentItem of recentItems) {
+    if (normalizedName.includes(recentItem) || recentItem.includes(normalizedName)) {
+      // Additional check for meaningful matches (avoid false positives)
+      if (normalizedName.length > 3 && recentItem.length > 3) {
+        const similarity = calculateStringSimilarity(normalizedName, recentItem);
+        if (similarity > 0.7) { // 70% similarity threshold
+          return true;
+        }
+      }
+    }
+  }
+  
+  return false;
+}
+
+// Helper function to calculate string similarity
+function calculateStringSimilarity(str1: string, str2: string): number {
+  const longer = str1.length > str2.length ? str1 : str2;
+  const shorter = str1.length > str2.length ? str2 : str1;
+  
+  if (longer.length === 0) {
+    return 1.0;
+  }
+  
+  const editDistance = levenshteinDistance(longer, shorter);
+  return (longer.length - editDistance) / longer.length;
+}
+
+// Helper function to calculate Levenshtein distance
+function levenshteinDistance(str1: string, str2: string): number {
+  const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
+  
+  for (let i = 0; i <= str1.length; i++) {
+    matrix[0][i] = i;
+  }
+  
+  for (let j = 0; j <= str2.length; j++) {
+    matrix[j][0] = j;
+  }
+  
+  for (let j = 1; j <= str2.length; j++) {
+    for (let i = 1; i <= str1.length; i++) {
+      if (str1[i - 1] === str2[j - 1]) {
+        matrix[j][i] = matrix[j - 1][i - 1];
+      } else {
+        matrix[j][i] = Math.min(
+          matrix[j - 1][i - 1] + 1, // substitution
+          matrix[j][i - 1] + 1,     // insertion
+          matrix[j - 1][i] + 1      // deletion
+        );
+      }
+    }
+  }
+  
+  return matrix[str2.length][str1.length];
+}
+
 // Helper functions for processing different upload types
 async function createSampleDealsFromImage(retailerId: number, circularId: number, filename: string) {
   // In production, this would use OCR to extract text from the image
@@ -1124,10 +1210,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.body.userId || 1; // Default to user 1 for demo
 
-      // Get user preferences
+      // Get user preferences and recent purchases
       const user = await storage.getUser(userId);
       const userPrefersBulk = user?.buyInBulk || false;
       const userPrioritizesCost = user?.prioritizeCostSavings || false;
+      
+      // Get recent purchases to filter out recently bought items
+      const recentPurchases = await storage.getPurchases(userId, 50); // Get last 50 purchases
+      const recentlyPurchasedItems = getRecentlyPurchasedItems(recentPurchases, 3); // Last 3 days
 
       // AI-enhanced deal data with comprehensive categorization and optimization
       const availableDeals = [
@@ -1271,25 +1361,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Analyze deals considering user preferences
       const analyzedDeals = analyzeBulkVsUnitPricing(aiEnhancedDeals, userPrefersBulk);
 
-      // Convert to recommendation format with AI enhancements
-      const recommendedItems = analyzedDeals.map(deal => ({
-        productName: deal.productName,
-        quantity: deal.quantity,
-        unit: deal.unit || 'COUNT',
-        suggestedRetailerId: 1, // Mock Retailer ID
-        suggestedPrice: deal.salePrice,
-        savings: deal.savings,
-        category: deal.category,
-        confidence: deal.confidence || 0.8,
-        aisle: deal.aisle,
-        section: deal.section,
-        reason: deal.aiReasoning || `Best deal based on ${userPrefersBulk ? 'bulk preference' : 'unit price'} at ${deal.retailerName}`,
-        daysUntilPurchase: 2, // Mock value
-        isSelected: true,
-        aiOptimized: deal.aiOptimized || false,
-        originalQuantity: deal.originalQuantity,
-        originalUnit: deal.originalUnit
-      }));
+      // Convert to recommendation format with AI enhancements and filter recently purchased
+      const recommendedItems = analyzedDeals
+        .filter(deal => !wasItemRecentlyPurchased(deal.productName, recentlyPurchasedItems))
+        .map(deal => ({
+          productName: deal.productName,
+          quantity: deal.quantity,
+          unit: deal.unit || 'COUNT',
+          suggestedRetailerId: 1, // Mock Retailer ID
+          suggestedPrice: deal.salePrice,
+          savings: deal.savings,
+          category: deal.category,
+          confidence: deal.confidence || 0.8,
+          aisle: deal.aisle,
+          section: deal.section,
+          reason: deal.aiReasoning || `Best deal based on ${userPrefersBulk ? 'bulk preference' : 'unit price'} at ${deal.retailerName}`,
+          daysUntilPurchase: 2, // Mock value
+          isSelected: true,
+          aiOptimized: deal.aiOptimized || false,
+          originalQuantity: deal.originalQuantity,
+          originalUnit: deal.originalUnit
+        }));
 
       // AI-enhanced additional items with comprehensive categorization
       const additionalItems = [
@@ -1340,31 +1432,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       ];
 
-      // Process additional items through AI categorization
-      const aiEnhancedAdditionalItems = await Promise.all(additionalItems.map(async (item) => {
-        try {
-          const aiCategory = productCategorizer.categorizeProduct(item.productName);
-          const aiQuantityOptimization = productCategorizer.normalizeQuantity(
-            item.productName, 
-            item.quantity, 
-            item.unit
-          );
+      // Process additional items through AI categorization and filter recently purchased
+      const aiEnhancedAdditionalItems = await Promise.all(
+        additionalItems
+          .filter(item => !wasItemRecentlyPurchased(item.productName, recentlyPurchasedItems))
+          .map(async (item) => {
+            try {
+              const aiCategory = productCategorizer.categorizeProduct(item.productName);
+              const aiQuantityOptimization = productCategorizer.normalizeQuantity(
+                item.productName, 
+                item.quantity, 
+                item.unit
+              );
 
-          return {
-            ...item,
-            category: aiCategory.category,
-            confidence: Math.max(item.confidence || 0.7, aiCategory.confidence),
-            aisle: aiCategory.aisle,
-            section: aiCategory.section,
-            quantity: aiQuantityOptimization.suggestedQuantity || item.quantity,
-            unit: aiQuantityOptimization.suggestedUnit || item.unit,
-            aiReasoning: aiQuantityOptimization.conversionReason || item.conversionReason
-          };
-        } catch (error) {
-          console.warn('AI enhancement failed for additional item:', item.productName, error);
-          return item;
-        }
-      }));
+              return {
+                ...item,
+                category: aiCategory.category,
+                confidence: Math.max(item.confidence || 0.7, aiCategory.confidence),
+                aisle: aiCategory.aisle,
+                section: aiCategory.section,
+                quantity: aiQuantityOptimization.suggestedQuantity || item.quantity,
+                unit: aiQuantityOptimization.suggestedUnit || item.unit,
+                aiReasoning: aiQuantityOptimization.conversionReason || item.conversionReason
+              };
+            } catch (error) {
+              console.warn('AI enhancement failed for additional item:', item.productName, error);
+              return item;
+            }
+          })
+      );
+      
+      // Track filtered items for user feedback
+      const allOriginalItems = [...analyzedDeals, ...additionalItems];
+      const filteredOutItems = allOriginalItems.filter(item => 
+        wasItemRecentlyPurchased(item.productName, recentlyPurchasedItems)
+      );
 
       // Combine all AI-enhanced items
       const allRecommendedItems = [...recommendedItems, ...aiEnhancedAdditionalItems];
@@ -1411,14 +1513,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }));
       }
 
-      // Return comprehensive AI-enhanced recommendations
+      // Return comprehensive AI-enhanced recommendations with filtering info
       res.json({
         userId,
         items: allRecommendedItems,
         totalSavings: allRecommendedItems.reduce((sum, item) => sum + (item.savings || 0), 0),
         aiEnhanced: true,
         categorizedItems: allRecommendedItems.length,
-        optimizedQuantities: allRecommendedItems.filter(item => item.aiOptimized).length
+        optimizedQuantities: allRecommendedItems.filter(item => item.aiOptimized).length,
+        filteredItems: filteredOutItems.map(item => ({
+          productName: item.productName,
+          reason: 'Recently purchased (within last 3 days)'
+        })),
+        filteredCount: filteredOutItems.length
       });
     } catch (error) {
       handleError(res, error);

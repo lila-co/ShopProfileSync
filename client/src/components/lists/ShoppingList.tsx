@@ -31,6 +31,17 @@ const ShoppingListComponent: React.FC = () => {
   const [newItemUnit, setNewItemUnit] = useState('COUNT');
   const [autoDetectUnit, setAutoDetectUnit] = useState(true);
 
+  // AI Generation state
+  const [isAutoGenerating, setIsAutoGenerating] = useState(false);
+  const [generationStep, setGenerationStep] = useState(0);
+  const [generationSteps] = useState([
+    'Analyzing your shopping history...',
+    'Checking recent purchases...',
+    'Identifying items you need...',
+    'Optimizing quantities and units...',
+    'Building your personalized list...'
+  ]);
+
   // Edit dialog state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editItemName, setEditItemName] = useState('');
@@ -46,6 +57,7 @@ const ShoppingListComponent: React.FC = () => {
   // Generate list state
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
   const [generatedItems, setGeneratedItems] = useState<any[]>([]);
+  const [filteredItems, setFilteredItems] = useState<any[]>([]);
 
   // Optimization state
   const [optimizationPreference, setOptimizationPreference] = useState('cost');
@@ -259,9 +271,30 @@ const ShoppingListComponent: React.FC = () => {
 
       setGeneratedItems(enhancedItems);
       }
-      setGenerateDialogOpen(true);
+      
+      // Store filtered items info to show to user
+      if (data.filteredItems && data.filteredItems.length > 0) {
+        setFilteredItems(data.filteredItems);
+        toast({
+          title: "Smart Filtering Applied",
+          description: `${data.filteredCount} items skipped because you purchased them recently: ${data.filteredItems.map((item: any) => item.productName).join(', ')}`,
+          duration: 5000
+        });
+      } else {
+        setFilteredItems([]);
+      }
+      
+      // If auto-generating, automatically add items without showing dialog
+      if (isAutoGenerating) {
+        setTimeout(() => {
+          generateListMutation.mutate();
+        }, 1000);
+      } else {
+        setGenerateDialogOpen(true);
+      }
     },
     onError: (error) => {
+      setIsAutoGenerating(false);
       toast({
         title: "Error",
         description: "Failed to generate list preview",
@@ -285,6 +318,7 @@ const ShoppingListComponent: React.FC = () => {
     },
     onSuccess: (data) => {
       setGenerateDialogOpen(false);
+      setIsAutoGenerating(false);
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
 
       const itemCount = data.itemsAdded || generatedItems.length;
@@ -294,6 +328,7 @@ const ShoppingListComponent: React.FC = () => {
       });
     },
     onError: (error) => {
+      setIsAutoGenerating(false);
       toast({
         title: "Error",
         description: "Failed to generate shopping list",
@@ -301,6 +336,35 @@ const ShoppingListComponent: React.FC = () => {
       });
     }
   });
+
+  // Auto-generate list when component loads if list is empty
+  useEffect(() => {
+    if (shoppingLists && shoppingLists.length > 0) {
+      const defaultList = shoppingLists[0];
+      const hasItems = defaultList?.items && defaultList.items.length > 0;
+      
+      if (!hasItems && !isAutoGenerating && !previewGenerateMutation.isPending) {
+        setIsAutoGenerating(true);
+        setGenerationStep(0);
+        
+        // Animate through generation steps
+        const stepInterval = setInterval(() => {
+          setGenerationStep(prev => {
+            if (prev >= generationSteps.length - 1) {
+              clearInterval(stepInterval);
+              return prev;
+            }
+            return prev + 1;
+          });
+        }, 800);
+
+        // Start the actual generation after a brief delay
+        setTimeout(() => {
+          previewGenerateMutation.mutate();
+        }, 2000);
+      }
+    }
+  }, [shoppingLists, isAutoGenerating, previewGenerateMutation.isPending]);
 
   // Import recipe ingredients
   const importRecipeMutation = useMutation({
@@ -447,6 +511,52 @@ const ShoppingListComponent: React.FC = () => {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Show AI generation animation overlay
+  if (isAutoGenerating) {
+    return (
+      <div className="p-4 space-y-4">
+        <div className="text-center py-12">
+          <div className="relative mx-auto w-20 h-20 mb-6">
+            <div className="absolute inset-0 rounded-full border-4 border-blue-200"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+            <div className="absolute inset-3 rounded-full bg-blue-50 flex items-center justify-center">
+              <Wand2 className="h-8 w-8 text-blue-600 animate-pulse" />
+            </div>
+          </div>
+          
+          <h2 className="text-xl font-bold text-gray-900 mb-2">AI is creating your shopping list</h2>
+          <p className="text-gray-600 mb-6">Analyzing your shopping patterns to build the perfect list</p>
+          
+          <div className="space-y-3 max-w-md mx-auto">
+            {generationSteps.map((step, index) => (
+              <div key={index} className={`flex items-center space-x-3 p-3 rounded-lg transition-all duration-500 ${
+                index <= generationStep 
+                  ? 'bg-blue-50 text-blue-800' 
+                  : 'bg-gray-50 text-gray-400'
+              }`}>
+                {index < generationStep ? (
+                  <CheckCircle2 className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                ) : index === generationStep ? (
+                  <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+                ) : (
+                  <Circle className="h-5 w-5 flex-shrink-0" />
+                )}
+                <span className="text-sm font-medium">{step}</span>
+              </div>
+            ))}
+          </div>
+          
+          <div className="mt-8">
+            <Progress value={(generationStep + 1) / generationSteps.length * 100} className="w-full max-w-md mx-auto" />
+            <p className="text-xs text-gray-500 mt-2">
+              Step {generationStep + 1} of {generationSteps.length}
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -610,34 +720,36 @@ const ShoppingListComponent: React.FC = () => {
       <div className="mb-4">
         <h2 className="text-xl font-bold mb-4 text-gray-900">Shopping List</h2>
 
-        {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <Button 
-            variant="default" 
-            size="lg" 
-            onClick={() => previewGenerateMutation.mutate()}
-            className="flex items-center justify-center h-12 text-base font-semibold bg-slate-700 text-white border-2 border-slate-700 hover:bg-slate-800 shadow-md transition-all"
-            disabled={previewGenerateMutation.isPending}
-          >
-            <Wand2 className="h-5 w-5 mr-2" />
-            {previewGenerateMutation.isPending ? 'Generating...' : 'Generate List'}
-          </Button>
-          <Button 
-            variant="default" 
-            size="lg" 
-            onClick={() => setRecipeDialogOpen(true)} 
-            className="flex items-center justify-center h-12 text-base font-semibold bg-slate-600 text-white border-2 border-slate-600 hover:bg-slate-700 shadow-md transition-all"
-          >
-            <FileText className="h-5 w-5 mr-2" />
-            Import Recipe
-          </Button>
-        </div>
+        {/* Action Buttons - Only show if list has items */}
+        {items.length > 0 && (
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <Button 
+              variant="default" 
+              size="lg" 
+              onClick={() => previewGenerateMutation.mutate()}
+              className="flex items-center justify-center h-12 text-base font-semibold bg-slate-700 text-white border-2 border-slate-700 hover:bg-slate-800 shadow-md transition-all"
+              disabled={previewGenerateMutation.isPending}
+            >
+              <Wand2 className="h-5 w-5 mr-2" />
+              {previewGenerateMutation.isPending ? 'Generating...' : 'Regenerate List'}
+            </Button>
+            <Button 
+              variant="default" 
+              size="lg" 
+              onClick={() => setRecipeDialogOpen(true)} 
+              className="flex items-center justify-center h-12 text-base font-semibold bg-slate-600 text-white border-2 border-slate-600 hover:bg-slate-700 shadow-md transition-all"
+            >
+              <FileText className="h-5 w-5 mr-2" />
+              Import Recipe
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Manual Add Item Section - Enhanced Visibility */}
       <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4 shadow-sm">
         <div className="flex items-center mb-3">
-          <Plus className="h-5 w-5 text-blue-600 mr-2" />
+          
           <h3 className="text-lg font-semibold text-gray-900">Add New Item</h3>
         </div>
 
@@ -645,11 +757,15 @@ const ShoppingListComponent: React.FC = () => {
           <div className="flex space-x-2 mb-3">
             <Input
               type="text"
-              placeholder="What do you need to buy?"
+              placeholder="What do you need to buy? (e.g., milk, bread, apples)"
               value={newItemName}
               onChange={(e) => setNewItemName(e.target.value)}
-              className="flex-1 bg-white border-2 border-blue-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium shadow-sm"
-              style={{ backgroundColor: 'white !important' }}
+              className="flex-1 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium transition-all"
+              style={{ 
+                backgroundColor: '#f8fafc !important',
+                border: '2px solid #cbd5e1',
+                boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.1)'
+              }}
             />
             <Button 
               type="submit" 
@@ -815,7 +931,7 @@ const ShoppingListComponent: React.FC = () => {
                   const incompleteItems = items.filter(item => !item.isCompleted);
                   const completedItems = items.filter(item => item.isCompleted);
 
-                  // Group incomplete items by category
+                  //// Group incomplete items by category
                   const incompleteGrouped: { [key: string]: ShoppingListItem[] } = {};
                   incompleteItems.forEach(item => {
                     const category = getCategoryFromName(item.productName);
@@ -1395,7 +1511,7 @@ const ShoppingListComponent: React.FC = () => {
 
       {/* Generate List Preview Dialog */}
       <Dialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>AI Generated Shopping List</DialogTitle>
           </DialogHeader>
@@ -1403,19 +1519,66 @@ const ShoppingListComponent: React.FC = () => {
             <p className="text-sm text-gray-500">
               Based on your purchase history, here are suggested items for your shopping list:
             </p>
-            <div className="max-h-64 overflow-y-auto">
-              {generatedItems.map((item, index) => (
-                <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
-                  <div>
-                    <span className="font-medium">{item.productName}</span>
-                    <span className="text-sm text-gray-500 block">{item.reason}</span>
-                  </div>
-                  <span className="text-sm text-gray-600">
-                    {item.quantity} {item.detectedUnit && item.detectedUnit !== "COUNT" ? item.detectedUnit.toLowerCase() : ""}
-                  </span>
+            
+            {/* Suggested Items */}
+            {generatedItems.length > 0 && (
+              <div>
+                <h4 className="font-medium text-gray-700 mb-2">Items to Add</h4>
+                <div className="max-h-48 overflow-y-auto">
+                  {generatedItems.map((item, index) => (
+                    <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
+                      <div>
+                        <span className="font-medium">{item.productName}</span>
+                        <span className="text-sm text-gray-500 block">{item.reason}</span>
+                      </div>
+                      <span className="text-sm text-gray-600">
+                        {item.quantity} {item.detectedUnit && item.detectedUnit !== "COUNT" ? item.detectedUnit.toLowerCase() : ""}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
+            
+            {/* Filtered Items */}
+            {filteredItems.length > 0 && (
+              <div className="border-t border-gray-200 pt-4">
+                <h4 className="font-medium text-orange-600 mb-2 flex items-center">
+                  <AlertTriangle className="h-4 w-4 mr-1" />
+                  Recently Purchased (Skipped)
+                </h4>
+                <div className="max-h-32 overflow-y-auto">
+                  {filteredItems.map((item, index) => (
+                    <div key={index} className="flex justify-between items-center py-1 text-sm">
+                      <div>
+                        <span className="text-gray-600">{item.productName}</span>
+                        <span className="text-xs text-orange-600 block">{item.reason}</span>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="text-xs h-6 px-2"
+                        onClick={() => {
+                          setGeneratedItems(prev => [...prev, {
+                            productName: item.productName,
+                            quantity: 1,
+                            unit: detectUnitFromItemName(item.productName),
+                            reason: 'Added despite recent purchase',
+                            detectedUnit: detectUnitFromItemName(item.productName)
+                          }]);
+                          setFilteredItems(prev => prev.filter((_, i) => i !== index));
+                        }}
+                      >
+                        Add Anyway
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  These items were recently purchased and automatically filtered out. Click "Add Anyway" if you still need them.
+                </p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button 
