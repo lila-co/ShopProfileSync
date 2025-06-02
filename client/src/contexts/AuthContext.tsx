@@ -32,11 +32,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const checkAuth = async () => {
     try {
-      // Clear any existing tokens to start fresh
-      localStorage.removeItem('auth_token');
-      setUser(null);
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        // Verify token is valid by fetching user profile
+        const response = await fetch('/api/user/profile', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+        } else {
+          // Token is invalid, clear it
+          localStorage.removeItem('auth_token');
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
     } catch (error) {
       console.error('Auth check failed:', error);
+      localStorage.removeItem('auth_token');
       setUser(null);
     } finally {
       setIsLoading(false);

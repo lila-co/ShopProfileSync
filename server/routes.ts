@@ -1601,10 +1601,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get personalized suggestions based on user profile
   app.get('/api/shopping-lists/suggestions', async (req: Request, res: Response) => {
     try {
-      const userId = 1; // For demo purposes, use default user
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+      
       const user = await storage.getUser(userId);
       if (!user) {
-        return res.status(404).json({ message: 'User not found' });
+        // Return empty suggestions instead of error to prevent frontend crashes
+        return res.json([]);
       }
 
       // For demo purposes, return hardcoded suggestions based on user profile
@@ -1630,7 +1633,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(suggestions);
     } catch (error) {
-      handleError(res, error);
+      console.error('Error fetching suggestions:', error);
+      // Return empty array instead of error to prevent frontend crashes
+      res.json([]);
     }
   });
 

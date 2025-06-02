@@ -71,7 +71,11 @@ const ShoppingListComponent: React.FC = () => {
   // AI List Generation Animation
   useEffect(() => {
     if (shoppingLists && shoppingLists.length > 0) {
-      const shouldShowAnimation = !localStorage.getItem('listGenerationShown') || 
+      const defaultList = shoppingLists[0];
+      const hasItems = defaultList.items && defaultList.items.length > 0;
+      
+      // Only show animation if list is empty or force regeneration is requested
+      const shouldShowAnimation = !hasItems || 
                                  localStorage.getItem('forceShowAnimation') === 'true';
 
       if (shouldShowAnimation) {
@@ -95,6 +99,11 @@ const ShoppingListComponent: React.FC = () => {
                 setIsGeneratingList(false);
                 localStorage.setItem('listGenerationShown', 'true');
                 localStorage.removeItem('forceShowAnimation');
+                
+                // Auto-generate items if list is empty
+                if (!hasItems) {
+                  generateSampleItems();
+                }
               }, 1000);
               return prev;
             }
@@ -106,6 +115,31 @@ const ShoppingListComponent: React.FC = () => {
       }
     }
   }, [shoppingLists]);
+
+  // Generate sample items for empty lists
+  const generateSampleItems = async () => {
+    const defaultList = shoppingLists?.[0];
+    if (!defaultList) return;
+
+    const sampleItems = [
+      { productName: 'Organic Milk', quantity: 1, unit: 'GALLON' },
+      { productName: 'Bananas', quantity: 2, unit: 'LB' },
+      { productName: 'Whole Grain Bread', quantity: 1, unit: 'LOAF' },
+      { productName: 'Free-Range Eggs', quantity: 1, unit: 'DOZEN' },
+      { productName: 'Chicken Breast', quantity: 1, unit: 'LB' }
+    ];
+
+    for (const item of sampleItems) {
+      try {
+        await apiRequest('POST', `/api/shopping-lists/${defaultList.id}/items`, item);
+      } catch (error) {
+        console.error('Error adding sample item:', error);
+      }
+    }
+    
+    // Refresh the list
+    queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+  };
 
   const addItemMutation = useMutation({
     mutationFn: async (itemName: string) => {
@@ -233,9 +267,29 @@ const ShoppingListComponent: React.FC = () => {
     }
   };
 
-  const handleRegenerateList = () => {
-    localStorage.setItem('forceShowAnimation', 'true');
-    window.location.reload();
+  const handleRegenerateList = async () => {
+    try {
+      // Clear existing items first
+      const defaultList = shoppingLists?.[0];
+      if (defaultList && defaultList.items) {
+        for (const item of defaultList.items) {
+          await deleteItemMutation.mutateAsync(item.id);
+        }
+      }
+      
+      // Trigger regeneration
+      localStorage.setItem('forceShowAnimation', 'true');
+      localStorage.removeItem('listGenerationShown');
+      
+      // Refresh the component to trigger animation
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to regenerate list",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleImportRecipe = () => {
