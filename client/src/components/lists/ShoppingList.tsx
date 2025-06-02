@@ -240,21 +240,54 @@ const ShoppingListComponent: React.FC = () => {
 
   const deleteItemMutation = useMutation({
     mutationFn: async (itemId: number) => {
-      const response = await apiRequest('DELETE', `/api/shopping-lists/items/${itemId}`);
-      return response.json();
+      await apiRequest('DELETE', `/api/shopping-lists/items/${itemId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
       toast({
         title: "Item deleted",
-        description: "Item has been removed from your shopping list",
+        description: "The item has been removed from your list"
       });
     },
     onError: (error: any) => {
       toast({
         title: "Error",
         description: error.message || "Failed to delete item",
-        variant: "destructive",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const regenerateListMutation = useMutation({
+    mutationFn: async () => {
+      const defaultList = shoppingLists?.[0];
+      if (!defaultList) throw new Error('No shopping list found');
+
+      // First, delete all existing items
+      if (defaultList.items && defaultList.items.length > 0) {
+        for (const item of defaultList.items) {
+          await apiRequest('DELETE', `/api/shopping-lists/items/${item.id}`);
+        }
+      }
+
+      // Then generate new items
+      const response = await apiRequest('POST', '/api/shopping-lists/generate', {
+        shoppingListId: defaultList.id
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      toast({
+        title: "List Regenerated",
+        description: "Your shopping list has been regenerated with fresh recommendations"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to regenerate list",
+        variant: "destructive"
       });
     }
   });
