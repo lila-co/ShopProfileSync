@@ -12,6 +12,7 @@ interface HeaderProps {
   showNotifications?: boolean;
   onBack?: () => void;
   showAuth?: boolean;
+  rightContent?: React.ReactNode;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -20,7 +21,8 @@ const Header: React.FC<HeaderProps> = ({
   showSearch = false, 
   showNotifications = true,
   showAuth = false,
-  onBack
+  onBack,
+  rightContent
 }) => {
   if (showAuth) {
     return <AuthenticatedHeader />;
