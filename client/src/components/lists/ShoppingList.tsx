@@ -73,11 +73,11 @@ const ShoppingListComponent: React.FC = () => {
     if (shoppingLists && shoppingLists.length > 0) {
       const defaultList = shoppingLists[0];
       const hasItems = defaultList.items && defaultList.items.length > 0;
-      
+
       // Check if we've shown the animation before
       const hasShownAnimation = localStorage.getItem('listGenerationShown') === 'true';
       const forceAnimation = localStorage.getItem('forceShowAnimation') === 'true';
-      
+
       // Show animation if: list is empty AND (never shown before OR forced)
       const shouldShowAnimation = !hasItems && (!hasShownAnimation || forceAnimation);
 
@@ -102,7 +102,7 @@ const ShoppingListComponent: React.FC = () => {
                 setIsGeneratingList(false);
                 localStorage.setItem('listGenerationShown', 'true');
                 localStorage.removeItem('forceShowAnimation');
-                
+
                 // Auto-generate items
                 generateSampleItems();
               }, 1000);
@@ -129,11 +129,11 @@ const ShoppingListComponent: React.FC = () => {
       const response = await apiRequest('POST', '/api/shopping-lists/generate', {
         shoppingListId: defaultList.id
       });
-      
+
       if (response.ok) {
         // Refresh shopping lists to show new items
         queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-        
+
         toast({
           title: "Shopping List Generated",
           description: "AI has created a personalized shopping list for you"
@@ -160,10 +160,10 @@ const ShoppingListComponent: React.FC = () => {
           console.error('Failed to add item:', item.productName, addError);
         }
       }
-      
+
       // Refresh the list
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-      
+
       toast({
         title: "Basic Items Added",
         description: "Added some essential items to get you started"
@@ -185,7 +185,7 @@ const ShoppingListComponent: React.FC = () => {
         console.error('Error adding sample item:', error);
       }
     }
-    
+
     // Refresh the list
     queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
   };
@@ -316,42 +316,40 @@ const ShoppingListComponent: React.FC = () => {
     }
   };
 
-  const regenerateListMutation = useMutation({
-    mutationFn: async () => {
-      const defaultList = shoppingLists?.[0];
-      if (!defaultList) throw new Error('No shopping list found');
-
-      // First, delete all existing items
-      if (defaultList.items && defaultList.items.length > 0) {
-        for (const item of defaultList.items) {
-          await apiRequest('DELETE', `/api/shopping-lists/items/${item.id}`);
-        }
-      }
-
-      // Then generate new items
-      const response = await apiRequest('POST', '/api/shopping-lists/generate', {
-        shoppingListId: defaultList.id
-      });
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-      toast({
-        title: "List Regenerated",
-        description: "Your shopping list has been regenerated with fresh recommendations"
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to regenerate list",
-        variant: "destructive"
-      });
-    }
-  });
-
   const handleRegenerateList = () => {
-    regenerateListMutation.mutate();
+    // Show animation during regeneration
+    setIsGeneratingList(true);
+    const steps = [
+      "Clearing current list...",
+      "Analyzing your preferences...",
+      "Finding fresh recommendations...",
+      "Optimizing your shopping list...",
+      "Finalizing new items..."
+    ];
+
+    setGenerationSteps(steps);
+    setCurrentStep(0);
+
+    let currentStepIndex = 0;
+    const interval = setInterval(() => {
+      currentStepIndex++;
+      setCurrentStep(currentStepIndex);
+
+      if (currentStepIndex >= steps.length - 1) {
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    regenerateListMutation.mutate(undefined, {
+      onSettled: () => {
+        // Ensure animation completes before hiding
+        setTimeout(() => {
+          clearInterval(interval);
+          setIsGeneratingList(false);
+          setCurrentStep(-1);
+        }, Math.max(1000, (steps.length - currentStepIndex) * 1000));
+      }
+    });
   };
 
   const handleImportRecipe = () => {
