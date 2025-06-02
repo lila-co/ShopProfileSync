@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Router, Route, Switch, Redirect } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -27,8 +26,8 @@ import AuthPage from './pages/auth';
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router>
+      <Router>
+        <AuthProvider>
           <div className="App">
             <Switch>
               <Route path="/login" component={AuthPage} />
@@ -115,9 +114,8 @@ function App() {
               <Route component={NotFound} />
             </Switch>
           </div>
-        </Router>
-        <Toaster />
-      </AuthProvider>
+        </AuthProvider>
+      </Router>
     </QueryClientProvider>
   );
 }
