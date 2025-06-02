@@ -1606,30 +1606,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const user = await storage.getUser(userId);
       if (!user) {
+        console.log(`User ${userId} not found for suggestions`);
         // Return empty suggestions instead of error to prevent frontend crashes
         return res.json([]);
       }
 
-      // For demo purposes, return hardcoded suggestions based on user profile
-      const suggestions = [
-        {
-          type: "swap",
-          currentItem: "Regular pasta",
-          suggestedItem: "Whole wheat pasta",
-          reason: "Healthier option with more fiber and nutrients"
-        },
-        {
-          type: "new",
-          suggestedItem: "Fresh seasonal fruits",
-          reason: "Based on your preference for organic products"
-        },
-        {
-          type: "swap",
-          currentItem: "Regular milk",
-          suggestedItem: "Organic milk",
-          reason: "Aligns with your dietary preferences"
-        }
-      ];
+      // Generate suggestions based on user profile
+      const suggestions = await generatePersonalizedSuggestions(user);
 
       res.json(suggestions);
     } catch (error) {

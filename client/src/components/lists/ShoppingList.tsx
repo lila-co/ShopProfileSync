@@ -68,15 +68,18 @@ const ShoppingListComponent: React.FC = () => {
     enabled: !!shoppingLists,
   });
 
-  // AI List Generation Animation
+  // AI List Generation Animation and Auto-generation
   useEffect(() => {
     if (shoppingLists && shoppingLists.length > 0) {
       const defaultList = shoppingLists[0];
       const hasItems = defaultList.items && defaultList.items.length > 0;
       
-      // Only show animation if list is empty or force regeneration is requested
-      const shouldShowAnimation = !hasItems || 
-                                 localStorage.getItem('forceShowAnimation') === 'true';
+      // Check if we've shown the animation before
+      const hasShownAnimation = localStorage.getItem('listGenerationShown') === 'true';
+      const forceAnimation = localStorage.getItem('forceShowAnimation') === 'true';
+      
+      // Show animation if: list is empty AND (never shown before OR forced)
+      const shouldShowAnimation = !hasItems && (!hasShownAnimation || forceAnimation);
 
       if (shouldShowAnimation) {
         setIsGeneratingList(true);
@@ -100,10 +103,8 @@ const ShoppingListComponent: React.FC = () => {
                 localStorage.setItem('listGenerationShown', 'true');
                 localStorage.removeItem('forceShowAnimation');
                 
-                // Auto-generate items if list is empty
-                if (!hasItems) {
-                  generateSampleItems();
-                }
+                // Auto-generate items
+                generateSampleItems();
               }, 1000);
               return prev;
             }
@@ -112,6 +113,9 @@ const ShoppingListComponent: React.FC = () => {
         }, 1500);
 
         return () => clearInterval(interval);
+      } else if (!hasItems && hasShownAnimation) {
+        // If list is empty but we've shown animation before, just generate items directly
+        generateSampleItems();
       }
     }
   }, [shoppingLists]);
@@ -119,7 +123,52 @@ const ShoppingListComponent: React.FC = () => {
   // Generate sample items for empty lists
   const generateSampleItems = async () => {
     const defaultList = shoppingLists?.[0];
-    if (!defaultList) return;
+    if (!defaultList || (defaultList.items && defaultList.items.length > 0)) return;
+
+    try {
+      const response = await apiRequest('POST', '/api/shopping-lists/generate', {
+        shoppingListId: defaultList.id
+      });
+      
+      if (response.ok) {
+        // Refresh shopping lists to show new items
+        queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+        
+        toast({
+          title: "Shopping List Generated",
+          description: "AI has created a personalized shopping list for you"
+        });
+      }
+    } catch (error) {
+      console.error('Failed to generate sample items:', error);
+      // Fallback: add some basic items manually
+      const basicItems = [
+        { productName: 'Milk', quantity: 1, unit: 'GALLON' },
+        { productName: 'Bread', quantity: 1, unit: 'LOAF' },
+        { productName: 'Eggs', quantity: 1, unit: 'DOZEN' },
+        { productName: 'Bananas', quantity: 2, unit: 'LB' },
+        { productName: 'Chicken Breast', quantity: 1, unit: 'LB' }
+      ];
+
+      for (const item of basicItems) {
+        try {
+          await apiRequest('POST', '/api/shopping-list/items', {
+            ...item,
+            shoppingListId: defaultList.id
+          });
+        } catch (addError) {
+          console.error('Failed to add item:', item.productName, addError);
+        }
+      }
+      
+      // Refresh the list
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      
+      toast({
+        title: "Basic Items Added",
+        description: "Added some essential items to get you started"
+      });
+    }
 
     const sampleItems = [
       { productName: 'Organic Milk', quantity: 1, unit: 'GALLON' },
