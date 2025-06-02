@@ -316,29 +316,42 @@ const ShoppingListComponent: React.FC = () => {
     }
   };
 
-  const handleRegenerateList = async () => {
-    try {
-      // Clear existing items first
+  const regenerateListMutation = useMutation({
+    mutationFn: async () => {
       const defaultList = shoppingLists?.[0];
-      if (defaultList && defaultList.items) {
+      if (!defaultList) throw new Error('No shopping list found');
+
+      // First, delete all existing items
+      if (defaultList.items && defaultList.items.length > 0) {
         for (const item of defaultList.items) {
-          await deleteItemMutation.mutateAsync(item.id);
+          await apiRequest('DELETE', `/api/shopping-lists/items/${item.id}`);
         }
       }
-      
-      // Trigger regeneration
-      localStorage.setItem('forceShowAnimation', 'true');
-      localStorage.removeItem('listGenerationShown');
-      
-      // Refresh the component to trigger animation
+
+      // Then generate new items
+      const response = await apiRequest('POST', '/api/shopping-lists/generate', {
+        shoppingListId: defaultList.id
+      });
+      return response.json();
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-    } catch (error) {
+      toast({
+        title: "List Regenerated",
+        description: "Your shopping list has been regenerated with fresh recommendations"
+      });
+    },
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to regenerate list",
+        description: error.message || "Failed to regenerate list",
         variant: "destructive"
       });
     }
+  });
+
+  const handleRegenerateList = () => {
+    regenerateListMutation.mutate();
   };
 
   const handleImportRecipe = () => {
@@ -457,10 +470,11 @@ const ShoppingListComponent: React.FC = () => {
         <Button
           variant="outline"
           onClick={handleRegenerateList}
+          disabled={regenerateListMutation.isPending}
           className="flex items-center gap-1"
         >
           <Wand2 className="h-4 w-4" />
-          <span>Regenerate List</span>
+          <span>{regenerateListMutation.isPending ? "Regenerating..." : "Regenerate List"}</span>
         </Button>
       </div>
 
