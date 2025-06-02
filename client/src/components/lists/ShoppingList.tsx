@@ -262,6 +262,28 @@ const ShoppingListComponent: React.FC = () => {
     }
   });
 
+  const updateItemMutation = useMutation({
+    mutationFn: async ({ itemId, updates }: { itemId: number; updates: Partial<ShoppingListItem> }) => {
+      const response = await apiRequest('PUT', `/api/shopping-lists/items/${itemId}`, updates);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      setEditingItem(null);
+      toast({
+        title: "Item updated",
+        description: "Item has been updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update item",
+        variant: "destructive",
+      });
+    }
+  });
+
   const regenerateListMutation = useMutation({
     mutationFn: async () => {
       const defaultList = shoppingLists?.[0];
@@ -292,28 +314,6 @@ const ShoppingListComponent: React.FC = () => {
         title: "Error",
         description: error.message || "Failed to regenerate list",
         variant: "destructive"
-      });
-    }
-  });
-
-  const updateItemMutation = useMutation({
-    mutationFn: async ({ itemId, updates }: { itemId: number; updates: Partial<ShoppingListItem> }) => {
-      const response = await apiRequest('PUT', `/api/shopping-lists/items/${itemId}`, updates);
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-      setEditingItem(null);
-      toast({
-        title: "Item updated",
-        description: "Item has been updated successfully",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update item",
-        variant: "destructive",
       });
     }
   });
