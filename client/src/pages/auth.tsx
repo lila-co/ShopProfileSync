@@ -56,9 +56,7 @@ const AuthPage: React.FC = () => {
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
-  const { login, isAuthenticated } = useAuth();
-
-  // No need to redirect here - ProtectedRoute handles this
+  const { login } = useAuth();
 
   // Login form setup
   const loginForm = useForm<z.infer<typeof loginSchema>>({
