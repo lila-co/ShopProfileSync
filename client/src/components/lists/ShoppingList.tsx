@@ -36,6 +36,7 @@ const ShoppingListComponent: React.FC = () => {
   const [categorizedItems, setCategorizedItems] = useState<Record<string, ShoppingListItem[]>>({});
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
   const [isCategorizingItems, setIsCategorizingItems] = useState(false);
+  const [userHasClearedList, setUserHasClearedList] = useState(false);
   // Session handling removed - using AuthContext instead
 
   const importRecipeMutation = useMutation({
@@ -186,23 +187,27 @@ const ShoppingListComponent: React.FC = () => {
     }
   }, [shoppingLists]);
 
-  // Trigger auto-generation on authentication state change and initial load
+  // Trigger auto-generation only on initial load for new users
   useEffect(() => {
     const triggerListGeneration = async () => {
       if (shoppingLists && shoppingLists.length > 0) {
         const defaultList = shoppingLists[0];
         const hasItems = defaultList?.items && defaultList.items.length > 0;
 
-        // Generate list if it's empty
-        if (!hasItems) {
-          // Check if we've shown the animation before
+        // Only proceed if list is empty AND user hasn't manually cleared it
+        if (!hasItems && !userHasClearedList) {
+          console.log('Empty shopping list detected, starting generation flow...');
+          
+          // For new users or when forced, always show the animation
           const hasShownAnimation = localStorage.getItem('listGenerationShown') === 'true';
           const forceAnimation = localStorage.getItem('forceShowAnimation') === 'true';
+          const isFirstTimeUser = !hasShownAnimation;
 
-          // Show animation if: list is empty AND (never shown before OR forced)
-          const shouldShowAnimation = !hasItems && (!hasShownAnimation || forceAnimation);
+          console.log('Animation status:', { hasShownAnimation, forceAnimation, isFirstTimeUser });
 
-          if (shouldShowAnimation) {
+          // Show animation for first-time users or when forced
+          if (isFirstTimeUser || forceAnimation) {
+            console.log('Starting AI generation animation...');
             setIsGeneratingList(true);
             const steps = [
               "Analyzing your dietary preferences...",
@@ -224,7 +229,8 @@ const ShoppingListComponent: React.FC = () => {
                     localStorage.setItem('listGenerationShown', 'true');
                     localStorage.removeItem('forceShowAnimation');
 
-                    // Auto-generate items
+                    // Auto-generate items after animation
+                    console.log('Animation complete, generating sample items...');
                     generateSampleItems();
                   }, 1000);
                   return prev;
@@ -234,28 +240,49 @@ const ShoppingListComponent: React.FC = () => {
             }, 1500);
 
             return () => clearInterval(interval);
-          } else if (!hasItems && hasShownAnimation) {
-            // If list is empty but we've shown animation before, just generate items directly
+          } else {
+            // If animation was shown before but list is still empty, generate items directly
+            console.log('Skipping animation, generating items directly...');
             generateSampleItems();
           }
+        } else if (hasItems) {
+          console.log('Shopping list already has items, skipping generation');
+          // Reset the flag when list has items again
+          setUserHasClearedList(false);
+        } else {
+          console.log('User has manually cleared list, not auto-generating');
         }
+      } else {
+        console.log('No shopping lists found yet');
       }
     };
 
     triggerListGeneration();
-  }, [shoppingLists]); // React to changes in shoppingLists
+  }, [shoppingLists, userHasClearedList]); // React to changes in shoppingLists and userHasClearedList
 
   // Generate sample items for empty lists
   const generateSampleItems = async () => {
     const defaultList = shoppingLists?.[0];
-    if (!defaultList || (defaultList.items && defaultList.items.length > 0)) return;
+    if (!defaultList) {
+      console.error('No default shopping list found');
+      return;
+    }
+
+    if (defaultList.items && defaultList.items.length > 0) {
+      console.log('List already has items, skipping generation');
+      return;
+    }
+
+    console.log('Generating sample items for list:', defaultList.id);
 
     try {
+      // Try the API generation first
       const response = await apiRequest('POST', '/api/shopping-lists/generate', {
         shoppingListId: defaultList.id
       });
 
       if (response.ok) {
+        console.log('API generation successful');
         // Refresh shopping lists to show new items
         queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
 
@@ -263,24 +290,40 @@ const ShoppingListComponent: React.FC = () => {
           title: "Shopping List Generated",
           description: "AI has created a personalized shopping list for you"
         });
+        return; // Success, don't run fallback
+      } else {
+        console.warn('API generation failed with status:', response.status);
+        throw new Error('API generation failed');
       }
     } catch (error) {
-      console.error('Failed to generate sample items:', error);
-      // Fallback: add some basic items manually
+      console.error('API generation failed, using fallback:', error);
+      
+      // Fallback: add basic items manually
       const basicItems = [
-        { productName: 'Milk', quantity: 1, unit: 'GALLON' },
-        { productName: 'Bread', quantity: 1, unit: 'LOAF' },
-        { productName: 'Eggs', quantity: 1, unit: 'DOZEN' },
+        { productName: 'Organic Milk', quantity: 1, unit: 'GALLON' },
+        { productName: 'Whole Grain Bread', quantity: 1, unit: 'LOAF' },
+        { productName: 'Free-Range Eggs', quantity: 1, unit: 'DOZEN' },
         { productName: 'Bananas', quantity: 2, unit: 'LB' },
-        { productName: 'Chicken Breast', quantity: 1, unit: 'LB' }
+        { productName: 'Chicken Breast', quantity: 1, unit: 'LB' },
+        { productName: 'Greek Yogurt', quantity: 4, unit: 'CONTAINER' },
+        { productName: 'Baby Spinach', quantity: 1, unit: 'BAG' },
+        { productName: 'Roma Tomatoes', quantity: 2, unit: 'LB' }
       ];
+
+      console.log('Adding fallback items...');
+      let addedCount = 0;
 
       for (const item of basicItems) {
         try {
-          await apiRequest('POST', '/api/shopping-list/items', {
+          const response = await apiRequest('POST', '/api/shopping-list/items', {
             ...item,
             shoppingListId: defaultList.id
           });
+          
+          if (response.ok) {
+            addedCount++;
+            console.log(`Added item: ${item.productName}`);
+          }
         } catch (addError) {
           console.error('Failed to add item:', item.productName, addError);
         }
@@ -290,29 +333,13 @@ const ShoppingListComponent: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
 
       toast({
-        title: "Basic Items Added",
-        description: "Added some essential items to get you started"
+        title: addedCount > 0 ? "Starter Items Added" : "Error Adding Items",
+        description: addedCount > 0 
+          ? `Added ${addedCount} essential items to get you started`
+          : "Failed to add items. Please try adding items manually.",
+        variant: addedCount > 0 ? "default" : "destructive"
       });
     }
-
-    const sampleItems = [
-      { productName: 'Organic Milk', quantity: 1, unit: 'GALLON' },
-      { productName: 'Bananas', quantity: 2, unit: 'LB' },
-      { productName: 'Whole Grain Bread', quantity: 1, unit: 'LOAF' },
-      { productName: 'Free-Range Eggs', quantity: 1, unit: 'DOZEN' },
-      { productName: 'Chicken Breast', quantity: 1, unit: 'LB' }
-    ];
-
-    for (const item of sampleItems) {
-      try {
-        await apiRequest('POST', `/api/shopping-lists/${defaultList.id}/items`, item);
-      } catch (error) {
-        console.error('Error adding sample item:', error);
-      }
-    }
-
-    // Refresh the list
-    queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
   };
 
   const addItemMutation = useMutation({
@@ -417,10 +444,19 @@ const ShoppingListComponent: React.FC = () => {
       // Optimistically update to the new value
       queryClient.setQueryData(['/api/shopping-lists'], (old: any) => {
         if (!old) return old;
-        return old.map((list: any) => ({
+        const updatedLists = old.map((list: any) => ({
           ...list,
           items: list.items?.filter((item: any) => item.id !== itemId) || []
         }));
+        
+        // Check if this deletion will result in an empty list
+        const defaultList = updatedLists[0];
+        if (defaultList && (!defaultList.items || defaultList.items.length === 0)) {
+          // User is manually clearing the list
+          setUserHasClearedList(true);
+        }
+        
+        return updatedLists;
       });
 
       return { previousLists };
@@ -756,6 +792,9 @@ const ShoppingListComponent: React.FC = () => {
   });
 
   const handleRegenerateList = () => {
+    // Reset the flag since user is explicitly asking for regeneration
+    setUserHasClearedList(false);
+    
     // Show animation during regeneration
     setIsGeneratingList(true);
     const steps = [
@@ -1329,6 +1368,25 @@ const ShoppingListComponent: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Debug: Test new user flow button (remove in production) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-4 mb-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              localStorage.removeItem('listGenerationShown');
+              localStorage.setItem('forceShowAnimation', 'true');
+              setUserHasClearedList(false);
+              window.location.reload();
+            }}
+            className="text-xs"
+          >
+            🔧 Test New User Flow
+          </Button>
+        </div>
+      )}
 
       {/* Voice AI Agent - Moved to bottom */}
       <div className="mt-6 mb-4">
