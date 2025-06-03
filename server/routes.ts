@@ -667,8 +667,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/user/retailer-accounts', async (req: Request, res: Response) => {
     try {
-      const newAccount = await storage.createRetailerAccount(req.body);
-      res.json(newAccount);
+      const { connectionType, retailerId, ...accountData } = req.body;
+      
+      // For circular-only connections, create a simplified account
+      if (connectionType === 'circular') {
+        const circularAccount = {
+          retailerId,
+          isConnected: true,
+          circularOnly: true,
+          connectionType: 'circular',
+          username: null,
+          allowOrdering: false,
+          storeCredentials: false,
+          lastSync: new Date().toISOString()
+        };
+        
+        const newAccount = await storage.createRetailerAccount(circularAccount);
+        
+        // Trigger circular fetching for this retailer
+        try {
+          const { circularFetcher } = await import('./services/circularFetcher');
+          await circularFetcher.fetchCircularForRetailer(retailerId);
+        } catch (error) {
+          console.warn('Failed to fetch initial circular:', error);
+        }
+        
+        res.json(newAccount);
+      } else {
+        // Regular account connection
+        const newAccount = await storage.createRetailerAccount({ retailerId, ...accountData });
+        res.json(newAccount);
+      }
     } catch (error) {
       handleError(res, error);
     }
