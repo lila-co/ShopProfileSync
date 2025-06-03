@@ -203,19 +203,52 @@ const ShoppingListComponent: React.FC = () => {
       });
       return response.json();
     },
+    onMutate: async (itemName: string) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['/api/shopping-lists'] });
+      
+      // Snapshot the previous value
+      const previousLists = queryClient.getQueryData(['/api/shopping-lists']);
+      
+      // Optimistically update to the new value
+      const tempId = Date.now(); // Temporary ID for optimistic update
+      const newItem = {
+        id: tempId,
+        productName: itemName,
+        quantity: 1,
+        unit: 'COUNT',
+        isCompleted: false,
+        shoppingListId: shoppingLists?.[0]?.id
+      };
+      
+      queryClient.setQueryData(['/api/shopping-lists'], (old: any) => {
+        if (!old) return old;
+        return old.map((list: any) => ({
+          ...list,
+          items: [...(list.items || []), newItem]
+        }));
+      });
+      
+      return { previousLists };
+    },
+    onError: (err, itemName, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      queryClient.setQueryData(['/api/shopping-lists'], context?.previousLists);
+      toast({
+        title: "Error",
+        description: "Failed to add item",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      // Always refetch after error or success
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+    },
     onSuccess: () => {
       setNewItemName('');
-      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
       toast({
         title: "Item added",
         description: "Item has been added to your shopping list",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to add item",
-        variant: "destructive",
       });
     }
   });
@@ -247,18 +280,41 @@ const ShoppingListComponent: React.FC = () => {
       }
       return response;
     },
-    onSuccess: () => {
+    onMutate: async (itemId: number) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['/api/shopping-lists'] });
+
+      // Snapshot the previous value
+      const previousLists = queryClient.getQueryData(['/api/shopping-lists']);
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(['/api/shopping-lists'], (old: any) => {
+        if (!old) return old;
+        return old.map((list: any) => ({
+          ...list,
+          items: list.items?.filter((item: any) => item.id !== itemId) || []
+        }));
+      });
+
+      return { previousLists };
+    },
+    onError: (err, itemId, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      queryClient.setQueryData(['/api/shopping-lists'], context?.previousLists);
+      toast({
+        title: "Error",
+        description: "Failed to delete item",
+        variant: "destructive"
+      });
+    },
+    onSettled: () => {
+      // Always refetch after error or success
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+    },
+    onSuccess: () => {
       toast({
         title: "Item deleted",
         description: "The item has been removed from your list"
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete item",
-        variant: "destructive"
       });
     }
   });
