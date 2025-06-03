@@ -235,6 +235,52 @@ const PlanDetails: React.FC = () => {
           Back to List
         </Button>
 
+        {/* Plan Type Selection */}
+        <div className="mb-4">
+          <h3 className="text-sm font-medium text-gray-700 mb-3">Choose Your Plan</h3>
+          <div className="grid grid-cols-3 gap-2">
+            <Button
+              variant={planType === 'single-store' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => {
+                const newParams = new URLSearchParams(window.location.search);
+                newParams.set('planType', 'single-store');
+                navigate(`/plan-details?${newParams.toString()}`);
+              }}
+              className="text-xs h-8"
+            >
+              <Clock className="h-3 w-3 mr-1" />
+              Single Store
+            </Button>
+            <Button
+              variant={planType === 'best-value' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => {
+                const newParams = new URLSearchParams(window.location.search);
+                newParams.set('planType', 'best-value');
+                navigate(`/plan-details?${newParams.toString()}`);
+              }}
+              className="text-xs h-8"
+            >
+              <DollarSign className="h-3 w-3 mr-1" />
+              Best Value
+            </Button>
+            <Button
+              variant={planType === 'balanced' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => {
+                const newParams = new URLSearchParams(window.location.search);
+                newParams.set('planType', 'balanced');
+                navigate(`/plan-details?${newParams.toString()}`);
+              }}
+              className="text-xs h-8"
+            >
+              <Package className="h-3 w-3 mr-1" />
+              Balanced
+            </Button>
+          </div>
+        </div>
+
         {/* Plan Header */}
         <Card className={`mb-4 border-${color}-200 bg-${color}-50`}>
           <CardContent className="p-4">
