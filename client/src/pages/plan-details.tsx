@@ -301,6 +301,42 @@ const PlanDetails: React.FC = () => {
         </TabsContent>
       </Tabs>
 
+      {/* Action Buttons */}
+      <div className="flex gap-4 mb-6">
+        <div className="space-y-2 w-full">
+          <Button 
+            className="w-full"
+            size="lg"
+            onClick={() => {
+              const params = new URLSearchParams({
+                listId: listId || '1',
+                retailerId: planData.stores[0]?.retailer?.id?.toString() || '1',
+                planData: encodeURIComponent(JSON.stringify(planData)),
+                autoStart: 'true'
+              });
+              navigate(`/shop?${params.toString()}`);
+            }}
+          >
+            <ShoppingCart className="h-4 w-4 mr-2" />
+            Start Shopping Route
+          </Button>
+
+          <Button 
+            variant="outline"
+            className="w-full"
+            onClick={() => {
+              const params = new URLSearchParams({
+                listId: listId || '1',
+                retailerId: planData.stores[0]?.retailer?.id?.toString() || '1'
+              });
+              navigate(`/shop?${params.toString()}`);
+            }}
+          >
+            Customize Plan
+          </Button>
+        </div>
+      </div>
+
       {/* Store Details */}
       <div className="space-y-4">
         {planData.stores.map((store, index) => (
@@ -337,41 +373,6 @@ const PlanDetails: React.FC = () => {
             </CardContent>
           </Card>
         ))}
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex gap-4 pt-6">
-        <div className="space-y-2">
-                    <Button 
-                      className="w-full"
-                      onClick={() => {
-                        const params = new URLSearchParams({
-                          listId: listId || '1',
-                          retailerId: planData.stores[0]?.retailer?.id?.toString() || '1',
-                          planData: encodeURIComponent(JSON.stringify(planData)),
-                          autoStart: 'true'
-                        });
-                        navigate(`/shop?${params.toString()}`);
-                      }}
-                    >
-                      <ShoppingCart className="h-4 w-4 mr-2" />
-                      Start Shopping Route
-                    </Button>
-
-                    <Button 
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => {
-                        const params = new URLSearchParams({
-                          listId: listId || '1',
-                          retailerId: planData.stores[0]?.retailer?.id?.toString() || '1'
-                        });
-                        navigate(`/shop?${params.toString()}`);
-                      }}
-                    >
-                      Customize Plan
-                    </Button>
-                  </div>
       </div>
     </div>
   );

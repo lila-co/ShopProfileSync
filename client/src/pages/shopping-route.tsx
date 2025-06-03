@@ -121,7 +121,7 @@ const ShoppingRoute: React.FC = () => {
     }
   }, [shoppingList, planDataParam]);
 
-  
+
 
   // Generate optimized shopping route from selected plan data
   const generateOptimizedShoppingRouteFromPlan = (planData: any) => {
@@ -211,7 +211,7 @@ const ShoppingRoute: React.FC = () => {
       // Enhanced shelf location logic with more comprehensive patterns
       let shelfLocation = '';
       const name = item.productName.toLowerCase();
-      
+
       // Dairy specific locations
       if (name.includes('milk') || name.includes('yogurt') || name.includes('cheese')) {
         shelfLocation = 'Dairy Cooler';
@@ -249,7 +249,7 @@ const ShoppingRoute: React.FC = () => {
           // Find the item and update its categorization if AI is more confident
           const currentAisle = aisleGroups[fallbackAisleInfo.aisle];
           const itemIndex = currentAisle.items.findIndex((i: any) => i.id === item.id);
-          
+
           if (itemIndex !== -1) {
             currentAisle.items[itemIndex] = {
               ...currentAisle.items[itemIndex],
@@ -280,18 +280,18 @@ const ShoppingRoute: React.FC = () => {
     // Calculate route optimization with AI insights
     const totalAisles = sortedAisleGroups.length;
     let estimatedTime = Math.max(15, totalAisles * 3 + items.length * 0.5);
-    
+
     // Adjust time estimates based on item complexity and store layout
     const complexItems = items.filter((item: any) => {
       const name = item.productName.toLowerCase();
       return name.includes('organic') || name.includes('specialty') || name.includes('imported');
     }).length;
-    
+
     const freshItems = items.filter((item: any) => {
       const name = item.productName.toLowerCase();
       return name.includes('fresh') || name.includes('produce') || name.includes('meat') || name.includes('seafood');
     }).length;
-    
+
     // Add extra time for complex/fresh items that require more selection time
     estimatedTime += complexItems * 1.5 + freshItems * 1;
     estimatedTime = Math.round(estimatedTime);
@@ -383,7 +383,7 @@ const ShoppingRoute: React.FC = () => {
     };
   };
 
-  
+
 
   if (isLoading) {
     return (
@@ -454,7 +454,7 @@ const ShoppingRoute: React.FC = () => {
                   Show Barcode
                 </Button>
               </div>
-              
+
               {/* Barcode Display Area */}
               <div className="bg-white p-3 rounded border text-center">
                 <div className="text-xs text-gray-500 mb-1">Loyalty Card</div>
@@ -496,7 +496,7 @@ const ShoppingRoute: React.FC = () => {
                   )}
                 </div>
               </div>
-              
+
             </div>
 
             {/* Plan Summary */}
