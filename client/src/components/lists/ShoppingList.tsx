@@ -244,14 +244,15 @@ const ShoppingListComponent: React.FC = () => {
           
           autoAnimationInterval = setInterval(() => {
             setCurrentStep((prev) => {
-              if (prev >= steps.length - 1) {
+              const nextStep = prev + 1;
+              if (nextStep >= steps.length) {
                 if (autoAnimationInterval) {
                   clearInterval(autoAnimationInterval);
                   autoAnimationInterval = null;
                 }
-                return prev;
+                return steps.length - 1; // Stay on last step
               }
-              return prev + 1;
+              return nextStep;
             });
           }, 1500);
 
@@ -548,11 +549,12 @@ const ShoppingListComponent: React.FC = () => {
     animationInterval = setInterval(() => {
       setCurrentStep((prevStep) => {
         const nextStep = prevStep + 1;
-        if (nextStep >= steps.length - 1) {
+        if (nextStep >= steps.length) {
           if (animationInterval) {
             clearInterval(animationInterval);
             animationInterval = null;
           }
+          return steps.length - 1; // Stay on last step
         }
         return nextStep;
       });
