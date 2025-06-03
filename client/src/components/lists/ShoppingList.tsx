@@ -387,9 +387,43 @@ const ShoppingListComponent: React.FC = () => {
         }
       });
     }
+  });
+
+  const handleRegenerateList = () => {
+    // Show animation during regeneration
+    setIsGeneratingList(true);
+    const steps = [
+      "Clearing current list...",
+      "Analyzing your preferences...",
+      "Finding fresh recommendations...",
+      "Optimizing your shopping list...",
+      "Finalizing new items..."
+    ];
+
+    setGenerationSteps(steps);
+    setCurrentStep(0);
+
+    let currentStepIndex = 0;
+    const interval = setInterval(() => {
+      currentStepIndex++;
+      setCurrentStep(currentStepIndex);
+
+      if (currentStepIndex >= steps.length - 1) {
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    regenerateListMutation.mutate(undefined, {
+      onSettled: () => {
+        // Ensure animation completes before hiding
+        setTimeout(() => {
+          clearInterval(interval);
+          setIsGeneratingList(false);
+          setCurrentStep(-1);
+        }, Math.max(1000, (steps.length - currentStepIndex) * 1000));
+      }
+    });
   };
-
-
 
   const handleImportRecipe = () => {
     if (recipeUrl.trim()) {
