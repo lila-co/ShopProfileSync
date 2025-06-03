@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import VoiceAgent from '@/components/voice/VoiceAgent';
+import { useSession } from 'next-auth/react';
 
 const ShoppingListComponent: React.FC = () => {
   const { toast } = useToast();
@@ -35,6 +36,7 @@ const ShoppingListComponent: React.FC = () => {
   const [categorizedItems, setCategorizedItems] = useState<Record<string, ShoppingListItem[]>>({});
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
   const [isCategorizingItems, setIsCategorizingItems] = useState(false);
+  const { data: session } = useSession();
 
   const importRecipeMutation = useMutation({
     mutationFn: async () => {
@@ -182,57 +184,64 @@ const ShoppingListComponent: React.FC = () => {
     }
   }, [shoppingLists]);
 
-  // AI List Generation Animation and Auto-generation
+  // Trigger auto-generation on authentication state change and initial load
   useEffect(() => {
-    if (shoppingLists && shoppingLists.length > 0) {
-      const defaultList = shoppingLists[0];
-      const hasItems = defaultList.items && defaultList.items.length > 0;
+    const triggerListGeneration = async () => {
+      if (session?.user && shoppingLists && shoppingLists.length > 0) {
+        const defaultList = shoppingLists[0];
+        const hasItems = defaultList?.items && defaultList.items.length > 0;
 
-      // Check if we've shown the animation before
-      const hasShownAnimation = localStorage.getItem('listGenerationShown') === 'true';
-      const forceAnimation = localStorage.getItem('forceShowAnimation') === 'true';
+        // Generate list if it's empty
+        if (!hasItems) {
+          // Check if we've shown the animation before
+          const hasShownAnimation = localStorage.getItem('listGenerationShown') === 'true';
+          const forceAnimation = localStorage.getItem('forceShowAnimation') === 'true';
 
-      // Show animation if: list is empty AND (never shown before OR forced)
-      const shouldShowAnimation = !hasItems && (!hasShownAnimation || forceAnimation);
+          // Show animation if: list is empty AND (never shown before OR forced)
+          const shouldShowAnimation = !hasItems && (!hasShownAnimation || forceAnimation);
 
-      if (shouldShowAnimation) {
-        setIsGeneratingList(true);
-        const steps = [
-          "Analyzing your dietary preferences...",
-          "Checking your pantry inventory...",
-          "Finding the best deals and promotions...",
-          "Optimizing your shopping route...",
-          "Generating personalized recommendations..."
-        ];
+          if (shouldShowAnimation) {
+            setIsGeneratingList(true);
+            const steps = [
+              "Analyzing your dietary preferences...",
+              "Checking your pantry inventory...",
+              "Finding the best deals and promotions...",
+              "Optimizing your shopping route...",
+              "Generating personalized recommendations..."
+            ];
 
-        setGenerationSteps(steps);
-        setCurrentStep(0);
+            setGenerationSteps(steps);
+            setCurrentStep(0);
 
-        const interval = setInterval(() => {
-          setCurrentStep((prev) => {
-            if (prev >= steps.length - 1) {
-              clearInterval(interval);
-              setTimeout(() => {
-                setIsGeneratingList(false);
-                localStorage.setItem('listGenerationShown', 'true');
-                localStorage.removeItem('forceShowAnimation');
+            const interval = setInterval(() => {
+              setCurrentStep((prev) => {
+                if (prev >= steps.length - 1) {
+                  clearInterval(interval);
+                  setTimeout(() => {
+                    setIsGeneratingList(false);
+                    localStorage.setItem('listGenerationShown', 'true');
+                    localStorage.removeItem('forceShowAnimation');
 
-                // Auto-generate items
-                generateSampleItems();
-              }, 1000);
-              return prev;
-            }
-            return prev + 1;
-          });
-        }, 1500);
+                    // Auto-generate items
+                    generateSampleItems();
+                  }, 1000);
+                  return prev;
+                }
+                return prev + 1;
+              });
+            }, 1500);
 
-        return () => clearInterval(interval);
-      } else if (!hasItems && hasShownAnimation) {
-        // If list is empty but we've shown animation before, just generate items directly
-        generateSampleItems();
+            return () => clearInterval(interval);
+          } else if (!hasItems && hasShownAnimation) {
+            // If list is empty but we've shown animation before, just generate items directly
+            generateSampleItems();
+          }
+        }
       }
-    }
-  }, [shoppingLists]);
+    };
+
+    triggerListGeneration();
+  }, [session, shoppingLists]); // React to changes in session and shoppingLists
 
   // Generate sample items for empty lists
   const generateSampleItems = async () => {
@@ -1129,7 +1138,7 @@ const ShoppingListComponent: React.FC = () => {
         </div>
       )}
 
-      
+
 
       <form onSubmit={handleAddItem} className="mb-4">
         <Card className="bg-white rounded-lg shadow-md border border-gray-200">
@@ -1158,115 +1167,7 @@ const ShoppingListComponent: React.FC = () => {
 
               <div className="flex-1">
                 <select
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                  
-                
-onChange={(e) => setNewItemUnit(e.target.value as ShoppingListItem['unit'])}
+                  onChange={(e) => setNewItemUnit(e.target.value as ShoppingListItem['unit'])}
                   className="h-11 text-base border-2 border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 bg-white rounded-lg transition-all duration-200 cursor-pointer"
                 >
                   <option value="COUNT">Count</option>
@@ -1351,7 +1252,7 @@ onChange={(e) => setNewItemUnit(e.target.value as ShoppingListItem['unit'])}
         </Card>
       </form>
 
-      
+
 
       {/* Recipe Import Dialog */}
       <Dialog open={recipeDialogOpen} onOpenChange={setRecipeDialogOpen}>
