@@ -187,66 +187,95 @@ const ShoppingListComponent: React.FC = () => {
     }
   }, [shoppingLists]);
 
-  // Trigger auto-generation only on initial load for new users
+  // Trigger auto-generation for empty lists and auto-regeneration for new sessions
   useEffect(() => {
     const triggerListGeneration = async () => {
       if (shoppingLists && shoppingLists.length > 0) {
         const defaultList = shoppingLists[0];
         const hasItems = defaultList?.items && defaultList.items.length > 0;
 
-        // Only proceed if list is empty AND user hasn't manually cleared it
-        if (!hasItems && !userHasClearedList) {
-          console.log('Empty shopping list detected, starting generation flow...');
+        // Check if this is a truly new session (browser restart/new tab)
+        const lastSessionTimestamp = sessionStorage.getItem('shoppingListSessionStart');
+        const browserSessionId = localStorage.getItem('browserSessionId');
+        const currentBrowserSession = Date.now().toString();
+        
+        // If no session timestamp exists, this is the first visit in this browser session
+        const isNewSession = !lastSessionTimestamp;
+        
+        // Store session data
+        if (isNewSession) {
+          sessionStorage.setItem('shoppingListSessionStart', Date.now().toString());
+          localStorage.setItem('browserSessionId', currentBrowserSession);
+        }
+
+        // Auto-generate for empty lists OR auto-regenerate for truly new sessions with existing items
+        const shouldAutoGenerate = (!hasItems && !userHasClearedList) || (hasItems && isNewSession);
+
+        if (shouldAutoGenerate) {
+          const isEmptyList = !hasItems;
           
-          // For new users or when forced, always show the animation
-          const hasShownAnimation = localStorage.getItem('listGenerationShown') === 'true';
-          const forceAnimation = localStorage.getItem('forceShowAnimation') === 'true';
-          const isFirstTimeUser = !hasShownAnimation;
-
-          console.log('Animation status:', { hasShownAnimation, forceAnimation, isFirstTimeUser });
-
-          // Show animation for first-time users or when forced
-          if (isFirstTimeUser || forceAnimation) {
-            console.log('Starting AI generation animation...');
-            setIsGeneratingList(true);
-            const steps = [
-              "Analyzing your dietary preferences...",
-              "Checking your pantry inventory...",
-              "Finding the best deals and promotions...",
-              "Optimizing your shopping route...",
-              "Generating personalized recommendations..."
-            ];
-
-            setGenerationSteps(steps);
-            setCurrentStep(0);
-
-            const interval = setInterval(() => {
-              setCurrentStep((prev) => {
-                if (prev >= steps.length - 1) {
-                  clearInterval(interval);
-                  setTimeout(() => {
-                    setIsGeneratingList(false);
-                    localStorage.setItem('listGenerationShown', 'true');
-                    localStorage.removeItem('forceShowAnimation');
-
-                    // Auto-generate items after animation
-                    console.log('Animation complete, generating sample items...');
-                    generateSampleItems();
-                  }, 1000);
-                  return prev;
-                }
-                return prev + 1;
-              });
-            }, 1500);
-
-            return () => clearInterval(interval);
+          if (isEmptyList) {
+            console.log('Empty shopping list detected, generating new list...');
           } else {
-            // If animation was shown before but list is still empty, generate items directly
-            console.log('Skipping animation, generating items directly...');
-            generateSampleItems();
+            console.log('New session detected with existing items, regenerating list...');
           }
-        } else if (hasItems) {
-          console.log('Shopping list already has items, skipping generation');
+          
+          // Show animation for all scenarios
+          setIsGeneratingList(true);
+          const steps = isEmptyList ? [
+            "Analyzing your dietary preferences...",
+            "Checking your pantry inventory...",
+            "Finding the best deals and promotions...",
+            "Optimizing your shopping route...",
+            "Generating personalized recommendations..."
+          ] : [
+            "Scanning for new deals and promotions...",
+            "Analyzing recent purchase patterns...",
+            "Checking for items that need restocking...",
+            "Finding seasonal recommendations...",
+            "Updating your shopping list..."
+          ];
+          
+          setGenerationSteps(steps);
+          setCurrentStep(0);
+
+          let autoAnimationInterval: NodeJS.Timeout | null = null;
+          let autoAnimationTimeout: NodeJS.Timeout | null = null;
+          
+          autoAnimationInterval = setInterval(() => {
+            setCurrentStep((prev) => {
+              const nextStep = prev + 1;
+              if (nextStep >= steps.length) {
+                if (autoAnimationInterval) {
+                  clearInterval(autoAnimationInterval);
+                  autoAnimationInterval = null;
+                }
+                return steps.length - 1; // Stay on last step
+              }
+              return nextStep;
+            });
+          }, 1500);
+
+          // Trigger regeneration after animation
+          autoAnimationTimeout = setTimeout(() => {
+            if (autoAnimationInterval) {
+              clearInterval(autoAnimationInterval);
+            }
+            localStorage.setItem('listGenerationShown', 'true');
+            localStorage.removeItem('forceShowAnimation');
+            
+            // Use the unified regenerate mutation
+            regenerateListMutation.mutate(undefined, {
+              onSettled: () => {
+                setTimeout(() => {
+                  setIsGeneratingList(false);
+                  setCurrentStep(-1);
+                }, 500);
+              }
+            });
+          }, steps.length * 1500 + 1000);
+        } else if (hasItems && !isNewSession) {
+          console.log('Existing session with items, no auto-regeneration needed');
           // Reset the flag when list has items again
           setUserHasClearedList(false);
         } else {
@@ -259,88 +288,6 @@ const ShoppingListComponent: React.FC = () => {
 
     triggerListGeneration();
   }, [shoppingLists, userHasClearedList]); // React to changes in shoppingLists and userHasClearedList
-
-  // Generate sample items for empty lists
-  const generateSampleItems = async () => {
-    const defaultList = shoppingLists?.[0];
-    if (!defaultList) {
-      console.error('No default shopping list found');
-      return;
-    }
-
-    if (defaultList.items && defaultList.items.length > 0) {
-      console.log('List already has items, skipping generation');
-      return;
-    }
-
-    console.log('Generating sample items for list:', defaultList.id);
-
-    try {
-      // Try the API generation first
-      const response = await apiRequest('POST', '/api/shopping-lists/generate', {
-        shoppingListId: defaultList.id
-      });
-
-      if (response.ok) {
-        console.log('API generation successful');
-        // Refresh shopping lists to show new items
-        queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-
-        toast({
-          title: "Shopping List Generated",
-          description: "AI has created a personalized shopping list for you"
-        });
-        return; // Success, don't run fallback
-      } else {
-        console.warn('API generation failed with status:', response.status);
-        throw new Error('API generation failed');
-      }
-    } catch (error) {
-      console.error('API generation failed, using fallback:', error);
-      
-      // Fallback: add basic items manually
-      const basicItems = [
-        { productName: 'Organic Milk', quantity: 1, unit: 'GALLON' },
-        { productName: 'Whole Grain Bread', quantity: 1, unit: 'LOAF' },
-        { productName: 'Free-Range Eggs', quantity: 1, unit: 'DOZEN' },
-        { productName: 'Bananas', quantity: 2, unit: 'LB' },
-        { productName: 'Chicken Breast', quantity: 1, unit: 'LB' },
-        { productName: 'Greek Yogurt', quantity: 4, unit: 'CONTAINER' },
-        { productName: 'Baby Spinach', quantity: 1, unit: 'BAG' },
-        { productName: 'Roma Tomatoes', quantity: 2, unit: 'LB' }
-      ];
-
-      console.log('Adding fallback items...');
-      let addedCount = 0;
-
-      for (const item of basicItems) {
-        try {
-          const response = await apiRequest('POST', '/api/shopping-list/items', {
-            ...item,
-            shoppingListId: defaultList.id
-          });
-          
-          if (response.ok) {
-            addedCount++;
-            console.log(`Added item: ${item.productName}`);
-          }
-        } catch (addError) {
-          console.error('Failed to add item:', item.productName, addError);
-        }
-      }
-
-      // Refresh the list
-      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-
-      toast({
-        title: addedCount > 0 ? "Starter Items Added" : "Error Adding Items",
-        description: addedCount > 0 
-          ? `Added ${addedCount} essential items to get you started`
-          : "Failed to add items. Please try adding items manually.",
-        variant: addedCount > 0 ? "default" : "destructive"
-      });
-    }
-  };
 
   const addItemMutation = useMutation({
     mutationFn: async ({ itemName, quantity, unit }: { itemName: string; quantity: number; unit: string }) => {
@@ -510,272 +457,51 @@ const ShoppingListComponent: React.FC = () => {
       if (!defaultList) throw new Error('No shopping list found');
 
       const currentItems = defaultList.items || [];
+      const isEmptyList = currentItems.length === 0;
 
-      // If list is empty, generate a basic starter list
-      if (currentItems.length === 0) {
-        const starterItems = [
-          { productName: 'Milk', quantity: 1, unit: 'GALLON' },
-          { productName: 'Bread', quantity: 1, unit: 'LOAF' },
-          { productName: 'Eggs', quantity: 1, unit: 'DOZEN' },
-          { productName: 'Bananas', quantity: 2, unit: 'LB' },
-          { productName: 'Chicken Breast', quantity: 1, unit: 'LB' },
-          { productName: 'Yogurt', quantity: 4, unit: 'CONTAINER' },
-          { productName: 'Apples', quantity: 3, unit: 'LB' },
-          { productName: 'Spinach', quantity: 1, unit: 'BAG' }
-        ];
+      console.log(`Regenerating list - Current items: ${currentItems.length}, Empty: ${isEmptyList}`);
+      console.log('Making API call to /api/shopping-lists/generate');
 
-        const addedItems = [];
-        for (const item of starterItems) {
-          try {
-            const response = await apiRequest('POST', '/api/shopping-list/items', {
-              shoppingListId: defaultList.id,
-              productName: item.productName,
-              quantity: item.quantity,
-              unit: item.unit
-            });
-            addedItems.push(await response.json());
-          } catch (error) {
-            console.error('Failed to add starter item:', item.productName, error);
-          }
-        }
-
-        return { 
-          message: 'New shopping list created', 
-          items: addedItems,
-          itemsAdded: addedItems.length,
-          itemsSkipped: 0,
-          isNewList: true
-        };
-      }
-
-      // If list has items, expand it with complementary items
-      // Get existing items and create normalized versions for similarity checking
-      const existingItems = new Map<string, string>(); // normalized -> original
-      const existingNormalizedSet = new Set<string>();
-
-      for (const item of currentItems) {
-        const original = item.productName.toLowerCase().trim();
-
-        // Normalize the product name for similarity checking (less aggressive)
-        let normalized = original
-          .replace(/\b(organic|free-range|grass-fed|natural|premium|select|fresh)\s+/gi, '') // Remove quality descriptors
-          .replace(/\b(whole|2%|1%|skim|low-fat|non-fat)\s+/gi, '') // Remove specific types
-          .replace(/\s+/g, ' ')
-          .trim();
-
-        // Only normalize very similar products
-        if (normalized.includes('milk') && !normalized.includes('coconut') && !normalized.includes('almond')) {
-          normalized = 'milk';
-        } else if (normalized.includes('bread') && !normalized.includes('crumb')) {
-          normalized = 'bread';
-        } else if (normalized.includes('eggs') && !normalized.includes('eggplant')) {
-          normalized = 'eggs';
-        }
-
-        existingItems.set(normalized, original);
-        existingNormalizedSet.add(normalized);
-      }
-
-      // Enhanced recommendation items that complement existing list
-      const enhancementItems = [
-        // Produce
-        { productName: 'Organic Bananas', quantity: 2, unit: 'LB' },
-        { productName: 'Fresh Strawberries', quantity: 1, unit: 'LB' },
-        { productName: 'Avocados', quantity: 4, unit: 'COUNT' },
-        { productName: 'Baby Spinach', quantity: 1, unit: 'BAG' },
-        { productName: 'Roma Tomatoes', quantity: 2, unit: 'LB' },
-        { productName: 'Yellow Onions', quantity: 3, unit: 'LB' },
-        { productName: 'Red Bell Peppers', quantity: 3, unit: 'COUNT' },
-        { productName: 'Carrots', quantity: 2, unit: 'LB' },
-        { productName: 'Broccoli Crowns', quantity: 2, unit: 'COUNT' },
-        { productName: 'Cucumber', quantity: 2, unit: 'COUNT' },
-
-        // Dairy & Eggs
-        { productName: 'Organic Milk', quantity: 1, unit: 'GALLON' },
-        { productName: 'Free-Range Eggs', quantity: 1, unit: 'DOZEN' },
-        { productName: 'Greek Yogurt', quantity: 4, unit: 'CONTAINER' },
-        { productName: 'Cheddar Cheese', quantity: 1, unit: 'BLOCK' },
-        { productName: 'Butter', quantity: 1, unit: 'COUNT' },
-        { productName: 'Cream Cheese', quantity: 1, unit: 'COUNT' },
-
-        // Meat & Seafood
-        { productName: 'Chicken Breast', quantity: 2, unit: 'LB' },
-        { productName: 'Ground Turkey', quantity: 1, unit: 'LB' },
-        { productName: 'Salmon Fillet', quantity: 1, unit: 'LB' },
-
-        // Pantry & Canned Goods
-        { productName: 'Brown Rice', quantity: 1, unit: 'BAG' },
-        { productName: 'Quinoa', quantity: 1, unit: 'BAG' },
-        { productName: 'Whole Wheat Pasta', quantity: 2, unit: 'BOX' },
-        { productName: 'Olive Oil', quantity: 1, unit: 'BOTTLE' },
-        { productName: 'Black Beans', quantity: 2, unit: 'CAN' },
-        { productName: 'Diced Tomatoes', quantity: 2, unit: 'CAN' },
-        { productName: 'Chicken Broth', quantity: 2, unit: 'CONTAINER' },
-        { productName: 'Oatmeal', quantity: 1, unit: 'CONTAINER' },
-        { productName: 'Almond Butter', quantity: 1, unit: 'JAR' },
-        { productName: 'Honey', quantity: 1, unit: 'BOTTLE' },
-        { productName: 'Sparkling Water', quantity: 12, unit: 'CAN' },
-        { productName: 'Coconut Milk', quantity: 2, unit: 'CAN' },
-        { productName: 'Pasta Sauce', quantity: 1, unit: 'JAR' },
-        { productName: 'Baking Soda', quantity: 1, unit: 'BOX' },
-
-        // Bakery
-        { productName: 'Whole Wheat Bread', quantity: 1, unit: 'LOAF' },
-
-        // Household Items
-        { productName: 'Paper Towels', quantity: 6, unit: 'COUNT' },
-        { productName: 'Toilet Paper', quantity: 12, unit: 'COUNT' },
-
-        // Personal Care
-        { productName: 'Shampoo', quantity: 1, unit: 'BOTTLE' },
-        { productName: 'Toothpaste', quantity: 1, unit: 'COUNT' },
-
-        // Spices & Seasonings
-        { productName: 'Garlic Powder', quantity: 1, unit: 'COUNT' },
-        { productName: 'Black Pepper', quantity: 1, unit: 'COUNT' },
-        { productName: 'Sea Salt', quantity: 1, unit: 'COUNT' }
-      ];
-
-      // Filter out items that already exist in the list using a more precise matching
-      const newItems = enhancementItems.filter(item => {
-        const itemName = item.productName.toLowerCase().trim();
-
-        // Check for exact matches first (case-insensitive)
-        const exactMatch = currentItems.some(existing => 
-          existing.productName.toLowerCase().trim() === itemName
-        );
-
-        if (exactMatch) {
-          console.log(`Skipping "${item.productName}" - exact match found`);
-          return false;
-        }
-
-        // Only check for very specific core product matches to avoid over-filtering
-        const coreProduct = itemName
-          .replace(/\b(organic|free-range|grass-fed|natural|premium|select|fresh|baby|roma|yellow|red|brown|whole\s+wheat|whole\s+grain)\s*/gi, '')
-          .replace(/\s+/g, ' ')
-          .trim();
-
-        // Only normalize these very common base products
-        let normalizedCore = coreProduct;
-        if (coreProduct === 'milk' || coreProduct.endsWith(' milk')) {
-          normalizedCore = 'milk';
-        } else if (coreProduct === 'bread' || coreProduct.endsWith(' bread')) {
-          normalizedCore = 'bread';
-        } else if (coreProduct === 'eggs' || coreProduct.startsWith('eggs')) {
-          normalizedCore = 'eggs';
-        }
-
-        // Check if this core product already exists
-        const coreExists = currentItems.some(existing => {
-          const existingCore = existing.productName.toLowerCase().trim()
-            .replace(/\b(organic|free-range|grass-fed|natural|premium|select|fresh|baby|roma|yellow|red|brown|whole\s+wheat|whole\s+grain)\s*/gi, '')
-            .replace(/\s+/g, ' ')
-            .trim();
-
-          let existingNormalized = existingCore;
-          if (existingCore === 'milk' || existingCore.endsWith(' milk')) {
-            existingNormalized = 'milk';
-          } else if (existingCore === 'bread' || existingCore.endsWith(' bread')) {
-            existingNormalized = 'bread';
-          } else if (existingCore === 'eggs' || existingCore.startsWith('eggs')) {
-            existingNormalized = 'eggs';
-          }
-
-          return existingNormalized === normalizedCore;
-        });
-
-        if (coreExists) {
-          console.log(`Skipping "${item.productName}" - core product already exists`);
-          return false;
-        }
-
-        return true;
+      // Use the unified API endpoint for all scenarios
+      const response = await apiRequest('POST', '/api/shopping-lists/generate', {
+        shoppingListId: defaultList.id
       });
 
-      // Add only new items to enhance the existing list
-      const addedItems = [];
-      for (const item of newItems) {
-        try {
-          // Use AI categorization to get the proper unit
-          let finalUnit = item.unit || 'COUNT';
-          let finalQuantity = item.quantity || 1;
+      console.log('API response status:', response.status);
 
-          try {
-              // Try to get AI-suggested unit and quantity
-              const aiResult = await aiCategorizationService.categorizeProduct(
-                item.productName, 
-                item.quantity || 1, 
-                item.unit || 'COUNT'
-              );
-
-              console.log(`AI categorization for ${item.productName}:`, aiResult);
-
-              if (aiResult?.suggestedUnit) {
-                finalUnit = aiResult.suggestedUnit;
-                console.log(`Using AI suggested unit: ${finalUnit} for ${item.productName}`);
-              }
-              if (aiResult?.suggestedQuantity) {
-                finalQuantity = aiResult.suggestedQuantity;
-                console.log(`Using AI suggested quantity: ${finalQuantity} for ${item.productName}`);
-              }
-            } catch (aiError) {
-              console.warn('AI categorization failed, using quick categorization fallback:', aiError);
-              // If AI fails, use quick categorization fallback
-              const quickResult = aiCategorizationService.getQuickCategory(
-                item.productName, 
-                item.quantity || 1, 
-                item.unit || 'COUNT'
-              );
-              console.log(`Quick categorization for ${item.productName}:`, quickResult);
-
-              if (quickResult.suggestedUnit) {
-                finalUnit = quickResult.suggestedUnit;
-                console.log(`Using quick suggested unit: ${finalUnit} for ${item.productName}`);
-              }
-              if (quickResult.suggestedQuantity) {
-                finalQuantity = quickResult.suggestedQuantity;
-                console.log(`Using quick suggested quantity: ${finalQuantity} for ${item.productName}`);
-              }
-            }
-
-          console.log(`Adding ${item.productName} with quantity: ${finalQuantity}, unit: ${finalUnit}`);
-
-          const response = await apiRequest('POST', '/api/shopping-list/items', {
-            shoppingListId: defaultList.id,
-            productName: item.productName,
-            quantity: finalQuantity,
-            unit: finalUnit
-          });
-          const addedItem = await response.json();
-          addedItems.push(addedItem);
-        } catch (error) {
-          console.error('Failed to add item:', item.productName, error);
-        }
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API error response:', errorText);
+        throw new Error(`Failed to generate shopping list: ${response.status} ${errorText}`);
       }
 
-      return { 
-        message: 'List enhanced successfully', 
-        items: addedItems,
-        itemsAdded: addedItems.length,
-        itemsSkipped: enhancementItems.length - newItems.length
+      const result = await response.json();
+      console.log('API response data:', result);
+      
+      return {
+        ...result,
+        isEmptyList,
+        message: isEmptyList ? 'New shopping list created' : 'List enhanced with additional items'
       };
     },
     onSuccess: (data) => {
+      console.log('Regeneration successful, invalidating queries');
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
 
       let title, description;
 
-      if (data.isNewList) {
+      if (data.isEmptyList) {
         title = "Shopping List Created";
-        description = `Created a new list with ${data.itemsAdded} essential items`;
+        description = `Created a new list with ${data.itemsAdded || data.totalItems || 'essential'} items`;
       } else {
-        title = "List Enhanced";
-        description = `Added ${data.itemsAdded} new items to expand your shopping list`;
+        title = "List Regenerated";
+        description = `Added ${data.itemsAdded || data.totalItems || 'new'} items to your shopping list`;
         if (data.itemsSkipped > 0) {
           description += ` (${data.itemsSkipped} similar items already existed)`;
         }
       }
+
+      console.log('Showing success toast:', title, description);
 
       toast({
         title,
@@ -783,6 +509,7 @@ const ShoppingListComponent: React.FC = () => {
       });
     },
     onError: (error: any) => {
+      console.error('Regeneration failed:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to enhance list",
@@ -792,42 +519,88 @@ const ShoppingListComponent: React.FC = () => {
   });
 
   const handleRegenerateList = () => {
+    // Prevent multiple calls if already generating
+    if (regenerateListMutation.isPending || isGeneratingList) {
+      console.log('Regeneration already in progress, ignoring duplicate call');
+      return;
+    }
+
     // Reset the flag since user is explicitly asking for regeneration
     setUserHasClearedList(false);
     
+    const defaultList = shoppingLists?.[0];
+    const hasItems = defaultList?.items && defaultList.items.length > 0;
+    
+    console.log('Manual regeneration triggered - hasItems:', hasItems);
+    console.log('Current shopping list:', defaultList);
+    
     // Show animation during regeneration
     setIsGeneratingList(true);
-    const steps = [
-      "Clearing current list...",
+    const steps = hasItems ? [
+      "Analyzing current list...",
+      "Finding complementary items...", 
+      "Checking for the best deals...",
+      "Optimizing quantities and units...",
+      "Adding new recommendations..."
+    ] : [
+      "Creating your shopping list...",
       "Analyzing your preferences...",
-      "Finding fresh recommendations...",
-      "Optimizing your shopping list...",
-      "Finalizing new items..."
+      "Finding the best deals...",
+      "Optimizing your shopping route...",
+      "Finalizing recommendations..."
     ];
 
     setGenerationSteps(steps);
     setCurrentStep(0);
 
-    let currentStepIndex = 0;
-    const interval = setInterval(() => {
-      currentStepIndex++;
-      setCurrentStep(currentStepIndex);
+    let animationInterval: NodeJS.Timeout | null = null;
+    
+    // Start the animation
+    animationInterval = setInterval(() => {
+      setCurrentStep((prevStep) => {
+        const nextStep = prevStep + 1;
+        if (nextStep >= steps.length) {
+          if (animationInterval) {
+            clearInterval(animationInterval);
+            animationInterval = null;
+          }
+          return steps.length - 1; // Stay on last step
+        }
+        return nextStep;
+      });
+    }, 1200);
 
-      if (currentStepIndex >= steps.length - 1) {
-        clearInterval(interval);
-      }
-    }, 1000);
-
-    regenerateListMutation.mutate(undefined, {
-      onSettled: () => {
-        // Ensure animation completes before hiding
-        setTimeout(() => {
-          clearInterval(interval);
+    // Start the actual mutation after a brief delay to ensure animation starts
+    console.log('Starting regeneration mutation...');
+    setTimeout(() => {
+      regenerateListMutation.mutate(undefined, {
+        onSettled: () => {
+          console.log('Mutation settled, cleaning up animation');
+          // Clean up animation when mutation is done
+          if (animationInterval) {
+            clearInterval(animationInterval);
+          }
+          
+          // Hide the animation after a short delay
+          setTimeout(() => {
+            setIsGeneratingList(false);
+            setCurrentStep(-1);
+          }, 1000);
+        },
+        onError: (error) => {
+          console.error('Regeneration failed in handler:', error);
+          // Ensure animation stops on error
+          if (animationInterval) {
+            clearInterval(animationInterval);
+          }
           setIsGeneratingList(false);
           setCurrentStep(-1);
-        }, Math.max(1000, (steps.length - currentStepIndex) * 1000));
-      }
-    });
+        },
+        onSuccess: (data) => {
+          console.log('Regeneration completed successfully in handler:', data);
+        }
+      });
+    }, 200);
   };
 
   const handleAddItem = (e: React.FormEvent) => {
@@ -932,10 +705,16 @@ const ShoppingListComponent: React.FC = () => {
                   </div>
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  AI is Creating Your Smart Shopping List
+                  {generationSteps.some(step => step.includes('Scanning')) 
+                    ? 'AI is Updating Your Shopping List'
+                    : 'AI is Creating Your Smart Shopping List'
+                  }
                 </h3>
                 <p className="text-sm text-gray-600">
-                  Please wait while we personalize your shopping experience
+                  {generationSteps.some(step => step.includes('Scanning'))
+                    ? 'Checking for new deals and items you might need'
+                    : 'Please wait while we personalize your shopping experience'
+                  }
                 </p>
               </div>
 
