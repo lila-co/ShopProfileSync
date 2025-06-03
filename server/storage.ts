@@ -123,6 +123,12 @@ export interface IStorage {
   // Role switching methods
   switchUserRole(currentUserId: number, targetRole: string): Promise<User>;
   getAllUsers(): Promise<User[]>;
+
+  // Privacy and data management methods
+  getPrivacyPreferences(userId: number): Promise<any>;
+  updatePrivacyPreferences(userId: number, preferences: any): Promise<any>;
+  exportUserData(userId: number): Promise<any>;
+  deleteUserAccount(userId: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -1406,6 +1412,115 @@ export class MemStorage implements IStorage {
     return Array.from(this.users.values()).find(u => u.username === username);
   }
 
+  async getPrivacyPreferences(userId: number): Promise<any> {
+    // For demo, return default privacy preferences
+    return {
+      userId,
+      allowAnalytics: true,
+      allowMarketing: false,
+      allowDataSharing: false,
+      allowLocationTracking: true,
+      allowPersonalization: true,
+      gdprConsent: false,
+      ccpaOptOut: false,
+      dataRetentionPeriod: 2555,
+      consentDate: new Date(),
+      lastUpdated: new Date()
+    };
+  }
+
+  async updatePrivacyPreferences(userId: number, preferences: any): Promise<any> {
+    // For demo, just return the updated preferences
+    const existing = await this.getPrivacyPreferences(userId);
+    const updated = {
+      ...existing,
+      ...preferences,
+      lastUpdated: new Date()
+    };
+    
+    console.log(`Updated privacy preferences for user ${userId}:`, updated);
+    return updated;
+  }
+
+  async exportUserData(userId: number): Promise<any> {
+    const user = await this.getUser(userId);
+    const purchases = await this.getPurchases();
+    const userPurchases = purchases.filter(p => p.userId === userId);
+    const shoppingLists = await this.getShoppingLists();
+    const recommendations = await this.getRecommendations();
+    const privacyPreferences = await this.getPrivacyPreferences(userId);
+
+    return {
+      user: {
+        id: user?.id,
+        username: user?.username,
+        firstName: user?.firstName,
+        lastName: user?.lastName,
+        email: user?.email,
+        householdType: user?.householdType,
+        householdSize: user?.householdSize,
+        preferences: {
+          preferNameBrand: user?.preferNameBrand,
+          preferOrganic: user?.preferOrganic,
+          buyInBulk: user?.buyInBulk,
+          prioritizeCostSavings: user?.prioritizeCostSavings,
+          shoppingRadius: user?.shoppingRadius
+        }
+      },
+      purchases: userPurchases.map(p => ({
+        id: p.id,
+        date: p.purchaseDate,
+        retailerId: p.retailerId,
+        totalAmount: p.totalAmount,
+        items: p.items?.map(item => ({
+          productName: item.productName,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalPrice: item.totalPrice
+        }))
+      })),
+      shoppingLists: shoppingLists.map(list => ({
+        id: list.id,
+        name: list.name,
+        isDefault: list.isDefault,
+        items: list.items?.map(item => ({
+          productName: item.productName,
+          quantity: item.quantity,
+          unit: item.unit,
+          isCompleted: item.isCompleted
+        }))
+      })),
+      recommendations: recommendations.map(rec => ({
+        productName: rec.productName,
+        recommendedDate: rec.recommendedDate,
+        reason: rec.reason,
+        savings: rec.savings
+      })),
+      privacyPreferences,
+      exportDate: new Date(),
+      exportType: 'gdpr_request'
+    };
+  }
+
+  async deleteUserAccount(userId: number): Promise<boolean> {
+    console.log(`Account deletion requested for user ${userId}`);
+    
+    // In a real implementation, this would:
+    // 1. Delete all user data
+    // 2. Anonymize any data that needs to be retained
+    // 3. Send confirmation emails
+    // 4. Log the deletion for audit purposes
+    
+    // For demo, just log the request
+    const user = await this.getUser(userId);
+    if (user) {
+      console.log(`Deleting account for user: ${user.username} (${user.email})`);
+      return true;
+    }
+    
+    return false;
+  }
+
   async updatePurchase(id: number, data: any): Promise<Purchase> {
       const purchase = this.purchases.get(id);
       if (!purchase) {
@@ -1499,6 +1614,156 @@ export class DatabaseStorage implements IStorage {
       return user || undefined;
     } catch (error) {
       console.error("Error getting user by username:", error);
+      throw error;
+    }
+  }
+
+  async getPrivacyPreferences(userId: number): Promise<any> {
+    try {
+      // For demo implementation, return default preferences
+      // In production, this would query the dataPrivacyPreferences table
+      return {
+        userId,
+        allowAnalytics: true,
+        allowMarketing: false,
+        allowDataSharing: false,
+        allowLocationTracking: true,
+        allowPersonalization: true,
+        gdprConsent: false,
+        ccpaOptOut: false,
+        dataRetentionPeriod: 2555,
+        consentDate: new Date(),
+        lastUpdated: new Date()
+      };
+    } catch (error) {
+      console.error("Error getting privacy preferences:", error);
+      throw error;
+    }
+  }
+
+  async updatePrivacyPreferences(userId: number, preferences: any): Promise<any> {
+    try {
+      // For demo implementation, just return updated preferences
+      // In production, this would update the dataPrivacyPreferences table
+      const existing = await this.getPrivacyPreferences(userId);
+      const updated = {
+        ...existing,
+        ...preferences,
+        lastUpdated: new Date()
+      };
+      
+      console.log(`Updated privacy preferences for user ${userId}:`, updated);
+      return updated;
+    } catch (error) {
+      console.error("Error updating privacy preferences:", error);
+      throw error;
+    }
+  }
+
+  async getNotificationPreferences(userId: number): Promise<any> {
+    try {
+      // For demo implementation, return default preferences
+      // In production, this would query the notificationPreferences table
+      return {
+        userId,
+        dealAlerts: true,
+        priceDropAlerts: true,
+        weeklyDigest: false,
+        expirationAlerts: true,
+        recommendationUpdates: true,
+        pushNotifications: false,
+        emailNotifications: true,
+        smsNotifications: false,
+        createdAt: new Date(),
+        lastUpdated: new Date()
+      };
+    } catch (error) {
+      console.error("Error getting notification preferences:", error);
+      throw error;
+    }
+  }
+
+  async updateNotificationPreferences(userId: number, preferences: any): Promise<any> {
+    try {
+      // For demo implementation, just return updated preferences
+      // In production, this would update the notificationPreferences table
+      const existing = await this.getNotificationPreferences(userId);
+      const updated = {
+        ...existing,
+        ...preferences,
+        lastUpdated: new Date()
+      };
+      
+      console.log(`Updated notification preferences for user ${userId}:`, updated);
+      return updated;
+    } catch (error) {
+      console.error("Error updating notification preferences:", error);
+      throw error;
+    }
+  }
+
+  async exportUserData(userId: number): Promise<any> {
+    try {
+      const user = await this.getUser(userId);
+      const purchases = await this.getPurchases(userId);
+      const shoppingLists = await this.getShoppingLists();
+      const recommendations = await this.getRecommendations();
+      const privacyPreferences = await this.getPrivacyPreferences(userId);
+
+      return {
+        user: {
+          id: user?.id,
+          username: user?.username,
+          firstName: user?.firstName,
+          lastName: user?.lastName,
+          email: user?.email,
+          householdType: user?.householdType,
+          householdSize: user?.householdSize,
+          preferences: {
+            preferNameBrand: user?.preferNameBrand,
+            preferOrganic: user?.preferOrganic,
+            buyInBulk: user?.buyInBulk,
+            prioritizeCostSavings: user?.prioritizeCostSavings,
+            shoppingRadius: user?.shoppingRadius
+          }
+        },
+        purchases: purchases.map(p => ({
+          id: p.id,
+          date: p.purchaseDate,
+          retailerId: p.retailerId,
+          totalAmount: p.totalAmount
+        })),
+        shoppingLists,
+        recommendations,
+        privacyPreferences,
+        exportDate: new Date(),
+        exportType: 'gdpr_request'
+      };
+    } catch (error) {
+      console.error("Error exporting user data:", error);
+      throw error;
+    }
+  }
+
+  async deleteUserAccount(userId: number): Promise<boolean> {
+    try {
+      console.log(`Account deletion requested for user ${userId}`);
+      
+      // In a real implementation, this would:
+      // 1. Delete all user data from all tables
+      // 2. Anonymize any data that needs to be retained for legal/business reasons
+      // 3. Send confirmation emails
+      // 4. Log the deletion for audit purposes
+      
+      const user = await this.getUser(userId);
+      if (user) {
+        console.log(`Deleting account for user: ${user.username} (${user.email})`);
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error("Error deleting user account:", error);
       throw error;
     }
   }

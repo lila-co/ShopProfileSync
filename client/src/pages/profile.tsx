@@ -47,6 +47,74 @@ const ProfilePage: React.FC = () => {
     queryKey: ['/api/user/profile'],
   });
 
+  const { data: privacyPreferences, isLoading: privacyLoading } = useQuery({
+    queryKey: ['/api/user/privacy-preferences'],
+  });
+
+  const { data: notificationPreferences, isLoading: notificationLoading } = useQuery({
+    queryKey: ['/api/user/notification-preferences'],
+  });
+
+  const updatePrivacyMutation = useMutation({
+    mutationFn: async (preferences: any) => {
+      const response = await fetch('/api/user/privacy-preferences', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(preferences),
+      });
+      if (!response.ok) throw new Error('Failed to update privacy preferences');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/user/privacy-preferences'] });
+      toast({
+        title: "Privacy Settings Updated",
+        description: "Your privacy preferences have been saved.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update privacy settings. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const updateNotificationMutation = useMutation({
+    mutationFn: async (preferences: any) => {
+      const response = await fetch('/api/user/notification-preferences', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(preferences),
+      });
+      if (!response.ok) throw new Error('Failed to update notification preferences');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/user/notification-preferences'] });
+      toast({
+        title: "Notification Settings Updated",
+        description: "Your notification preferences have been saved.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update notification settings. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handlePrivacyToggle = (setting: string, value: boolean) => {
+    updatePrivacyMutation.mutate({ [setting]: value });
+  };
+
+  const handleNotificationToggle = (setting: string, value: boolean) => {
+    updateNotificationMutation.mutate({ [setting]: value });
+  };
+
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -335,7 +403,9 @@ const ProfilePage: React.FC = () => {
                   </div>
                   <Switch 
                     id="shareData" 
-                    defaultChecked={true} 
+                    checked={privacyPreferences?.allowAnalytics ?? true}
+                    onCheckedChange={(checked) => handlePrivacyToggle('allowAnalytics', checked)}
+                    disabled={updatePrivacyMutation.isPending}
                     className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
                   />
                 </div>
@@ -347,7 +417,9 @@ const ProfilePage: React.FC = () => {
                   </div>
                   <Switch 
                     id="locationTracking" 
-                    defaultChecked={true} 
+                    checked={privacyPreferences?.allowLocationTracking ?? true}
+                    onCheckedChange={(checked) => handlePrivacyToggle('allowLocationTracking', checked)}
+                    disabled={updatePrivacyMutation.isPending}
                     className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
                   />
                 </div>
@@ -359,7 +431,9 @@ const ProfilePage: React.FC = () => {
                   </div>
                   <Switch 
                     id="profileVisibility" 
-                    defaultChecked={false} 
+                    checked={privacyPreferences?.allowDataSharing ?? false}
+                    onCheckedChange={(checked) => handlePrivacyToggle('allowDataSharing', checked)}
+                    disabled={updatePrivacyMutation.isPending}
                     className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300"
                     aria-describedby="profileVisibility-description"
                   />
@@ -372,7 +446,9 @@ const ProfilePage: React.FC = () => {
                   </div>
                   <Switch 
                     id="dataRetention" 
-                    defaultChecked={true}
+                    checked={privacyPreferences?.allowPersonalization ?? true}
+                    onCheckedChange={(checked) => handlePrivacyToggle('allowPersonalization', checked)}
+                    disabled={updatePrivacyMutation.isPending}
                     className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300"
                     aria-describedby="dataRetention-description"
                   />
@@ -388,11 +464,91 @@ const ProfilePage: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full">
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/user/data-export', {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json' },
+                      });
+                      
+                      if (response.ok) {
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `user_data_export_${new Date().toISOString().split('T')[0]}.json`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+                        
+                        toast({
+                          title: "Data Export Complete",
+                          description: "Your data has been downloaded successfully.",
+                        });
+                      } else {
+                        throw new Error('Export failed');
+                      }
+                    } catch (error) {
+                      toast({
+                        title: "Export Failed",
+                        description: "Failed to export your data. Please try again.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                >
                   <Eye className="w-4 h-4 mr-2" />
                   Download My Data
                 </Button>
-                <Button variant="destructive" className="w-full">
+                <Button 
+                  variant="destructive" 
+                  className="w-full"
+                  onClick={async () => {
+                    const confirmed = confirm(
+                      "Are you sure you want to delete your account?\n\n" +
+                      "This will permanently delete:\n" +
+                      "• Your profile and personal information\n" +
+                      "• Shopping lists and purchase history\n" +
+                      "• Connected retailer accounts\n" +
+                      "• All recommendations and preferences\n\n" +
+                      "This action cannot be undone."
+                    );
+                    
+                    if (confirmed) {
+                      try {
+                        const response = await fetch('/api/user/delete-account', {
+                          method: 'DELETE',
+                          headers: { 'Content-Type': 'application/json' },
+                        });
+                        
+                        if (response.ok) {
+                          toast({
+                            title: "Account Deletion Initiated",
+                            description: "Your account deletion request has been submitted. You will receive a confirmation email.",
+                            variant: "destructive",
+                          });
+                          
+                          // Redirect to auth page after a delay
+                          setTimeout(() => {
+                            navigate('/auth');
+                          }, 3000);
+                        } else {
+                          throw new Error('Deletion failed');
+                        }
+                      } catch (error) {
+                        toast({
+                          title: "Deletion Failed",
+                          description: "Failed to delete account. Please contact support.",
+                          variant: "destructive",
+                        });
+                      }
+                    }
+                  }}
+                >
                   <AlertTriangle className="w-4 h-4 mr-2" />
                   Delete Account
                 </Button>
@@ -409,53 +565,75 @@ const ProfilePage: React.FC = () => {
                 </CardTitle>
                 <CardDescription>Choose what alerts you'd like to receive</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="dealAlerts">Deal alerts</Label>
-                    <p className="text-sm text-gray-500">Get notified about new deals</p>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between py-4 px-4 bg-gray-50 rounded-lg border">
+                  <div className="flex-1">
+                    <Label htmlFor="dealAlerts" className="text-base font-medium text-gray-900">Deal alerts</Label>
+                    <p className="text-sm text-gray-600 mt-1">Get notified about new deals</p>
                   </div>
-                  <Switch id="dealAlerts" defaultChecked={true} />
+                  <Switch 
+                    id="dealAlerts" 
+                    checked={notificationPreferences?.dealAlerts ?? true}
+                    onCheckedChange={(checked) => handleNotificationToggle('dealAlerts', checked)}
+                    disabled={updateNotificationMutation.isPending}
+                    className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
+                  />
                 </div>
 
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="priceDrops">Price drop notifications</Label>
-                    <p className="text-sm text-gray-500">Items on your list go on sale</p>
+                <div className="flex items-center justify-between py-4 px-4 bg-gray-50 rounded-lg border">
+                  <div className="flex-1">
+                    <Label htmlFor="priceDrops" className="text-base font-medium text-gray-900">Price drop notifications</Label>
+                    <p className="text-sm text-gray-600 mt-1">Items on your list go on sale</p>
                   </div>
-                  <Switch id="priceDrops" defaultChecked={true} />
+                  <Switch 
+                    id="priceDrops" 
+                    checked={notificationPreferences?.priceDropAlerts ?? true}
+                    onCheckedChange={(checked) => handleNotificationToggle('priceDropAlerts', checked)}
+                    disabled={updateNotificationMutation.isPending}
+                    className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
+                  />
                 </div>
 
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="weeklyDigest">Weekly digest</Label>
-                    <p className="text-sm text-gray-500">Summary of savings and trends</p>
+                <div className="flex items-center justify-between py-4 px-4 bg-gray-50 rounded-lg border">
+                  <div className="flex-1">
+                    <Label htmlFor="weeklyDigest" className="text-base font-medium text-gray-900">Weekly digest</Label>
+                    <p className="text-sm text-gray-600 mt-1">Summary of savings and trends</p>
                   </div>
-                  <Switch id="weeklyDigest" defaultChecked={false} />
+                  <Switch 
+                    id="weeklyDigest" 
+                    checked={notificationPreferences?.weeklyDigest ?? false}
+                    onCheckedChange={(checked) => handleNotificationToggle('weeklyDigest', checked)}
+                    disabled={updateNotificationMutation.isPending}
+                    className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
+                  />
                 </div>
 
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="expirationAlerts">Expiration alerts</Label>
-                    <p className="text-sm text-gray-500">When deals are about to expire</p>
+                <div className="flex items-center justify-between py-4 px-4 bg-gray-50 rounded-lg border">
+                  <div className="flex-1">
+                    <Label htmlFor="expirationAlerts" className="text-base font-medium text-gray-900">Expiration alerts</Label>
+                    <p className="text-sm text-gray-600 mt-1">When deals are about to expire</p>
                   </div>
-                  <Switch id="expirationAlerts" defaultChecked={true} />
+                  <Switch 
+                    id="expirationAlerts" 
+                    checked={notificationPreferences?.expirationAlerts ?? true}
+                    onCheckedChange={(checked) => handleNotificationToggle('expirationAlerts', checked)}
+                    disabled={updateNotificationMutation.isPending}
+                    className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
+                  />
                 </div>
 
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="recommendationUpdates">New recommendations</Label>
-                    <p className="text-sm text-gray-500">Personalized product suggestions</p>
+                <div className="flex items-center justify-between py-4 px-4 bg-gray-50 rounded-lg border">
+                  <div className="flex-1">
+                    <Label htmlFor="recommendationUpdates" className="text-base font-medium text-gray-900">New recommendations</Label>
+                    <p className="text-sm text-gray-600 mt-1">Personalized product suggestions</p>
                   </div>
-                  <Switch id="recommendationUpdates" defaultChecked={true} />
+                  <Switch 
+                    id="recommendationUpdates" 
+                    checked={notificationPreferences?.recommendationUpdates ?? true}
+                    onCheckedChange={(checked) => handleNotificationToggle('recommendationUpdates', checked)}
+                    disabled={updateNotificationMutation.isPending}
+                    className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
+                  />
                 </div>
               </CardContent>
             </Card>

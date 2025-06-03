@@ -57,19 +57,25 @@ const ShoppingRoute: React.FC = () => {
     queryKey: [`/api/user/loyalty-card/${optimizedRoute?.retailerName}`],
     enabled: !!optimizedRoute?.retailerName,
     queryFn: async () => {
+      console.log('Fetching loyalty card for retailer:', optimizedRoute.retailerName);
       const response = await fetch(`/api/user/loyalty-card/${encodeURIComponent(optimizedRoute.retailerName)}`, {
         credentials: "include",
       });
+      console.log('Loyalty card response status:', response.status);
       if (!response.ok) {
+        console.log('No loyalty card found for retailer:', optimizedRoute.retailerName);
         return null; // No loyalty card found
       }
       const data = await response.json();
+      console.log('Loyalty card data received:', data);
       return data;
     }
   });
 
   useEffect(() => {
+    console.log('Loyalty card data effect triggered:', loyaltyCardData);
     if (loyaltyCardData) {
+      console.log('Setting loyalty card:', loyaltyCardData);
       setLoyaltyCard(loyaltyCardData);
     }
   }, [loyaltyCardData]);
@@ -407,12 +413,15 @@ const ShoppingRoute: React.FC = () => {
     estimatedTime += complexItems * 1.5 + freshItems * 1;
     estimatedTime = Math.round(estimatedTime);
 
+    const finalRetailerName = retailerName || 'Store';
+    console.log('Generated route with retailer name:', finalRetailerName);
+    
     return {
       aisleGroups: sortedAisleGroups,
       totalAisles,
       estimatedTime: Math.round(estimatedTime),
       routeOrder: sortedAisleGroups.map((group: any) => group.aisleName),
-      retailerName: retailerName || 'Kroger',
+      retailerName: finalRetailerName,
       totalItems: items.length,
       planType: planData?.planType || 'Shopping Plan',
       totalCost: planData?.totalCost || 0,
@@ -576,13 +585,28 @@ const ShoppingRoute: React.FC = () => {
       <Header title="Shopping Route" />
 
       <main className="flex-1 overflow-y-auto p-4 pb-20">
+        {/* Debug Info */}
+        {process.env.NODE_ENV === 'development' && (
+          <Card className="mb-4 border-yellow-200 bg-yellow-50">
+            <CardContent className="p-4">
+              <div className="text-xs">
+                <div>Retailer: {optimizedRoute?.retailerName || 'Not set'}</div>
+                <div>Loyalty Card Data: {loyaltyCardData ? 'Found' : 'Not found'}</div>
+                <div>Loyalty Card State: {loyaltyCard ? 'Set' : 'Not set'}</div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Loyalty Card Section */}
         {loyaltyCard && (
           <Card className="mb-4 border-green-200 bg-green-50">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Badge className="h-5 w-5 text-primary" />
+                  <div className="h-5 w-5 bg-green-600 rounded-full flex items-center justify-center">
+                    <Check className="h-3 w-3 text-white" />
+                  </div>
                   <div>
                     <div className="font-semibold text-green-800">Loyalty Card Ready</div>
                     <div className="text-xs text-green-600">{loyaltyCard.cardNumber}</div>

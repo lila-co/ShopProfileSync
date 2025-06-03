@@ -4020,23 +4020,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get privacy preferences
+  app.get('/api/user/privacy-preferences', async (req: Request, res: Response) => {
+    try {
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+
+      const preferences = await storage.getPrivacyPreferences(userId);
+      res.json(preferences);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
   // Update privacy preferences
   app.patch('/api/user/privacy-preferences', async (req: Request, res: Response) => {
     try {
       const userId = req.headers['x-current-user-id'] ? 
         parseInt(req.headers['x-current-user-id'] as string) : 1;
 
-      const { SecurityManager } = await import('./services/securityManager');
-      
       const updatedPreferences = await storage.updatePrivacyPreferences(userId, req.body);
       
-      // Log privacy setting change
-      await SecurityManager.logSecurityEvent(
-        userId, 
-        'privacy_preferences_updated', 
-        req.body,
-        req.ip
-      );
+      console.log(`Privacy preferences updated for user ${userId}:`, req.body);
 
       res.json(updatedPreferences);
     } catch (error) {
@@ -4050,21 +4055,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.headers['x-current-user-id'] ? 
         parseInt(req.headers['x-current-user-id'] as string) : 1;
 
-      const { SecurityManager } = await import('./services/securityManager');
+      const userData = await storage.exportUserData(userId);
       
-      const userData = await SecurityManager.exportUserData(userId);
-      
-      // Log data export
-      await SecurityManager.logSecurityEvent(
-        userId, 
-        'data_export', 
-        { exportType: 'gdpr_request' },
-        req.ip
-      );
+      console.log(`Data export requested for user ${userId}`);
 
+      // Set headers for file download
       res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Content-Disposition', `attachment; filename=user-data-${userId}-${Date.now()}.json`);
+      res.setHeader('Content-Disposition', `attachment; filename="user_data_export_${userId}_${new Date().toISOString().split('T')[0]}.json"`);
+      
       res.json(userData);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Account deletion
+  app.delete('/api/user/delete-account', async (req: Request, res: Response) => {
+    try {
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+
+      const deleted = await storage.deleteUserAccount(userId);
+      
+      if (deleted) {
+        console.log(`Account deletion initiated for user ${userId}`);
+        res.json({ 
+          success: true, 
+          message: 'Account deletion request has been processed. You will receive a confirmation email.' 
+        });
+      } else {
+        res.status(404).json({ 
+          success: false, 
+          message: 'User account not found.' 
+        });
+      }
     } catch (error) {
       handleError(res, error);
     }
@@ -4085,6 +4109,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: 'Account deletion completed',
         analyticsRetained: retainAnalytics 
       });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Notification Preferences Endpoints
+  // Get notification preferences
+  app.get('/api/user/notification-preferences', async (req: Request, res: Response) => {
+    try {
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+
+      const preferences = await storage.getNotificationPreferences(userId);
+      res.json(preferences);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Update notification preferences
+  app.patch('/api/user/notification-preferences', async (req: Request, res: Response) => {
+    try {
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+
+      const updatedPreferences = await storage.updateNotificationPreferences(userId, req.body);
+      
+      console.log(`Notification preferences updated for user ${userId}:`, req.body);
+
+      res.json(updatedPreferences);
     } catch (error) {
       handleError(res, error);
     }
