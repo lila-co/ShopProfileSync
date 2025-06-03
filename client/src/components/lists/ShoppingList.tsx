@@ -36,6 +36,7 @@ const ShoppingListComponent: React.FC = () => {
   const [categorizedItems, setCategorizedItems] = useState<Record<string, ShoppingListItem[]>>({});
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
   const [isCategorizingItems, setIsCategorizingItems] = useState(false);
+  const [userHasClearedList, setUserHasClearedList] = useState(false);
   // Session handling removed - using AuthContext instead
 
   const importRecipeMutation = useMutation({
@@ -186,15 +187,15 @@ const ShoppingListComponent: React.FC = () => {
     }
   }, [shoppingLists]);
 
-  // Trigger auto-generation on authentication state change and initial load
+  // Trigger auto-generation only on initial load for new users
   useEffect(() => {
     const triggerListGeneration = async () => {
       if (shoppingLists && shoppingLists.length > 0) {
         const defaultList = shoppingLists[0];
         const hasItems = defaultList?.items && defaultList.items.length > 0;
 
-        // Only proceed if list is empty
-        if (!hasItems) {
+        // Only proceed if list is empty AND user hasn't manually cleared it
+        if (!hasItems && !userHasClearedList) {
           console.log('Empty shopping list detected, starting generation flow...');
           
           // For new users or when forced, always show the animation
@@ -244,8 +245,12 @@ const ShoppingListComponent: React.FC = () => {
             console.log('Skipping animation, generating items directly...');
             generateSampleItems();
           }
-        } else {
+        } else if (hasItems) {
           console.log('Shopping list already has items, skipping generation');
+          // Reset the flag when list has items again
+          setUserHasClearedList(false);
+        } else {
+          console.log('User has manually cleared list, not auto-generating');
         }
       } else {
         console.log('No shopping lists found yet');
@@ -253,7 +258,7 @@ const ShoppingListComponent: React.FC = () => {
     };
 
     triggerListGeneration();
-  }, [shoppingLists]); // React to changes in shoppingLists
+  }, [shoppingLists, userHasClearedList]); // React to changes in shoppingLists and userHasClearedList
 
   // Generate sample items for empty lists
   const generateSampleItems = async () => {
@@ -439,10 +444,19 @@ const ShoppingListComponent: React.FC = () => {
       // Optimistically update to the new value
       queryClient.setQueryData(['/api/shopping-lists'], (old: any) => {
         if (!old) return old;
-        return old.map((list: any) => ({
+        const updatedLists = old.map((list: any) => ({
           ...list,
           items: list.items?.filter((item: any) => item.id !== itemId) || []
         }));
+        
+        // Check if this deletion will result in an empty list
+        const defaultList = updatedLists[0];
+        if (defaultList && (!defaultList.items || defaultList.items.length === 0)) {
+          // User is manually clearing the list
+          setUserHasClearedList(true);
+        }
+        
+        return updatedLists;
       });
 
       return { previousLists };
@@ -778,6 +792,9 @@ const ShoppingListComponent: React.FC = () => {
   });
 
   const handleRegenerateList = () => {
+    // Reset the flag since user is explicitly asking for regeneration
+    setUserHasClearedList(false);
+    
     // Show animation during regeneration
     setIsGeneratingList(true);
     const steps = [
@@ -1361,6 +1378,7 @@ const ShoppingListComponent: React.FC = () => {
             onClick={() => {
               localStorage.removeItem('listGenerationShown');
               localStorage.setItem('forceShowAnimation', 'true');
+              setUserHasClearedList(false);
               window.location.reload();
             }}
             className="text-xs"
