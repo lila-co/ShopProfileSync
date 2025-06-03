@@ -1134,7 +1134,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Generate a shopping list from typical purchases
+  // Unified shopping list generation for all scenarios
   app.post('/api/shopping-lists/generate', async (req: Request, res: Response) => {
     try {
       const { items: selectedItems, shoppingListId } = req.body;
@@ -1148,31 +1148,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'No shopping list available' });
       }
 
-      // If no items provided, generate some sample items
-      let itemsToProcess = selectedItems;
-      if (!itemsToProcess || !Array.isArray(itemsToProcess)) {
-        itemsToProcess = [
-          { productName: 'Milk', quantity: 1, unit: 'GALLON', isSelected: true },
-          { productName: 'Bread', quantity: 1, unit: 'LOAF', isSelected: true },
-          { productName: 'Eggs', quantity: 1, unit: 'DOZEN', isSelected: true },
-          { productName: 'Bananas', quantity: 2, unit: 'LB', isSelected: true },
-          { productName: 'Chicken Breast', quantity: 1, unit: 'LB', isSelected: true }
-        ];
-      }
-
-      // Get existing items to check for duplicates
+      // Get existing items to determine if this is an empty list
       const existingItems = await storage.getShoppingListItems(targetListId);
+      const isEmptyList = existingItems.length === 0;
+
+      console.log(`Generating list - Target: ${targetListId}, Existing items: ${existingItems.length}, Empty: ${isEmptyList}`);
+
+      let itemsToProcess = selectedItems;
+
+      // If no specific items provided, use a comprehensive item set based on list state
+      if (!itemsToProcess || !Array.isArray(itemsToProcess)) {
+        if (isEmptyList) {
+          // For empty lists, create a comprehensive starter list
+          itemsToProcess = [
+            // Essential dairy & proteins
+            { productName: 'Milk', quantity: 1, unit: 'GALLON', isSelected: true },
+            { productName: 'Eggs', quantity: 1, unit: 'DOZEN', isSelected: true },
+            { productName: 'Greek Yogurt', quantity: 4, unit: 'CONTAINER', isSelected: true },
+            { productName: 'Chicken Breast', quantity: 2, unit: 'LB', isSelected: true },
+            
+            // Fresh produce
+            { productName: 'Bananas', quantity: 2, unit: 'LB', isSelected: true },
+            { productName: 'Baby Spinach', quantity: 1, unit: 'BAG', isSelected: true },
+            { productName: 'Roma Tomatoes', quantity: 2, unit: 'LB', isSelected: true },
+            { productName: 'Avocados', quantity: 3, unit: 'COUNT', isSelected: true },
+            
+            // Pantry staples
+            { productName: 'Whole Wheat Bread', quantity: 1, unit: 'LOAF', isSelected: true },
+            { productName: 'Brown Rice', quantity: 1, unit: 'BAG', isSelected: true },
+            { productName: 'Olive Oil', quantity: 1, unit: 'BOTTLE', isSelected: true },
+            { productName: 'Black Beans', quantity: 2, unit: 'CAN', isSelected: true }
+          ];
+        } else {
+          // For non-empty lists, add complementary items
+          itemsToProcess = [
+            // Fresh additions
+            { productName: 'Fresh Strawberries', quantity: 1, unit: 'CONTAINER', isSelected: true },
+            { productName: 'Cucumber', quantity: 2, unit: 'COUNT', isSelected: true },
+            { productName: 'Bell Peppers', quantity: 3, unit: 'COUNT', isSelected: true },
+            { productName: 'Ground Turkey', quantity: 1, unit: 'LB', isSelected: true },
+            
+            // Pantry enhancements
+            { productName: 'Quinoa', quantity: 1, unit: 'BAG', isSelected: true },
+            { productName: 'Coconut Milk', quantity: 2, unit: 'CAN', isSelected: true },
+            { productName: 'Chicken Broth', quantity: 2, unit: 'CONTAINER', isSelected: true },
+            { productName: 'Almond Butter', quantity: 1, unit: 'JAR', isSelected: true },
+            
+            // Household essentials
+            { productName: 'Paper Towels', quantity: 6, unit: 'COUNT', isSelected: true },
+            { productName: 'Sparkling Water', quantity: 12, unit: 'BOTTLE', isSelected: true }
+          ];
+        }
+      }
 
       const addedItems = [];
       const updatedItems = [];
+      const skippedItems = [];
 
-      // Process each selected item
+      // Process each item
       for (const item of itemsToProcess) {
         if (!item.isSelected) continue;
 
         const normalizedName = item.productName.toLowerCase().trim();
 
-        // Check for duplicates using the same logic as the regular add item endpoint
+        // Check for duplicates using comprehensive matching
         let existingItem = existingItems.find(existing => 
           existing.productName.toLowerCase() === normalizedName ||
           existing.productName.toLowerCase() + 's' === normalizedName ||
@@ -1182,20 +1221,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Check for common item variations
         if (!existingItem) {
           const commonItemCorrections: Record<string, string[]> = {
-            'milk': ['milk (gallon)', 'milk whole', 'whole milk', 'organic milk'],
-            'bread': ['sandwich bread', 'loaf bread', 'white bread'],
-            'eggs': ['egg', 'dozen eggs'],
-            'banana': ['bananas'],
-            'chicken': ['chicken breast', 'chicken breasts'],
-            'pasta': ['spaghetti', 'noodles'],
-            'coffee': ['ground coffee', 'coffee beans']
+            'milk': ['organic milk', 'whole milk', 'skim milk', '2% milk'],
+            'bread': ['whole wheat bread', 'white bread', 'sandwich bread'],
+            'eggs': ['free-range eggs', 'organic eggs', 'large eggs'],
+            'banana': ['bananas', 'organic bananas'],
+            'chicken': ['chicken breast', 'chicken breasts', 'organic chicken'],
+            'yogurt': ['greek yogurt', 'plain yogurt', 'vanilla yogurt'],
+            'spinach': ['baby spinach', 'fresh spinach', 'organic spinach'],
+            'tomato': ['roma tomatoes', 'cherry tomatoes', 'fresh tomatoes'],
+            'rice': ['brown rice', 'white rice', 'jasmine rice', 'basmati rice'],
+            'oil': ['olive oil', 'vegetable oil', 'coconut oil', 'canola oil']
           };
 
           for (const [baseItem, variations] of Object.entries(commonItemCorrections)) {
-            if (normalizedName.includes(baseItem) || variations.some(v => normalizedName.includes(v))) {
+            if (normalizedName.includes(baseItem) || variations.some(v => normalizedName.includes(v.toLowerCase()))) {
               existingItem = existingItems.find(existing => {
                 const existingName = existing.productName.toLowerCase();
-                return existingName.includes(baseItem) || variations.some(v => existingName.includes(v));
+                return existingName.includes(baseItem) || variations.some(v => existingName.includes(v.toLowerCase()));
               });
               if (existingItem) break;
             }
@@ -1203,7 +1245,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         if (existingItem) {
-          // Update existing item by adding quantities
+          // For existing items, update quantity
           const updatedItem = await storage.updateShoppingListItem(existingItem.id, {
             quantity: existingItem.quantity + item.quantity,
             unit: item.unit || existingItem.unit || 'COUNT'
@@ -1215,23 +1257,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
             message: `Combined with existing "${existingItem.productName}" item`
           });
         } else {
-          // Add as new item
-          const newItem = await storage.addShoppingListItem({
-            shoppingListId: targetListId,
-            productName: item.productName,
-            quantity: item.quantity,
-            unit: item.unit || 'COUNT'
-          });
-          addedItems.push(newItem);
+          // Add as new item with AI optimization
+          try {
+            let finalUnit = item.unit || 'COUNT';
+            let finalQuantity = item.quantity || 1;
+
+            // Use AI categorization for unit optimization
+            try {
+              const { productCategorizer } = await import('./services/productCategorizer');
+              const normalized = productCategorizer.normalizeQuantity(
+                item.productName, 
+                item.quantity || 1, 
+                item.unit || 'COUNT'
+              );
+
+              if (normalized.suggestedUnit) {
+                finalUnit = normalized.suggestedUnit;
+              }
+              if (normalized.suggestedQuantity && normalized.suggestedQuantity > 0) {
+                finalQuantity = normalized.suggestedQuantity;
+              }
+
+              console.log(`AI optimization for ${item.productName}: ${item.quantity} ${item.unit} -> ${finalQuantity} ${finalUnit}`);
+            } catch (aiError) {
+              console.warn('AI categorization failed for:', item.productName, aiError);
+            }
+
+            const newItem = await storage.addShoppingListItem({
+              shoppingListId: targetListId,
+              productName: item.productName,
+              quantity: finalQuantity,
+              unit: finalUnit
+            });
+            addedItems.push(newItem);
+          } catch (error) {
+            console.error('Failed to add item:', item.productName, error);
+            skippedItems.push(item.productName);
+          }
         }
       }
 
       res.json({
         addedItems,
         updatedItems,
+        skippedItems,
         itemsAdded: addedItems.length,
         itemsUpdated: updatedItems.length,
-        totalItems: addedItems.length + updatedItems.length
+        itemsSkipped: skippedItems.length,
+        totalItems: addedItems.length + updatedItems.length,
+        isEmptyList,
+        message: isEmptyList ? 'Shopping list created successfully' : 'Shopping list enhanced with new items'
       });
     } catch (error) {
       handleError(res, error);
