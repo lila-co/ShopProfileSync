@@ -310,7 +310,7 @@ const PlanDetails: React.FC = () => {
             className="w-full"
             size="lg"
             onClick={() => {
-              console.log('Start Shopping Route clicked');
+              console.log('Start Shopping Route clicked with planData:', planData);
 
               if (!planData || !planData.stores || planData.stores.length === 0) {
                 toast({
@@ -330,16 +330,29 @@ const PlanDetails: React.FC = () => {
                 listId: listId
               };
 
-              // Store the plan data in sessionStorage as a backup
+              console.log('Enhanced plan data for navigation:', enhancedPlanData);
+
+              // Store in sessionStorage as backup
               sessionStorage.setItem('shoppingPlanData', JSON.stringify(enhancedPlanData));
 
+              // Navigate with proper encoding
               const params = new URLSearchParams({
                 listId: listId || '1',
                 mode: 'instore',
                 planData: encodeURIComponent(JSON.stringify(enhancedPlanData))
               });
 
-              navigate(`/shopping-route?${params.toString()}`);
+              const targetUrl = `/shopping-route?${params.toString()}`;
+              console.log('Navigating to:', targetUrl);
+
+              // Use navigate from wouter
+              navigate(targetUrl);
+
+              toast({
+                title: "Loading Shopping Route",
+                description: "Preparing your optimized shopping route...",
+                duration: 2000
+              });
             }}
           >
             <ShoppingCart className="h-4 w-4 mr-2" />

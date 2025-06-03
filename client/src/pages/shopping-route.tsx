@@ -110,56 +110,66 @@ const ShoppingRoute: React.FC = () => {
     console.log('shoppingList:', shoppingList);
     console.log('Current location:', location);
     
-    let planDataToUse = planDataParam;
+    let planDataToUse = null;
     
-    // If no URL param, try sessionStorage
+    // Try URL parameter first
+    if (planDataParam) {
+      try {
+        planDataToUse = JSON.parse(decodeURIComponent(planDataParam));
+        console.log('Successfully parsed plan data from URL:', planDataToUse);
+      } catch (error) {
+        console.error('Error parsing URL plan data:', error);
+      }
+    }
+    
+    // If no URL param or parsing failed, try sessionStorage
     if (!planDataToUse) {
       const storedPlanData = sessionStorage.getItem('shoppingPlanData');
       if (storedPlanData) {
-        console.log('Using stored plan data from sessionStorage');
-        planDataToUse = encodeURIComponent(storedPlanData);
+        try {
+          planDataToUse = JSON.parse(storedPlanData);
+          console.log('Using stored plan data from sessionStorage:', planDataToUse);
+        } catch (error) {
+          console.error('Error parsing stored plan data:', error);
+        }
       }
     }
     
     if (planDataToUse) {
-      try {
-        const planData = JSON.parse(decodeURIComponent(planDataToUse));
-        console.log('Successfully parsed plan data:', planData);
-        setSelectedPlanData(planData);
+      setSelectedPlanData(planDataToUse);
 
-        // Generate route from the selected plan
-        const route = generateOptimizedShoppingRouteFromPlan(planData);
-        console.log('Generated route from plan:', route);
-        setOptimizedRoute(route);
-        setStartTime(new Date());
-        
-        toast({
-          title: "Shopping Route Ready!",
-          description: `Your shopping route has been created`,
-          duration: 3000
-        });
-        
-      } catch (error) {
-        console.error('Error parsing plan data:', error);
-        // Fall back to shopping list
-        tryShoppingListFallback();
-      }
+      // Generate route from the selected plan
+      const route = generateOptimizedShoppingRouteFromPlan(planDataToUse);
+      console.log('Generated route from plan:', route);
+      setOptimizedRoute(route);
+      setStartTime(new Date());
+      
+      toast({
+        title: "Shopping Route Ready!",
+        description: `Your shopping route has been created`,
+        duration: 3000
+      });
+    } else if (shoppingList?.items && shoppingList.items.length > 0) {
+      console.log('Using shopping list items as fallback');
+      const route = generateOptimizedShoppingRoute(shoppingList.items);
+      setOptimizedRoute(route);
+      setStartTime(new Date());
+      
+      toast({
+        title: "Shopping Route Created",
+        description: "Using your shopping list items",
+        duration: 3000
+      });
     } else {
-      // No plan data available, try shopping list
-      tryShoppingListFallback();
+      console.log('No data available for shopping route');
+      toast({
+        title: "No Shopping Data",
+        description: "Unable to create shopping route. Please go back and select a plan.",
+        variant: "destructive",
+        duration: 5000
+      });
     }
-
-    function tryShoppingListFallback() {
-      if (shoppingList?.items && shoppingList.items.length > 0) {
-        console.log('Using shopping list items as fallback');
-        const route = generateOptimizedShoppingRoute(shoppingList.items);
-        setOptimizedRoute(route);
-        setStartTime(new Date());
-      } else {
-        console.log('No data available for shopping route');
-      }
-    }
-  }, [shoppingList, planDataParam, location]);
+  }, [shoppingList, planDataParam, location, toast]);
 
 
 
@@ -178,29 +188,30 @@ const ShoppingRoute: React.FC = () => {
       
       if (planData.stores.length === 1) {
         // Single store plan
-        items = planData.stores[0].items || [];
-        retailerName = planData.stores[0].retailerName || planData.stores[0].retailer?.name || 'Store';
-        stores = planData.stores.map((store: any) => ({
+        const store = planData.stores[0];
+        items = store.items || [];
+        retailerName = store.retailer?.name || store.retailerName || 'Store';
+        stores = [{
           ...store,
-          retailerName: store.retailerName || store.retailer?.name || 'Store',
-          items: store.items || []
-        }));
+          retailerName: retailerName,
+          items: items
+        }];
         console.log('Single store plan - items:', items.length, 'retailer:', retailerName);
       } else {
         // Multi-store plan - keep stores separate
         isMultiStore = true;
         stores = planData.stores.map((store: any) => ({
           ...store,
-          retailerName: store.retailerName || store.retailer?.name || 'Store',
+          retailerName: store.retailer?.name || store.retailerName || 'Store',
           items: (store.items || []).map((item: any) => ({
             ...item,
-            storeName: store.retailerName || store.retailer?.name
+            storeName: store.retailer?.name || store.retailerName || 'Store'
           }))
         }));
         retailerName = `Multi-Store Plan (${stores.length} stores)`;
-        // For the main route, use all items but keep store association
-        items = stores.flatMap((store: any) => store.items || []);
-        console.log('Multi-store plan - total items:', items.length, 'stores:', stores.length);
+        // For the main route, use items from first store initially
+        items = stores[0]?.items || [];
+        console.log('Multi-store plan - stores:', stores.length, 'first store items:', items.length);
       }
     } else if (planData.items) {
       // Single store plan with items directly
@@ -215,8 +226,19 @@ const ShoppingRoute: React.FC = () => {
       stores = [{ retailerName: 'Store', items }];
     }
 
-    console.log('Final items for route generation:', items);
-    const route = generateOptimizedShoppingRoute(items, retailerName, planData);
+    // Ensure items have required properties
+    const processedItems = items.map((item: any) => ({
+      id: item.id || Math.random(),
+      productName: item.productName || 'Unknown Product',
+      quantity: item.quantity || 1,
+      unit: item.unit || 'item',
+      isCompleted: item.isCompleted || false,
+      suggestedPrice: item.suggestedPrice || 0,
+      ...item
+    }));
+
+    console.log('Processed items for route generation:', processedItems);
+    const route = generateOptimizedShoppingRoute(processedItems, retailerName, planData);
     
     // Add multi-store specific data
     if (isMultiStore) {
@@ -501,17 +523,25 @@ const ShoppingRoute: React.FC = () => {
             <CardContent className="p-6 text-center">
               <p className="text-gray-500 mb-4">No shopping route available</p>
               <p className="text-sm text-gray-400 mb-4">
-                Debug info: listId={listId}, planData={planDataParam ? 'present' : 'missing'}
+                Debug info: listId={listId}, planData={planDataParam ? 'present' : 'missing'}, 
+                sessionStorage={sessionStorage.getItem('shoppingPlanData') ? 'present' : 'missing'}
               </p>
               <div className="space-y-2">
+                <Button onClick={() => navigate('/plan-details?listId=' + (listId || '1'))}>
+                  Go Back to Plan Details
+                </Button>
                 <Button onClick={() => navigate('/shopping-list')}>
-                  Go Back to Shopping List
+                  Go to Shopping List
                 </Button>
                 <Button 
                   variant="outline" 
-                  onClick={() => window.location.href = '/shopping-list'}
+                  onClick={() => {
+                    // Clear any stored data and try again
+                    sessionStorage.removeItem('shoppingPlanData');
+                    navigate('/shopping-list');
+                  }}
                 >
-                  Force Navigate Back
+                  Start Over
                 </Button>
               </div>
             </CardContent>
