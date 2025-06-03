@@ -91,7 +91,7 @@ const RetailerLinking: React.FC = () => {
       // Show success message
       toast({
         title: 'Account Linked Successfully',
-        description: `Your ${selectedRetailer?.name} account has been connected to SavvyCart.`,
+        description: `Your ${selectedRetailer?.name} account has been connected to SmartCart.`,
       });
     },
     onError: (error: any) => {
@@ -138,7 +138,7 @@ const RetailerLinking: React.FC = () => {
       // Show success message
       toast({
         title: 'Account Unlinked',
-        description: `Your ${account?.retailerName} account has been disconnected from SavvyCart.`,
+        description: `Your ${account?.retailerName} account has been disconnected from SmartCart.`,
       });
     }
   });
@@ -398,7 +398,7 @@ const RetailerLinking: React.FC = () => {
               )}
             </DialogTitle>
             <DialogDescription>
-              Enter your account credentials to connect your retailer account with SavvyCart.
+              Enter your account credentials to connect your retailer account with SmartCart.
             </DialogDescription>
           </DialogHeader>
 
@@ -453,7 +453,7 @@ const RetailerLinking: React.FC = () => {
                   checked={allowOrdering}
                   onCheckedChange={setAllowOrdering}
                 />
-                <Label htmlFor="allow-ordering">Allow SavvyCart to place orders for me</Label>
+                <Label htmlFor="allow-ordering">Allow SmartCart to place orders for me</Label>
               </div>
 
               <Separator />
@@ -487,7 +487,7 @@ const RetailerLinking: React.FC = () => {
 
               <div className="bg-blue-50 p-3 rounded-md">
                 <p className="text-xs text-blue-600">
-                  <strong>Privacy Note:</strong> SavvyCart uses the highest security standards to protect your data. 
+                  <strong>Privacy Note:</strong> SmartCart uses the highest security standards to protect your data. 
                   Your credentials will only be used to access your shopping history and place orders on your behalf 
                   when authorized. You can remove access at any time.
                 </p>
