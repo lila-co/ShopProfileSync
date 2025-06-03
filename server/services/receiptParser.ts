@@ -54,14 +54,12 @@ export async function parseReceiptImage(imageBase64: string): Promise<any> {
 
 // Convert extracted receipt data to purchase data with minimal storage
 export function receiptToPurchase(receiptData: any, userId: number): InsertPurchase {
-  // Store only essential receipt metadata, not full OCR text
+  // Store minimal receipt metadata for space efficiency
   const compressedReceiptData = {
-    retailerId: receiptData.retailerId,
-    subtotal: receiptData.subtotal,
-    tax: receiptData.tax,
-    total: receiptData.total,
-    // Remove rawText and redundant data to save space
-    itemCount: receiptData.items?.length || 0
+    r: receiptData.retailerId, // shortened keys
+    t: receiptData.total,
+    c: receiptData.items?.length || 0, // item count only
+    d: receiptData.date ? new Date(receiptData.date).toISOString().split('T')[0] : null // date only
   };
 
   const purchase: InsertPurchase = {

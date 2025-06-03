@@ -1,15 +1,20 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-import * as schema from "../shared/schema";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 
-const connectionString = process.env.DATABASE_URL || "postgres://localhost:5432/shopping_app";
-
-const client = postgres(connectionString, {
-  max: 10,
-  idle_timeout: 20,
-  connect_timeout: 10,
-  onnotice: () => {}, // Suppress notices
-  onparameter: () => {}, // Suppress parameter notices
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL ?? "postgresql://replit:password@localhost:5432/smart_shopping",
+  // Optimize connection pool
+  max: 20, // Maximum number of clients in the pool
+  min: 5,  // Minimum number of clients in the pool
+  idle: 30000, // Close idle clients after 30 seconds
+  connectionTimeoutMillis: 5000, // Return error if connection takes longer than 5 seconds
+  idleTimeoutMillis: 30000, // Close idle connections after 30 seconds
+  maxUses: 7500, // Close connection after 7500 uses
 });
 
-export const db = drizzle(client, { schema });
+// Handle pool errors
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle client', err);
+});
+
+export const db = drizzle(pool);

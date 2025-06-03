@@ -9,9 +9,9 @@ interface CacheConfig {
   maxCacheSize: number; // Maximum number of cached items
 }
 
+import { cacheManager } from './cacheManager';
+
 export class DataOptimizer {
-  private priceCache: Map<string, { price: number; timestamp: number }> = new Map();
-  private dealCache: Map<string, { deals: StoreDeal[]; timestamp: number }> = new Map();
   private config: CacheConfig;
 
   constructor(config: CacheConfig = {
@@ -26,12 +26,11 @@ export class DataOptimizer {
    * Get fresh price data with intelligent caching
    */
   async getOptimizedPrice(retailerId: number, productName: string): Promise<number | null> {
-    const cacheKey = `${retailerId}-${productName.toLowerCase()}`;
-    const cached = this.priceCache.get(cacheKey);
+    const cacheKey = `price:${retailerId}:${productName.toLowerCase()}`;
+    const cachedPrice = cacheManager.get(cacheKey);
     
-    // Check if cached data is still fresh
-    if (cached && (Date.now() - cached.timestamp) < this.config.pricesTTL * 60 * 1000) {
-      return cached.price;
+    if (cachedPrice !== null) {
+      return cachedPrice;
     }
 
     try {

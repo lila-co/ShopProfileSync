@@ -85,7 +85,12 @@ export const purchases = pgTable("purchases", {
   purchaseDate: timestamp("purchase_date").notNull(),
   receiptImageUrl: text("receipt_image_url"),
   totalAmount: integer("total_amount").notNull(),
-  receiptData: json("receipt_data"),
+  receiptData: json("receipt_data").$type<{
+    r?: number; // retailerId (compressed key)
+    t?: number; // total (compressed key)  
+    c?: number; // item count (compressed key)
+    d?: string; // date (compressed key)
+  }>(),
 }, (table) => ({
   userIdIdx: index("purchases_user_id_idx").on(table.userId),
   purchaseDateIdx: index("purchases_date_idx").on(table.purchaseDate),
