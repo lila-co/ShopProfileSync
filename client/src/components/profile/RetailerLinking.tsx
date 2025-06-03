@@ -167,14 +167,20 @@ const RetailerLinking: React.FC = () => {
       const response = await apiRequest('POST', '/api/retailers', storeData);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (newRetailer) => {
       queryClient.invalidateQueries({ queryKey: ['/api/retailers'] });
       setShowAddStore(false);
       setNewStoreName('');
       setNewStoreWebsite('');
+      
+      // Automatically open the connection dialog for the newly added store
+      setSelectedRetailer(newRetailer);
+      setConnectionType('account'); // Default to account connection
+      setLinkDialogOpen(true);
+      
       toast({
         title: "Store Added",
-        description: "Your custom store has been added successfully."
+        description: "Your custom store has been added successfully. Now connect your account."
       });
     },
     onError: (error) => {
