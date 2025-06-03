@@ -485,9 +485,13 @@ const ShoppingListComponent: React.FC = () => {
           placeholder="Add an item..."
           value={newItemName}
           onChange={(e) => setNewItemName(e.target.value)}
-          className="flex-1"
+          className="flex-1 border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 bg-white text-gray-900 placeholder-gray-500 font-medium"
         />
-        <Button type="submit" disabled={addItemMutation.isPending}>
+        <Button 
+          type="submit" 
+          disabled={addItemMutation.isPending}
+          className="bg-blue-600 hover:bg-blue-700 text-white border-2 border-blue-600 hover:border-blue-700 shadow-md min-w-[44px]"
+        >
           <Plus className="h-4 w-4" />
         </Button>
       </form>
