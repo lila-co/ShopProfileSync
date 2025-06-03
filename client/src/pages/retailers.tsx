@@ -75,10 +75,7 @@ const RetailersPage: React.FC = () => {
   };
 
   const handleRetailerClick = (retailerId: number) => {
-    // Use setTimeout to avoid blocking the main thread
-    setTimeout(() => {
-      navigate(`/retailers/${retailerId}`);
-    }, 0);
+    navigate(`/retailers/${retailerId}`);
   };
 
   const handleAddStore = () => {
@@ -217,7 +214,7 @@ const RetailersPage: React.FC = () => {
         </div>
       </main>
 
-      <BottomNavigation activeTab="stores" />
+      <BottomNavigation activeTab="retailers" />
     </div>
   );
 };
