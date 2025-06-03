@@ -33,7 +33,7 @@ const ShoppingRoute: React.FC = () => {
 
   // Get URL parameters from current location
   const searchParams = new URLSearchParams(location.split('?')[1] || '');
-  const listId = searchParams.get('listId');
+  const listId = searchParams.get('listId') || '1'; // Default to list 1 if not provided
   const mode = searchParams.get('mode') || 'instore';
   const planDataParam = searchParams.get('planData');
   
@@ -109,6 +109,7 @@ const ShoppingRoute: React.FC = () => {
     console.log('planDataParam:', planDataParam);
     console.log('shoppingList:', shoppingList);
     console.log('Current location:', location);
+    console.log('listId:', listId);
     
     let planDataToUse = null;
     
@@ -144,13 +145,30 @@ const ShoppingRoute: React.FC = () => {
       
       toast({
         title: "Shopping Route Ready!",
-        description: `Your shopping route has been created`,
+        description: `Your shopping route has been created from your selected plan`,
         duration: 3000
       });
     } else if (shoppingList?.items && shoppingList.items.length > 0) {
-      console.log('Using shopping list items as fallback');
-      const route = generateOptimizedShoppingRoute(shoppingList.items);
+      console.log('Using shopping list items as fallback, listId:', listId);
+      
+      // Create a simple plan data structure from shopping list items
+      const fallbackPlanData = {
+        stores: [{
+          retailer: { name: 'Store', id: 1 },
+          items: shoppingList.items,
+          subtotal: shoppingList.items.reduce((sum: number, item: any) => 
+            sum + (item.suggestedPrice || 0) * item.quantity, 0)
+        }],
+        totalCost: shoppingList.items.reduce((sum: number, item: any) => 
+          sum + (item.suggestedPrice || 0) * item.quantity, 0),
+        planType: 'Shopping List',
+        listId: listId
+      };
+      
+      const route = generateOptimizedShoppingRouteFromPlan(fallbackPlanData);
+      console.log('Generated route from shopping list fallback:', route);
       setOptimizedRoute(route);
+      setSelectedPlanData(fallbackPlanData);
       setStartTime(new Date());
       
       toast({
@@ -159,7 +177,7 @@ const ShoppingRoute: React.FC = () => {
         duration: 3000
       });
     } else {
-      console.log('No data available for shopping route');
+      console.log('No data available for shopping route, listId:', listId, 'shoppingList:', shoppingList);
       toast({
         title: "No Shopping Data",
         description: "Unable to create shopping route. Please go back and select a plan.",
@@ -167,7 +185,7 @@ const ShoppingRoute: React.FC = () => {
         duration: 5000
       });
     }
-  }, [shoppingList, planDataParam, location, toast]);
+  }, [shoppingList, planDataParam, location, toast, listId]);
 
 
 

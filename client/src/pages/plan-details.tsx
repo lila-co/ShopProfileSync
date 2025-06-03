@@ -341,8 +341,8 @@ const PlanDetails: React.FC = () => {
               const targetUrl = `/shopping-route?listId=${listId}&mode=instore&fromPlan=true`;
               console.log('Navigating to:', targetUrl);
 
-              // Force navigation using window.location to ensure it works
-              window.location.href = targetUrl;
+              // Use the navigate function instead of window.location for better routing
+              navigate(targetUrl);
 
               toast({
                 title: "Loading Shopping Route",
