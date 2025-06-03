@@ -380,11 +380,13 @@ class AICategorationService {
     // Apply count optimization suggestions
     const countOptimization = detectCountOptimization(bestCategory, name, quantity, unit);
 
+    console.log(`Quick categorization for "${name}": category=${bestCategory}, originalUnit=${unit}, suggestedUnit=${countOptimization.suggestedUnit}`);
+
     return { 
       category: bestCategory, 
       confidence: bestConfidence,
-      suggestedQuantity: countOptimization.suggestedQuantity,
-      suggestedUnit: countOptimization.suggestedUnit
+      suggestedQuantity: countOptimization.suggestedQuantity || quantity,
+      suggestedUnit: countOptimization.suggestedUnit || unit
     };
   }
 
@@ -408,13 +410,53 @@ function detectCountOptimization(category: string, name: string, quantity?: numb
   let suggestedQuantity = quantity;
   let suggestedUnit = unit;
 
+  // More comprehensive unit detection patterns
+  const unitPatterns = [
+    // Liquids and bottles
+    { patterns: ['olive oil', 'oil', 'vinegar', 'honey', 'syrup', 'vanilla'], unit: 'BOTTLE' },
+    // Canned goods
+    { patterns: ['beans', 'black beans', 'kidney beans', 'diced tomato', 'crushed tomato', 'tomato sauce', 'marinara', 'pasta sauce'], unit: 'CAN' },
+    // Jars
+    { patterns: ['jam', 'jelly', 'peanut butter', 'almond butter', 'salsa', 'pickles'], unit: 'JAR' },
+    // Bags
+    { patterns: ['rice', 'quinoa', 'flour', 'sugar', 'spinach', 'lettuce', 'carrots'], unit: 'BAG' },
+    // Boxes
+    { patterns: ['cereal', 'crackers', 'pasta', 'baking soda', 'baking powder', 'salt'], unit: 'BOX' },
+    // Loaves
+    { patterns: ['bread', 'loaf'], unit: 'LOAF' },
+    // Gallons for milk
+    { patterns: ['milk'], unit: 'GALLON' },
+    // Dozens for eggs
+    { patterns: ['egg'], unit: 'DOZEN' },
+    // Pounds for produce and meat
+    { patterns: ['banana', 'apple', 'potato', 'onion', 'tomato', 'carrot', 'chicken', 'beef', 'ground'], unit: 'LB' },
+    // Bottles for beverages
+    { patterns: ['sparkling water', 'water', 'soda', 'juice'], unit: 'BOTTLE' },
+    // Containers for dairy
+    { patterns: ['yogurt', 'cottage cheese', 'sour cream'], unit: 'CONTAINER' },
+    // Blocks for cheese
+    { patterns: ['cheese', 'cheddar', 'swiss'], unit: 'BLOCK' }
+  ];
+
+  // Find the best matching unit pattern
+  for (const pattern of unitPatterns) {
+    for (const keyword of pattern.patterns) {
+      if (name.includes(keyword)) {
+        suggestedUnit = pattern.unit;
+        console.log(`Unit pattern match: "${keyword}" in "${name}" suggests ${pattern.unit}`);
+        break;
+      }
+    }
+    if (suggestedUnit !== unit) break;
+  }
+
   // Pantry items that should use specific units
   if (category === 'Pantry & Canned Goods') {
     if (name.includes('rice') || name.includes('quinoa') || name.includes('oatmeal') || name.includes('flour')) {
       suggestedUnit = 'BAG';
     } else if (name.includes('honey') || name.includes('syrup') || name.includes('oil') || name.includes('vinegar')) {
       suggestedUnit = 'BOTTLE';
-    } else if (name.includes('sauce') || name.includes('jam') || name.includes('jelly') || name.includes('butter') && name.includes('peanut')) {
+    } else if (name.includes('sauce') || name.includes('jam') || name.includes('jelly') || (name.includes('butter') && name.includes('peanut'))) {
       suggestedUnit = 'JAR';
     } else if (name.includes('baking soda') || name.includes('baking powder') || name.includes('salt') || name.includes('sugar')) {
       suggestedUnit = 'BOX';

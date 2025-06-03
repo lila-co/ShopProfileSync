@@ -673,26 +673,37 @@ const ShoppingListComponent: React.FC = () => {
               item.unit || 'COUNT'
             );
 
-            if (aiResult?.suggestedUnit) {
+            console.log(`AI categorization for ${item.productName}:`, aiResult);
+
+            if (aiResult?.suggestedUnit && aiResult.suggestedUnit !== 'COUNT') {
               finalUnit = aiResult.suggestedUnit;
+              console.log(`Using AI suggested unit: ${finalUnit} for ${item.productName}`);
             }
-            if (aiResult?.suggestedQuantity) {
+            if (aiResult?.suggestedQuantity && aiResult.suggestedQuantity !== finalQuantity) {
               finalQuantity = aiResult.suggestedQuantity;
+              console.log(`Using AI suggested quantity: ${finalQuantity} for ${item.productName}`);
             }
           } catch (aiError) {
+            console.warn('AI categorization failed, using quick categorization fallback:', aiError);
             // If AI fails, use quick categorization fallback
             const quickResult = aiCategorizationService.getQuickCategory(
               item.productName, 
               item.quantity || 1, 
               item.unit || 'COUNT'
             );
-            if (quickResult.suggestedUnit) {
+            console.log(`Quick categorization for ${item.productName}:`, quickResult);
+            
+            if (quickResult.suggestedUnit && quickResult.suggestedUnit !== 'COUNT') {
               finalUnit = quickResult.suggestedUnit;
+              console.log(`Using quick suggested unit: ${finalUnit} for ${item.productName}`);
             }
-            if (quickResult.suggestedQuantity) {
+            if (quickResult.suggestedQuantity && quickResult.suggestedQuantity !== finalQuantity) {
               finalQuantity = quickResult.suggestedQuantity;
+              console.log(`Using quick suggested quantity: ${finalQuantity} for ${item.productName}`);
             }
           }
+
+          console.log(`Adding ${item.productName} with quantity: ${finalQuantity}, unit: ${finalUnit}`);
 
           const response = await apiRequest('POST', '/api/shopping-list/items', {
             shoppingListId: defaultList.id,
