@@ -177,9 +177,17 @@ export class ProductCategorizerService {
   }
 
   private initializePatterns() {
+    // Spices and seasonings pattern - check this first to prevent false matches
+    this.categoryPatterns.set('spices', [
+      /\b(onion\s+powder|garlic\s+powder|chili\s+powder|curry\s+powder|paprika|cumin|oregano|basil|thyme|rosemary|sage|parsley|cilantro|dill|turmeric|ginger\s+powder|cinnamon|nutmeg|cloves|allspice|cardamom|coriander|fennel|bay\s+leaves)\b/i,
+      /\b(salt|pepper|spice|seasoning|powder|dried\s+herbs|herbs)\b/i,
+      /\b(vanilla\s+extract|almond\s+extract|extract)\b/i
+    ]);
+
     this.categoryPatterns.set('produce', [
       /\b(banana|apple|orange|grape|strawberr|blueberr|raspberr|peach|pear)\w*\b/i,
-      /\b(tomato|onion|carrot|potato|lettuce|spinach|broccoli|pepper|cucumber)\w*\b/i,
+      /\b(fresh\s+tomato|fresh\s+onion|fresh\s+carrot|fresh\s+potato|fresh\s+lettuce|fresh\s+spinach|fresh\s+broccoli|fresh\s+pepper|fresh\s+cucumber)\b/i,
+      /\b(tomato|carrot|potato|lettuce|spinach|broccoli|cucumber)\w*\b/i,
       /\b(fresh|organic|ripe|seasonal)\b.*\b(fruit|vegetable)\w*\b/i
     ]);
 
@@ -197,7 +205,7 @@ export class ProductCategorizerService {
     ]);
 
     this.categoryPatterns.set('pantry', [
-      /\b(rice|pasta|flour|sugar|salt|pepper|spice|sauce)\w*\b/i,
+      /\b(rice|pasta|flour|sugar|sauce|oil|vinegar|ketchup|mustard|mayo)\w*\b/i,
       /\b(can|jar|bottle|box)\w*\b/i,
       /\b(cereal|oatmeal|granola|crackers|chips)\w*\b/i
     ]);
@@ -218,7 +226,8 @@ export class ProductCategorizerService {
     ]);
 
     this.categoryPatterns.set('household', [
-      /\b(cleaner|detergent|soap|towel|tissue|trash|garbage)\w*\b/i,
+      /\b(toilet\s*paper|paper\s*towel|tissue|napkin|paper\s*plate|paper\s*cup)\b/i,
+      /\b(cleaner|detergent|soap|trash|garbage)\w*\b/i,
       /\b(cleaning|laundry|kitchen|bathroom)\b.*\b(supplies|products)\b/i
     ]);
 
@@ -344,22 +353,39 @@ export class ProductCategorizerService {
       }
     }
 
-    // Pattern matching if no direct match
+    // Pattern matching if no direct match - check spices first to prevent false matches
     if (!bestMatch || bestSimilarity < 0.8) {
       let maxPatternScore = 0;
       let patternCategory = '';
 
-      for (const [category, patterns] of this.categoryPatterns) {
-        let score = 0;
-        for (const pattern of patterns) {
+      // Check spices first to prevent false categorization
+      const spicePatterns = this.categoryPatterns.get('spices');
+      if (spicePatterns) {
+        for (const pattern of spicePatterns) {
           if (pattern.test(normalizedName)) {
-            score += 1;
+            patternCategory = 'pantry';
+            maxPatternScore = 10; // High score to prioritize spice categorization
+            break;
           }
         }
+      }
 
-        if (score > maxPatternScore) {
-          maxPatternScore = score;
-          patternCategory = category;
+      // If not a spice, check other categories
+      if (maxPatternScore === 0) {
+        for (const [category, patterns] of this.categoryPatterns) {
+          if (category === 'spices') continue; // Already checked
+
+          let score = 0;
+          for (const pattern of patterns) {
+            if (pattern.test(normalizedName)) {
+              score += 1;
+            }
+          }
+
+          if (score > maxPatternScore) {
+            maxPatternScore = score;
+            patternCategory = category;
+          }
         }
       }
 
