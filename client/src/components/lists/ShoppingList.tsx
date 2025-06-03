@@ -195,7 +195,8 @@ const ShoppingListComponent: React.FC = () => {
       const defaultList = shoppingLists?.[0];
       if (!defaultList) throw new Error('No shopping list found');
 
-      const response = await apiRequest('POST', `/api/shopping-lists/${defaultList.id}/items`, {
+      const response = await apiRequest('POST', '/api/shopping-list/items', {
+        shoppingListId: defaultList.id,
         productName: itemName,
         quantity: 1,
         unit: 'COUNT'
@@ -221,8 +222,8 @@ const ShoppingListComponent: React.FC = () => {
 
   const toggleItemMutation = useMutation({
     mutationFn: async ({ itemId, completed }: { itemId: number; completed: boolean }) => {
-      const response = await apiRequest('PUT', `/api/shopping-lists/items/${itemId}`, {
-        completed
+      const response = await apiRequest('PATCH', `/api/shopping-list/items/${itemId}`, {
+        isCompleted: completed
       });
       return response.json();
     },
@@ -240,7 +241,7 @@ const ShoppingListComponent: React.FC = () => {
 
   const deleteItemMutation = useMutation({
     mutationFn: async (itemId: number) => {
-      const response = await apiRequest('DELETE', `/api/shopping-lists/items/${itemId}`);
+      const response = await apiRequest('DELETE', `/api/shopping-list/items/${itemId}`);
       if (!response.ok) {
         throw new Error('Failed to delete item');
       }
@@ -264,7 +265,7 @@ const ShoppingListComponent: React.FC = () => {
 
   const updateItemMutation = useMutation({
     mutationFn: async ({ itemId, updates }: { itemId: number; updates: Partial<ShoppingListItem> }) => {
-      const response = await apiRequest('PUT', `/api/shopping-lists/items/${itemId}`, updates);
+      const response = await apiRequest('PATCH', `/api/shopping-list/items/${itemId}`, updates);
       return response.json();
     },
     onSuccess: () => {
@@ -292,7 +293,7 @@ const ShoppingListComponent: React.FC = () => {
       // First, delete all existing items
       if (defaultList.items && defaultList.items.length > 0) {
         for (const item of defaultList.items) {
-          await apiRequest('DELETE', `/api/shopping-lists/items/${item.id}`);
+          await apiRequest('DELETE', `/api/shopping-list/items/${item.id}`);
         }
       }
 
