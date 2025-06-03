@@ -332,21 +332,17 @@ const PlanDetails: React.FC = () => {
 
               console.log('Enhanced plan data for navigation:', enhancedPlanData);
 
-              // Store in sessionStorage as backup
+              // Store in sessionStorage as primary method
               sessionStorage.setItem('shoppingPlanData', JSON.stringify(enhancedPlanData));
+              sessionStorage.setItem('shoppingListId', listId);
+              sessionStorage.setItem('shoppingMode', 'instore');
 
-              // Navigate with proper encoding
-              const params = new URLSearchParams({
-                listId: listId || '1',
-                mode: 'instore',
-                planData: encodeURIComponent(JSON.stringify(enhancedPlanData))
-              });
-
-              const targetUrl = `/shopping-route?${params.toString()}`;
+              // Navigate with simple parameters to avoid URL corruption
+              const targetUrl = `/shopping-route?listId=${listId}&mode=instore&fromPlan=true`;
               console.log('Navigating to:', targetUrl);
 
-              // Use navigate from wouter
-              navigate(targetUrl);
+              // Force navigation using window.location to ensure it works
+              window.location.href = targetUrl;
 
               toast({
                 title: "Loading Shopping Route",

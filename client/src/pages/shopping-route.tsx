@@ -112,26 +112,24 @@ const ShoppingRoute: React.FC = () => {
     
     let planDataToUse = null;
     
-    // Try URL parameter first
-    if (planDataParam) {
+    // Try sessionStorage first (more reliable)
+    const storedPlanData = sessionStorage.getItem('shoppingPlanData');
+    if (storedPlanData) {
+      try {
+        planDataToUse = JSON.parse(storedPlanData);
+        console.log('Using stored plan data from sessionStorage:', planDataToUse);
+      } catch (error) {
+        console.error('Error parsing stored plan data:', error);
+      }
+    }
+    
+    // If no sessionStorage data, try URL parameter
+    if (!planDataToUse && planDataParam) {
       try {
         planDataToUse = JSON.parse(decodeURIComponent(planDataParam));
         console.log('Successfully parsed plan data from URL:', planDataToUse);
       } catch (error) {
         console.error('Error parsing URL plan data:', error);
-      }
-    }
-    
-    // If no URL param or parsing failed, try sessionStorage
-    if (!planDataToUse) {
-      const storedPlanData = sessionStorage.getItem('shoppingPlanData');
-      if (storedPlanData) {
-        try {
-          planDataToUse = JSON.parse(storedPlanData);
-          console.log('Using stored plan data from sessionStorage:', planDataToUse);
-        } catch (error) {
-          console.error('Error parsing stored plan data:', error);
-        }
       }
     }
     
