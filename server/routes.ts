@@ -4094,14 +4094,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-      res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Content-Disposition', `attachment; filename=user-data-${userId}-${Date.now()}.json`);
-      res.json(userData);
-    } catch (error) {
-      handleError(res, error);
-    }
-  });
-
   // Account Deletion (GDPR Right to be Forgotten)
   app.delete('/api/user/account', async (req: Request, res: Response) => {
     try {
