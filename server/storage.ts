@@ -1670,12 +1670,51 @@ const [updatedUser] = await db
     }
   }
 
-  // Purchase methods
-  async getPurchases(): Promise<Purchase[]> {
+  // Purchase methods with pagination and date filtering
+  async getPurchases(userId?: number, limit: number = 50, offset: number = 0, startDate?: Date, endDate?: Date): Promise<Purchase[]> {
     try {
-      return db.select().from(purchases);
+      let query = db.select().from(purchases);
+      
+      if (userId) {
+        query = query.where(eq(purchases.userId, userId));
+      }
+      
+      if (startDate && endDate) {
+        query = query.where(
+          and(
+            gte(purchases.purchaseDate, startDate),
+            lte(purchases.purchaseDate, endDate)
+          )
+        );
+      }
+      
+      return query
+        .orderBy(desc(purchases.purchaseDate))
+        .limit(limit)
+        .offset(offset);
     } catch (error) {
       console.error("Error getting purchases:", error);
+      throw error;
+    }
+  }
+
+  // Get recent purchases for analysis (last 3 months by default)
+  async getRecentPurchases(userId: number, monthsBack: number = 3): Promise<Purchase[]> {
+    try {
+      const startDate = new Date();
+      startDate.setMonth(startDate.getMonth() - monthsBack);
+      
+      return db.select()
+        .from(purchases)
+        .where(
+          and(
+            eq(purchases.userId, userId),
+            gte(purchases.purchaseDate, startDate)
+          )
+        )
+        .orderBy(desc(purchases.purchaseDate));
+    } catch (error) {
+      console.error("Error getting recent purchases:", error);
       throw error;
     }
   }

@@ -1,6 +1,7 @@
-import { pgTable, text, serial, integer, boolean, timestamp, json, pgEnum, doublePrecision } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, json, pgEnum, doublePrecision, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { and, eq, gte, lte, desc } from "drizzle-orm";
 
 // Enums
 export const householdTypeEnum = pgEnum('household_type', [
@@ -76,7 +77,7 @@ export const products = pgTable("products", {
   isOrganic: boolean("is_organic").default(false),
 });
 
-// Purchase History Schema
+// Purchase History Schema with optimized indexing
 export const purchases = pgTable("purchases", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
@@ -85,9 +86,13 @@ export const purchases = pgTable("purchases", {
   receiptImageUrl: text("receipt_image_url"),
   totalAmount: integer("total_amount").notNull(),
   receiptData: json("receipt_data"),
-});
+}, (table) => ({
+  userIdIdx: index("purchases_user_id_idx").on(table.userId),
+  purchaseDateIdx: index("purchases_date_idx").on(table.purchaseDate),
+  userDateIdx: index("purchases_user_date_idx").on(table.userId, table.purchaseDate),
+}));
 
-// Purchase Item Schema
+// Purchase Item Schema with optimized indexing
 export const purchaseItems = pgTable("purchase_items", {
   id: serial("id").primaryKey(),
   purchaseId: integer("purchase_id").notNull(),
@@ -96,7 +101,11 @@ export const purchaseItems = pgTable("purchase_items", {
   quantity: integer("quantity").notNull(),
   unitPrice: integer("unit_price").notNull(),
   totalPrice: integer("total_price").notNull(),
-});
+}, (table) => ({
+  purchaseIdIdx: index("purchase_items_purchase_id_idx").on(table.purchaseId),
+  productNameIdx: index("purchase_items_product_name_idx").on(table.productName),
+  productIdIdx: index("purchase_items_product_id_idx").on(table.productId),
+}));
 
 // Shopping List Schema
 export const shoppingLists = pgTable("shopping_lists", {

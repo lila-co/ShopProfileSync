@@ -8,84 +8,41 @@ export async function parseReceiptImage(imageBase64: string): Promise<any> {
   console.log("Parsing receipt image...");
   
   try {
-    // This is a simulated response since we don't have a real OCR service
-    // In a real application, we would call an OCR API here
-    // The structure mimics what would come back from a real service
-    
-    // Add some randomness to make it seem more realistic
+    // Optimized simulated response - generate fewer items and less data
     const retailers = ["Walmart", "Target", "Kroger", "Whole Foods"];
     const retailerId = Math.floor(Math.random() * 4) + 1;
     const retailerName = retailers[retailerId - 1];
     
-    // Generate a random date within the last 2 weeks
+    // Use current date to reduce processing
     const today = new Date();
-    const twoWeeksAgo = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000);
-    const randomDate = new Date(
-      twoWeeksAgo.getTime() + Math.random() * (today.getTime() - twoWeeksAgo.getTime())
-    );
     
-    // Sample product categories
-    const categories = ["Dairy", "Produce", "Bakery", "Household", "Beverages", "Pantry"];
-    
-    // Sample products with realistic prices
+    // Reduced product set for faster processing
     const sampleProducts = [
-      { name: "Milk (Gallon)", category: "Dairy", price: 379, quantity: 1 },
-      { name: "Eggs (dozen)", category: "Dairy", price: 349, quantity: 1 },
-      { name: "Bread", category: "Bakery", price: 299, quantity: 1 },
-      { name: "Bananas", category: "Produce", price: 149, quantity: 1 },
-      { name: "Apples", category: "Produce", price: 389, quantity: 1 },
-      { name: "Toilet Paper (24 pack)", category: "Household", price: 1899, quantity: 1 },
-      { name: "Paper Towels", category: "Household", price: 1299, quantity: 1 },
-      { name: "Laundry Detergent", category: "Household", price: 1799, quantity: 1 },
-      { name: "Coffee", category: "Beverages", price: 899, quantity: 1 },
-      { name: "Cereal", category: "Breakfast", price: 399, quantity: 1 },
-      { name: "Pasta", category: "Pantry", price: 199, quantity: 1 },
-      { name: "Pasta Sauce", category: "Pantry", price: 299, quantity: 1 },
+      { name: "Milk", price: 379, quantity: 1 },
+      { name: "Eggs", price: 349, quantity: 1 },
+      { name: "Bread", price: 299, quantity: 1 },
+      { name: "Bananas", price: 149, quantity: 1 },
+      { name: "Chicken", price: 899, quantity: 1 },
     ];
     
-    // Select 3-8 random products
-    const numProducts = Math.floor(Math.random() * 6) + 3;
-    const selectedProducts = [];
-    const usedIndices = new Set<number>();
+    // Generate fewer items (3-5 instead of 3-8)
+    const numProducts = Math.floor(Math.random() * 3) + 3;
+    const selectedProducts = sampleProducts.slice(0, numProducts);
     
-    for (let i = 0; i < numProducts; i++) {
-      let randomIndex: number;
-      do {
-        randomIndex = Math.floor(Math.random() * sampleProducts.length);
-      } while (usedIndices.has(randomIndex));
-      
-      usedIndices.add(randomIndex);
-      
-      // Randomly adjust quantity sometimes
-      const product = {...sampleProducts[randomIndex]};
-      if (Math.random() > 0.7) {
-        product.quantity = Math.floor(Math.random() * 3) + 2;
-        product.price = product.price * product.quantity;
-      }
-      
-      selectedProducts.push(product);
-    }
-    
-    // Calculate subtotal
+    // Simplified calculation
     const subtotal = selectedProducts.reduce((sum, product) => sum + product.price, 0);
-    
-    // Calculate tax (approximately 8%)
     const tax = Math.round(subtotal * 0.08);
-    
-    // Calculate total
     const total = subtotal + tax;
     
+    // Minimal data structure - no rawText to save space
     const receiptData = {
       retailerId,
       retailerName,
-      date: randomDate.toISOString(),
+      date: today.toISOString(),
       items: selectedProducts,
       subtotal,
       tax,
-      total,
-      rawText: `RECEIPT\n${retailerName}\nDate: ${randomDate.toLocaleDateString()}\n` +
-               selectedProducts.map(p => `${p.name} $${(p.price/100).toFixed(2)}`).join('\n') +
-               `\nSubtotal: $${(subtotal/100).toFixed(2)}\nTax: $${(tax/100).toFixed(2)}\nTotal: $${(total/100).toFixed(2)}`
+      total
     };
     
     return receiptData;
@@ -95,14 +52,24 @@ export async function parseReceiptImage(imageBase64: string): Promise<any> {
   }
 }
 
-// Convert extracted receipt data to purchase data
+// Convert extracted receipt data to purchase data with minimal storage
 export function receiptToPurchase(receiptData: any, userId: number): InsertPurchase {
+  // Store only essential receipt metadata, not full OCR text
+  const compressedReceiptData = {
+    retailerId: receiptData.retailerId,
+    subtotal: receiptData.subtotal,
+    tax: receiptData.tax,
+    total: receiptData.total,
+    // Remove rawText and redundant data to save space
+    itemCount: receiptData.items?.length || 0
+  };
+
   const purchase: InsertPurchase = {
     userId,
     retailerId: receiptData.retailerId,
     purchaseDate: receiptData.date || new Date().toISOString(),
     totalAmount: receiptData.total,
-    receiptData
+    receiptData: compressedReceiptData
   };
   
   return purchase;
