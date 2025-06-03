@@ -42,7 +42,11 @@ const RetailerDetailsPage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
-        <Header title="Loading..." showBackButton />
+        <Header 
+          title="Loading..." 
+          showBackButton 
+          onBack={() => navigate('/retailers')}
+        />
         <main className="flex-1 overflow-y-auto p-4">
           <div>Loading retailer details...</div>
         </main>
@@ -54,7 +58,11 @@ const RetailerDetailsPage: React.FC = () => {
   if (error || (!retailer && !isLoading)) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
-        <Header title="Store Not Found" showBackButton />
+        <Header 
+          title="Store Not Found" 
+          showBackButton 
+          onBack={() => navigate('/retailers')}
+        />
         <main className="flex-1 overflow-y-auto p-4">
           <div>Store not found.</div>
         </main>
@@ -65,7 +73,11 @@ const RetailerDetailsPage: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
-      <Header title={retailer.name} showBackButton />
+      <Header 
+        title={retailer.name} 
+        showBackButton 
+        onBack={() => navigate('/retailers')}
+      />
 
       <main className="flex-1 overflow-y-auto p-4 pb-20">
         {/* Store Header */}
