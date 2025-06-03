@@ -12,10 +12,6 @@ const ShoppingInsights: React.FC = () => {
   const [role, setRole] = useState('');
   const [showReceiptScanner, setShowReceiptScanner] = useState(false);
 
-  if (showReceiptScanner) {
-    return <ReceiptScanner />;
-  }
-
   const { data: topItems, isLoading: loadingTopItems } = useQuery<PurchasePattern[]>({
     queryKey: ['/api/insights/top-items'],
   });
@@ -35,6 +31,10 @@ const ShoppingInsights: React.FC = () => {
   const { data: demographicInsights } = useQuery({
     queryKey: ['/api/insights/demographic-insights'],
   });
+
+  if (showReceiptScanner) {
+    return <ReceiptScanner />;
+  }
 
   const renderTopItems = () => {
     if (loadingTopItems) {
