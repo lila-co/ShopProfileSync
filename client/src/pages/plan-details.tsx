@@ -308,17 +308,19 @@ const PlanDetails: React.FC = () => {
             className="w-full"
             size="lg"
             onClick={() => {
-            const params = new URLSearchParams({
-              listId: listId || '1',
-              planData: encodeURIComponent(JSON.stringify({
-                ...planData,
-                planType: selectedPlanType === 'single-store' ? 'Single Store' :
-                         selectedPlanType === 'multi-store' ? 'Multi-Store Best Value' :
-                         selectedPlanType === 'balanced' ? 'Balanced Plan' : 'Shopping Plan'
-              }))
-            });
-            navigate(`/shopping-route?${params.toString()}`);
-          }}
+              console.log('Navigating to shopping route with planData:', planData);
+              const params = new URLSearchParams({
+                listId: listId || '1',
+                mode: 'instore',
+                planData: encodeURIComponent(JSON.stringify({
+                  ...planData,
+                  planType: selectedPlanType === 'single-store' ? 'Single Store' :
+                           selectedPlanType === 'multi-store' ? 'Multi-Store Best Value' :
+                           selectedPlanType === 'balanced' ? 'Balanced Plan' : 'Shopping Plan'
+                }))
+              });
+              window.location.href = `/shopping-route?${params.toString()}`;
+            }}
           >
             <ShoppingCart className="h-4 w-4 mr-2" />
             Start Shopping Route
