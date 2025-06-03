@@ -67,10 +67,20 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
       return response.json();
     },
     onSuccess: () => {
+      // Invalidate all shopping list related queries to ensure the UI updates
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-list/items'] });
+      
       toast({
         title: "Added to List",
         description: "Item has been added to your shopping list."
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add item to shopping list",
+        variant: "destructive"
       });
     }
   });
