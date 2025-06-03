@@ -579,6 +579,9 @@ const ShoppingListComponent: React.FC = () => {
         { productName: 'Almond Butter', quantity: 1, unit: 'JAR' },
         { productName: 'Honey', quantity: 1, unit: 'BOTTLE' },
         { productName: 'Sparkling Water', quantity: 12, unit: 'CAN' },
+        { productName: 'Coconut Milk', quantity: 2, unit: 'CAN' },
+        { productName: 'Pasta Sauce', quantity: 1, unit: 'JAR' },
+        { productName: 'Baking Soda', quantity: 1, unit: 'BOX' },
 
         // Bakery
         { productName: 'Whole Wheat Bread', quantity: 1, unit: 'LOAF' },
@@ -597,34 +600,61 @@ const ShoppingListComponent: React.FC = () => {
         { productName: 'Sea Salt', quantity: 1, unit: 'COUNT' }
       ];
 
-      // Filter out items that already exist in the list using normalized names (less aggressive)
+      // Filter out items that already exist in the list using a more precise matching
       const newItems = enhancementItems.filter(item => {
         const itemName = item.productName.toLowerCase().trim();
         
-        // Normalize the enhancement item name the same way (less aggressive)
-        let normalized = itemName
-          .replace(/\b(organic|free-range|grass-fed|natural|premium|select|fresh)\s+/gi, '')
-          .replace(/\b(whole|2%|1%|skim|low-fat|non-fat)\s+/gi, '')
+        // Check for exact matches first (case-insensitive)
+        const exactMatch = currentItems.some(existing => 
+          existing.productName.toLowerCase().trim() === itemName
+        );
+        
+        if (exactMatch) {
+          console.log(`Skipping "${item.productName}" - exact match found`);
+          return false;
+        }
+
+        // Only check for very specific core product matches to avoid over-filtering
+        const coreProduct = itemName
+          .replace(/\b(organic|free-range|grass-fed|natural|premium|select|fresh|baby|roma|yellow|red|brown|whole\s+wheat|whole\s+grain)\s*/gi, '')
           .replace(/\s+/g, ' ')
           .trim();
 
-        // Apply same specific normalizations (only for very similar items)
-        if (normalized.includes('milk') && !normalized.includes('coconut') && !normalized.includes('almond')) {
-          normalized = 'milk';
-        } else if (normalized.includes('bread') && !normalized.includes('crumb')) {
-          normalized = 'bread';
-        } else if (normalized.includes('eggs') && !normalized.includes('eggplant')) {
-          normalized = 'eggs';
+        // Only normalize these very common base products
+        let normalizedCore = coreProduct;
+        if (coreProduct === 'milk' || coreProduct.endsWith(' milk')) {
+          normalizedCore = 'milk';
+        } else if (coreProduct === 'bread' || coreProduct.endsWith(' bread')) {
+          normalizedCore = 'bread';
+        } else if (coreProduct === 'eggs' || coreProduct.startsWith('eggs')) {
+          normalizedCore = 'eggs';
         }
 
-        // Check if this normalized product already exists
-        const alreadyExists = existingNormalizedSet.has(normalized);
+        // Check if this core product already exists
+        const coreExists = currentItems.some(existing => {
+          const existingCore = existing.productName.toLowerCase().trim()
+            .replace(/\b(organic|free-range|grass-fed|natural|premium|select|fresh|baby|roma|yellow|red|brown|whole\s+wheat|whole\s+grain)\s*/gi, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+          
+          let existingNormalized = existingCore;
+          if (existingCore === 'milk' || existingCore.endsWith(' milk')) {
+            existingNormalized = 'milk';
+          } else if (existingCore === 'bread' || existingCore.endsWith(' bread')) {
+            existingNormalized = 'bread';
+          } else if (existingCore === 'eggs' || existingCore.startsWith('eggs')) {
+            existingNormalized = 'eggs';
+          }
+
+          return existingNormalized === normalizedCore;
+        });
         
-        if (alreadyExists) {
-          console.log(`Skipping "${item.productName}" - similar to existing "${existingItems.get(normalized)}"`);
+        if (coreExists) {
+          console.log(`Skipping "${item.productName}" - core product already exists`);
+          return false;
         }
         
-        return !alreadyExists;
+        return true;
       });
 
       // Add only new items to enhance the existing list
@@ -634,10 +664,11 @@ const ShoppingListComponent: React.FC = () => {
           const response = await apiRequest('POST', '/api/shopping-list/items', {
             shoppingListId: defaultList.id,
             productName: item.productName,
-            quantity: item.quantity,
+            quantity: item.quantity || 1, // Ensure quantity is always set
             unit: item.unit || 'COUNT' // Ensure unit is always set
           });
-          addedItems.push(await response.json());
+          const addedItem = await response.json();
+          addedItems.push(addedItem);
         } catch (error) {
           console.error('Failed to add item:', item.productName, error);
         }
