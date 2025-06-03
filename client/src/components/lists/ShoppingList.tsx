@@ -1148,24 +1148,7 @@ const ShoppingListComponent: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Debug: Test new user flow button (remove in production) */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mt-4 mb-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              localStorage.removeItem('listGenerationShown');
-              localStorage.setItem('forceShowAnimation', 'true');
-              setUserHasClearedList(false);
-              window.location.reload();
-            }}
-            className="text-xs"
-          >
-            🔧 Test New User Flow
-          </Button>
-        </div>
-      )}
+      
 
       {/* Voice AI Agent - Moved to bottom */}
       <div className="mt-6 mb-4">
