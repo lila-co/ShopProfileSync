@@ -168,7 +168,7 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
               return matchesSearch && matchesFilter;
             })
             .map((deal) => (
-            <Card key={deal.id} className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
+            <Card key={deal.id} className="border-0 shadow-sm">
               <CardContent className="p-4">
                 <div className="flex gap-4">
                   {/* Product Image Placeholder */}
@@ -224,7 +224,11 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
                       size="sm"
                       variant="outline"
                       className="w-8 h-8 p-0 rounded-full border-2"
-                      onClick={() => addToShoppingListMutation.mutate(deal)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        addToShoppingListMutation.mutate(deal);
+                      }}
                       disabled={addToShoppingListMutation.isPending}
                     >
                       <Plus className="h-4 w-4" />
