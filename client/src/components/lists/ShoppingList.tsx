@@ -18,6 +18,8 @@ const ShoppingListComponent: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [newItemName, setNewItemName] = useState('');
+  const [newItemQuantity, setNewItemQuantity] = useState('1');
+  const [newItemUnit, setNewItemUnit] = useState('COUNT');
   const [recipeUrl, setRecipeUrl] = useState('');
   const [servings, setServings] = useState('4');
   const [recipeDialogOpen, setRecipeDialogOpen] = useState(false);
@@ -191,15 +193,15 @@ const ShoppingListComponent: React.FC = () => {
   };
 
   const addItemMutation = useMutation({
-    mutationFn: async (itemName: string) => {
+    mutationFn: async ({ itemName, quantity, unit }: { itemName: string; quantity: number; unit: string }) => {
       const defaultList = shoppingLists?.[0];
       if (!defaultList) throw new Error('No shopping list found');
 
       const response = await apiRequest('POST', '/api/shopping-list/items', {
         shoppingListId: defaultList.id,
         productName: itemName,
-        quantity: 1,
-        unit: 'COUNT'
+        quantity: quantity,
+        unit: unit
       });
       return response.json();
     },
@@ -246,6 +248,8 @@ const ShoppingListComponent: React.FC = () => {
     },
     onSuccess: () => {
       setNewItemName('');
+      setNewItemQuantity('1');
+      setNewItemUnit('COUNT');
       toast({
         title: "Item added",
         description: "Item has been added to your shopping list",
@@ -414,7 +418,12 @@ const ShoppingListComponent: React.FC = () => {
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
     if (newItemName.trim()) {
-      addItemMutation.mutate(newItemName.trim());
+      const quantity = parseInt(newItemQuantity) || 1;
+      addItemMutation.mutate({ 
+        itemName: newItemName.trim(), 
+        quantity: quantity,
+        unit: newItemUnit 
+      });
     }
   };
 
@@ -536,21 +545,65 @@ const ShoppingListComponent: React.FC = () => {
     <div className="p-4 pb-20">
       <h2 className="text-xl font-bold mb-4">Shopping List</h2>
 
-      <form onSubmit={handleAddItem} className="flex space-x-2 mb-4">
-        <Input
-          type="text"
-          placeholder="Add an item..."
-          value={newItemName}
-          onChange={(e) => setNewItemName(e.target.value)}
-          className="flex-1 border-4 border-gray-600 focus:border-blue-600 focus:ring-4 focus:ring-blue-300 bg-gray-50 text-black font-bold text-lg placeholder-gray-600 px-6 py-3 rounded-lg shadow-inner"
-        />
-        <Button 
-          type="submit" 
-          disabled={addItemMutation.isPending}
-          className="bg-blue-600 hover:bg-blue-700 text-white border-4 border-blue-600 hover:border-blue-700 shadow-lg min-w-[48px] rounded-lg"
-        >
-          <Plus className="h-5 w-5" />
-        </Button>
+      <form onSubmit={handleAddItem} className="mb-4">
+        <div className="flex space-x-2 mb-2">
+          <Input
+            type="text"
+            placeholder="Add an item..."
+            value={newItemName}
+            onChange={(e) => setNewItemName(e.target.value)}
+            className="flex-1 border-4 border-gray-600 focus:border-blue-600 focus:ring-4 focus:ring-blue-300 bg-gray-50 text-black font-bold text-lg placeholder-gray-600 px-6 py-3 rounded-lg shadow-inner"
+          />
+          <Button 
+            type="submit" 
+            disabled={addItemMutation.isPending}
+            className="bg-blue-600 hover:bg-blue-700 text-white border-4 border-blue-600 hover:border-blue-700 shadow-lg min-w-[48px] rounded-lg"
+          >
+            <Plus className="h-5 w-5" />
+          </Button>
+        </div>
+        <div className="flex space-x-2">
+          <div className="flex-1">
+            <Input
+              type="number"
+              placeholder="Quantity"
+              value={newItemQuantity}
+              onChange={(e) => setNewItemQuantity(e.target.value)}
+              min="1"
+              className="w-full border-2 border-gray-300 focus:border-blue-500 px-3 py-2 rounded-md"
+            />
+          </div>
+          <div className="flex-1">
+            <select
+              value={newItemUnit}
+              onChange={(e) => setNewItemUnit(e.target.value)}
+              className="w-full border-2 border-gray-300 focus:border-blue-500 px-3 py-2 rounded-md bg-white"
+            >
+              <option value="COUNT">Count</option>
+              <option value="LB">Pounds</option>
+              <option value="OZ">Ounces</option>
+              <option value="GALLON">Gallon</option>
+              <option value="QUART">Quart</option>
+              <option value="PINT">Pint</option>
+              <option value="CUP">Cup</option>
+              <option value="LITER">Liter</option>
+              <option value="ML">Milliliters</option>
+              <option value="DOZEN">Dozen</option>
+              <option value="LOAF">Loaf</option>
+              <option value="BAG">Bag</option>
+              <option value="BOX">Box</option>
+              <option value="BOTTLE">Bottle</option>
+              <option value="CAN">Can</option>
+              <option value="JAR">Jar</option>
+              <option value="PACK">Pack</option>
+              <option value="CONTAINER">Container</option>
+              <option value="BUNCH">Bunch</option>
+              <option value="HEAD">Head</option>
+              <option value="BLOCK">Block</option>
+              <option value="BOTTLES">Bottles</option>
+            </select>
+          </div>
+        </div>
       </form>
 
       <div className="mb-6 flex gap-2">
