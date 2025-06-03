@@ -416,7 +416,9 @@ const RetailerLinking: React.FC = () => {
             <SelectValue placeholder="Select a retailer to connect..." />
           </SelectTrigger>
           <SelectContent className="max-h-60">
-            {!retailersLoading && retailers?.filter((retailer: any) => !isRetailerLinked(retailer.id)).map((retailer: any) => {
+            {!retailersLoading && retailers?.filter((retailer: any) => !isRetailerLinked(retailer.id))
+              .sort((a: any, b: any) => a.name.localeCompare(b.name))
+              .map((retailer: any) => {
               const logoUrl = getCompanyLogo(retailer.name);
               
               return (
