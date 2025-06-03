@@ -187,29 +187,51 @@ const ShoppingListComponent: React.FC = () => {
     }
   }, [shoppingLists]);
 
-  // Trigger auto-generation for empty lists using unified regenerate logic
+  // Trigger auto-generation for empty lists and auto-regeneration for new sessions
   useEffect(() => {
     const triggerListGeneration = async () => {
       if (shoppingLists && shoppingLists.length > 0) {
         const defaultList = shoppingLists[0];
         const hasItems = defaultList?.items && defaultList.items.length > 0;
 
-        // Only proceed if list is empty AND user hasn't manually cleared it
-        if (!hasItems && !userHasClearedList) {
-          console.log('Empty shopping list detected, using unified regeneration...');
+        // Check if this is a new session
+        const lastSessionId = localStorage.getItem('sessionId');
+        const currentSessionId = Date.now().toString();
+        const isNewSession = !lastSessionId || lastSessionId !== currentSessionId;
+
+        // Store current session ID
+        if (isNewSession) {
+          localStorage.setItem('sessionId', currentSessionId);
+        }
+
+        // Auto-generate for empty lists OR auto-regenerate for new sessions with existing items
+        const shouldAutoGenerate = (!hasItems && !userHasClearedList) || (hasItems && isNewSession);
+
+        if (shouldAutoGenerate) {
+          const isEmptyList = !hasItems;
           
-          // Always show animation for empty list generation
-          console.log('Auto-generation - showing animation for empty list...');
+          if (isEmptyList) {
+            console.log('Empty shopping list detected, generating new list...');
+          } else {
+            console.log('New session detected with existing items, regenerating list...');
+          }
           
           // Show animation for all scenarios
           setIsGeneratingList(true);
-          const steps = [
+          const steps = isEmptyList ? [
             "Analyzing your dietary preferences...",
             "Checking your pantry inventory...",
             "Finding the best deals and promotions...",
             "Optimizing your shopping route...",
             "Generating personalized recommendations..."
+          ] : [
+            "Scanning for new deals and promotions...",
+            "Analyzing recent purchase patterns...",
+            "Checking for items that need restocking...",
+            "Finding seasonal recommendations...",
+            "Updating your shopping list..."
           ];
+          
           setGenerationSteps(steps);
           setCurrentStep(0);
 
@@ -247,8 +269,8 @@ const ShoppingListComponent: React.FC = () => {
               }
             });
           }, steps.length * 1500 + 1000);
-        } else if (hasItems) {
-          console.log('Shopping list already has items, skipping generation');
+        } else if (hasItems && !isNewSession) {
+          console.log('Existing session with items, no auto-regeneration needed');
           // Reset the flag when list has items again
           setUserHasClearedList(false);
         } else {
@@ -646,10 +668,16 @@ const ShoppingListComponent: React.FC = () => {
                   </div>
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  AI is Creating Your Smart Shopping List
+                  {generationSteps.some(step => step.includes('Scanning')) 
+                    ? 'AI is Updating Your Shopping List'
+                    : 'AI is Creating Your Smart Shopping List'
+                  }
                 </h3>
                 <p className="text-sm text-gray-600">
-                  Please wait while we personalize your shopping experience
+                  {generationSteps.some(step => step.includes('Scanning'))
+                    ? 'Checking for new deals and items you might need'
+                    : 'Please wait while we personalize your shopping experience'
+                  }
                 </p>
               </div>
 
