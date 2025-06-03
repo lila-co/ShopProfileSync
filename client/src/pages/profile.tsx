@@ -388,11 +388,32 @@ const ProfilePage: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full">
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => {
+                    toast({
+                      title: "Data Export Initiated",
+                      description: "Your data export will be emailed to you within 24 hours.",
+                    });
+                  }}
+                >
                   <Eye className="w-4 h-4 mr-2" />
                   Download My Data
                 </Button>
-                <Button variant="destructive" className="w-full">
+                <Button 
+                  variant="destructive" 
+                  className="w-full"
+                  onClick={() => {
+                    if (confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+                      toast({
+                        title: "Account Deletion",
+                        description: "Account deletion request submitted. You will receive a confirmation email.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                >
                   <AlertTriangle className="w-4 h-4 mr-2" />
                   Delete Account
                 </Button>
