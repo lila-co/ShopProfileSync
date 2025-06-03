@@ -7,18 +7,12 @@ interface BottomNavigationProps {
 }
 
 const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab }) => {
-  const [location, navigate] = useLocation();
-  
-  const handleShopNowClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    // Navigate to plan-details with default parameters
-    navigate('/plan-details?listId=1&planType=single-store');
-  };
+  const location = useLocation();
 
   const tabs = [
     { id: 'lists', label: 'Home', icon: Home, href: '/shopping-list' },
     { id: 'deals', label: 'Deals', icon: Tag, href: '/deals' },
-    { id: 'shop', label: 'Shop Now', icon: ShoppingCart, href: '/plan-details?listId=1&planType=single-store', onClick: handleShopNowClick },
+    { id: 'shop', label: 'Shop Now', icon: ShoppingCart, href: '/plan-details?listId=1&planType=single-store' },
     { id: 'stores', label: 'Stores', icon: Store, href: '/retailers' },
     { id: 'profile', label: 'Profile', icon: User, href: '/profile' },
   ];
@@ -34,7 +28,6 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab }) => {
             <Link
               key={tab.id}
               to={tab.href}
-              onClick={tab.onClick}
               className={`flex flex-col items-center justify-center flex-1 py-2 px-1 rounded-lg transition-all duration-200 ${
                 isActive || location[0] === tab.href
                   ? 'text-primary bg-primary/10 scale-105'
