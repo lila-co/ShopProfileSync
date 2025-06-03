@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import { useLocation } from 'wouter';
+import { useLocation, useRoute } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
 import { aiCategorizationService } from '@/lib/aiCategorization';
 
@@ -31,16 +31,18 @@ const ShoppingRoute: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Get URL parameters
-  const params = new URLSearchParams(window.location.search);
-  const listId = params.get('listId');
-  const mode = params.get('mode') || 'instore';
-  const planDataParam = params.get('planData');
+  // Get URL parameters - force refresh to get current URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const listId = urlParams.get('listId');
+  const mode = urlParams.get('mode') || 'instore';
+  const planDataParam = urlParams.get('planData');
   
+  console.log('Shopping route loaded with current URL:', window.location.href);
   console.log('Shopping route loaded with params:', {
     listId,
     mode,
-    planDataParam: planDataParam ? 'present' : 'missing'
+    planDataParam: planDataParam ? 'present' : 'missing',
+    fullURL: window.location.search
   });
 
   const [optimizedRoute, setOptimizedRoute] = useState<any>(null);
@@ -107,10 +109,17 @@ const ShoppingRoute: React.FC = () => {
     console.log('Shopping route useEffect triggered');
     console.log('planDataParam:', planDataParam);
     console.log('shoppingList:', shoppingList);
+    console.log('Current location:', location);
+    console.log('Full URL search params:', window.location.search);
     
-    if (planDataParam) {
+    // Force re-parse URL parameters in case they changed
+    const currentParams = new URLSearchParams(window.location.search);
+    const currentPlanData = currentParams.get('planData');
+    
+    if (currentPlanData || planDataParam) {
       try {
-        const planData = JSON.parse(decodeURIComponent(planDataParam));
+        const planDataToUse = currentPlanData || planDataParam;
+        const planData = JSON.parse(decodeURIComponent(planDataToUse!));
         console.log('Successfully parsed plan data:', planData);
         setSelectedPlanData(planData);
 
@@ -127,7 +136,7 @@ const ShoppingRoute: React.FC = () => {
         });
         
       } catch (error) {
-        console.error('Error parsing plan data:', error);
+        console.error('Error parsing plan data:', error, 'Raw data:', currentPlanData || planDataParam);
         toast({
           title: "Error Loading Plan",
           description: "Using default shopping list instead",
@@ -151,7 +160,7 @@ const ShoppingRoute: React.FC = () => {
     } else {
       console.log('No plan data or shopping list items available');
     }
-  }, [shoppingList, planDataParam]);
+  }, [shoppingList, planDataParam, location]);
 
 
 
@@ -492,9 +501,20 @@ const ShoppingRoute: React.FC = () => {
           <Card>
             <CardContent className="p-6 text-center">
               <p className="text-gray-500 mb-4">No shopping route available</p>
-              <Button onClick={() => navigate('/')}>
-                Go Back to Shopping List
-              </Button>
+              <p className="text-sm text-gray-400 mb-4">
+                Debug info: listId={listId}, planData={planDataParam ? 'present' : 'missing'}
+              </p>
+              <div className="space-y-2">
+                <Button onClick={() => navigate('/shopping-list')}>
+                  Go Back to Shopping List
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => window.location.href = '/shopping-list'}
+                >
+                  Force Navigate Back
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </main>

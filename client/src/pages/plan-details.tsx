@@ -313,7 +313,7 @@ const PlanDetails: React.FC = () => {
               console.log('Start Shopping Route clicked');
               console.log('Current planData:', planData);
               console.log('Selected plan type:', selectedPlanType);
-              
+
               if (!planData || !planData.stores || planData.stores.length === 0) {
                 toast({
                   title: "No Plan Data",
@@ -322,7 +322,7 @@ const PlanDetails: React.FC = () => {
                 });
                 return;
               }
-              
+
               const enhancedPlanData = {
                 ...planData,
                 planType: selectedPlanType === 'single-store' ? 'Single Store' :
@@ -331,19 +331,33 @@ const PlanDetails: React.FC = () => {
                 selectedPlanType: selectedPlanType,
                 listId: listId
               };
-              
+
               console.log('Enhanced plan data being sent:', enhancedPlanData);
-              
+
               const params = new URLSearchParams({
                 listId: listId || '1',
                 mode: 'instore',
                 planData: encodeURIComponent(JSON.stringify(enhancedPlanData))
               });
-              
+
               const url = `/shopping-route?${params.toString()}`;
               console.log('Navigating to:', url);
-              
-              navigate(url);
+              console.log('Full URL will be:', window.location.origin + url);
+
+              // Try both navigation methods
+              try {
+                navigate(url);
+                // Fallback after a short delay
+                setTimeout(() => {
+                  if (window.location.pathname !== '/shopping-route') {
+                    console.log('Navigation failed, using window.location');
+                    window.location.href = url;
+                  }
+                }, 500);
+              } catch (error) {
+                console.error('Navigation error:', error);
+                window.location.href = url;
+              }
             }}
           >
             <ShoppingCart className="h-4 w-4 mr-2" />
