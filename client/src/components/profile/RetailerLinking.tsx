@@ -394,55 +394,6 @@ const RetailerLinking: React.FC = () => {
         )}
       </div>
 
-      {/* Add Custom Store Section */}
-      <div className="mt-8">
-        <h3 className="text-lg font-semibold mb-3">Add Custom Store</h3>
-        <Dialog open={showAddStore} onOpenChange={setShowAddStore}>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="w-full">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Custom Store
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add Custom Store</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="storeName">Store Name</Label>
-                <Input
-                  id="storeName"
-                  value={newStoreName}
-                  onChange={(e) => setNewStoreName(e.target.value)}
-                  placeholder="Enter store name"
-                />
-              </div>
-              <div>
-                <Label htmlFor="storeWebsite">Store Website</Label>
-                <Input
-                  id="storeWebsite"
-                  value={newStoreWebsite}
-                  onChange={(e) => setNewStoreWebsite(e.target.value)}
-                  placeholder="Enter store website"
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setShowAddStore(false)}>
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleAddStore}
-                  disabled={!newStoreName.trim() || addStoreMutation.isPending}
-                >
-                  {addStoreMutation.isPending ? 'Adding...' : 'Add Store'}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-
       {/* Available Retailers Dropdown */}
       <h3 className="text-lg font-semibold mt-8 mb-3">Connect New Retailer</h3>
       <div className="space-y-4">
