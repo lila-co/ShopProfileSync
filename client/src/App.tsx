@@ -5,11 +5,11 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { queryClient } from '@/lib/queryClient';
 import AuthPage from './pages/auth';
-import Dashboard from './pages/dashboard';
 import ShoppingListPage from './pages/shopping-list';
 import DealsPage from './pages/deals';
 import RetailersPage from './pages/retailers';
 import ProfilePage from './pages/profile';
+import ScanPage from '@/pages/scan';
 
 function AppContent() {
   const { isLoading, isAuthenticated } = useAuth();
@@ -29,10 +29,10 @@ function AppContent() {
   return (
     <Switch>
       <Route path="/shopping-list" component={ShoppingListPage} />
-      <Route path="/dashboard" component={Dashboard} />
       <Route path="/deals" component={DealsPage} />
       <Route path="/retailers" component={RetailersPage} />
       <Route path="/profile" component={ProfilePage} />
+      <Route path="/scan" component={ScanPage} />
       <Route path="/" component={() => <Redirect to="/shopping-list" />} />
       <Route component={() => <Redirect to="/shopping-list" />} />
     </Switch>
