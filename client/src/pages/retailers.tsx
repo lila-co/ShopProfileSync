@@ -11,6 +11,7 @@ import { Store, ExternalLink, CheckCircle, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import AuthenticatedHeader from '@/components/layout/AuthenticatedHeader';
+import { getCompanyLogo } from '@/lib/imageUtils';
 
 interface Retailer {
   id: number;
@@ -126,7 +127,12 @@ const RetailersPage: React.FC = () => {
                     <div 
                       className={`w-4 h-4 rounded-full bg-${retailer.logoColor}-500`}
                     />
-                    <Store className="h-6 w-6 text-gray-600" />
+                    {/* Use the actual brand logo here */}
+                    <img
+                      src={getCompanyLogo(retailer.name)} // Assuming retailer.name can be used to derive the logo URL
+                      alt={`${retailer.name} Logo`}
+                      className="h-6 w-6"
+                    />
                     <div>
                       <h3 className="font-semibold">{retailer.name}</h3>
                       <p className="text-sm text-gray-500">
