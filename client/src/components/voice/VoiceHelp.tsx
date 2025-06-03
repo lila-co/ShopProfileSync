@@ -57,6 +57,18 @@ const VoiceHelp: React.FC = () => {
                 </ul>
               </div>
 
+              <div>
+                <p className="font-medium text-gray-700 mb-1">Recipe & Cooking Help:</p>
+                <ul className="space-y-1 text-gray-600 ml-2">
+                  <li>• "Give me a chicken recipe"</li>
+                  <li>• "How do I make pasta?"</li>
+                  <li>• "Suggest a soup recipe"</li>
+                  <li>• "What's a good salad recipe?"</li>
+                  <li>• "How do I cook rice?"</li>
+                  <li>• "What can I make for dinner?"</li>
+                </ul>
+              </div>
+
               <div className="mt-2 p-2 bg-blue-50 rounded">
                 <p className="text-blue-700 font-medium text-xs">💡 Pro Tip:</p>
                 <p className="text-blue-600 text-xs">I'm powered by AI and listen continuously! Have natural conversations about cooking, ask for recipe ideas, or get meal planning help. Just talk to me like you would a friend - I'll keep listening until you tell me to stop!</p>
