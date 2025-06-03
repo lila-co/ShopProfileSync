@@ -100,7 +100,7 @@ const ShoppingListComponent: React.FC = () => {
       // Process items in parallel for better performance
       const categorizedPromises = items.map(async (item) => {
         let category = 'Pantry & Canned Goods'; // Default category
-        
+
         try {
           // Use AI categorization service
           const result = await aiCategorizationService.categorizeProduct(
@@ -108,7 +108,7 @@ const ShoppingListComponent: React.FC = () => {
             item.quantity, 
             item.unit
           );
-          
+
           if (result && result.category) {
             category = result.category;
           } else {
@@ -173,7 +173,7 @@ const ShoppingListComponent: React.FC = () => {
   useEffect(() => {
     const defaultList = shoppingLists?.[0];
     const items = defaultList?.items || [];
-    
+
     if (items.length > 0) {
       categorizeItems(items);
     } else {
@@ -319,10 +319,10 @@ const ShoppingListComponent: React.FC = () => {
     onMutate: async ({ itemName, quantity, unit }: { itemName: string; quantity: number; unit: string }) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['/api/shopping-lists'] });
-      
+
       // Snapshot the previous value
       const previousLists = queryClient.getQueryData(['/api/shopping-lists']);
-      
+
       // Optimistically update to the new value
       const tempId = Date.now(); // Temporary ID for optimistic update
       const newItem = {
@@ -333,7 +333,7 @@ const ShoppingListComponent: React.FC = () => {
         completed: false,
         shoppingListId: shoppingLists?.[0]?.id
       };
-      
+
       queryClient.setQueryData(['/api/shopping-lists'], (old: any) => {
         if (!old) return old;
         return old.map((list: any) => ({
@@ -341,7 +341,7 @@ const ShoppingListComponent: React.FC = () => {
           items: [...(list.items || []), newItem]
         }));
       });
-      
+
       return { previousLists };
     },
     onError: (err, variables, context) => {
@@ -369,7 +369,7 @@ const ShoppingListComponent: React.FC = () => {
     onSettled: () => {
       // Always re-categorize items after adding new item (success or error)
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-      
+
       // Force re-categorization after a short delay to ensure data is fresh
       setTimeout(() => {
         const updatedList = queryClient.getQueryData<ShoppingListType[]>(['/api/shopping-lists']);
@@ -473,30 +473,107 @@ const ShoppingListComponent: React.FC = () => {
       const defaultList = shoppingLists?.[0];
       if (!defaultList) throw new Error('No shopping list found');
 
-      // First, delete all existing items
-      if (defaultList.items && defaultList.items.length > 0) {
-        for (const item of defaultList.items) {
-          await apiRequest('DELETE', `/api/shopping-list/items/${item.id}`);
+      // Get existing items to avoid duplicates
+      const existingItems = new Set(
+        (defaultList.items || []).map(item => item.productName.toLowerCase().trim())
+      );
+
+      // Enhanced recommendation items that complement existing list
+      const enhancementItems = [
+        // Produce
+        { productName: 'Organic Bananas', quantity: 2, unit: 'LB' },
+        { productName: 'Fresh Strawberries', quantity: 1, unit: 'LB' },
+        { productName: 'Avocados', quantity: 4, unit: 'COUNT' },
+        { productName: 'Baby Spinach', quantity: 1, unit: 'BAG' },
+        { productName: 'Roma Tomatoes', quantity: 2, unit: 'LB' },
+        { productName: 'Yellow Onions', quantity: 3, unit: 'LB' },
+        { productName: 'Red Bell Peppers', quantity: 3, unit: 'COUNT' },
+        { productName: 'Carrots', quantity: 2, unit: 'LB' },
+        { productName: 'Broccoli Crowns', quantity: 2, unit: 'COUNT' },
+        { productName: 'Cucumber', quantity: 2, unit: 'COUNT' },
+
+        // Dairy & Eggs
+        { productName: 'Organic Milk', quantity: 1, unit: 'GALLON' },
+        { productName: 'Free-Range Eggs', quantity: 1, unit: 'DOZEN' },
+        { productName: 'Greek Yogurt', quantity: 4, unit: 'CONTAINER' },
+        { productName: 'Cheddar Cheese', quantity: 1, unit: 'BLOCK' },
+        { productName: 'Butter', quantity: 1, unit: 'COUNT' },
+        { productName: 'Cream Cheese', quantity: 1, unit: 'COUNT' },
+
+        // Meat & Seafood
+        { productName: 'Chicken Breast', quantity: 2, unit: 'LB' },
+        { productName: 'Ground Turkey', quantity: 1, unit: 'LB' },
+        { productName: 'Salmon Fillet', quantity: 1, unit: 'LB' },
+
+        // Pantry & Canned Goods
+        { productName: 'Brown Rice', quantity: 1, unit: 'BAG' },
+        { productName: 'Quinoa', quantity: 1, unit: 'BAG' },
+        { productName: 'Whole Wheat Pasta', quantity: 2, unit: 'BOX' },
+        { productName: 'Olive Oil', quantity: 1, unit: 'BOTTLE' },
+        { productName: 'Black Beans', quantity: 2, unit: 'CAN' },
+        { productName: 'Diced Tomatoes', quantity: 2, unit: 'CAN' },
+        { productName: 'Chicken Broth', quantity: 2, unit: 'CONTAINER' },
+        { productName: 'Oatmeal', quantity: 1, unit: 'CONTAINER' },
+        { productName: 'Almond Butter', quantity: 1, unit: 'JAR' },
+        { productName: 'Honey', quantity: 1, unit: 'BOTTLE' },
+        { productName: 'Sparkling Water', quantity: 12, unit: 'CAN' },
+
+        // Bakery
+        { productName: 'Whole Wheat Bread', quantity: 1, unit: 'LOAF' },
+
+        // Household Items
+        { productName: 'Paper Towels', quantity: 6, unit: 'COUNT' },
+        { productName: 'Toilet Paper', quantity: 12, unit: 'COUNT' },
+
+        // Personal Care
+        { productName: 'Shampoo', quantity: 1, unit: 'BOTTLE' },
+        { productName: 'Toothpaste', quantity: 1, unit: 'COUNT' },
+
+        // Spices & Seasonings
+        { productName: 'Garlic Powder', quantity: 1, unit: 'COUNT' },
+        { productName: 'Black Pepper', quantity: 1, unit: 'COUNT' },
+        { productName: 'Sea Salt', quantity: 1, unit: 'COUNT' }
+      ];
+
+      // Filter out items that already exist in the list
+      const newItems = enhancementItems.filter(item => 
+        !existingItems.has(item.productName.toLowerCase().trim())
+      );
+
+      // Add only new items to enhance the existing list
+      const addedItems = [];
+      for (const item of newItems) {
+        try {
+          const response = await apiRequest('POST', '/api/shopping-list/items', {
+            shoppingListId: defaultList.id,
+            productName: item.productName,
+            quantity: item.quantity,
+            unit: item.unit
+          });
+          addedItems.push(await response.json());
+        } catch (error) {
+          console.error('Failed to add item:', item.productName, error);
         }
       }
 
-      // Then generate new items
-      const response = await apiRequest('POST', '/api/shopping-lists/generate', {
-        shoppingListId: defaultList.id
-      });
-      return response.json();
+      return { 
+        message: 'List enhanced successfully', 
+        items: addedItems,
+        itemsAdded: addedItems.length,
+        itemsSkipped: enhancementItems.length - newItems.length
+      };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
       toast({
-        title: "List Regenerated",
-        description: "Your shopping list has been regenerated with fresh recommendations"
+        title: "List Enhanced",
+        description: `Added ${data.itemsAdded} new items to your shopping list${data.itemsSkipped > 0 ? ` (${data.itemsSkipped} items already existed)` : ''}`
       });
     },
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to regenerate list",
+        description: error.message || "Failed to enhance list",
         variant: "destructive"
       });
     }
@@ -668,7 +745,7 @@ const ShoppingListComponent: React.FC = () => {
     <div className="p-4 pb-20">
       <h2 className="text-xl font-bold mb-4">Shopping List</h2>
 
-      
+
 
       {/* Categorized Shopping List */}
       {isCategorizingItems && (
@@ -722,7 +799,7 @@ const ShoppingListComponent: React.FC = () => {
                         </div>
                       </CardContent>
                     </CollapsibleTrigger>
-                    
+
                     <CollapsibleContent>
                       <div className="px-3 pb-3 space-y-2">
                         {categoryItems.map((item) => (
