@@ -667,42 +667,42 @@ const ShoppingListComponent: React.FC = () => {
           let finalQuantity = item.quantity || 1;
 
           try {
-            // Try to get AI-suggested unit and quantity
-            const aiResult = await aiCategorizationService.categorizeProduct(
-              item.productName, 
-              item.quantity || 1, 
-              item.unit || 'COUNT'
-            );
+              // Try to get AI-suggested unit and quantity
+              const aiResult = await aiCategorizationService.categorizeProduct(
+                item.productName, 
+                item.quantity || 1, 
+                item.unit || 'COUNT'
+              );
 
-            console.log(`AI categorization for ${item.productName}:`, aiResult);
+              console.log(`AI categorization for ${item.productName}:`, aiResult);
 
-            if (aiResult?.suggestedUnit && aiResult.suggestedUnit !== 'COUNT') {
-              finalUnit = aiResult.suggestedUnit;
-              console.log(`Using AI suggested unit: ${finalUnit} for ${item.productName}`);
-            }
-            if (aiResult?.suggestedQuantity && aiResult.suggestedQuantity !== finalQuantity) {
-              finalQuantity = aiResult.suggestedQuantity;
-              console.log(`Using AI suggested quantity: ${finalQuantity} for ${item.productName}`);
-            }
-          } catch (aiError) {
-            console.warn('AI categorization failed, using quick categorization fallback:', aiError);
-            // If AI fails, use quick categorization fallback
-            const quickResult = aiCategorizationService.getQuickCategory(
-              item.productName, 
-              item.quantity || 1, 
-              item.unit || 'COUNT'
-            );
-            console.log(`Quick categorization for ${item.productName}:`, quickResult);
+              if (aiResult?.suggestedUnit) {
+                finalUnit = aiResult.suggestedUnit;
+                console.log(`Using AI suggested unit: ${finalUnit} for ${item.productName}`);
+              }
+              if (aiResult?.suggestedQuantity) {
+                finalQuantity = aiResult.suggestedQuantity;
+                console.log(`Using AI suggested quantity: ${finalQuantity} for ${item.productName}`);
+              }
+            } catch (aiError) {
+              console.warn('AI categorization failed, using quick categorization fallback:', aiError);
+              // If AI fails, use quick categorization fallback
+              const quickResult = aiCategorizationService.getQuickCategory(
+                item.productName, 
+                item.quantity || 1, 
+                item.unit || 'COUNT'
+              );
+              console.log(`Quick categorization for ${item.productName}:`, quickResult);
 
-            if (quickResult.suggestedUnit && quickResult.suggestedUnit !== 'COUNT') {
-              finalUnit = quickResult.suggestedUnit;
-              console.log(`Using quick suggested unit: ${finalUnit} for ${item.productName}`);
+              if (quickResult.suggestedUnit) {
+                finalUnit = quickResult.suggestedUnit;
+                console.log(`Using quick suggested unit: ${finalUnit} for ${item.productName}`);
+              }
+              if (quickResult.suggestedQuantity) {
+                finalQuantity = quickResult.suggestedQuantity;
+                console.log(`Using quick suggested quantity: ${finalQuantity} for ${item.productName}`);
+              }
             }
-            if (quickResult.suggestedQuantity && quickResult.suggestedQuantity !== finalQuantity) {
-              finalQuantity = quickResult.suggestedQuantity;
-              console.log(`Using quick suggested quantity: ${finalQuantity} for ${item.productName}`);
-            }
-          }
 
           console.log(`Adding ${item.productName} with quantity: ${finalQuantity}, unit: ${finalUnit}`);
 
