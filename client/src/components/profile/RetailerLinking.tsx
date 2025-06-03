@@ -400,8 +400,11 @@ const RetailerLinking: React.FC = () => {
         <Select value={selectedAvailableRetailer} onValueChange={(value) => {
           setSelectedAvailableRetailer(value);
           
-          // Auto-open connection dialog when a retailer is selected (not custom store)
-          if (value !== 'add-custom-store' && value) {
+          if (value === 'add-custom-store') {
+            // Auto-open custom store dialog
+            setShowAddStore(true);
+          } else if (value) {
+            // Auto-open connection dialog when a retailer is selected
             const retailerId = parseInt(value);
             const retailer = retailers?.find((r: any) => r.id === retailerId);
             if (retailer) {
@@ -442,16 +445,6 @@ const RetailerLinking: React.FC = () => {
             </SelectItem>
           </SelectContent>
         </Select>
-        
-        {selectedAvailableRetailer === 'add-custom-store' && (
-          <Button 
-            onClick={() => setShowAddStore(true)}
-            className="w-full"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Custom Store
-          </Button>
-        )}
       </div>
 
       {/* Add Custom Store Dialog */}
