@@ -203,7 +203,7 @@ const RetailerLinking: React.FC = () => {
     <div className="space-y-8">
       <h3 className="text-xl font-semibold mb-2">Connected Retailer Accounts</h3>
       <p className="text-gray-600 mb-6">
-        Connect your retailer accounts to SavvyCart to access your purchase history and enable online ordering.
+        Connect your retailer accounts to SmartCart to access your purchase history and enable online ordering.
         Your credentials are securely stored and can be removed at any time.
       </p>
 
