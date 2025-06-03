@@ -68,8 +68,12 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
     },
     onSuccess: () => {
       // Invalidate all shopping list related queries to ensure the UI updates
-      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/shopping-list/items'] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey[0] as string;
+          return queryKey.includes('/api/shopping-list') || queryKey.includes('/api/shopping-lists');
+        }
+      });
       
       toast({
         title: "Added to List",
