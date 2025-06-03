@@ -661,11 +661,44 @@ const ShoppingListComponent: React.FC = () => {
       const addedItems = [];
       for (const item of newItems) {
         try {
+          // Use AI categorization to get the proper unit
+          let finalUnit = item.unit || 'COUNT';
+          let finalQuantity = item.quantity || 1;
+
+          try {
+            // Try to get AI-suggested unit and quantity
+            const aiResult = await aiCategorizationService.categorizeProduct(
+              item.productName, 
+              item.quantity || 1, 
+              item.unit || 'COUNT'
+            );
+
+            if (aiResult?.suggestedUnit) {
+              finalUnit = aiResult.suggestedUnit;
+            }
+            if (aiResult?.suggestedQuantity) {
+              finalQuantity = aiResult.suggestedQuantity;
+            }
+          } catch (aiError) {
+            // If AI fails, use quick categorization fallback
+            const quickResult = aiCategorizationService.getQuickCategory(
+              item.productName, 
+              item.quantity || 1, 
+              item.unit || 'COUNT'
+            );
+            if (quickResult.suggestedUnit) {
+              finalUnit = quickResult.suggestedUnit;
+            }
+            if (quickResult.suggestedQuantity) {
+              finalQuantity = quickResult.suggestedQuantity;
+            }
+          }
+
           const response = await apiRequest('POST', '/api/shopping-list/items', {
             shoppingListId: defaultList.id,
             productName: item.productName,
-            quantity: item.quantity || 1, // Ensure quantity is always set
-            unit: item.unit || 'COUNT' // Ensure unit is always set
+            quantity: finalQuantity,
+            unit: finalUnit
           });
           const addedItem = await response.json();
           addedItems.push(addedItem);
