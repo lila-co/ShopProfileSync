@@ -311,8 +311,6 @@ const PlanDetails: React.FC = () => {
             size="lg"
             onClick={() => {
               console.log('Start Shopping Route clicked');
-              console.log('Current planData:', planData);
-              console.log('Selected plan type:', selectedPlanType);
 
               if (!planData || !planData.stores || planData.stores.length === 0) {
                 toast({
@@ -332,7 +330,8 @@ const PlanDetails: React.FC = () => {
                 listId: listId
               };
 
-              console.log('Enhanced plan data being sent:', enhancedPlanData);
+              // Store the plan data in sessionStorage as a backup
+              sessionStorage.setItem('shoppingPlanData', JSON.stringify(enhancedPlanData));
 
               const params = new URLSearchParams({
                 listId: listId || '1',
@@ -340,24 +339,7 @@ const PlanDetails: React.FC = () => {
                 planData: encodeURIComponent(JSON.stringify(enhancedPlanData))
               });
 
-              const url = `/shopping-route?${params.toString()}`;
-              console.log('Navigating to:', url);
-              console.log('Full URL will be:', window.location.origin + url);
-
-              // Try both navigation methods
-              try {
-                navigate(url);
-                // Fallback after a short delay
-                setTimeout(() => {
-                  if (window.location.pathname !== '/shopping-route') {
-                    console.log('Navigation failed, using window.location');
-                    window.location.href = url;
-                  }
-                }, 500);
-              } catch (error) {
-                console.error('Navigation error:', error);
-                window.location.href = url;
-              }
+              navigate(`/shopping-route?${params.toString()}`);
             }}
           >
             <ShoppingCart className="h-4 w-4 mr-2" />

@@ -31,18 +31,17 @@ const ShoppingRoute: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Get URL parameters - force refresh to get current URL
-  const urlParams = new URLSearchParams(window.location.search);
-  const listId = urlParams.get('listId');
-  const mode = urlParams.get('mode') || 'instore';
-  const planDataParam = urlParams.get('planData');
+  // Get URL parameters from current location
+  const searchParams = new URLSearchParams(location.split('?')[1] || '');
+  const listId = searchParams.get('listId');
+  const mode = searchParams.get('mode') || 'instore';
+  const planDataParam = searchParams.get('planData');
   
-  console.log('Shopping route loaded with current URL:', window.location.href);
+  console.log('Shopping route loaded with location:', location);
   console.log('Shopping route loaded with params:', {
     listId,
     mode,
-    planDataParam: planDataParam ? 'present' : 'missing',
-    fullURL: window.location.search
+    planDataParam: planDataParam ? 'present' : 'missing'
   });
 
   const [optimizedRoute, setOptimizedRoute] = useState<any>(null);
@@ -110,16 +109,21 @@ const ShoppingRoute: React.FC = () => {
     console.log('planDataParam:', planDataParam);
     console.log('shoppingList:', shoppingList);
     console.log('Current location:', location);
-    console.log('Full URL search params:', window.location.search);
     
-    // Force re-parse URL parameters in case they changed
-    const currentParams = new URLSearchParams(window.location.search);
-    const currentPlanData = currentParams.get('planData');
+    let planDataToUse = planDataParam;
     
-    if (currentPlanData || planDataParam) {
+    // If no URL param, try sessionStorage
+    if (!planDataToUse) {
+      const storedPlanData = sessionStorage.getItem('shoppingPlanData');
+      if (storedPlanData) {
+        console.log('Using stored plan data from sessionStorage');
+        planDataToUse = encodeURIComponent(storedPlanData);
+      }
+    }
+    
+    if (planDataToUse) {
       try {
-        const planDataToUse = currentPlanData || planDataParam;
-        const planData = JSON.parse(decodeURIComponent(planDataToUse!));
+        const planData = JSON.parse(decodeURIComponent(planDataToUse));
         console.log('Successfully parsed plan data:', planData);
         setSelectedPlanData(planData);
 
@@ -131,34 +135,29 @@ const ShoppingRoute: React.FC = () => {
         
         toast({
           title: "Shopping Route Ready!",
-          description: `Your shopping route has been created for ${route.retailerName}`,
+          description: `Your shopping route has been created`,
           duration: 3000
         });
         
       } catch (error) {
-        console.error('Error parsing plan data:', error, 'Raw data:', currentPlanData || planDataParam);
-        toast({
-          title: "Error Loading Plan",
-          description: "Using default shopping list instead",
-          variant: "destructive",
-          duration: 3000
-        });
-        
-        // Fallback to original method if plan data is invalid
-        if (shoppingList?.items) {
-          const route = generateOptimizedShoppingRoute(shoppingList.items);
-          setOptimizedRoute(route);
-          setStartTime(new Date());
-        }
+        console.error('Error parsing plan data:', error);
+        // Fall back to shopping list
+        tryShoppingListFallback();
       }
-    } else if (shoppingList?.items && shoppingList.items.length > 0) {
-      // Fallback to original method if no plan data is provided
-      console.log('No plan data provided, using shopping list items');
-      const route = generateOptimizedShoppingRoute(shoppingList.items);
-      setOptimizedRoute(route);
-      setStartTime(new Date());
     } else {
-      console.log('No plan data or shopping list items available');
+      // No plan data available, try shopping list
+      tryShoppingListFallback();
+    }
+
+    function tryShoppingListFallback() {
+      if (shoppingList?.items && shoppingList.items.length > 0) {
+        console.log('Using shopping list items as fallback');
+        const route = generateOptimizedShoppingRoute(shoppingList.items);
+        setOptimizedRoute(route);
+        setStartTime(new Date());
+      } else {
+        console.log('No data available for shopping route');
+      }
     }
   }, [shoppingList, planDataParam, location]);
 
