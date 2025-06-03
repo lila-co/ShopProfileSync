@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, MapPin, DollarSign, Clock, ShoppingCart } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface ShoppingItem {
   id: number;
@@ -37,6 +38,7 @@ interface PlanData {
 
 const PlanDetails: React.FC = () => {
   const [location, navigate] = useLocation();
+  const { toast } = useToast();
   const searchParams = new URLSearchParams(location.split('?')[1] || '');
   const [selectedPlanType, setSelectedPlanType] = useState(
     searchParams.get('planType') || 'single-store'
@@ -308,13 +310,26 @@ const PlanDetails: React.FC = () => {
             className="w-full"
             size="lg"
             onClick={() => {
-              console.log('Navigating to shopping route with planData:', planData);
+              console.log('Start Shopping Route clicked');
+              console.log('Current planData:', planData);
+              console.log('Selected plan type:', selectedPlanType);
+              
+              if (!planData || !planData.stores || planData.stores.length === 0) {
+                toast({
+                  title: "No Plan Data",
+                  description: "Please select a plan type first",
+                  variant: "destructive"
+                });
+                return;
+              }
+              
               const enhancedPlanData = {
                 ...planData,
                 planType: selectedPlanType === 'single-store' ? 'Single Store' :
                          selectedPlanType === 'multi-store' ? 'Multi-Store Best Value' :
                          selectedPlanType === 'balanced' ? 'Balanced Plan' : 'Shopping Plan',
-                selectedPlanType: selectedPlanType
+                selectedPlanType: selectedPlanType,
+                listId: listId
               };
               
               console.log('Enhanced plan data being sent:', enhancedPlanData);
@@ -324,7 +339,11 @@ const PlanDetails: React.FC = () => {
                 mode: 'instore',
                 planData: encodeURIComponent(JSON.stringify(enhancedPlanData))
               });
-              window.location.href = `/shopping-route?${params.toString()}`;
+              
+              const url = `/shopping-route?${params.toString()}`;
+              console.log('Navigating to:', url);
+              
+              navigate(url);
             }}
           >
             <ShoppingCart className="h-4 w-4 mr-2" />
