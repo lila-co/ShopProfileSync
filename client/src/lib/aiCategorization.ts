@@ -402,4 +402,78 @@ class AICategorationService {
   }
 }
 
+// Helper function to detect better units and quantities
+function detectCountOptimization(category: string, name: string, quantity?: number, unit?: string): { suggestedQuantity?: number; suggestedUnit?: string } {
+  // Default to original values
+  let suggestedQuantity = quantity;
+  let suggestedUnit = unit;
+
+  // Pantry items that should use specific units
+  if (category === 'Pantry & Canned Goods') {
+    if (name.includes('rice') || name.includes('quinoa') || name.includes('oatmeal') || name.includes('flour')) {
+      suggestedUnit = 'BAG';
+    } else if (name.includes('honey') || name.includes('syrup') || name.includes('oil') || name.includes('vinegar')) {
+      suggestedUnit = 'BOTTLE';
+    } else if (name.includes('sauce') || name.includes('jam') || name.includes('jelly') || name.includes('butter') && name.includes('peanut')) {
+      suggestedUnit = 'JAR';
+    } else if (name.includes('baking soda') || name.includes('baking powder') || name.includes('salt') || name.includes('sugar')) {
+      suggestedUnit = 'BOX';
+    } else if (name.includes('can') || name.includes('beans') || name.includes('tomato')) {
+      suggestedUnit = 'CAN';
+    }
+  }
+
+  // Household items
+  if (category === 'Household Items') {
+    if (name.includes('paper towel')) {
+      suggestedUnit = 'COUNT';
+      suggestedQuantity = Math.max(1, Math.min(quantity || 1, 6)); // 6-pack typical
+    } else if (name.includes('toilet paper')) {
+      suggestedUnit = 'COUNT';
+      suggestedQuantity = Math.max(1, Math.min(quantity || 1, 12)); // 12-pack typical
+    }
+  }
+
+  // Personal care
+  if (category === 'Personal Care') {
+    if (name.includes('shampoo') || name.includes('conditioner') || name.includes('body wash')) {
+      suggestedUnit = 'BOTTLE';
+    } else if (name.includes('toothpaste') || name.includes('deodorant')) {
+      suggestedUnit = 'COUNT';
+    }
+  }
+
+  // Produce items that should be by weight
+  if (category === 'Produce') {
+    if (name.includes('banana') || name.includes('apple') || name.includes('potato') || name.includes('onion') || name.includes('carrot') || name.includes('tomato')) {
+      if (unit === 'COUNT' && (quantity || 1) > 3) {
+        suggestedUnit = 'LB';
+        suggestedQuantity = Math.max(1, Math.round((quantity || 1) * 0.3)); // Rough weight conversion
+      }
+    }
+  }
+
+  // Dairy items
+  if (category === 'Dairy & Eggs') {
+    if (name.includes('milk')) {
+      suggestedUnit = 'GALLON';
+      suggestedQuantity = 1;
+    } else if (name.includes('yogurt')) {
+      suggestedUnit = 'CONTAINER';
+    } else if (name.includes('cheese') && !name.includes('cream')) {
+      suggestedUnit = 'BLOCK';
+    }
+  }
+
+  // Bakery items
+  if (category === 'Bakery') {
+    if (name.includes('bread')) {
+      suggestedUnit = 'LOAF';
+      suggestedQuantity = 1;
+    }
+  }
+
+  return { suggestedQuantity, suggestedUnit };
+}
+
 export const aiCategorizationService = new AICategorationService();
