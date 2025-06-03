@@ -76,8 +76,8 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
     window.speechSynthesis.cancel();
     
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1;
-    utterance.pitch = 1;
+    utterance.rate = 0.9; // Slightly slower for more natural speech
+    utterance.pitch = 1.1; // Slightly higher pitch for friendliness
     utterance.volume = 0.8;
     
     utterance.onstart = () => setIsSpeaking(true);
@@ -199,6 +199,34 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
       .join(' ');
   };
 
+  // Generate conversational responses
+  const getConversationalResponse = useCallback((action: string, itemName: string, quantity?: number, unit?: string) => {
+    const responses = {
+      add: [
+        `Perfect! I've added ${quantity === 1 ? '' : quantity + ' '}${unit && unit !== 'COUNT' ? unit.toLowerCase() + ' of ' : ''}${itemName} to your list.`,
+        `Got it! ${itemName} is now on your shopping list${quantity && quantity > 1 ? ` - ${quantity} ${unit?.toLowerCase()}` : ''}.`,
+        `Done! Added ${itemName} to your list${quantity && quantity > 1 ? ` (${quantity} ${unit?.toLowerCase()})` : ''}. What else do you need?`,
+        `Great choice! ${itemName} is added${quantity && quantity > 1 ? ` - ${quantity} ${unit?.toLowerCase()}` : ''}. Anything else?`,
+        `Nice! I've put ${itemName} on your list${quantity && quantity > 1 ? ` with ${quantity} ${unit?.toLowerCase()}` : ''}. Keep going!`
+      ],
+      toggle: [
+        `Awesome! I've marked ${itemName} as done. One less thing to worry about!`,
+        `Great job! ${itemName} is now checked off your list.`,
+        `Perfect! ${itemName} is complete. You're making good progress!`,
+        `Nice work! ${itemName} is marked as finished.`
+      ],
+      delete: [
+        `No problem! I've removed ${itemName} from your list.`,
+        `Done! ${itemName} is off your shopping list now.`,
+        `Got it! ${itemName} has been deleted from your list.`,
+        `Sure thing! ${itemName} is no longer on your list.`
+      ]
+    };
+
+    const actionResponses = responses[action as keyof typeof responses] || [];
+    return actionResponses[Math.floor(Math.random() * actionResponses.length)];
+  }, []);
+
   // Process voice command
   const processVoiceCommand = useCallback(async (command: string) => {
     setIsProcessingVoice(true);
@@ -210,23 +238,30 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
         switch (parsedCommand.action) {
           case 'add':
             await onAddItem(parsedCommand.itemName, parsedCommand.quantity, parsedCommand.unit);
-            speak(`Added ${parsedCommand.quantity} ${parsedCommand.unit.toLowerCase()} of ${parsedCommand.itemName} to your shopping list`);
+            speak(getConversationalResponse('add', parsedCommand.itemName, parsedCommand.quantity, parsedCommand.unit));
             break;
           case 'toggle':
             if (onToggleItem) {
               onToggleItem(parsedCommand.itemName);
-              speak(`Marked ${parsedCommand.itemName} as completed`);
+              speak(getConversationalResponse('toggle', parsedCommand.itemName));
             }
             break;
           case 'delete':
             if (onDeleteItem) {
               onDeleteItem(parsedCommand.itemName);
-              speak(`Removed ${parsedCommand.itemName} from your shopping list`);
+              speak(getConversationalResponse('delete', parsedCommand.itemName));
             }
             break;
         }
       } else {
-        speak("I didn't understand that command. Try saying 'add milk' or 'add 2 pounds of chicken'");
+        const notUnderstoodResponses = [
+          "Hmm, I didn't quite catch that. Could you try saying something like 'add milk' or 'add 2 pounds of chicken'?",
+          "Sorry, I'm not sure what you meant. Try saying 'add' followed by the item you need.",
+          "I didn't understand that command. Can you say it differently? Maybe 'add bananas' or 'remove bread'?",
+          "Oops, I missed that. Try telling me to 'add' something to your list, like 'add apples'."
+        ];
+        speak(notUnderstoodResponses[Math.floor(Math.random() * notUnderstoodResponses.length)]);
+        
         toast({
           title: "Command Not Recognized",
           description: "Try saying 'add [item]' or 'add [quantity] [unit] of [item]'",
@@ -235,7 +270,14 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
       }
     } catch (error) {
       console.error('Error processing voice command:', error);
-      speak("Sorry, I had trouble processing that command");
+      const errorResponses = [
+        "Oops, something went wrong on my end. Could you try that again?",
+        "Sorry about that! I ran into a little issue. Give it another try?",
+        "Hmm, I had trouble with that command. Mind trying once more?",
+        "My apologies! Something didn't work right. Please try again."
+      ];
+      speak(errorResponses[Math.floor(Math.random() * errorResponses.length)]);
+      
       toast({
         title: "Error",
         description: "Failed to process voice command",
@@ -244,7 +286,7 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
     } finally {
       setIsProcessingVoice(false);
     }
-  }, [parseVoiceCommand, onAddItem, onToggleItem, onDeleteItem, speak, toast]);
+  }, [parseVoiceCommand, onAddItem, onToggleItem, onDeleteItem, speak, toast, getConversationalResponse]);
 
   // Start listening
   const startListening = useCallback(() => {
@@ -296,7 +338,14 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
 
     try {
       recognitionRef.current.start();
-      speak("I'm listening. What would you like to add to your shopping list?");
+      const greetings = [
+        "Hi there! I'm ready to help. What would you like to add to your shopping list?",
+        "Hey! I'm all ears. What do you need to add today?",
+        "Hello! I'm listening. What can I add to your list?",
+        "Hi! What would you like to put on your shopping list?",
+        "Ready when you are! What should I add to your list?"
+      ];
+      speak(greetings[Math.floor(Math.random() * greetings.length)]);
     } catch (error) {
       console.error('Failed to start speech recognition:', error);
       setIsListening(false);
@@ -318,7 +367,7 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
   const toggleSpeech = () => {
     setSpeechEnabled(!speechEnabled);
     if (!speechEnabled) {
-      speak("Voice feedback enabled");
+      speak("Great! Now I can talk back to you. Voice feedback is on!");
     } else {
       window.speechSynthesis.cancel();
     }
