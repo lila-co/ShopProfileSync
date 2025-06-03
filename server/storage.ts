@@ -1660,6 +1660,48 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getNotificationPreferences(userId: number): Promise<any> {
+    try {
+      // For demo implementation, return default preferences
+      // In production, this would query the notificationPreferences table
+      return {
+        userId,
+        dealAlerts: true,
+        priceDropAlerts: true,
+        weeklyDigest: false,
+        expirationAlerts: true,
+        recommendationUpdates: true,
+        pushNotifications: false,
+        emailNotifications: true,
+        smsNotifications: false,
+        createdAt: new Date(),
+        lastUpdated: new Date()
+      };
+    } catch (error) {
+      console.error("Error getting notification preferences:", error);
+      throw error;
+    }
+  }
+
+  async updateNotificationPreferences(userId: number, preferences: any): Promise<any> {
+    try {
+      // For demo implementation, just return updated preferences
+      // In production, this would update the notificationPreferences table
+      const existing = await this.getNotificationPreferences(userId);
+      const updated = {
+        ...existing,
+        ...preferences,
+        lastUpdated: new Date()
+      };
+      
+      console.log(`Updated notification preferences for user ${userId}:`, updated);
+      return updated;
+    } catch (error) {
+      console.error("Error updating notification preferences:", error);
+      throw error;
+    }
+  }
+
   async exportUserData(userId: number): Promise<any> {
     try {
       const user = await this.getUser(userId);

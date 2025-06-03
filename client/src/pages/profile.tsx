@@ -51,6 +51,10 @@ const ProfilePage: React.FC = () => {
     queryKey: ['/api/user/privacy-preferences'],
   });
 
+  const { data: notificationPreferences, isLoading: notificationLoading } = useQuery({
+    queryKey: ['/api/user/notification-preferences'],
+  });
+
   const updatePrivacyMutation = useMutation({
     mutationFn: async (preferences: any) => {
       const response = await fetch('/api/user/privacy-preferences', {
@@ -77,8 +81,38 @@ const ProfilePage: React.FC = () => {
     }
   });
 
+  const updateNotificationMutation = useMutation({
+    mutationFn: async (preferences: any) => {
+      const response = await fetch('/api/user/notification-preferences', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(preferences),
+      });
+      if (!response.ok) throw new Error('Failed to update notification preferences');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/user/notification-preferences'] });
+      toast({
+        title: "Notification Settings Updated",
+        description: "Your notification preferences have been saved.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update notification settings. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
   const handlePrivacyToggle = (setting: string, value: boolean) => {
     updatePrivacyMutation.mutate({ [setting]: value });
+  };
+
+  const handleNotificationToggle = (setting: string, value: boolean) => {
+    updateNotificationMutation.mutate({ [setting]: value });
   };
 
   const form = useForm<z.infer<typeof profileSchema>>({
@@ -539,7 +573,9 @@ const ProfilePage: React.FC = () => {
                   </div>
                   <Switch 
                     id="dealAlerts" 
-                    defaultChecked={true} 
+                    checked={notificationPreferences?.dealAlerts ?? true}
+                    onCheckedChange={(checked) => handleNotificationToggle('dealAlerts', checked)}
+                    disabled={updateNotificationMutation.isPending}
                     className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
                   />
                 </div>
@@ -551,7 +587,9 @@ const ProfilePage: React.FC = () => {
                   </div>
                   <Switch 
                     id="priceDrops" 
-                    defaultChecked={true} 
+                    checked={notificationPreferences?.priceDropAlerts ?? true}
+                    onCheckedChange={(checked) => handleNotificationToggle('priceDropAlerts', checked)}
+                    disabled={updateNotificationMutation.isPending}
                     className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
                   />
                 </div>
@@ -563,7 +601,9 @@ const ProfilePage: React.FC = () => {
                   </div>
                   <Switch 
                     id="weeklyDigest" 
-                    defaultChecked={false} 
+                    checked={notificationPreferences?.weeklyDigest ?? false}
+                    onCheckedChange={(checked) => handleNotificationToggle('weeklyDigest', checked)}
+                    disabled={updateNotificationMutation.isPending}
                     className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
                   />
                 </div>
@@ -575,7 +615,9 @@ const ProfilePage: React.FC = () => {
                   </div>
                   <Switch 
                     id="expirationAlerts" 
-                    defaultChecked={true} 
+                    checked={notificationPreferences?.expirationAlerts ?? true}
+                    onCheckedChange={(checked) => handleNotificationToggle('expirationAlerts', checked)}
+                    disabled={updateNotificationMutation.isPending}
                     className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
                   />
                 </div>
@@ -587,7 +629,9 @@ const ProfilePage: React.FC = () => {
                   </div>
                   <Switch 
                     id="recommendationUpdates" 
-                    defaultChecked={true} 
+                    checked={notificationPreferences?.recommendationUpdates ?? true}
+                    onCheckedChange={(checked) => handleNotificationToggle('recommendationUpdates', checked)}
+                    disabled={updateNotificationMutation.isPending}
                     className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
                   />
                 </div>
