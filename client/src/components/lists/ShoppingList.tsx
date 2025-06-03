@@ -570,14 +570,14 @@ const ShoppingListComponent: React.FC = () => {
               value={newItemQuantity}
               onChange={(e) => setNewItemQuantity(e.target.value)}
               min="1"
-              className="w-full border-2 border-gray-300 focus:border-blue-500 px-3 py-2 rounded-md"
+              className="w-full border-4 border-orange-400 focus:border-orange-600 focus:ring-4 focus:ring-orange-200 bg-orange-50 text-black font-bold text-lg placeholder-orange-600 px-4 py-3 rounded-lg shadow-md"
             />
           </div>
           <div className="flex-1">
             <select
               value={newItemUnit}
               onChange={(e) => setNewItemUnit(e.target.value)}
-              className="w-full border-2 border-gray-300 focus:border-blue-500 px-3 py-2 rounded-md bg-white"
+              className="w-full border-4 border-orange-400 focus:border-orange-600 focus:ring-4 focus:ring-orange-200 bg-orange-50 text-black font-bold text-lg px-4 py-3 rounded-lg shadow-md"
             >
               <option value="COUNT">Count</option>
               <option value="LB">Pounds</option>
