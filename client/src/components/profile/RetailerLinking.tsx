@@ -466,40 +466,58 @@ const RetailerLinking: React.FC = () => {
                 </SelectItem>
               );
             })}
+            <SelectItem value="add-custom-store">
+              <div className="flex items-center space-x-2">
+                <Plus className="h-5 w-5 text-gray-500" />
+                <span>Add Custom Store</span>
+              </div>
+            </SelectItem>
           </SelectContent>
         </Select>
         
         {selectedAvailableRetailer && (
           <div className="flex space-x-2">
-            <Button 
-              onClick={() => {
-                const retailerId = parseInt(selectedAvailableRetailer);
-                const retailer = retailers?.find((r: any) => r.id === retailerId);
-                if (retailer) {
-                  openLinkDialog(retailer);
-                }
-              }}
-              className="flex-1"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Connect Account
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                const retailerId = parseInt(selectedAvailableRetailer);
-                const retailer = retailers?.find((r: any) => r.id === retailerId);
-                if (retailer) {
-                  setSelectedRetailer(retailer);
-                  setConnectionType('circular');
-                  setLinkDialogOpen(true);
-                }
-              }}
-              className="flex-1"
-            >
-              <Store className="h-4 w-4 mr-2" />
-              Circular Only
-            </Button>
+            {selectedAvailableRetailer === 'add-custom-store' ? (
+              <Button 
+                onClick={() => setShowAddStore(true)}
+                className="w-full"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Custom Store
+              </Button>
+            ) : (
+              <>
+                <Button 
+                  onClick={() => {
+                    const retailerId = parseInt(selectedAvailableRetailer);
+                    const retailer = retailers?.find((r: any) => r.id === retailerId);
+                    if (retailer) {
+                      openLinkDialog(retailer);
+                    }
+                  }}
+                  className="flex-1"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Connect Account
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    const retailerId = parseInt(selectedAvailableRetailer);
+                    const retailer = retailers?.find((r: any) => r.id === retailerId);
+                    if (retailer) {
+                      setSelectedRetailer(retailer);
+                      setConnectionType('circular');
+                      setLinkDialogOpen(true);
+                    }
+                  }}
+                  className="flex-1"
+                >
+                  <Store className="h-4 w-4 mr-2" />
+                  Circular Only
+                </Button>
+              </>
+            )}
           </div>
         )}
       </div>
