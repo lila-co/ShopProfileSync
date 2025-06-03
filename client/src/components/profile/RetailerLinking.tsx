@@ -26,6 +26,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 import { Eye, EyeOff, Lock, ExternalLink, RefreshCw, Plus, Check, AlertCircle, Store, CheckCircle } from 'lucide-react';
 import { getCompanyLogo } from '@/lib/imageUtils';
@@ -56,6 +63,7 @@ const RetailerLinking: React.FC = () => {
   const [showAddStore, setShowAddStore] = useState(false);
   const [newStoreName, setNewStoreName] = useState('');
   const [newStoreWebsite, setNewStoreWebsite] = useState('');
+  const [selectedAvailableRetailer, setSelectedAvailableRetailer] = useState<string>('');
 
   // Form state
   const [username, setUsername] = useState('');
@@ -88,6 +96,7 @@ const RetailerLinking: React.FC = () => {
       setPassword('');
       setLoyaltyCardNumber('');
       setLoyaltyMemberId('');
+      setSelectedAvailableRetailer('');
       setLinkDialogOpen(false);
 
       // Invalidate queries to refresh the data
@@ -221,6 +230,7 @@ const RetailerLinking: React.FC = () => {
     setLoyaltyCardNumber('');
     setLoyaltyMemberId('');
     setConnectionType('account');
+    setSelectedAvailableRetailer('');
   };
 
   const handleAddStore = () => {
@@ -244,6 +254,7 @@ const RetailerLinking: React.FC = () => {
   const openLinkDialog = (retailer: any) => {
     setSelectedRetailer(retailer);
     setConnectionType('account'); // Reset to default
+    setSelectedAvailableRetailer(''); // Reset dropdown
     setLinkDialogOpen(true);
   };
 
@@ -273,10 +284,10 @@ const RetailerLinking: React.FC = () => {
         Your credentials are securely stored and can be removed at any time.
       </p>
 
-      {/* Linked Accounts */}
+      {/* Connected Accounts Only */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {!accountsLoading && retailerAccounts?.length > 0 ? (
-          retailerAccounts.map((account: any) => {
+        {!accountsLoading && retailerAccounts?.filter((account: any) => account.isConnected).length > 0 ? (
+          retailerAccounts.filter((account: any) => account.isConnected).map((account: any) => {
             const retailer = retailers?.find((r: any) => r.id === account.retailerId);
             const logoUrl = retailer ? getCompanyLogo(retailer.name) : undefined;
 
@@ -371,7 +382,7 @@ const RetailerLinking: React.FC = () => {
             <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
             <h4 className="font-medium text-gray-700 mb-1">No Connected Accounts</h4>
             <p className="text-gray-500 text-sm mb-4">
-              Link your retailer accounts to automatically track purchases and enable personalized shopping recommendations.
+              Connect retailer accounts below to automatically track purchases and enable personalized shopping recommendations.
             </p>
           </div>
         )}
@@ -426,65 +437,71 @@ const RetailerLinking: React.FC = () => {
         </Dialog>
       </div>
 
-      {/* Available Retailers */}
-      <h3 className="text-lg font-semibold mt-8 mb-3">Available Retailers</h3>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {!retailersLoading && retailers?.map((retailer: any) => {
-          const isLinked = isRetailerLinked(retailer.id);
-          const account = getLinkedAccount(retailer.id);
-          const logoUrl = getCompanyLogo(retailer.name);
-
-          return (
-            <Card key={retailer.id} className={isLinked ? "border-primary/30" : ""}>
-              <CardContent className="p-4">
-                <div className="flex flex-col items-center text-center">
-                  {logoUrl ? (
-                    <img src={logoUrl} alt={retailer.name} className="h-12 w-12 mb-2 object-contain" />
-                  ) : (
-                    <div 
-                      className="h-12 w-12 rounded-full flex items-center justify-center text-white mb-2"
-                      style={{backgroundColor: retailer.logoColor || '#4A7CFA'}}
-                    >
-                      <span className="text-lg font-bold">{retailer.name.charAt(0)}</span>
-                    </div>
-                  )}
-                  <h5 className="font-medium">{retailer.name}</h5>
-
-                  {isLinked ? (
-                    <div className="mt-2 w-full">
-                      <Badge className="w-full mb-2 bg-primary/20 text-primary border border-primary/30">
-                        <Check className="h-3 w-3 mr-1" /> Connected
-                      </Badge>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full text-xs"
-                        onClick={() => {
-                          setSelectedRetailer(retailer);
-                          setUsername(account?.username || '');
-                          setAllowOrdering(account?.allowOrdering !== false);
-                          setRememberMe(account?.storeCredentials !== false);
-                          setLinkDialogOpen(true);
-                        }}
+      {/* Available Retailers Dropdown */}
+      <h3 className="text-lg font-semibold mt-8 mb-3">Connect New Retailer</h3>
+      <div className="space-y-4">
+        <Select value={selectedAvailableRetailer} onValueChange={setSelectedAvailableRetailer}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select a retailer to connect..." />
+          </SelectTrigger>
+          <SelectContent className="max-h-60">
+            {!retailersLoading && retailers?.filter((retailer: any) => !isRetailerLinked(retailer.id)).map((retailer: any) => {
+              const logoUrl = getCompanyLogo(retailer.name);
+              
+              return (
+                <SelectItem key={retailer.id} value={retailer.id.toString()}>
+                  <div className="flex items-center space-x-2">
+                    {logoUrl ? (
+                      <img src={logoUrl} alt={retailer.name} className="h-5 w-5 object-contain" />
+                    ) : (
+                      <div 
+                        className="h-5 w-5 rounded-full flex items-center justify-center text-white text-xs"
+                        style={{backgroundColor: retailer.logoColor || '#4A7CFA'}}
                       >
-                        Manage Connection
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="mt-2 w-full"
-                      onClick={() => openLinkDialog(retailer)}
-                    >
-                      <Plus className="h-3 w-3 mr-1" /> Connect
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                        {retailer.name.charAt(0)}
+                      </div>
+                    )}
+                    <span>{retailer.name}</span>
+                  </div>
+                </SelectItem>
+              );
+            })}
+          </SelectContent>
+        </Select>
+        
+        {selectedAvailableRetailer && (
+          <div className="flex space-x-2">
+            <Button 
+              onClick={() => {
+                const retailerId = parseInt(selectedAvailableRetailer);
+                const retailer = retailers?.find((r: any) => r.id === retailerId);
+                if (retailer) {
+                  openLinkDialog(retailer);
+                }
+              }}
+              className="flex-1"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Connect Account
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                const retailerId = parseInt(selectedAvailableRetailer);
+                const retailer = retailers?.find((r: any) => r.id === retailerId);
+                if (retailer) {
+                  setSelectedRetailer(retailer);
+                  setConnectionType('circular');
+                  setLinkDialogOpen(true);
+                }
+              }}
+              className="flex-1"
+            >
+              <Store className="h-4 w-4 mr-2" />
+              Circular Only
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Link Account Dialog */}
