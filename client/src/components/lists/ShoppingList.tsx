@@ -198,66 +198,55 @@ const ShoppingListComponent: React.FC = () => {
         if (!hasItems && !userHasClearedList) {
           console.log('Empty shopping list detected, using unified regeneration...');
           
-          // Check if this is a first-time user
-          const hasShownAnimation = localStorage.getItem('listGenerationShown') === 'true';
-          const forceAnimation = localStorage.getItem('forceShowAnimation') === 'true';
-          const isFirstTimeUser = !hasShownAnimation;
+          // Always show animation for empty list generation
+          console.log('Auto-generation - showing animation for empty list...');
+          
+          // Show animation for all scenarios
+          setIsGeneratingList(true);
+          const steps = [
+            "Analyzing your dietary preferences...",
+            "Checking your pantry inventory...",
+            "Finding the best deals and promotions...",
+            "Optimizing your shopping route...",
+            "Generating personalized recommendations..."
+          ];
+          setGenerationSteps(steps);
+          setCurrentStep(0);
 
-          console.log('Auto-generation status:', { hasShownAnimation, forceAnimation, isFirstTimeUser });
-
-          // Use the unified regenerate mutation with appropriate animation
-          if (isFirstTimeUser || forceAnimation) {
-            // Show new user animation
-            setIsGeneratingList(true);
-            const steps = [
-              "Analyzing your dietary preferences...",
-              "Checking your pantry inventory...",
-              "Finding the best deals and promotions...",
-              "Optimizing your shopping route...",
-              "Generating personalized recommendations..."
-            ];
-            setGenerationSteps(steps);
-            setCurrentStep(0);
-
-            let autoAnimationInterval: NodeJS.Timeout | null = null;
-            let autoAnimationTimeout: NodeJS.Timeout | null = null;
-            
-            autoAnimationInterval = setInterval(() => {
-              setCurrentStep((prev) => {
-                if (prev >= steps.length - 1) {
-                  if (autoAnimationInterval) {
-                    clearInterval(autoAnimationInterval);
-                    autoAnimationInterval = null;
-                  }
-                  return prev;
+          let autoAnimationInterval: NodeJS.Timeout | null = null;
+          let autoAnimationTimeout: NodeJS.Timeout | null = null;
+          
+          autoAnimationInterval = setInterval(() => {
+            setCurrentStep((prev) => {
+              if (prev >= steps.length - 1) {
+                if (autoAnimationInterval) {
+                  clearInterval(autoAnimationInterval);
+                  autoAnimationInterval = null;
                 }
-                return prev + 1;
-              });
-            }, 1500);
-
-            // Trigger regeneration after animation
-            autoAnimationTimeout = setTimeout(() => {
-              if (autoAnimationInterval) {
-                clearInterval(autoAnimationInterval);
+                return prev;
               }
-              localStorage.setItem('listGenerationShown', 'true');
-              localStorage.removeItem('forceShowAnimation');
-              
-              // Use the unified regenerate mutation
-              regenerateListMutation.mutate(undefined, {
-                onSettled: () => {
-                  setTimeout(() => {
-                    setIsGeneratingList(false);
-                    setCurrentStep(-1);
-                  }, 500);
-                }
-              });
-            }, steps.length * 1500 + 1000);
-          } else {
-            // For returning users with empty lists, generate directly without animation
-            console.log('Existing user with empty list, generating directly...');
-            regenerateListMutation.mutate();
-          }
+              return prev + 1;
+            });
+          }, 1500);
+
+          // Trigger regeneration after animation
+          autoAnimationTimeout = setTimeout(() => {
+            if (autoAnimationInterval) {
+              clearInterval(autoAnimationInterval);
+            }
+            localStorage.setItem('listGenerationShown', 'true');
+            localStorage.removeItem('forceShowAnimation');
+            
+            // Use the unified regenerate mutation
+            regenerateListMutation.mutate(undefined, {
+              onSettled: () => {
+                setTimeout(() => {
+                  setIsGeneratingList(false);
+                  setCurrentStep(-1);
+                }, 500);
+              }
+            });
+          }, steps.length * 1500 + 1000);
         } else if (hasItems) {
           console.log('Shopping list already has items, skipping generation');
           // Reset the flag when list has items again
