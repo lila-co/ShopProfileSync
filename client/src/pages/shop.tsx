@@ -32,23 +32,23 @@ const Shop: React.FC = () => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedRetailerInfo, setSelectedRetailerInfo] = useState<any>(null);
-  
+
   // Check URL parameters for pre-selected retailer and list
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const retailerId = params.get('retailerId');
     const listId = params.get('listId');
-    
+
     if (retailerId) {
       setSelectedRetailer(parseInt(retailerId));
       fetchRetailerInfo(parseInt(retailerId));
     }
-    
+
     if (listId) {
       setSelectedList(parseInt(listId));
     }
   }, []);
-  
+
   // Fetch retailer integration information
   const fetchRetailerInfo = async (retailerId: number) => {
     try {
@@ -61,15 +61,15 @@ const Shop: React.FC = () => {
       console.error('Error fetching retailer information:', error);
     }
   };
-  
+
   // Search for products at the selected retailer
   const searchProducts = async () => {
     if (!selectedRetailer || !searchQuery.trim()) {
       return;
     }
-    
+
     setIsSearching(true);
-    
+
     try {
       const response = await fetch(`/api/retailers/${selectedRetailer}/products/search?query=${encodeURIComponent(searchQuery)}`);
       if (response.ok) {
@@ -87,7 +87,7 @@ const Shop: React.FC = () => {
       setIsSearching(false);
     }
   };
-  
+
   // Fetch shopping lists
   const { data: shoppingLists, isLoading: isLoadingLists } = useQuery({
     queryKey: ['/api/shopping-lists'],
@@ -97,7 +97,7 @@ const Shop: React.FC = () => {
         // Check URL parameters again to ensure we don't override them
         const params = new URLSearchParams(window.location.search);
         const listId = params.get('listId');
-        
+
         if (listId) {
           setSelectedList(parseInt(listId));
         } else {
@@ -106,7 +106,7 @@ const Shop: React.FC = () => {
       }
     }
   });
-  
+
   // Fetch retailers
   const { data: retailers, isLoading: isLoadingRetailers } = useQuery({
     queryKey: ['/api/retailers'],
@@ -116,7 +116,7 @@ const Shop: React.FC = () => {
         // Check URL parameters again to ensure we don't override them
         const params = new URLSearchParams(window.location.search);
         const retailerId = params.get('retailerId');
-        
+
         if (retailerId) {
           setSelectedRetailer(parseInt(retailerId));
           fetchRetailerInfo(parseInt(retailerId));
@@ -127,7 +127,7 @@ const Shop: React.FC = () => {
       }
     }
   });
-  
+
   // Get the items from the selected shopping list
   const { data: listItems, isLoading: isLoadingItems } = useQuery({
     queryKey: ['/api/shopping-lists', selectedList],
@@ -138,7 +138,7 @@ const Shop: React.FC = () => {
       return response.json();
     }
   });
-  
+
   // Mutation for adding items to shopping list
   const addItemToListMutation = useMutation({
     mutationFn: async (data: { shoppingListId: number; productName: string; quantity: number }) => {
@@ -165,25 +165,25 @@ const Shop: React.FC = () => {
   const submitShoppingMutation = useMutation({
     mutationFn: async () => {
       setIsSubmitting(true);
-      
+
       if (!selectedList || !selectedRetailer) {
         throw new Error("Please select a shopping list and retailer");
       }
-      
+
       // First check the retailer integration status
       const statusResponse = await fetch(`/api/retailers/${selectedRetailer}/integration-status`);
       if (!statusResponse.ok) {
         throw new Error("Failed to check retailer integration status");
       }
       const retailerStatus = await statusResponse.json();
-      
+
       // For in-store shopping or when online ordering is not supported
       if (shoppingMode === 'instore' || !retailerStatus.integration.supportsOnlineOrdering) {
         const response = await apiRequest('POST', '/api/shopping-route', {
           listId: selectedList,
           retailerId: selectedRetailer
         });
-        
+
         const result = await response.json();
         // Ensure retailer name is included in the route
         const routeWithRetailer = {
@@ -198,18 +198,18 @@ const Shop: React.FC = () => {
         if (shoppingMode === 'pickup' && !retailerStatus.integration.supportsPickup) {
           throw new Error(`${retailerStatus.retailerName} does not support pickup orders through our app yet.`);
         }
-        
+
         if (shoppingMode === 'delivery' && !retailerStatus.integration.supportsDelivery) {
           throw new Error(`${retailerStatus.retailerName} does not support delivery orders through our app yet.`);
         }
-        
+
         // Get the list items
         const listItemsResponse = await fetch(`/api/shopping-lists/${selectedList}`);
         if (!listItemsResponse.ok) {
           throw new Error("Failed to get shopping list items");
         }
         const items = await listItemsResponse.json();
-        
+
         // Customer info - in a real app, this would come from user profile
         const customerInfo = {
           name: "John Doe",
@@ -217,7 +217,7 @@ const Shop: React.FC = () => {
           address: "123 Main St, Anytown, USA",
           phone: "555-123-4567"
         };
-        
+
         // Submit the order to the retailer API
         const orderResponse = await apiRequest('POST', `/api/retailers/${selectedRetailer}/orders`, {
           items,
@@ -225,22 +225,22 @@ const Shop: React.FC = () => {
           customerInfo,
           shoppingListId: selectedList
         });
-        
+
         const orderResult = await orderResponse.json();
-        
+
         // Ensure retailer name is included in the order result
         const orderWithRetailer = {
           ...orderResult,
           retailer: selectedRetailerInfo?.retailerName || retailers?.find(r => r.id === selectedRetailer)?.name || 'Store'
         };
-        
+
         return { mode: shoppingMode, order: orderWithRetailer };
       }
     },
     onSuccess: (data) => {
       setIsSubmitting(false);
       setOrderCompleted(true);
-      
+
       if (data.mode === 'instore') {
         toast({
           title: "Shopping Route Ready!",
@@ -265,29 +265,29 @@ const Shop: React.FC = () => {
       });
     }
   });
-  
+
   const handleSubmit = () => {
     submitShoppingMutation.mutate();
   };
-  
+
   const getTotalItemCount = () => {
     if (!listItems) return 0;
     return listItems.reduce((sum: number, item: any) => sum + item.quantity, 0);
   };
-  
+
   const getTotalPrice = () => {
     if (!listItems) return 0;
     return listItems.reduce((sum: number, item: any) => {
       return sum + ((item.suggestedPrice || 0) * item.quantity);
     }, 0);
   };
-  
+
   const startNewShop = () => {
     setShoppingRoute(null);
     setOrderCompleted(false);
     queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
   };
-  
+
   if (isLoadingLists || isLoadingRetailers) {
     return (
       <div className="container mx-auto p-4 flex flex-col min-h-screen">
@@ -299,13 +299,13 @@ const Shop: React.FC = () => {
       </div>
     );
   }
-  
+
   if (orderCompleted && shoppingRoute) {
     // Show confirmation and shopping route/order details
     return (
       <div className="container mx-auto p-4 flex flex-col min-h-screen">
         <h1 className="text-2xl font-bold mb-2">Shop Now</h1>
-        
+
         <Card className="mb-4 border-green-500">
           <CardHeader className="bg-green-50 dark:bg-green-900/20">
             <div className="flex items-center gap-2">
@@ -324,7 +324,7 @@ const Shop: React.FC = () => {
                 `Your order will be delivered from ${shoppingRoute.retailer}`}
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent className="pt-4">
             {shoppingMode === 'instore' ? (
               // In-store shopping route
@@ -333,14 +333,14 @@ const Shop: React.FC = () => {
                   <Store className="h-5 w-5 text-gray-500" />
                   <span className="font-medium">{shoppingRoute.retailer}</span>
                 </div>
-                
+
                 <div className="flex items-center gap-2 mb-6">
                   <Clock className="h-5 w-5 text-gray-500" />
                   <span>Estimated shopping time: {shoppingRoute.estimatedTime}</span>
                 </div>
-                
+
                 <h3 className="text-lg font-medium mb-2">Your Shopping Route:</h3>
-                
+
                 <ScrollArea className="h-[300px] rounded-md border p-4">
                   {shoppingRoute.aisles?.map((aisle: any, index: number) => (
                     <div key={index} className="mb-6">
@@ -363,7 +363,7 @@ const Shop: React.FC = () => {
                       </ul>
                     </div>
                   ))}
-                  
+
                   {shoppingRoute.other && (
                     <div className="mb-6">
                       <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg mb-2">
@@ -394,12 +394,12 @@ const Shop: React.FC = () => {
                   <Store className="h-5 w-5 text-gray-500" />
                   <span className="font-medium">{shoppingRoute.retailer}</span>
                 </div>
-                
+
                 <div className="flex items-center gap-2 mb-2">
                   <ShoppingBag className="h-5 w-5 text-gray-500" />
                   <span>Order ID: {shoppingRoute.orderId}</span>
                 </div>
-                
+
                 <div className="flex items-center gap-2 mb-6">
                   <Clock className="h-5 w-5 text-gray-500" />
                   <span>
@@ -407,9 +407,9 @@ const Shop: React.FC = () => {
                     {shoppingRoute.estimatedReady}
                   </span>
                 </div>
-                
+
                 <h3 className="text-lg font-medium mb-2">Your Order:</h3>
-                
+
                 <ScrollArea className="h-[300px] rounded-md border p-4">
                   <ul className="space-y-2">
                     {shoppingRoute.items?.map((item: any) => (
@@ -425,7 +425,7 @@ const Shop: React.FC = () => {
                       </li>
                     ))}
                   </ul>
-                  
+
                   <div className="mt-4 pt-4 border-t flex justify-between font-medium">
                     <span>Total ({shoppingRoute.totalItems} items):</span>
                     <span>${shoppingRoute.totalPrice?.toFixed(2) || '0.00'}</span>
@@ -434,7 +434,7 @@ const Shop: React.FC = () => {
               </>
             )}
           </CardContent>
-          
+
           <CardFooter className="flex-col gap-2">
             <Button 
               className="w-full" 
@@ -444,16 +444,16 @@ const Shop: React.FC = () => {
             </Button>
           </CardFooter>
         </Card>
-        
+
         <BottomNavigation activeTab="shop" />
       </div>
     );
   }
-  
+
   return (
     <div className="container mx-auto p-3 sm:p-4 flex flex-col min-h-screen max-w-md sm:max-w-none">
       <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Shop Now</h1>
-      
+
       <Card className="mb-3 sm:mb-4">
         <CardHeader className="pb-3 sm:pb-6">
           <CardTitle className="text-lg sm:text-xl">Select Shopping List</CardTitle>
@@ -475,7 +475,7 @@ const Shop: React.FC = () => {
               ))}
             </SelectContent>
           </Select>
-          
+
           {selectedList && listItems && (
             <div className="mt-4">
               <h3 className="text-sm font-medium mb-2">List Contents:</h3>
@@ -504,7 +504,7 @@ const Shop: React.FC = () => {
           )}
         </CardContent>
       </Card>
-      
+
       <Card className="mb-4">
         <CardHeader>
           <CardTitle>Select Retailer</CardTitle>
@@ -531,7 +531,7 @@ const Shop: React.FC = () => {
               ))}
             </SelectContent>
           </Select>
-          
+
           {selectedRetailerInfo && (
             <div className="mt-4 text-sm">
               <div className="flex items-center">
@@ -546,7 +546,7 @@ const Shop: React.FC = () => {
               </div>
             </div>
           )}
-          
+
           {selectedRetailer && (
             <div className="mt-4">
               <form onSubmit={(e) => {
@@ -564,7 +564,7 @@ const Shop: React.FC = () => {
                   {isSearching ? 'Searching...' : 'Search'}
                 </Button>
               </form>
-              
+
               {searchResults.length > 0 && (
                 <div className="mt-4">
                   <h3 className="text-sm font-medium mb-2">Search Results:</h3>
@@ -605,7 +605,7 @@ const Shop: React.FC = () => {
                                       });
                                       return;
                                     }
-                                    
+
                                     addItemToListMutation.mutate({
                                       shoppingListId: selectedList,
                                       productName: product.name,
@@ -628,7 +628,7 @@ const Shop: React.FC = () => {
           )}
         </CardContent>
       </Card>
-      
+
       <Card className="mb-4">
         <CardHeader>
           <CardTitle>Shopping Method</CardTitle>
@@ -649,7 +649,7 @@ const Shop: React.FC = () => {
                 Get an organized route through the store
               </span>
             </button>
-            
+
             {/* Pickup button */}
             <button
               type="button"
@@ -668,7 +668,7 @@ const Shop: React.FC = () => {
                 <Badge variant="outline" className="mt-2 text-xs bg-gray-100">Not Available</Badge>
               )}
             </button>
-            
+
             {/* Delivery button */}
             <button
               type="button" 
@@ -690,7 +690,7 @@ const Shop: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-      
+
       {/* Conditional alerts based on shopping mode */}
       {shoppingMode === 'instore' && (
         <Alert className="mb-4">
@@ -701,7 +701,7 @@ const Shop: React.FC = () => {
           </AlertDescription>
         </Alert>
       )}
-      
+
       {shoppingMode === 'pickup' && (
         <Alert className="mb-4">
           <TruckIcon className="h-4 w-4" />
@@ -711,7 +711,7 @@ const Shop: React.FC = () => {
           </AlertDescription>
         </Alert>
       )}
-      
+
       {shoppingMode === 'delivery' && (
         <Alert className="mb-4">
           <HomeIcon className="h-4 w-4" />
@@ -721,7 +721,7 @@ const Shop: React.FC = () => {
           </AlertDescription>
         </Alert>
       )}
-      
+
       <div className="mt-auto mb-20">
         <Button 
           className="w-full"
@@ -736,7 +736,7 @@ const Shop: React.FC = () => {
           )}
         </Button>
       </div>
-      
+
       <BottomNavigation activeTab="shop" />
     </div>
   );
