@@ -42,6 +42,7 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [speechEnabled, setSpeechEnabled] = useState(true);
+  const [conversationContext, setConversationContext] = useState<string[]>([]);
   
   const recognitionRef = useRef<VoiceRecognition | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -54,7 +55,7 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
       recognitionRef.current = new SpeechRecognition();
       
       if (recognitionRef.current) {
-        recognitionRef.current.continuous = false;
+        recognitionRef.current.continuous = true;
         recognitionRef.current.interimResults = true;
         recognitionRef.current.lang = 'en-US';
       }
@@ -286,74 +287,73 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
     return null;
   }, []);
 
-  // Handle conversational queries
-  const handleConversationalQuery = useCallback((query: string) => {
+  // AI-powered conversational query handler with recipe fallback
+  const handleConversationalQuery = useCallback(async (query: string): Promise<string> => {
     const lowerQuery = query.toLowerCase();
     
-    // Specific meal or dish questions
-    if (lowerQuery.includes('what should i') || lowerQuery.includes('what can i') || lowerQuery.includes('what to')) {
-      const suggestionResponses = [
-        "What ingredients do you already have at home? I can suggest recipes based on what you've got!",
-        "Are you looking for breakfast, lunch, dinner, or maybe a snack idea?",
-        "What's your mood today - something comforting, healthy, spicy, or sweet?",
-        "How much time do you have to cook? I can suggest quick meals or something more elaborate!"
-      ];
-      return suggestionResponses[Math.floor(Math.random() * suggestionResponses.length)];
+    // Check if this is a recipe-related query
+    const recipeKeywords = ['recipe', 'cook', 'make', 'meal', 'how to', 'ingredients', 'preparation', 'dish'];
+    const isRecipeQuery = recipeKeywords.some(keyword => lowerQuery.includes(keyword));
+    
+    if (isRecipeQuery) {
+      // Handle recipe queries without OpenAI
+      if (lowerQuery.includes('chicken')) {
+        return "Here's a simple chicken recipe: Season chicken breast with salt, pepper, and herbs. Cook in a pan with olive oil for 6-7 minutes per side. Would you like me to add chicken breast to your shopping list?";
+      } else if (lowerQuery.includes('pasta')) {
+        return "For a great pasta dish, try this: Cook pasta according to package directions. Sauté garlic in olive oil, add tomatoes and herbs. Mix with pasta and top with parmesan. Should I add pasta, tomatoes, and garlic to your list?";
+      } else if (lowerQuery.includes('soup')) {
+        return "Here's a hearty soup recipe: Sauté onions, carrots, and celery. Add broth, potatoes, and herbs. Simmer for 20 minutes. Would you like me to add these ingredients to your shopping list?";
+      } else if (lowerQuery.includes('salad')) {
+        return "For a fresh salad: Mix greens, cherry tomatoes, cucumber, and your favorite dressing. Add some protein like chicken or cheese. Should I add salad ingredients to your list?";
+      } else {
+        return "I'd love to help with recipes! While I don't have access to specific recipes right now, I can help you add ingredients to your shopping list. What dish are you planning to make?";
+      }
     }
+    
+    try {
+      // Add current query to context
+      const updatedContext = [...conversationContext.slice(-4), query]; // Keep last 5 exchanges
+      
+      // Call the AI conversation endpoint
+      const response = await fetch('/api/voice/conversation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          message: query,
+          context: updatedContext 
+        }),
+      });
 
-    // Recipe requests
-    if (lowerQuery.includes('recipe') || lowerQuery.includes('cook') || lowerQuery.includes('make')) {
-      const recipeResponses = [
-        "I'd love to help with recipes! What type of meal are you thinking? Italian, Mexican, Asian, or something else?",
-        "Great question! Are you looking for something quick and easy, or do you have time for a more elaborate dish?",
-        "I can suggest ingredients! What's your main protein - chicken, beef, fish, or are you going vegetarian?",
-        "Tell me what you're in the mood for - comfort food, healthy options, or maybe something new to try?"
-      ];
-      return recipeResponses[Math.floor(Math.random() * recipeResponses.length)];
+      if (!response.ok) {
+        throw new Error('Failed to get AI response');
+      }
+
+      const data = await response.json();
+      
+      // Update conversation context
+      setConversationContext(prev => [...prev.slice(-4), query, data.response]);
+      
+      return data.response;
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      
+      // Enhanced fallback responses based on query type
+      if (lowerQuery.includes('help')) {
+        return "I'm here to help! You can ask me to add items like 'add milk' or 'I need 2 pounds of chicken'. I can also suggest simple recipes. What would you like to do?";
+      } else if (lowerQuery.includes('suggest') || lowerQuery.includes('recommend')) {
+        return "I'd recommend some staples like chicken, vegetables, pasta, and rice for versatile meal options. Would you like me to add any of these to your list?";
+      } else {
+        const fallbackResponses = [
+          "I can help you with your shopping list! Try saying 'add milk' or ask me about simple recipes. What would you like to add?",
+          "Let me help you build your shopping list! You can ask me to add items or suggest ingredients for meals. What are you planning to cook?",
+          "I'm ready to help with your shopping! Tell me what to add to your list or ask about meal ideas. What sounds good to you?"
+        ];
+        return fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+      }
     }
-
-    // Meal planning
-    if (lowerQuery.includes('meal') || lowerQuery.includes('plan') || lowerQuery.includes('week')) {
-      const mealPlanResponses = [
-        "Meal planning is smart! How many people are you cooking for this week?",
-        "Let's plan your meals! Do you prefer to batch cook or make fresh meals daily?",
-        "Great idea! What's your budget like this week? I can suggest cost-effective ingredients.",
-        "I can help with meal prep! Do you have any dietary restrictions I should know about?"
-      ];
-      return mealPlanResponses[Math.floor(Math.random() * mealPlanResponses.length)];
-    }
-
-    // Ingredient questions
-    if ((lowerQuery.includes('what') || lowerQuery.includes('which')) && (lowerQuery.includes('need') || lowerQuery.includes('buy') || lowerQuery.includes('get'))) {
-      const ingredientResponses = [
-        "What kind of meal are you planning? I can suggest everything you'll need!",
-        "Tell me about your cooking plans and I'll help you get organized!",
-        "Are you stocking up for the week or planning a specific dish?",
-        "What's your cooking skill level? I can suggest beginner-friendly or more advanced ingredients!"
-      ];
-      return ingredientResponses[Math.floor(Math.random() * ingredientResponses.length)];
-    }
-
-    // Help and guidance requests
-    if (lowerQuery.includes('help') || lowerQuery.includes('how') || lowerQuery.includes('can you')) {
-      const helpResponses = [
-        "I'm here to help! I can add items to your shopping list, suggest recipes, or help you plan meals. What would you like to do?",
-        "Absolutely! Tell me what you're cooking or planning, and I'll help you organize your shopping list.",
-        "I'd love to help! Are you looking for recipe ideas, need items added to your list, or want meal planning advice?",
-        "Sure thing! I can chat about recipes, suggest ingredients, or help you build your shopping list. What's on your mind?"
-      ];
-      return helpResponses[Math.floor(Math.random() * helpResponses.length)];
-    }
-
-    // Generic helpful responses for other conversational inputs
-    const helpfulResponses = [
-      "That's interesting! Tell me more about what you're planning to cook, and I can help suggest ingredients.",
-      "I'd love to help with your meal planning! What kind of cuisine are you in the mood for?",
-      "Sounds like you're thinking about cooking! What type of dish are you considering?",
-      "I'm here to help with both shopping and cooking ideas. What would you like to explore?"
-    ];
-    return helpfulResponses[Math.floor(Math.random() * helpfulResponses.length)];
-  }, []);
+  }, [conversationContext]);
 
   // Process voice command
   const processVoiceCommand = useCallback(async (command: string) => {
@@ -394,7 +394,7 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
             break;
             
           case 'conversation':
-            const conversationalResponse = handleConversationalQuery(parsedCommand.query);
+            const conversationalResponse = await handleConversationalQuery(parsedCommand.query);
             speak(conversationalResponse);
             break;
         }
@@ -461,14 +461,26 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
           clearTimeout(timeoutRef.current);
         }
 
-        // Process the final command
+        // Process the final command but keep listening
         processVoiceCommand(finalTranscript);
-        setIsListening(false);
+        
+        // Clear transcript after processing
+        setTimeout(() => {
+          setTranscript('');
+        }, 2000);
       }
     };
 
     recognitionRef.current.onend = () => {
-      setIsListening(false);
+      // If we're supposed to be listening, restart the recognition
+      if (isListening) {
+        try {
+          recognitionRef.current?.start();
+        } catch (error) {
+          console.warn('Failed to restart speech recognition:', error);
+          setIsListening(false);
+        }
+      }
     };
 
     recognitionRef.current.onerror = (event) => {
@@ -484,11 +496,11 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
     try {
       recognitionRef.current.start();
       const greetings = [
-        "Hi there! I'm your shopping assistant. You can ask me to add items, suggest recipes, or help plan your meals. What's on your mind?",
-        "Hey! I'm here to help with your shopping and cooking. What would you like to talk about?",
-        "Hello! I can help you add items to your list or chat about what you're planning to cook. What can I do for you?",
-        "Hi! Ready to help with your shopping list and meal planning. What are you thinking about making?",
-        "Hey there! I'm your kitchen companion. Ask me about recipes, meal ideas, or tell me what to add to your list!"
+        "Hi there! I'm your shopping assistant and I'm now listening continuously. You can ask me to add items, suggest simple recipes, or help plan your meals. I'll keep listening until you tell me to stop!",
+        "Hey! I'm here to help with your shopping and cooking. I can suggest recipes for chicken, pasta, soups, and salads. I'll stay active and listen for your commands. What would you like to talk about?",
+        "Hello! I can help you add items to your list or share simple recipe ideas. I'm listening continuously now, so just talk to me naturally!",
+        "Hi! Ready to help with your shopping list and meal planning. I know some great recipes for common ingredients. I'll keep listening for your voice commands. What are you thinking about making?",
+        "Hey there! I'm your kitchen companion and I'm staying active to listen. Ask me about simple recipes, meal ideas, or tell me what to add to your list!"
       ];
       speak(greetings[Math.floor(Math.random() * greetings.length)]);
     } catch (error) {
@@ -580,7 +592,7 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
             ) : (
               <Mic className="h-4 w-4" />
             )}
-            {isProcessingVoice ? 'Processing...' : isListening ? 'Stop' : 'Start Voice'}
+            {isProcessingVoice ? 'Processing...' : isListening ? 'Stop Listening' : 'Start Conversation'}
           </Button>
 
           {(isListening || isSpeaking) && (

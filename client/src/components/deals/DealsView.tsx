@@ -59,16 +59,28 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
     mutationFn: async (deal: StoreDeal) => {
       const response = await apiRequest('POST', '/api/shopping-list/items', {
         productName: deal.productName,
+        quantity: 1,
+        unit: 'COUNT',
         suggestedRetailerId: deal.retailerId,
-        suggestedPrice: deal.salePrice
+        suggestedPrice: Math.round(deal.salePrice * 100) // Convert dollars to cents
       });
       return response.json();
     },
     onSuccess: () => {
+      // Invalidate shopping list queries directly
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      queryClient.refetchQueries({ queryKey: ['/api/shopping-lists'] });
+      
       toast({
         title: "Added to List",
         description: "Item has been added to your shopping list."
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add item to shopping list",
+        variant: "destructive"
       });
     }
   });
@@ -168,7 +180,7 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
               return matchesSearch && matchesFilter;
             })
             .map((deal) => (
-            <Card key={deal.id} className="border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
+            <Card key={deal.id} className="border-0 shadow-sm">
               <CardContent className="p-4">
                 <div className="flex gap-4">
                   {/* Product Image Placeholder */}
@@ -224,7 +236,11 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
                       size="sm"
                       variant="outline"
                       className="w-8 h-8 p-0 rounded-full border-2"
-                      onClick={() => addToShoppingListMutation.mutate(deal)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        addToShoppingListMutation.mutate(deal);
+                      }}
                       disabled={addToShoppingListMutation.isPending}
                     >
                       <Plus className="h-4 w-4" />
