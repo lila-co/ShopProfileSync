@@ -1942,6 +1942,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let deals = await storage.getDeals(retailerId, category);
 
+      // Filter out expired deals
+      const now = new Date();
+      deals = deals.filter(deal => new Date(deal.endDate) > now);
+
       // Remove duplicates by creating a unique key for each deal
       const uniqueDeals = deals.filter((deal, index, self) => 
         index === self.findIndex((d) => 
@@ -1950,6 +1954,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           d.salePrice === deal.salePrice
         )
       );
+
+      // Sort by best savings first
+      uniqueDeals.sort((a, b) => {
+        const savingsA = (a.regularPrice - a.salePrice) / a.regularPrice;
+        const savingsB = (b.regularPrice - b.salePrice) / b.regularPrice;
+        return savingsB - savingsA;
+      });
 
       res.json(uniqueDeals);
     } catch (error) {

@@ -1,4 +1,3 @@
-
 import { storage } from "../storage";
 import { getRetailerAPI } from "./retailerIntegration";
 import type { StoreDeal, Purchase } from "@shared/schema";
@@ -28,7 +27,7 @@ export class DataOptimizer {
   async getOptimizedPrice(retailerId: number, productName: string): Promise<number | null> {
     const cacheKey = `price:${retailerId}:${productName.toLowerCase()}`;
     const cachedPrice = cacheManager.get(cacheKey);
-    
+
     if (cachedPrice !== null) {
       return cachedPrice;
     }
@@ -37,67 +36,73 @@ export class DataOptimizer {
       // Fetch fresh data from retailer API
       const retailerAPI = await getRetailerAPI(retailerId);
       const price = await retailerAPI.getProductPrice(productName);
-      
+
       if (price !== null) {
         // Cache the fresh price
         this.priceCache.set(cacheKey, { price, timestamp: Date.now() });
-        
+
         // Maintain cache size
         if (this.priceCache.size > this.config.maxCacheSize) {
           this.evictOldestEntries(this.priceCache, Math.floor(this.config.maxCacheSize * 0.8));
         }
       }
-      
+
       return price;
     } catch (error) {
       console.error(`Error fetching price for ${productName} from retailer ${retailerId}:`, error);
-      
+
       // Return cached data if API fails
       return cached?.price || null;
     }
   }
 
   /**
-   * Get optimized deals with database + API hybrid approach
+   * Get optimized deals with smart caching and fresh data integration
    */
   async getOptimizedDeals(retailerId?: number, category?: string): Promise<StoreDeal[]> {
-    const cacheKey = `deals-${retailerId || 'all'}-${category || 'all'}`;
+    const cacheKey = `deals_${retailerId || 'all'}_${category || 'all'}`;
     const cached = this.dealCache.get(cacheKey);
-    
-    // Check if cached data is still fresh
-    if (cached && (Date.now() - cached.timestamp) < this.config.dealsTTL * 60 * 1000) {
+
+    // Return cached results if still fresh (< 15 minutes)
+    if (cached && Date.now() - cached.timestamp < 15 * 60 * 1000) {
       return cached.deals;
     }
 
     try {
       // Get base deals from database (fastest)
       const dbDeals = await storage.getDeals(retailerId, category);
-      
+
       // Filter out expired deals
       const now = new Date();
       const activeDeals = dbDeals.filter(deal => new Date(deal.endDate) > now);
-      
+
+      // If specific retailer requested, ensure we only return deals for that retailer
+      const filteredDeals = retailerId ? 
+        activeDeals.filter(deal => deal.retailerId === retailerId) : 
+        activeDeals;
+
       // For critical retailers, also fetch fresh deals from API
       if (retailerId && [1, 2, 3].includes(retailerId)) { // Major retailers
         try {
           const freshDeals = await this.fetchFreshDealsFromAPI(retailerId, category);
-          
-          // Merge and deduplicate deals
-          const mergedDeals = this.mergeDeals(activeDeals, freshDeals);
-          
+
+          // Merge and deduplicate deals, ensuring they match the retailer
+          const retailerFreshDeals = freshDeals.filter(deal => deal.retailerId === retailerId);
+          const mergedDeals = this.mergeDeals(filteredDeals, retailerFreshDeals);
+
           // Cache the merged results
           this.dealCache.set(cacheKey, { deals: mergedDeals, timestamp: Date.now() });
-          
+
           return mergedDeals;
         } catch (apiError) {
           console.warn(`API fetch failed for retailer ${retailerId}, using database deals:`, apiError);
         }
       }
-      
+
       // Cache database results
-      this.dealCache.set(cacheKey, { deals: activeDeals, timestamp: Date.now() });
-      
-      return activeDeals;
+      this.dealCache.set(cacheKey, { deals: filteredDeals, timestamp: Date.now() });
+
+      return filteredDeals;
     } catch (error) {
       console.error('Error fetching optimized deals:', error);
       return cached?.deals || [];
@@ -111,10 +116,10 @@ export class DataOptimizer {
     const updatePromises = retailerIds.map(async (retailerId) => {
       try {
         const retailerAPI = await getRetailerAPI(retailerId);
-        
+
         // Fetch fresh deals from retailer API
         const freshDeals = await this.fetchFreshDealsFromAPI(retailerId);
-        
+
         // Update database with fresh deals
         for (const deal of freshDeals) {
           await storage.createDeal({
@@ -128,10 +133,10 @@ export class DataOptimizer {
             dealSource: "api_sync"
           });
         }
-        
+
         // Clear cache for this retailer to force fresh fetch
         this.clearRetailerCache(retailerId);
-        
+
       } catch (error) {
         console.error(`Failed to update deals for retailer ${retailerId}:`, error);
       }
@@ -171,7 +176,7 @@ export class DataOptimizer {
   async getOptimizedShoppingList(shoppingListId: number): Promise<any> {
     const listItems = await storage.getShoppingListItems(shoppingListId);
     const retailers = await storage.getRetailers();
-    
+
     const optimizedItems = await Promise.all(
       listItems.map(async (item) => {
         // Get all deals for this product from database (includes manual uploads)
@@ -213,10 +218,10 @@ export class DataOptimizer {
             dealInfo
           };
         });
-        
+
         const prices = await Promise.all(pricePromises);
         const availablePrices = prices.filter(p => p.price !== null);
-        
+
         // Find best price, prioritizing deals from manual uploads
         const bestPrice = availablePrices.reduce((min, current) => {
           // If current has a deal and min doesn't, prefer current
@@ -230,7 +235,7 @@ export class DataOptimizer {
           // Otherwise, compare prices
           return current.price! < min.price! ? current : min;
         }, availablePrices[0]);
-        
+
         return {
           ...item,
           availablePrices,
@@ -239,7 +244,7 @@ export class DataOptimizer {
         };
       })
     );
-    
+
     return optimizedItems;
   }
 
@@ -251,26 +256,26 @@ export class DataOptimizer {
 
   private mergeDeals(dbDeals: StoreDeal[], apiDeals: StoreDeal[]): StoreDeal[] {
     const merged = [...dbDeals];
-    
+
     for (const apiDeal of apiDeals) {
       const exists = merged.find(deal => 
         deal.retailerId === apiDeal.retailerId && 
         deal.productName === apiDeal.productName &&
         deal.salePrice === apiDeal.salePrice
       );
-      
+
       if (!exists) {
         merged.push(apiDeal);
       }
     }
-    
+
     return merged;
   }
 
   private evictOldestEntries(cache: Map<string, any>, targetSize: number): void {
     const entries = Array.from(cache.entries());
     entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
-    
+
     const toRemove = entries.slice(0, entries.length - targetSize);
     toRemove.forEach(([key]) => cache.delete(key));
   }
@@ -282,7 +287,7 @@ export class DataOptimizer {
         this.priceCache.delete(key);
       }
     }
-    
+
     // Clear deal cache for this retailer
     for (const [key] of this.dealCache) {
       if (key.includes(`-${retailerId}-`)) {
