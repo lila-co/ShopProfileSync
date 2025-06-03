@@ -56,24 +56,37 @@ const PlanDetails: React.FC = () => {
 
   // Generate plan data based on shopping items and plan type
   const generatePlanData = (items: ShoppingItem[], planType: string): PlanData => {
-    if (!items) return { totalCost: 0, estimatedTime: '0 min', stores: [] };
+    if (!items || items.length === 0) {
+      return { totalCost: 0, estimatedTime: '0 min', stores: [] };
+    }
 
     switch (planType) {
       case 'single-store':
         // Find the most common retailer
         const retailerCounts = items.reduce((acc, item) => {
-          const retailerId = item.suggestedRetailer.id;
-          acc[retailerId] = (acc[retailerId] || 0) + 1;
+          if (item.suggestedRetailer?.id) {
+            const retailerId = item.suggestedRetailer.id;
+            acc[retailerId] = (acc[retailerId] || 0) + 1;
+          }
           return acc;
         }, {} as Record<number, number>);
         
-        const mostCommonRetailerId = Object.keys(retailerCounts).reduce((a, b) =>
+        const retailerKeys = Object.keys(retailerCounts);
+        if (retailerKeys.length === 0) {
+          return { totalCost: 0, estimatedTime: '0 min', stores: [] };
+        }
+        
+        const mostCommonRetailerId = retailerKeys.reduce((a, b) =>
           retailerCounts[Number(a)] > retailerCounts[Number(b)] ? a : b
         );
         
         const primaryRetailer = items.find(item => 
-          item.suggestedRetailer.id === Number(mostCommonRetailerId)
+          item.suggestedRetailer?.id === Number(mostCommonRetailerId)
         )?.suggestedRetailer;
+
+        if (!primaryRetailer) {
+          return { totalCost: 0, estimatedTime: '0 min', stores: [] };
+        }
 
         return {
           totalCost: items.reduce((sum, item) => sum + (item.suggestedPrice || 0) * item.quantity, 0),
@@ -88,16 +101,18 @@ const PlanDetails: React.FC = () => {
       case 'multi-store':
         // Group by retailer for best prices
         const storeGroups = items.reduce((acc, item) => {
-          const retailerId = item.suggestedRetailer.id;
-          if (!acc[retailerId]) {
-            acc[retailerId] = {
-              retailer: item.suggestedRetailer,
-              items: [],
-              subtotal: 0
-            };
+          if (item.suggestedRetailer?.id) {
+            const retailerId = item.suggestedRetailer.id;
+            if (!acc[retailerId]) {
+              acc[retailerId] = {
+                retailer: item.suggestedRetailer,
+                items: [],
+                subtotal: 0
+              };
+            }
+            acc[retailerId].items.push(item);
+            acc[retailerId].subtotal += (item.suggestedPrice || 0) * item.quantity;
           }
-          acc[retailerId].items.push(item);
-          acc[retailerId].subtotal += (item.suggestedPrice || 0) * item.quantity;
           return acc;
         }, {} as Record<number, any>);
 
@@ -110,16 +125,18 @@ const PlanDetails: React.FC = () => {
       case 'balanced':
         // Balance between convenience and savings
         const balancedStores = items.reduce((acc, item) => {
-          const retailerId = item.suggestedRetailer.id;
-          if (!acc[retailerId]) {
-            acc[retailerId] = {
-              retailer: item.suggestedRetailer,
-              items: [],
-              subtotal: 0
-            };
+          if (item.suggestedRetailer?.id) {
+            const retailerId = item.suggestedRetailer.id;
+            if (!acc[retailerId]) {
+              acc[retailerId] = {
+                retailer: item.suggestedRetailer,
+                items: [],
+                subtotal: 0
+              };
+            }
+            acc[retailerId].items.push(item);
+            acc[retailerId].subtotal += (item.suggestedPrice || 0) * item.quantity;
           }
-          acc[retailerId].items.push(item);
-          acc[retailerId].subtotal += (item.suggestedPrice || 0) * item.quantity;
           return acc;
         }, {} as Record<number, any>);
 
