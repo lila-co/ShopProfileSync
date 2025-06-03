@@ -545,6 +545,84 @@ const ShoppingListComponent: React.FC = () => {
     <div className="p-4 pb-20">
       <h2 className="text-xl font-bold mb-4">Shopping List</h2>
 
+      
+
+      <div className="space-y-2">
+        {items.map((item) => (
+          <Card key={item.id} className={`${item.completed ? 'opacity-60' : ''}`}>
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3 flex-1">
+                  <button
+                    onClick={() => handleToggleItem(item.id, item.completed)}
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                      item.completed
+                        ? 'bg-green-500 border-green-500'
+                        : 'border-gray-300 hover:border-green-400'
+                    }`}
+                  >
+                    {item.completed && <Check className="h-3 w-3 text-white" />}
+                  </button>
+                  <div className="flex-1">
+                    <span className={`${item.completed ? 'line-through' : ''}`}>
+                      {item.productName}
+                    </span>
+                    <div className="text-sm text-gray-500">
+                      {item.quantity} {item.unit}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleEditItem(item)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteItem(item.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {items.length === 0 && (
+        <div className="text-center py-8 text-gray-500">
+          <ShoppingBag className="h-12 w-12 mx-auto mb-2 opacity-50" />
+          <p>Your shopping list is empty</p>
+          <p className="text-sm">Add items below to get started</p>
+        </div>
+      )}
+
+      <div className="mt-6 mb-6 flex gap-2">
+        <Button
+          variant="outline"
+          onClick={() => setRecipeDialogOpen(true)}
+          className="flex items-center gap-1"
+        >
+          <FileText className="h-4 w-4" />
+          <span>Import Recipe</span>
+        </Button>
+
+        <Button
+          variant="outline"
+          onClick={handleRegenerateList}
+          disabled={regenerateListMutation.isPending}
+          className="flex items-center gap-1"
+        >
+          <Wand2 className="h-4 w-4" />
+          <span>{regenerateListMutation.isPending ? "Regenerating..." : "Regenerate List"}</span>
+        </Button>
+      </div>
+
       <form onSubmit={handleAddItem} className="mb-4">
         <div className="flex space-x-2 mb-2">
           <Input
@@ -605,82 +683,6 @@ const ShoppingListComponent: React.FC = () => {
           </div>
         </div>
       </form>
-
-      <div className="mb-6 flex gap-2">
-        <Button
-          variant="outline"
-          onClick={() => setRecipeDialogOpen(true)}
-          className="flex items-center gap-1"
-        >
-          <FileText className="h-4 w-4" />
-          <span>Import Recipe</span>
-        </Button>
-
-        <Button
-          variant="outline"
-          onClick={handleRegenerateList}
-          disabled={regenerateListMutation.isPending}
-          className="flex items-center gap-1"
-        >
-          <Wand2 className="h-4 w-4" />
-          <span>{regenerateListMutation.isPending ? "Regenerating..." : "Regenerate List"}</span>
-        </Button>
-      </div>
-
-      <div className="space-y-2">
-        {items.map((item) => (
-          <Card key={item.id} className={`${item.completed ? 'opacity-60' : ''}`}>
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3 flex-1">
-                  <button
-                    onClick={() => handleToggleItem(item.id, item.completed)}
-                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                      item.completed
-                        ? 'bg-green-500 border-green-500'
-                        : 'border-gray-300 hover:border-green-400'
-                    }`}
-                  >
-                    {item.completed && <Check className="h-3 w-3 text-white" />}
-                  </button>
-                  <div className="flex-1">
-                    <span className={`${item.completed ? 'line-through' : ''}`}>
-                      {item.productName}
-                    </span>
-                    <div className="text-sm text-gray-500">
-                      {item.quantity} {item.unit}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleEditItem(item)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDeleteItem(item.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {items.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
-          <ShoppingBag className="h-12 w-12 mx-auto mb-2 opacity-50" />
-          <p>Your shopping list is empty</p>
-          <p className="text-sm">Add items above to get started</p>
-        </div>
-      )}
 
       {/* Recipe Import Dialog */}
       <Dialog open={recipeDialogOpen} onOpenChange={setRecipeDialogOpen}>
