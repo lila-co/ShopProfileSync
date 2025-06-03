@@ -35,6 +35,8 @@ const PlanDetails: React.FC = () => {
   const planType = params.get('planType');
   const mode = params.get('mode') || 'instore';
 
+  console.log('Plan Details loaded with params:', { listId, planType, mode });
+
   const [planData, setPlanData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
