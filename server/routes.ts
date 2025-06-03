@@ -1601,36 +1601,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get personalized suggestions based on user profile
   app.get('/api/shopping-lists/suggestions', async (req: Request, res: Response) => {
     try {
-      const userId = 1; // For demo purposes, use default user
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+      
       const user = await storage.getUser(userId);
       if (!user) {
-        return res.status(404).json({ message: 'User not found' });
+        console.log(`User ${userId} not found for suggestions`);
+        // Return empty suggestions instead of error to prevent frontend crashes
+        return res.json([]);
       }
 
-      // For demo purposes, return hardcoded suggestions based on user profile
-      const suggestions = [
-        {
-          type: "swap",
-          currentItem: "Regular pasta",
-          suggestedItem: "Whole wheat pasta",
-          reason: "Healthier option with more fiber and nutrients"
-        },
-        {
-          type: "new",
-          suggestedItem: "Fresh seasonal fruits",
-          reason: "Based on your preference for organic products"
-        },
-        {
-          type: "swap",
-          currentItem: "Regular milk",
-          suggestedItem: "Organic milk",
-          reason: "Aligns with your dietary preferences"
-        }
-      ];
+      // Generate suggestions based on user profile
+      const suggestions = await generatePersonalizedSuggestions(user);
 
       res.json(suggestions);
     } catch (error) {
-      handleError(res, error);
+      console.error('Error fetching suggestions:', error);
+      // Return empty array instead of error to prevent frontend crashes
+      res.json([]);
     }
   });
 

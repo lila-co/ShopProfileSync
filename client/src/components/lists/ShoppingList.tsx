@@ -68,11 +68,18 @@ const ShoppingListComponent: React.FC = () => {
     enabled: !!shoppingLists,
   });
 
-  // AI List Generation Animation
+  // AI List Generation Animation and Auto-generation
   useEffect(() => {
     if (shoppingLists && shoppingLists.length > 0) {
-      const shouldShowAnimation = !localStorage.getItem('listGenerationShown') || 
-                                 localStorage.getItem('forceShowAnimation') === 'true';
+      const defaultList = shoppingLists[0];
+      const hasItems = defaultList.items && defaultList.items.length > 0;
+
+      // Check if we've shown the animation before
+      const hasShownAnimation = localStorage.getItem('listGenerationShown') === 'true';
+      const forceAnimation = localStorage.getItem('forceShowAnimation') === 'true';
+
+      // Show animation if: list is empty AND (never shown before OR forced)
+      const shouldShowAnimation = !hasItems && (!hasShownAnimation || forceAnimation);
 
       if (shouldShowAnimation) {
         setIsGeneratingList(true);
@@ -95,6 +102,9 @@ const ShoppingListComponent: React.FC = () => {
                 setIsGeneratingList(false);
                 localStorage.setItem('listGenerationShown', 'true');
                 localStorage.removeItem('forceShowAnimation');
+
+                // Auto-generate items
+                generateSampleItems();
               }, 1000);
               return prev;
             }
@@ -103,9 +113,82 @@ const ShoppingListComponent: React.FC = () => {
         }, 1500);
 
         return () => clearInterval(interval);
+      } else if (!hasItems && hasShownAnimation) {
+        // If list is empty but we've shown animation before, just generate items directly
+        generateSampleItems();
       }
     }
   }, [shoppingLists]);
+
+  // Generate sample items for empty lists
+  const generateSampleItems = async () => {
+    const defaultList = shoppingLists?.[0];
+    if (!defaultList || (defaultList.items && defaultList.items.length > 0)) return;
+
+    try {
+      const response = await apiRequest('POST', '/api/shopping-lists/generate', {
+        shoppingListId: defaultList.id
+      });
+
+      if (response.ok) {
+        // Refresh shopping lists to show new items
+        queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+
+        toast({
+          title: "Shopping List Generated",
+          description: "AI has created a personalized shopping list for you"
+        });
+      }
+    } catch (error) {
+      console.error('Failed to generate sample items:', error);
+      // Fallback: add some basic items manually
+      const basicItems = [
+        { productName: 'Milk', quantity: 1, unit: 'GALLON' },
+        { productName: 'Bread', quantity: 1, unit: 'LOAF' },
+        { productName: 'Eggs', quantity: 1, unit: 'DOZEN' },
+        { productName: 'Bananas', quantity: 2, unit: 'LB' },
+        { productName: 'Chicken Breast', quantity: 1, unit: 'LB' }
+      ];
+
+      for (const item of basicItems) {
+        try {
+          await apiRequest('POST', '/api/shopping-list/items', {
+            ...item,
+            shoppingListId: defaultList.id
+          });
+        } catch (addError) {
+          console.error('Failed to add item:', item.productName, addError);
+        }
+      }
+
+      // Refresh the list
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+
+      toast({
+        title: "Basic Items Added",
+        description: "Added some essential items to get you started"
+      });
+    }
+
+    const sampleItems = [
+      { productName: 'Organic Milk', quantity: 1, unit: 'GALLON' },
+      { productName: 'Bananas', quantity: 2, unit: 'LB' },
+      { productName: 'Whole Grain Bread', quantity: 1, unit: 'LOAF' },
+      { productName: 'Free-Range Eggs', quantity: 1, unit: 'DOZEN' },
+      { productName: 'Chicken Breast', quantity: 1, unit: 'LB' }
+    ];
+
+    for (const item of sampleItems) {
+      try {
+        await apiRequest('POST', `/api/shopping-lists/${defaultList.id}/items`, item);
+      } catch (error) {
+        console.error('Error adding sample item:', error);
+      }
+    }
+
+    // Refresh the list
+    queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+  };
 
   const addItemMutation = useMutation({
     mutationFn: async (itemName: string) => {
@@ -158,20 +241,23 @@ const ShoppingListComponent: React.FC = () => {
   const deleteItemMutation = useMutation({
     mutationFn: async (itemId: number) => {
       const response = await apiRequest('DELETE', `/api/shopping-lists/items/${itemId}`);
-      return response.json();
+      if (!response.ok) {
+        throw new Error('Failed to delete item');
+      }
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
       toast({
         title: "Item deleted",
-        description: "Item has been removed from your shopping list",
+        description: "The item has been removed from your list"
       });
     },
     onError: (error: any) => {
       toast({
         title: "Error",
         description: error.message || "Failed to delete item",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   });
@@ -197,6 +283,76 @@ const ShoppingListComponent: React.FC = () => {
       });
     }
   });
+
+  const regenerateListMutation = useMutation({
+    mutationFn: async () => {
+      const defaultList = shoppingLists?.[0];
+      if (!defaultList) throw new Error('No shopping list found');
+
+      // First, delete all existing items
+      if (defaultList.items && defaultList.items.length > 0) {
+        for (const item of defaultList.items) {
+          await apiRequest('DELETE', `/api/shopping-lists/items/${item.id}`);
+        }
+      }
+
+      // Then generate new items
+      const response = await apiRequest('POST', '/api/shopping-lists/generate', {
+        shoppingListId: defaultList.id
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      toast({
+        title: "List Regenerated",
+        description: "Your shopping list has been regenerated with fresh recommendations"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to regenerate list",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleRegenerateList = () => {
+    // Show animation during regeneration
+    setIsGeneratingList(true);
+    const steps = [
+      "Clearing current list...",
+      "Analyzing your preferences...",
+      "Finding fresh recommendations...",
+      "Optimizing your shopping list...",
+      "Finalizing new items..."
+    ];
+
+    setGenerationSteps(steps);
+    setCurrentStep(0);
+
+    let currentStepIndex = 0;
+    const interval = setInterval(() => {
+      currentStepIndex++;
+      setCurrentStep(currentStepIndex);
+
+      if (currentStepIndex >= steps.length - 1) {
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    regenerateListMutation.mutate(undefined, {
+      onSettled: () => {
+        // Ensure animation completes before hiding
+        setTimeout(() => {
+          clearInterval(interval);
+          setIsGeneratingList(false);
+          setCurrentStep(-1);
+        }, Math.max(1000, (steps.length - currentStepIndex) * 1000));
+      }
+    });
+  };
 
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
@@ -231,11 +387,6 @@ const ShoppingListComponent: React.FC = () => {
         }
       });
     }
-  };
-
-  const handleRegenerateList = () => {
-    localStorage.setItem('forceShowAnimation', 'true');
-    window.location.reload();
   };
 
   const handleImportRecipe = () => {
@@ -334,9 +485,13 @@ const ShoppingListComponent: React.FC = () => {
           placeholder="Add an item..."
           value={newItemName}
           onChange={(e) => setNewItemName(e.target.value)}
-          className="flex-1"
+          className="flex-1 border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 bg-white text-black font-semibold text-base placeholder-gray-400 px-4 py-2"
         />
-        <Button type="submit" disabled={addItemMutation.isPending}>
+        <Button 
+          type="submit" 
+          disabled={addItemMutation.isPending}
+          className="bg-blue-600 hover:bg-blue-700 text-white border-2 border-blue-600 hover:border-blue-700 shadow-md min-w-[44px]"
+        >
           <Plus className="h-4 w-4" />
         </Button>
       </form>
@@ -354,10 +509,11 @@ const ShoppingListComponent: React.FC = () => {
         <Button
           variant="outline"
           onClick={handleRegenerateList}
+          disabled={regenerateListMutation.isPending}
           className="flex items-center gap-1"
         >
           <Wand2 className="h-4 w-4" />
-          <span>Regenerate List</span>
+          <span>{regenerateListMutation.isPending ? "Regenerating..." : "Regenerate List"}</span>
         </Button>
       </div>
 

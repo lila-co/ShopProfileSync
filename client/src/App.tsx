@@ -7,6 +7,9 @@ import { queryClient } from '@/lib/queryClient';
 import AuthPage from './pages/auth';
 import Dashboard from './pages/dashboard';
 import ShoppingListPage from './pages/shopping-list';
+import DealsPage from './pages/deals';
+import RetailersPage from './pages/retailers';
+import ProfilePage from './pages/profile';
 
 function AppContent() {
   const { isLoading, isAuthenticated } = useAuth();
@@ -19,17 +22,19 @@ function AppContent() {
     );
   }
 
+  if (!isAuthenticated) {
+    return <AuthPage />;
+  }
+
   return (
     <Switch>
-      <Route path="/dashboard">
-        {isAuthenticated ? <Dashboard /> : <Redirect to="/" />}
-      </Route>
-      <Route path="/shopping-list">
-        {isAuthenticated ? <ShoppingListPage /> : <Redirect to="/" />}
-      </Route>
-      <Route path="/">
-        {isAuthenticated ? <Redirect to="/shopping-list" /> : <AuthPage />}
-      </Route>
+      <Route path="/shopping-list" component={ShoppingListPage} />
+      <Route path="/dashboard" component={Dashboard} />
+      <Route path="/deals" component={DealsPage} />
+      <Route path="/retailers" component={RetailersPage} />
+      <Route path="/profile" component={ProfilePage} />
+      <Route path="/" component={() => <Redirect to="/shopping-list" />} />
+      <Route component={() => <Redirect to="/shopping-list" />} />
     </Switch>
   );
 }

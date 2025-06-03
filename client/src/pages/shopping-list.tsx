@@ -1,8 +1,8 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import ShoppingListComponent from '@/components/lists/ShoppingList';
-import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
+import AuthenticatedHeader from '@/components/layout/AuthenticatedHeader';
 import type { ShoppingList as ShoppingListType, User } from '@/lib/types';
 
 const ShoppingListPage: React.FC = () => {
@@ -21,7 +21,7 @@ const ShoppingListPage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
-        <Header user={user} />
+        <AuthenticatedHeader />
         <main className="flex-1 overflow-y-auto p-4 bg-white">
           <div className="animate-pulse space-y-4">
             <div className="h-8 bg-gray-200 rounded w-3/4"></div>
@@ -46,10 +46,7 @@ const ShoppingListPage: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
-      <Header 
-        title="Home"
-        user={user}
-      />
+      <AuthenticatedHeader />
       <main className="flex-1 overflow-y-auto">
         {/* Welcome Section */}
         <section className="p-4 bg-white border-b border-gray-100">
