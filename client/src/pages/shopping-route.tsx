@@ -98,14 +98,21 @@ const ShoppingRoute: React.FC = () => {
 
   // Parse plan data and generate route when component loads
   useEffect(() => {
+    console.log('Shopping route useEffect triggered');
+    console.log('planDataParam:', planDataParam);
+    console.log('shoppingList:', shoppingList);
+    
     if (planDataParam) {
       try {
         const planData = JSON.parse(decodeURIComponent(planDataParam));
+        console.log('Parsed plan data:', planData);
         setSelectedPlanData(planData);
 
         // Generate route from the selected plan instead of raw shopping list items
         const route = generateOptimizedShoppingRouteFromPlan(planData);
+        console.log('Generated route from plan:', route);
         setOptimizedRoute(route);
+        setStartTime(new Date());
       } catch (error) {
         console.error('Error parsing plan data:', error);
         // Fallback to original method if plan data is invalid
@@ -117,8 +124,10 @@ const ShoppingRoute: React.FC = () => {
       }
     } else if (shoppingList?.items) {
       // Fallback to original method if no plan data is provided
+      console.log('Using fallback method with shopping list items');
       const route = generateOptimizedShoppingRoute(shoppingList.items);
       setOptimizedRoute(route);
+      setStartTime(new Date());
     }
   }, [shoppingList, planDataParam]);
 
@@ -126,6 +135,8 @@ const ShoppingRoute: React.FC = () => {
 
   // Generate optimized shopping route from selected plan data
   const generateOptimizedShoppingRouteFromPlan = (planData: any) => {
+    console.log('generateOptimizedShoppingRouteFromPlan called with:', planData);
+    
     let items: any[] = [];
     let retailerName = 'Store';
     let isMultiStore = false;
@@ -133,11 +144,18 @@ const ShoppingRoute: React.FC = () => {
 
     // Extract items from different plan structures
     if (planData.stores && planData.stores.length > 0) {
+      console.log('Processing plan with stores:', planData.stores);
+      
       if (planData.stores.length === 1) {
         // Single store plan
         items = planData.stores[0].items || [];
         retailerName = planData.stores[0].retailerName || planData.stores[0].retailer?.name || 'Store';
-        stores = planData.stores;
+        stores = planData.stores.map((store: any) => ({
+          ...store,
+          retailerName: store.retailerName || store.retailer?.name || 'Store',
+          items: store.items || []
+        }));
+        console.log('Single store plan - items:', items.length, 'retailer:', retailerName);
       } else {
         // Multi-store plan - keep stores separate
         isMultiStore = true;
@@ -152,18 +170,22 @@ const ShoppingRoute: React.FC = () => {
         retailerName = `Multi-Store Plan (${stores.length} stores)`;
         // For the main route, use all items but keep store association
         items = stores.flatMap((store: any) => store.items || []);
+        console.log('Multi-store plan - total items:', items.length, 'stores:', stores.length);
       }
     } else if (planData.items) {
-      // Single store plan
+      // Single store plan with items directly
       items = planData.items;
       retailerName = planData.retailerName || 'Store';
       stores = [{ retailerName, items }];
+      console.log('Plan with direct items - items:', items.length);
     } else {
       // Fallback - use shopping list items
+      console.log('Using fallback - shopping list items');
       items = shoppingList?.items || [];
       stores = [{ retailerName: 'Store', items }];
     }
 
+    console.log('Final items for route generation:', items);
     const route = generateOptimizedShoppingRoute(items, retailerName, planData);
     
     // Add multi-store specific data
@@ -173,6 +195,7 @@ const ShoppingRoute: React.FC = () => {
       route.currentStoreIndex = 0;
     }
 
+    console.log('Generated final route:', route);
     return route;
   };
 

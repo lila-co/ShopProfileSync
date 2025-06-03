@@ -309,15 +309,20 @@ const PlanDetails: React.FC = () => {
             size="lg"
             onClick={() => {
               console.log('Navigating to shopping route with planData:', planData);
+              const enhancedPlanData = {
+                ...planData,
+                planType: selectedPlanType === 'single-store' ? 'Single Store' :
+                         selectedPlanType === 'multi-store' ? 'Multi-Store Best Value' :
+                         selectedPlanType === 'balanced' ? 'Balanced Plan' : 'Shopping Plan',
+                selectedPlanType: selectedPlanType
+              };
+              
+              console.log('Enhanced plan data being sent:', enhancedPlanData);
+              
               const params = new URLSearchParams({
                 listId: listId || '1',
                 mode: 'instore',
-                planData: encodeURIComponent(JSON.stringify({
-                  ...planData,
-                  planType: selectedPlanType === 'single-store' ? 'Single Store' :
-                           selectedPlanType === 'multi-store' ? 'Multi-Store Best Value' :
-                           selectedPlanType === 'balanced' ? 'Balanced Plan' : 'Shopping Plan'
-                }))
+                planData: encodeURIComponent(JSON.stringify(enhancedPlanData))
               });
               window.location.href = `/shopping-route?${params.toString()}`;
             }}
