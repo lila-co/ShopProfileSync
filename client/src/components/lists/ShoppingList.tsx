@@ -482,6 +482,12 @@ const ShoppingListComponent: React.FC = () => {
   });
 
   const handleRegenerateList = () => {
+    // Prevent multiple calls if already generating
+    if (regenerateListMutation.isPending || isGeneratingList) {
+      console.log('Regeneration already in progress, ignoring duplicate call');
+      return;
+    }
+
     // Reset the flag since user is explicitly asking for regeneration
     setUserHasClearedList(false);
     
