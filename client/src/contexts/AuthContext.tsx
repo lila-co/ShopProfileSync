@@ -89,9 +89,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('auth_token');
-    setUser(null);
+  const logout = async () => {
+    try {
+      // Call server logout endpoint to invalidate session
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error) {
+      console.error('Server logout failed:', error);
+    } finally {
+      // Clear all client-side state and session data
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('listGenerationShown');
+      localStorage.removeItem('lastLoginTime');
+      localStorage.removeItem('forceShowAnimation');
+      setUser(null);
+    }
   };
 
   // Helper method to clear auth state completely (useful for debugging)

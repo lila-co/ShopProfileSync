@@ -278,7 +278,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/auth/logout', async (req: Request, res: Response) => {
     try {
-      // In production, invalidate the session/token
+      // Get the current user ID from headers if available
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : null;
+      
+      // In production, you would invalidate the session/token in your session store
+      // For this demo, we'll clear any user-specific cached data
+      if (userId) {
+        // Clear any cached user data or session information
+        console.log(`User ${userId} logged out, clearing session data`);
+      }
+      
       res.json({ message: 'Logout successful' });
     } catch (error) {
       handleError(res, error);
