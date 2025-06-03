@@ -454,6 +454,72 @@ const RetailerLinking: React.FC = () => {
         )}
       </div>
 
+      {/* Add Custom Store Dialog */}
+      <Dialog open={showAddStore} onOpenChange={setShowAddStore}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <Store className="h-6 w-6 mr-2" />
+              Add Custom Store
+            </DialogTitle>
+            <DialogDescription>
+              Add a custom store that's not in our list. You can connect to it after adding.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="storeName">Store Name *</Label>
+              <Input
+                id="storeName"
+                value={newStoreName}
+                onChange={(e) => setNewStoreName(e.target.value)}
+                placeholder="e.g., Local Market"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="storeWebsite">Website URL (Optional)</Label>
+              <Input
+                id="storeWebsite"
+                type="url"
+                value={newStoreWebsite}
+                onChange={(e) => setNewStoreWebsite(e.target.value)}
+                placeholder="https://example.com"
+              />
+            </div>
+
+            <div className="bg-blue-50 p-3 rounded-md">
+              <p className="text-xs text-blue-600">
+                After adding your custom store, you'll be able to connect your account or subscribe to their weekly circulars if available.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="mt-4">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => {
+                setShowAddStore(false);
+                setNewStoreName('');
+                setNewStoreWebsite('');
+                setSelectedAvailableRetailer('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAddStore}
+              disabled={addStoreMutation.isPending || !newStoreName.trim()}
+            >
+              {addStoreMutation.isPending ? "Adding..." : "Add Store"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Link Account Dialog */}
       <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
         <DialogContent className="sm:max-w-md">
