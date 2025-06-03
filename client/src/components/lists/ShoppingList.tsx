@@ -14,6 +14,7 @@ import { getItemImage, getBestProductImage, getCompanyLogo } from '@/lib/imageUt
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import VoiceAgent from '@/components/voice/VoiceAgent';
 
 const ShoppingListComponent: React.FC = () => {
   const { toast } = useToast();
@@ -474,7 +475,7 @@ const ShoppingListComponent: React.FC = () => {
       if (!defaultList) throw new Error('No shopping list found');
 
       const currentItems = defaultList.items || [];
-      
+
       // If list is empty, generate a basic starter list
       if (currentItems.length === 0) {
         const starterItems = [
@@ -519,7 +520,7 @@ const ShoppingListComponent: React.FC = () => {
 
       for (const item of currentItems) {
         const original = item.productName.toLowerCase().trim();
-        
+
         // Normalize the product name for similarity checking (less aggressive)
         let normalized = original
           .replace(/\b(organic|free-range|grass-fed|natural|premium|select|fresh)\s+/gi, '') // Remove quality descriptors
@@ -603,12 +604,12 @@ const ShoppingListComponent: React.FC = () => {
       // Filter out items that already exist in the list using a more precise matching
       const newItems = enhancementItems.filter(item => {
         const itemName = item.productName.toLowerCase().trim();
-        
+
         // Check for exact matches first (case-insensitive)
         const exactMatch = currentItems.some(existing => 
           existing.productName.toLowerCase().trim() === itemName
         );
-        
+
         if (exactMatch) {
           console.log(`Skipping "${item.productName}" - exact match found`);
           return false;
@@ -636,7 +637,7 @@ const ShoppingListComponent: React.FC = () => {
             .replace(/\b(organic|free-range|grass-fed|natural|premium|select|fresh|baby|roma|yellow|red|brown|whole\s+wheat|whole\s+grain)\s*/gi, '')
             .replace(/\s+/g, ' ')
             .trim();
-          
+
           let existingNormalized = existingCore;
           if (existingCore === 'milk' || existingCore.endsWith(' milk')) {
             existingNormalized = 'milk';
@@ -648,12 +649,12 @@ const ShoppingListComponent: React.FC = () => {
 
           return existingNormalized === normalizedCore;
         });
-        
+
         if (coreExists) {
           console.log(`Skipping "${item.productName}" - core product already exists`);
           return false;
         }
-        
+
         return true;
       });
 
@@ -661,11 +662,55 @@ const ShoppingListComponent: React.FC = () => {
       const addedItems = [];
       for (const item of newItems) {
         try {
+          // Use AI categorization to get the proper unit
+          let finalUnit = item.unit || 'COUNT';
+          let finalQuantity = item.quantity || 1;
+
+          try {
+              // Try to get AI-suggested unit and quantity
+              const aiResult = await aiCategorizationService.categorizeProduct(
+                item.productName, 
+                item.quantity || 1, 
+                item.unit || 'COUNT'
+              );
+
+              console.log(`AI categorization for ${item.productName}:`, aiResult);
+
+              if (aiResult?.suggestedUnit) {
+                finalUnit = aiResult.suggestedUnit;
+                console.log(`Using AI suggested unit: ${finalUnit} for ${item.productName}`);
+              }
+              if (aiResult?.suggestedQuantity) {
+                finalQuantity = aiResult.suggestedQuantity;
+                console.log(`Using AI suggested quantity: ${finalQuantity} for ${item.productName}`);
+              }
+            } catch (aiError) {
+              console.warn('AI categorization failed, using quick categorization fallback:', aiError);
+              // If AI fails, use quick categorization fallback
+              const quickResult = aiCategorizationService.getQuickCategory(
+                item.productName, 
+                item.quantity || 1, 
+                item.unit || 'COUNT'
+              );
+              console.log(`Quick categorization for ${item.productName}:`, quickResult);
+
+              if (quickResult.suggestedUnit) {
+                finalUnit = quickResult.suggestedUnit;
+                console.log(`Using quick suggested unit: ${finalUnit} for ${item.productName}`);
+              }
+              if (quickResult.suggestedQuantity) {
+                finalQuantity = quickResult.suggestedQuantity;
+                console.log(`Using quick suggested quantity: ${finalQuantity} for ${item.productName}`);
+              }
+            }
+
+          console.log(`Adding ${item.productName} with quantity: ${finalQuantity}, unit: ${finalUnit}`);
+
           const response = await apiRequest('POST', '/api/shopping-list/items', {
             shoppingListId: defaultList.id,
             productName: item.productName,
-            quantity: item.quantity || 1, // Ensure quantity is always set
-            unit: item.unit || 'COUNT' // Ensure unit is always set
+            quantity: finalQuantity,
+            unit: finalUnit
           });
           const addedItem = await response.json();
           addedItems.push(addedItem);
@@ -683,9 +728,9 @@ const ShoppingListComponent: React.FC = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-      
+
       let title, description;
-      
+
       if (data.isNewList) {
         title = "Shopping List Created";
         description = `Created a new list with ${data.itemsAdded} essential items`;
@@ -696,7 +741,7 @@ const ShoppingListComponent: React.FC = () => {
           description += ` (${data.itemsSkipped} similar items already existed)`;
         }
       }
-      
+
       toast({
         title,
         description
@@ -793,6 +838,47 @@ const ShoppingListComponent: React.FC = () => {
     }
   };
 
+  // Voice command handlers
+  const handleVoiceAddItem = async (itemName: string, quantity: number, unit: string) => {
+    return new Promise<void>((resolve, reject) => {
+      addItemMutation.mutate(
+        { itemName, quantity, unit },
+        {
+          onSuccess: () => resolve(),
+          onError: (error) => reject(error)
+        }
+      );
+    });
+  };
+
+  const handleVoiceToggleItem = (itemName: string) => {
+    const defaultList = shoppingLists?.[0];
+    if (!defaultList?.items) return;
+
+    // Find item by name (case-insensitive)
+    const item = defaultList.items.find(
+      item => item.productName.toLowerCase().includes(itemName.toLowerCase())
+    );
+
+    if (item) {
+      toggleItemMutation.mutate({ itemId: item.id, completed: !item.completed });
+    }
+  };
+
+  const handleVoiceDeleteItem = (itemName: string) => {
+    const defaultList = shoppingLists?.[0];
+    if (!defaultList?.items) return;
+
+    // Find item by name (case-insensitive)
+    const item = defaultList.items.find(
+      item => item.productName.toLowerCase().includes(itemName.toLowerCase())
+    );
+
+    if (item) {
+      deleteItemMutation.mutate(item.id);
+    }
+  };
+
   // Show AI generation animation
   if (isGeneratingList) {
     return (
@@ -876,8 +962,6 @@ const ShoppingListComponent: React.FC = () => {
   return (
     <div className="p-4 pb-20">
       <h2 className="text-xl font-bold mb-4">Shopping List</h2>
-
-
 
       {/* Categorized Shopping List */}
       {isCategorizingItems && (
@@ -1212,6 +1296,16 @@ const ShoppingListComponent: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Voice AI Agent - Moved to bottom */}
+      <div className="mt-6 mb-4">
+        <VoiceAgent
+          onAddItem={handleVoiceAddItem}
+          onToggleItem={handleVoiceToggleItem}
+          onDeleteItem={handleVoiceDeleteItem}
+          isProcessing={addItemMutation.isPending || toggleItemMutation.isPending || deleteItemMutation.isPending}
+        />
+      </div>
     </div>
   );
 };

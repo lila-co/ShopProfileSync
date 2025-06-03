@@ -797,6 +797,7 @@ export class MemStorage implements IStorage {
       shoppingListId,
       productName: itemData.productName || "New Item",
       quantity: itemData.quantity || 1,
+      unit: itemData.unit || 'COUNT', // Keep the provided unit or default to COUNT
       isCompleted: itemData.isCompleted || false,
       suggestedRetailerId: itemData.suggestedRetailerId,
       suggestedPrice: itemData.suggestedPrice,
