@@ -40,6 +40,7 @@ const ShoppingRoute: React.FC = () => {
   const [optimizedRoute, setOptimizedRoute] = useState<any>(null);
   const [selectedPlanData, setSelectedPlanData] = useState<any>(null);
   const [currentAisleIndex, setCurrentAisleIndex] = useState(0);
+  const [currentStoreIndex, setCurrentStoreIndex] = useState(0);
   const [completedItems, setCompletedItems] = useState<Set<number>>(new Set());
   const [loyaltyCard, setLoyaltyCard] = useState<any>(null);
   const [startTime, setStartTime] = useState<Date | null>(null);
@@ -127,33 +128,52 @@ const ShoppingRoute: React.FC = () => {
   const generateOptimizedShoppingRouteFromPlan = (planData: any) => {
     let items: any[] = [];
     let retailerName = 'Store';
+    let isMultiStore = false;
+    let stores: any[] = [];
 
     // Extract items from different plan structures
     if (planData.stores && planData.stores.length > 0) {
-      // Multi-store plan - use first store for route or combine all stores
       if (planData.stores.length === 1) {
+        // Single store plan
         items = planData.stores[0].items || [];
-        retailerName = planData.stores[0].retailerName || 'Store';
+        retailerName = planData.stores[0].retailerName || planData.stores[0].retailer?.name || 'Store';
+        stores = planData.stores;
       } else {
-        // For multi-store plans, combine all items and let user know it's multi-store
-        items = planData.stores.flatMap((store: any) => 
-          (store.items || []).map((item: any) => ({
+        // Multi-store plan - keep stores separate
+        isMultiStore = true;
+        stores = planData.stores.map((store: any) => ({
+          ...store,
+          retailerName: store.retailerName || store.retailer?.name || 'Store',
+          items: (store.items || []).map((item: any) => ({
             ...item,
-            storeName: store.retailerName // Add store name to each item
+            storeName: store.retailerName || store.retailer?.name
           }))
-        );
-        retailerName = `Multi-Store (${planData.stores.map((s: any) => s.retailerName).join(', ')})`;
+        }));
+        retailerName = `Multi-Store Plan (${stores.length} stores)`;
+        // For the main route, use all items but keep store association
+        items = stores.flatMap((store: any) => store.items || []);
       }
     } else if (planData.items) {
       // Single store plan
       items = planData.items;
       retailerName = planData.retailerName || 'Store';
+      stores = [{ retailerName, items }];
     } else {
       // Fallback - use shopping list items
       items = shoppingList?.items || [];
+      stores = [{ retailerName: 'Store', items }];
     }
 
-    return generateOptimizedShoppingRoute(items, retailerName, planData);
+    const route = generateOptimizedShoppingRoute(items, retailerName, planData);
+    
+    // Add multi-store specific data
+    if (isMultiStore) {
+      route.isMultiStore = true;
+      route.stores = stores;
+      route.currentStoreIndex = 0;
+    }
+
+    return route;
   };
 
   // Generate optimized shopping route with AI-powered categorization
@@ -332,11 +352,31 @@ const ShoppingRoute: React.FC = () => {
 
   const getProgressPercentage = () => {
     if (!optimizedRoute) return 0;
+    
+    // For multi-store plans, calculate progress across all stores
+    if (optimizedRoute.isMultiStore && optimizedRoute.stores) {
+      const totalItems = optimizedRoute.stores.reduce((sum: number, store: any) => sum + store.items.length, 0);
+      return totalItems > 0 ? (completedItems.size / totalItems) * 100 : 0;
+    }
+    
     return (completedItems.size / optimizedRoute.totalItems) * 100;
   };
 
   const getCurrentAisle = () => {
     if (!optimizedRoute?.aisleGroups) return null;
+    
+    // For multi-store plans, generate aisles from current store's items
+    if (optimizedRoute.isMultiStore && optimizedRoute.stores) {
+      const currentStore = optimizedRoute.stores[currentStoreIndex];
+      if (!currentStore) return null;
+      
+      // Generate aisles for current store
+      const storeRoute = generateOptimizedShoppingRoute(currentStore.items, currentStore.retailerName);
+      if (!storeRoute.aisleGroups || !storeRoute.aisleGroups[currentAisleIndex]) return null;
+      
+      return storeRoute.aisleGroups[currentAisleIndex];
+    }
+    
     return optimizedRoute.aisleGroups[currentAisleIndex];
   };
 
@@ -534,6 +574,102 @@ const ShoppingRoute: React.FC = () => {
           </CardContent>
         </Card>
 
+        {/* Multi-Store Navigation */}
+        {optimizedRoute?.isMultiStore && (
+          <Card className="mb-4">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Store className="h-5 w-5 text-purple-600" />
+                Multi-Store Shopping Plan
+              </CardTitle>
+              <p className="text-sm text-gray-600">Shop at {optimizedRoute.stores.length} stores for best prices</p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {optimizedRoute.stores.map((store: any, index: number) => {
+                  const storeCompletedItems = store.items.filter((item: any) => 
+                    completedItems.has(item.id) || item.isCompleted
+                  ).length;
+                  const isCurrent = index === currentStoreIndex;
+                  const isCompleted = storeCompletedItems === store.items.length;
+
+                  return (
+                    <div
+                      key={index}
+                      className={`p-3 rounded-lg border transition-all cursor-pointer ${
+                        isCurrent 
+                          ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200' 
+                          : isCompleted
+                          ? 'bg-green-50 border-green-200'
+                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                      }`}
+                      onClick={() => setCurrentStoreIndex(index)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-sm">{store.retailerName}</div>
+                          <div className="text-xs text-gray-500">
+                            {store.items.length} items • ${((store.subtotal || 0) / 100).toFixed(2)}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-xs text-gray-600">
+                            {storeCompletedItems}/{store.items.length}
+                          </div>
+                          {isCurrent && (
+                            <Badge className="bg-blue-600 text-white text-xs">
+                              Current
+                            </Badge>
+                          )}
+                          {isCompleted && !isCurrent && (
+                            <Badge className="bg-green-600 text-white text-xs">
+                              Complete
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* Store Navigation Buttons */}
+              <div className="mt-4 pt-3 border-t">
+                <div className="grid grid-cols-2 gap-3">
+                  <Button 
+                    variant="outline"
+                    onClick={() => setCurrentStoreIndex(Math.max(0, currentStoreIndex - 1))}
+                    disabled={currentStoreIndex === 0}
+                    className="w-full"
+                  >
+                    <ArrowRight className="h-4 w-4 mr-2 rotate-180" />
+                    Previous Store
+                  </Button>
+
+                  <Button 
+                    className="w-full"
+                    onClick={() => {
+                      if (currentStoreIndex < optimizedRoute.stores.length - 1) {
+                        setCurrentStoreIndex(currentStoreIndex + 1);
+                        setCurrentAisleIndex(0); // Reset to first aisle of new store
+                        toast({
+                          title: "Moving to next store",
+                          description: `Now shopping at ${optimizedRoute.stores[currentStoreIndex + 1].retailerName}`,
+                          duration: 3000
+                        });
+                      }
+                    }}
+                    disabled={currentStoreIndex >= optimizedRoute.stores.length - 1}
+                  >
+                    Next Store
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Current Aisle */}
         {currentAisle && (
           <Card className="mb-4">
@@ -543,6 +679,11 @@ const ShoppingRoute: React.FC = () => {
                   <CardTitle className="text-lg flex items-center gap-2">
                     <MapPin className="h-5 w-5 text-blue-600" />
                     {currentAisle.aisleName}
+                    {optimizedRoute?.isMultiStore && (
+                      <span className="text-sm font-normal text-gray-500">
+                        @ {optimizedRoute.stores[currentStoreIndex]?.retailerName}
+                      </span>
+                    )}
                   </CardTitle>
                   <p className="text-sm text-gray-600 mt-1">{currentAisle.category}</p>
                 </div>
