@@ -27,22 +27,24 @@ const VoiceHelp: React.FC = () => {
               <div>
                 <p className="font-medium text-gray-700 mb-1">Adding Items:</p>
                 <ul className="space-y-1 text-gray-600 ml-2">
-                  <li>• "Add milk"</li>
-                  <li>• "Add 2 pounds of chicken"</li>
-                  <li>• "Add 1 gallon of orange juice"</li>
-                  <li>• "Add 3 cans of tomatoes"</li>
-                  <li>• "Get bread"</li>
-                  <li>• "Buy 1 dozen eggs"</li>
+                  <li>• "Add milk to my list"</li>
+                  <li>• "I need 2 pounds of chicken"</li>
+                  <li>• "Put 1 gallon of orange juice on there"</li>
+                  <li>• "Add 3 cans of tomatoes please"</li>
+                  <li>• "Don't forget bread"</li>
+                  <li>• "I need a dozen eggs"</li>
+                  <li>• "Can you add some bananas?"</li>
                 </ul>
               </div>
 
               <div>
                 <p className="font-medium text-gray-700 mb-1">Managing Items:</p>
                 <ul className="space-y-1 text-gray-600 ml-2">
-                  <li>• "Complete milk" (mark as done)</li>
+                  <li>• "I got the milk" (mark as done)</li>
                   <li>• "Check off bread"</li>
-                  <li>• "Remove chicken"</li>
-                  <li>• "Delete tomatoes"</li>
+                  <li>• "Actually, remove the chicken"</li>
+                  <li>• "Delete tomatoes from my list"</li>
+                  <li>• "Mark eggs as complete"</li>
                 </ul>
               </div>
 
