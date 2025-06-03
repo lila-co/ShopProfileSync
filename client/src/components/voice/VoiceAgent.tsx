@@ -92,12 +92,21 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
   const parseVoiceCommand = useCallback((command: string) => {
     const lowerCommand = command.toLowerCase().trim();
     
-    // Check for conversational queries first
-    const conversationalKeywords = ['recipe', 'cook', 'make', 'meal', 'plan', 'what', 'how', 'help', 'suggest'];
-    const isConversational = conversationalKeywords.some(keyword => lowerCommand.includes(keyword)) &&
-                            !lowerCommand.match(/(?:add|get|buy|remove|delete|complete|check|mark)/i);
+    // Enhanced conversational query detection
+    const conversationalKeywords = ['recipe', 'cook', 'make', 'meal', 'plan', 'what', 'how', 'help', 'suggest', 'why', 'when', 'where', 'should', 'can', 'could', 'would', 'do you', 'tell me', 'explain'];
+    const questionWords = ['what', 'how', 'why', 'when', 'where', 'who', 'which', 'should', 'can', 'could', 'would', 'do you', 'will you', 'are you'];
     
-    if (isConversational) {
+    // Check if it's a question (ends with ? or starts with question words)
+    const isQuestion = lowerCommand.endsWith('?') || 
+                      questionWords.some(word => lowerCommand.startsWith(word + ' '));
+    
+    // Check for conversational keywords without explicit add commands
+    const hasConversationalKeywords = conversationalKeywords.some(keyword => lowerCommand.includes(keyword));
+    
+    // Don't treat as add command if it's clearly conversational
+    const hasAddKeywords = lowerCommand.match(/(?:add|get|buy|put|need|want)/i);
+    
+    if (isQuestion || (hasConversationalKeywords && !hasAddKeywords)) {
       return { action: 'conversation', query: command };
     }
     
@@ -150,16 +159,20 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
       }
     }
 
-    // Simple add without quantity
-    const simpleAdd = lowerCommand.match(/(?:add|get|buy)\s+(.+)/i);
+    // Simple add without quantity - only if explicitly using add/get/buy commands
+    const simpleAdd = lowerCommand.match(/^(?:add|get|buy)\s+(.+)/i);
     if (simpleAdd) {
-      return {
-        action: 'add',
-        itemName: capitalizeWords(simpleAdd[1].trim()),
-        quantity: 1,
-        unit: 'COUNT',
-        suggestRecipe: true
-      };
+      const itemName = simpleAdd[1].trim();
+      // Double-check it's not a question disguised as an add command
+      if (!itemName.includes('?') && !questionWords.some(word => itemName.includes(word))) {
+        return {
+          action: 'add',
+          itemName: capitalizeWords(itemName),
+          quantity: 1,
+          unit: 'COUNT',
+          suggestRecipe: true
+        };
+      }
     }
 
     // Toggle/complete item commands
@@ -277,6 +290,17 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
   const handleConversationalQuery = useCallback((query: string) => {
     const lowerQuery = query.toLowerCase();
     
+    // Specific meal or dish questions
+    if (lowerQuery.includes('what should i') || lowerQuery.includes('what can i') || lowerQuery.includes('what to')) {
+      const suggestionResponses = [
+        "What ingredients do you already have at home? I can suggest recipes based on what you've got!",
+        "Are you looking for breakfast, lunch, dinner, or maybe a snack idea?",
+        "What's your mood today - something comforting, healthy, spicy, or sweet?",
+        "How much time do you have to cook? I can suggest quick meals or something more elaborate!"
+      ];
+      return suggestionResponses[Math.floor(Math.random() * suggestionResponses.length)];
+    }
+
     // Recipe requests
     if (lowerQuery.includes('recipe') || lowerQuery.includes('cook') || lowerQuery.includes('make')) {
       const recipeResponses = [
@@ -300,7 +324,7 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
     }
 
     // Ingredient questions
-    if (lowerQuery.includes('what') && (lowerQuery.includes('need') || lowerQuery.includes('buy'))) {
+    if ((lowerQuery.includes('what') || lowerQuery.includes('which')) && (lowerQuery.includes('need') || lowerQuery.includes('buy') || lowerQuery.includes('get'))) {
       const ingredientResponses = [
         "What kind of meal are you planning? I can suggest everything you'll need!",
         "Tell me about your cooking plans and I'll help you get organized!",
@@ -310,12 +334,23 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
       return ingredientResponses[Math.floor(Math.random() * ingredientResponses.length)];
     }
 
-    // Generic helpful responses
+    // Help and guidance requests
+    if (lowerQuery.includes('help') || lowerQuery.includes('how') || lowerQuery.includes('can you')) {
+      const helpResponses = [
+        "I'm here to help! I can add items to your shopping list, suggest recipes, or help you plan meals. What would you like to do?",
+        "Absolutely! Tell me what you're cooking or planning, and I'll help you organize your shopping list.",
+        "I'd love to help! Are you looking for recipe ideas, need items added to your list, or want meal planning advice?",
+        "Sure thing! I can chat about recipes, suggest ingredients, or help you build your shopping list. What's on your mind?"
+      ];
+      return helpResponses[Math.floor(Math.random() * helpResponses.length)];
+    }
+
+    // Generic helpful responses for other conversational inputs
     const helpfulResponses = [
-      "I'm here to help with your shopping! You can ask me to add items, suggest recipes, or help plan meals.",
-      "I can help you add items to your list, or we can chat about what you're planning to cook!",
-      "Tell me what you're thinking about making, and I can suggest ingredients you might need!",
-      "I love helping with meal planning! What kind of cuisine are you in the mood for?"
+      "That's interesting! Tell me more about what you're planning to cook, and I can help suggest ingredients.",
+      "I'd love to help with your meal planning! What kind of cuisine are you in the mood for?",
+      "Sounds like you're thinking about cooking! What type of dish are you considering?",
+      "I'm here to help with both shopping and cooking ideas. What would you like to explore?"
     ];
     return helpfulResponses[Math.floor(Math.random() * helpfulResponses.length)];
   }, []);
