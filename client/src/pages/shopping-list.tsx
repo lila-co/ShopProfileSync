@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import ShoppingListSimple from '@/components/lists/ShoppingListSimple';
+import ShoppingListComponent from '@/components/lists/ShoppingList';
 import BottomNavigation from '@/components/layout/BottomNavigation';
 import AuthenticatedHeader from '@/components/layout/AuthenticatedHeader';
 import type { ShoppingList as ShoppingListType, User } from '@/lib/types';
@@ -63,7 +63,7 @@ const ShoppingListPage: React.FC = () => {
           </div>
         </section>
 
-        <ShoppingListSimple />
+        <ShoppingListComponent />
       </main>
       <BottomNavigation activeTab="lists" />
     </div>
