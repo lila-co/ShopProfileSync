@@ -409,53 +409,65 @@ const ProfilePage: React.FC = () => {
                 </CardTitle>
                 <CardDescription>Choose what alerts you'd like to receive</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="dealAlerts">Deal alerts</Label>
-                    <p className="text-sm text-gray-500">Get notified about new deals</p>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between py-4 px-4 bg-gray-50 rounded-lg border">
+                  <div className="flex-1">
+                    <Label htmlFor="dealAlerts" className="text-base font-medium text-gray-900">Deal alerts</Label>
+                    <p className="text-sm text-gray-600 mt-1">Get notified about new deals</p>
                   </div>
-                  <Switch id="dealAlerts" defaultChecked={true} />
+                  <Switch 
+                    id="dealAlerts" 
+                    defaultChecked={true} 
+                    className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
+                  />
                 </div>
 
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="priceDrops">Price drop notifications</Label>
-                    <p className="text-sm text-gray-500">Items on your list go on sale</p>
+                <div className="flex items-center justify-between py-4 px-4 bg-gray-50 rounded-lg border">
+                  <div className="flex-1">
+                    <Label htmlFor="priceDrops" className="text-base font-medium text-gray-900">Price drop notifications</Label>
+                    <p className="text-sm text-gray-600 mt-1">Items on your list go on sale</p>
                   </div>
-                  <Switch id="priceDrops" defaultChecked={true} />
+                  <Switch 
+                    id="priceDrops" 
+                    defaultChecked={true} 
+                    className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
+                  />
                 </div>
 
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="weeklyDigest">Weekly digest</Label>
-                    <p className="text-sm text-gray-500">Summary of savings and trends</p>
+                <div className="flex items-center justify-between py-4 px-4 bg-gray-50 rounded-lg border">
+                  <div className="flex-1">
+                    <Label htmlFor="weeklyDigest" className="text-base font-medium text-gray-900">Weekly digest</Label>
+                    <p className="text-sm text-gray-600 mt-1">Summary of savings and trends</p>
                   </div>
-                  <Switch id="weeklyDigest" defaultChecked={false} />
+                  <Switch 
+                    id="weeklyDigest" 
+                    defaultChecked={false} 
+                    className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
+                  />
                 </div>
 
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="expirationAlerts">Expiration alerts</Label>
-                    <p className="text-sm text-gray-500">When deals are about to expire</p>
+                <div className="flex items-center justify-between py-4 px-4 bg-gray-50 rounded-lg border">
+                  <div className="flex-1">
+                    <Label htmlFor="expirationAlerts" className="text-base font-medium text-gray-900">Expiration alerts</Label>
+                    <p className="text-sm text-gray-600 mt-1">When deals are about to expire</p>
                   </div>
-                  <Switch id="expirationAlerts" defaultChecked={true} />
+                  <Switch 
+                    id="expirationAlerts" 
+                    defaultChecked={true} 
+                    className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
+                  />
                 </div>
 
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="recommendationUpdates">New recommendations</Label>
-                    <p className="text-sm text-gray-500">Personalized product suggestions</p>
+                <div className="flex items-center justify-between py-4 px-4 bg-gray-50 rounded-lg border">
+                  <div className="flex-1">
+                    <Label htmlFor="recommendationUpdates" className="text-base font-medium text-gray-900">New recommendations</Label>
+                    <p className="text-sm text-gray-600 mt-1">Personalized product suggestions</p>
                   </div>
-                  <Switch id="recommendationUpdates" defaultChecked={true} />
+                  <Switch 
+                    id="recommendationUpdates" 
+                    defaultChecked={true} 
+                    className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
+                  />
                 </div>
               </CardContent>
             </Card>
