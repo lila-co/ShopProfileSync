@@ -485,14 +485,14 @@ const ShoppingListComponent: React.FC = () => {
           placeholder="Add an item..."
           value={newItemName}
           onChange={(e) => setNewItemName(e.target.value)}
-          className="flex-1 border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 bg-white text-black font-semibold text-base placeholder-gray-400 px-4 py-2"
+          className="flex-1 border-4 border-gray-600 focus:border-blue-600 focus:ring-4 focus:ring-blue-300 bg-gray-50 text-black font-bold text-lg placeholder-gray-600 px-6 py-3 rounded-lg shadow-inner"
         />
         <Button 
           type="submit" 
           disabled={addItemMutation.isPending}
-          className="bg-blue-600 hover:bg-blue-700 text-white border-2 border-blue-600 hover:border-blue-700 shadow-md min-w-[44px]"
+          className="bg-blue-600 hover:bg-blue-700 text-white border-4 border-blue-600 hover:border-blue-700 shadow-lg min-w-[48px] rounded-lg"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-5 w-5" />
         </Button>
       </form>
 
