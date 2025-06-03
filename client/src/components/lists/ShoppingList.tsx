@@ -520,6 +520,8 @@ const ShoppingListComponent: React.FC = () => {
     const defaultList = shoppingLists?.[0];
     const hasItems = defaultList?.items && defaultList.items.length > 0;
     
+    console.log('Manual regeneration triggered - hasItems:', hasItems);
+    
     // Show animation during regeneration
     setIsGeneratingList(true);
     const steps = hasItems ? [
@@ -542,32 +544,46 @@ const ShoppingListComponent: React.FC = () => {
     let currentStepIndex = 0;
     let animationInterval: NodeJS.Timeout | null = null;
     
+    // Start the animation
     animationInterval = setInterval(() => {
-      currentStepIndex++;
-      setCurrentStep(currentStepIndex);
-
-      if (currentStepIndex >= steps.length - 1) {
-        if (animationInterval) {
-          clearInterval(animationInterval);
-          animationInterval = null;
+      setCurrentStep((prevStep) => {
+        const nextStep = prevStep + 1;
+        if (nextStep >= steps.length - 1) {
+          if (animationInterval) {
+            clearInterval(animationInterval);
+            animationInterval = null;
+          }
         }
-      }
-    }, 1000);
+        return nextStep;
+      });
+    }, 1200);
 
-    regenerateListMutation.mutate(undefined, {
-      onSettled: () => {
-        // Clean up animation immediately when mutation is done
-        if (animationInterval) {
-          clearInterval(animationInterval);
-        }
-        
-        // Always hide the animation within a reasonable time
-        setTimeout(() => {
+    // Start the actual mutation after a brief delay to ensure animation starts
+    setTimeout(() => {
+      regenerateListMutation.mutate(undefined, {
+        onSettled: () => {
+          // Clean up animation when mutation is done
+          if (animationInterval) {
+            clearInterval(animationInterval);
+          }
+          
+          // Hide the animation after a short delay
+          setTimeout(() => {
+            setIsGeneratingList(false);
+            setCurrentStep(-1);
+          }, 1000);
+        },
+        onError: (error) => {
+          console.error('Regeneration failed:', error);
+          // Ensure animation stops on error
+          if (animationInterval) {
+            clearInterval(animationInterval);
+          }
           setIsGeneratingList(false);
           setCurrentStep(-1);
-        }, 500); // Short delay to ensure smooth transition
-      }
-    });
+        }
+      });
+    }, 200);
   };
 
   const handleAddItem = (e: React.FormEvent) => {
