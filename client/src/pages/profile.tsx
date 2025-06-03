@@ -47,6 +47,40 @@ const ProfilePage: React.FC = () => {
     queryKey: ['/api/user/profile'],
   });
 
+  const { data: privacyPreferences, isLoading: privacyLoading } = useQuery({
+    queryKey: ['/api/user/privacy-preferences'],
+  });
+
+  const updatePrivacyMutation = useMutation({
+    mutationFn: async (preferences: any) => {
+      const response = await fetch('/api/user/privacy-preferences', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(preferences),
+      });
+      if (!response.ok) throw new Error('Failed to update privacy preferences');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/user/privacy-preferences'] });
+      toast({
+        title: "Privacy Settings Updated",
+        description: "Your privacy preferences have been saved.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update privacy settings. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handlePrivacyToggle = (setting: string, value: boolean) => {
+    updatePrivacyMutation.mutate({ [setting]: value });
+  };
+
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -335,7 +369,9 @@ const ProfilePage: React.FC = () => {
                   </div>
                   <Switch 
                     id="shareData" 
-                    defaultChecked={true} 
+                    checked={privacyPreferences?.allowAnalytics ?? true}
+                    onCheckedChange={(checked) => handlePrivacyToggle('allowAnalytics', checked)}
+                    disabled={updatePrivacyMutation.isPending}
                     className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
                   />
                 </div>
@@ -347,7 +383,9 @@ const ProfilePage: React.FC = () => {
                   </div>
                   <Switch 
                     id="locationTracking" 
-                    defaultChecked={true} 
+                    checked={privacyPreferences?.allowLocationTracking ?? true}
+                    onCheckedChange={(checked) => handlePrivacyToggle('allowLocationTracking', checked)}
+                    disabled={updatePrivacyMutation.isPending}
                     className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
                   />
                 </div>
@@ -359,7 +397,9 @@ const ProfilePage: React.FC = () => {
                   </div>
                   <Switch 
                     id="profileVisibility" 
-                    defaultChecked={false} 
+                    checked={privacyPreferences?.allowDataSharing ?? false}
+                    onCheckedChange={(checked) => handlePrivacyToggle('allowDataSharing', checked)}
+                    disabled={updatePrivacyMutation.isPending}
                     className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300"
                     aria-describedby="profileVisibility-description"
                   />
@@ -372,7 +412,9 @@ const ProfilePage: React.FC = () => {
                   </div>
                   <Switch 
                     id="dataRetention" 
-                    defaultChecked={true}
+                    checked={privacyPreferences?.allowPersonalization ?? true}
+                    onCheckedChange={(checked) => handlePrivacyToggle('allowPersonalization', checked)}
+                    disabled={updatePrivacyMutation.isPending}
                     className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300"
                     aria-describedby="dataRetention-description"
                   />
@@ -391,11 +433,38 @@ const ProfilePage: React.FC = () => {
                 <Button 
                   variant="outline" 
                   className="w-full"
-                  onClick={() => {
-                    toast({
-                      title: "Data Export Initiated",
-                      description: "Your data export will be emailed to you within 24 hours.",
-                    });
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/user/data-export', {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json' },
+                      });
+                      
+                      if (response.ok) {
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `user_data_export_${new Date().toISOString().split('T')[0]}.json`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+                        
+                        toast({
+                          title: "Data Export Complete",
+                          description: "Your data has been downloaded successfully.",
+                        });
+                      } else {
+                        throw new Error('Export failed');
+                      }
+                    } catch (error) {
+                      toast({
+                        title: "Export Failed",
+                        description: "Failed to export your data. Please try again.",
+                        variant: "destructive",
+                      });
+                    }
                   }}
                 >
                   <Eye className="w-4 h-4 mr-2" />
@@ -404,13 +473,45 @@ const ProfilePage: React.FC = () => {
                 <Button 
                   variant="destructive" 
                   className="w-full"
-                  onClick={() => {
-                    if (confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
-                      toast({
-                        title: "Account Deletion",
-                        description: "Account deletion request submitted. You will receive a confirmation email.",
-                        variant: "destructive",
-                      });
+                  onClick={async () => {
+                    const confirmed = confirm(
+                      "Are you sure you want to delete your account?\n\n" +
+                      "This will permanently delete:\n" +
+                      "• Your profile and personal information\n" +
+                      "• Shopping lists and purchase history\n" +
+                      "• Connected retailer accounts\n" +
+                      "• All recommendations and preferences\n\n" +
+                      "This action cannot be undone."
+                    );
+                    
+                    if (confirmed) {
+                      try {
+                        const response = await fetch('/api/user/delete-account', {
+                          method: 'DELETE',
+                          headers: { 'Content-Type': 'application/json' },
+                        });
+                        
+                        if (response.ok) {
+                          toast({
+                            title: "Account Deletion Initiated",
+                            description: "Your account deletion request has been submitted. You will receive a confirmation email.",
+                            variant: "destructive",
+                          });
+                          
+                          // Redirect to auth page after a delay
+                          setTimeout(() => {
+                            navigate('/auth');
+                          }, 3000);
+                        } else {
+                          throw new Error('Deletion failed');
+                        }
+                      } catch (error) {
+                        toast({
+                          title: "Deletion Failed",
+                          description: "Failed to delete account. Please contact support.",
+                          variant: "destructive",
+                        });
+                      }
                     }
                   }}
                 >
