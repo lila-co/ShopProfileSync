@@ -24,6 +24,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 
 import { Eye, EyeOff, Lock, ExternalLink, RefreshCw, Plus, Check, AlertCircle, Store, CheckCircle } from 'lucide-react';
