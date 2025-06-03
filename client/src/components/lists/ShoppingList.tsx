@@ -365,12 +365,18 @@ const ShoppingListComponent: React.FC = () => {
         title: "Item added",
         description: "Item has been added to your shopping list",
       });
+    },
+    onSettled: () => {
+      // Always re-categorize items after adding new item (success or error)
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
       
-      // Re-categorize items after adding new item
-      const updatedList = queryClient.getQueryData<ShoppingListType[]>(['/api/shopping-lists']);
-      if (updatedList && updatedList[0]?.items) {
-        categorizeItems(updatedList[0].items);
-      }
+      // Force re-categorization after a short delay to ensure data is fresh
+      setTimeout(() => {
+        const updatedList = queryClient.getQueryData<ShoppingListType[]>(['/api/shopping-lists']);
+        if (updatedList && updatedList[0]?.items) {
+          categorizeItems(updatedList[0].items);
+        }
+      }, 100);
     }
   });
 
@@ -739,7 +745,7 @@ const ShoppingListComponent: React.FC = () => {
                                       {item.productName}
                                     </span>
                                     <div className="text-sm text-gray-500">
-                                      {item.quantity} {item.unit}
+                                      {item.quantity} {item.unit || 'COUNT'}
                                     </div>
                                   </div>
                                 </div>
@@ -795,7 +801,7 @@ const ShoppingListComponent: React.FC = () => {
                         {item.productName}
                       </span>
                       <div className="text-sm text-gray-500">
-                        {item.quantity} {item.unit}
+                        {item.quantity} {item.unit || 'COUNT'}
                       </div>
                     </div>
                   </div>
