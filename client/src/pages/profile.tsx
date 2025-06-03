@@ -328,50 +328,52 @@ const ProfilePage: React.FC = () => {
                 <CardDescription>Control your data and privacy preferences</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="flex items-center justify-between py-2">
+                <div className="flex items-center justify-between py-4 px-4 bg-gray-50 rounded-lg border">
                   <div className="flex-1">
-                    <Label htmlFor="shareData" className="text-base font-medium">Share anonymous usage data</Label>
-                    <p className="text-sm text-gray-500 mt-1">Help improve our service</p>
+                    <Label htmlFor="shareData" className="text-base font-medium text-gray-900">Share anonymous usage data</Label>
+                    <p className="text-sm text-gray-600 mt-1">Help improve our service</p>
                   </div>
-                  <Switch id="shareData" defaultChecked={true} className="ml-4" />
+                  <Switch 
+                    id="shareData" 
+                    defaultChecked={true} 
+                    className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
+                  />
                 </div>
 
-                <Separator />
-
-                <div className="flex items-center justify-between py-2">
+                <div className="flex items-center justify-between py-4 px-4 bg-gray-50 rounded-lg border">
                   <div className="flex-1">
-                    <Label htmlFor="locationTracking" className="text-base font-medium">Location-based recommendations</Label>
-                    <p className="text-sm text-gray-500 mt-1">Get deals from nearby stores</p>
+                    <Label htmlFor="locationTracking" className="text-base font-medium text-gray-900">Location-based recommendations</Label>
+                    <p className="text-sm text-gray-600 mt-1">Get deals from nearby stores</p>
                   </div>
-                  <Switch id="locationTracking" defaultChecked={true} className="ml-4" />
+                  <Switch 
+                    id="locationTracking" 
+                    defaultChecked={true} 
+                    className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
+                  />
                 </div>
 
-                <Separator />
-
-                <div className="flex items-center justify-between py-2">
+                <div className="flex items-center justify-between py-4 px-4 bg-gray-50 rounded-lg border">
                   <div className="flex-1">
-                    <Label htmlFor="profileVisibility" className="text-base font-medium cursor-pointer">Public profile</Label>
-                    <p className="text-sm text-gray-500 mt-1">Allow others to see your reviews</p>
+                    <Label htmlFor="profileVisibility" className="text-base font-medium text-gray-900 cursor-pointer">Public profile</Label>
+                    <p className="text-sm text-gray-600 mt-1">Allow others to see your reviews</p>
                   </div>
                   <Switch 
                     id="profileVisibility" 
                     defaultChecked={false} 
-                    className="ml-4"
+                    className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300"
                     aria-describedby="profileVisibility-description"
                   />
                 </div>
 
-                <Separator />
-
-                <div className="flex items-center justify-between py-2">
+                <div className="flex items-center justify-between py-4 px-4 bg-gray-50 rounded-lg border">
                   <div className="flex-1">
-                    <Label htmlFor="dataRetention" className="text-base font-medium cursor-pointer">Data retention</Label>
-                    <p className="text-sm text-gray-500 mt-1">Keep purchase history for recommendations</p>
+                    <Label htmlFor="dataRetention" className="text-base font-medium text-gray-900 cursor-pointer">Data retention</Label>
+                    <p className="text-sm text-gray-600 mt-1">Keep purchase history for recommendations</p>
                   </div>
                   <Switch 
                     id="dataRetention" 
                     defaultChecked={true}
-                    className="ml-4"
+                    className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300"
                     aria-describedby="dataRetention-description"
                   />
                 </div>
