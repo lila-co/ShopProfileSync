@@ -316,7 +316,7 @@ const ShoppingListComponent: React.FC = () => {
       });
       return response.json();
     },
-    onMutate: async (itemName: string) => {
+    onMutate: async ({ itemName, quantity, unit }: { itemName: string; quantity: number; unit: string }) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['/api/shopping-lists'] });
       
@@ -328,9 +328,9 @@ const ShoppingListComponent: React.FC = () => {
       const newItem = {
         id: tempId,
         productName: itemName,
-        quantity: 1,
-        unit: 'COUNT',
-        isCompleted: false,
+        quantity: quantity,
+        unit: unit,
+        completed: false,
         shoppingListId: shoppingLists?.[0]?.id
       };
       
@@ -344,7 +344,7 @@ const ShoppingListComponent: React.FC = () => {
       
       return { previousLists };
     },
-    onError: (err, itemName, context) => {
+    onError: (err, variables, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
       queryClient.setQueryData(['/api/shopping-lists'], context?.previousLists);
       toast({
