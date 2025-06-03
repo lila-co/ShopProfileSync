@@ -49,8 +49,9 @@ const PlanDetails: React.FC = () => {
   const { data: shoppingItems, isLoading, error } = useQuery({
     queryKey: ['shopping-items', listId],
     queryFn: async () => {
-      const response = await apiRequest('GET', `/api/shopping-lists/${listId}/items`);
-      return response.json();
+      const response = await apiRequest('GET', `/api/shopping-lists/${listId}`);
+      const data = await response.json();
+      return data.items || [];
     },
   });
 
