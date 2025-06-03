@@ -327,7 +327,7 @@ const Shop: React.FC = () => {
 
           <CardContent className="pt-4">
             {shoppingMode === 'instore' ? (
-              // In-store shopping route
+              // In-store shopping route with interactive checklist
               <>
                 <div className="flex items-center gap-2 mb-4">
                   <Store className="h-5 w-5 text-gray-500" />
@@ -339,52 +339,96 @@ const Shop: React.FC = () => {
                   <span>Estimated shopping time: {shoppingRoute.estimatedTime}</span>
                 </div>
 
-                <h3 className="text-lg font-medium mb-2">Your Shopping Route:</h3>
+                <h3 className="text-lg font-medium mb-4">🛒 In-Store Shopping Checklist</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Follow this optimized route through the store. Check off items as you collect them!
+                </p>
 
-                <ScrollArea className="h-[300px] rounded-md border p-4">
+                <ScrollArea className="h-[400px] rounded-md border p-4">
                   {shoppingRoute.aisles?.map((aisle: any, index: number) => (
                     <div key={index} className="mb-6">
-                      <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg mb-2">
-                        <h4 className="font-medium">{aisle.name}</h4>
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg mb-3 border-l-4 border-blue-500">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-blue-600" />
+                          <h4 className="font-semibold text-blue-900 dark:text-blue-100">
+                            Step {index + 1}: {aisle.name}
+                          </h4>
+                        </div>
                       </div>
-                      <ul className="space-y-2 pl-2">
+                      <div className="space-y-3 pl-2">
                         {aisle.items.map((item: any) => (
-                          <li key={item.id} className="flex justify-between">
-                            <span>
-                              {item.productName} ({item.quantity})
-                            </span>
-                            {item.suggestedPrice && (
-                              <span className="text-gray-500">
-                                ${(item.suggestedPrice * item.quantity).toFixed(2)}
+                          <div key={item.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
+                            <Checkbox 
+                              id={`item-${item.id}`}
+                              className="h-5 w-5"
+                            />
+                            <label 
+                              htmlFor={`item-${item.id}`} 
+                              className="flex-1 cursor-pointer flex justify-between items-center"
+                            >
+                              <span className="font-medium">
+                                {item.productName} <span className="text-gray-500">({item.quantity})</span>
                               </span>
-                            )}
-                          </li>
+                              {item.suggestedPrice && (
+                                <span className="text-green-600 font-medium">
+                                  ${(item.suggestedPrice * item.quantity).toFixed(2)}
+                                </span>
+                              )}
+                            </label>
+                          </div>
                         ))}
-                      </ul>
+                      </div>
                     </div>
                   ))}
 
                   {shoppingRoute.other && (
                     <div className="mb-6">
-                      <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg mb-2">
-                        <h4 className="font-medium">{shoppingRoute.other.name}</h4>
+                      <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg mb-3 border-l-4 border-orange-500">
+                        <div className="flex items-center gap-2">
+                          <ShoppingBag className="h-4 w-4 text-orange-600" />
+                          <h4 className="font-semibold text-orange-900 dark:text-orange-100">
+                            Final Stop: {shoppingRoute.other.name}
+                          </h4>
+                        </div>
                       </div>
-                      <ul className="space-y-2 pl-2">
+                      <div className="space-y-3 pl-2">
                         {shoppingRoute.other.items.map((item: any) => (
-                          <li key={item.id} className="flex justify-between">
-                            <span>
-                              {item.productName} ({item.quantity})
-                            </span>
-                            {item.suggestedPrice && (
-                              <span className="text-gray-500">
-                                ${(item.suggestedPrice * item.quantity).toFixed(2)}
+                          <div key={item.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
+                            <Checkbox 
+                              id={`other-item-${item.id}`}
+                              className="h-5 w-5"
+                            />
+                            <label 
+                              htmlFor={`other-item-${item.id}`} 
+                              className="flex-1 cursor-pointer flex justify-between items-center"
+                            >
+                              <span className="font-medium">
+                                {item.productName} <span className="text-gray-500">({item.quantity})</span>
                               </span>
-                            )}
-                          </li>
+                              {item.suggestedPrice && (
+                                <span className="text-green-600 font-medium">
+                                  ${(item.suggestedPrice * item.quantity).toFixed(2)}
+                                </span>
+                              )}
+                            </label>
+                          </div>
                         ))}
-                      </ul>
+                      </div>
                     </div>
                   )}
+
+                  <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
+                    <div className="flex items-center gap-2 text-green-800">
+                      <Check className="h-5 w-5" />
+                      <span className="font-medium">Shopping Tips:</span>
+                    </div>
+                    <ul className="mt-2 text-sm text-green-700 space-y-1">
+                      <li>• Follow the route order for maximum efficiency</li>
+                      <li>• Check items off as you collect them</li>
+                      <li>• Look for store brands to save money</li>
+                      <li>• Ask store associates if you can't find an item</li>
+                    </ul>
+                  </div>
                 </ScrollArea>
               </>
             ) : (
@@ -722,7 +766,8 @@ const Shop: React.FC = () => {
         </Alert>
       )}
 
-      <div className="mt-auto mb-20">
+      {/* Start Shopping Button - Moved above the list */}
+      <div className="mb-6">
         <Button 
           className="w-full"
           size="lg"
@@ -730,11 +775,16 @@ const Shop: React.FC = () => {
           disabled={isSubmitting || !selectedList || !selectedRetailer || listItems?.length === 0}
         >
           {isSubmitting ? 'Processing...' : (
-            shoppingMode === 'instore' ? 'Create Shopping Route' : 
-            shoppingMode === 'pickup' ? 'Place Pickup Order' : 
-            'Place Delivery Order'
+            shoppingMode === 'instore' ? 'Start Shopping - Create Route' : 
+            shoppingMode === 'pickup' ? 'Start Shopping - Place Pickup Order' : 
+            'Start Shopping - Place Delivery Order'
           )}
         </Button>
+        {(!selectedList || !selectedRetailer || listItems?.length === 0) && (
+          <p className="text-sm text-gray-500 mt-2 text-center">
+            Please select a shopping list and retailer to continue
+          </p>
+        )}
       </div>
 
       <BottomNavigation activeTab="shop" />
