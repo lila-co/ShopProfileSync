@@ -46,9 +46,12 @@ const PlanDetails: React.FC = () => {
   const listId = searchParams.get('listId') || '1';
 
   // Fetch shopping list items
-  const { data: shoppingItems, isLoading } = useQuery({
+  const { data: shoppingItems, isLoading, error } = useQuery({
     queryKey: ['shopping-items', listId],
-    queryFn: () => apiRequest(`/api/shopping-lists/${listId}/items`),
+    queryFn: async () => {
+      const response = await apiRequest('GET', `/api/shopping-lists/${listId}/items`);
+      return response.json();
+    },
   });
 
   // Generate plan data based on shopping items and plan type
@@ -146,6 +149,22 @@ const PlanDetails: React.FC = () => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-lg">Loading your shopping plan...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg text-red-600">Error loading shopping list: {error.message}</div>
+      </div>
+    );
+  }
+
+  if (!shoppingItems || shoppingItems.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg">No items found in shopping list</div>
       </div>
     );
   }
