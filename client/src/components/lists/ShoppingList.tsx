@@ -9,10 +9,11 @@ import { useToast } from '@/hooks/use-toast';
 import { aiCategorizationService } from '@/lib/aiCategorization';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Plus, ShoppingBag, FileText, Clock, Check, Trash2, AlertTriangle, DollarSign, MapPin, Car, BarChart2, Wand2, Pencil, Image, Star, TrendingDown, Percent, Circle, CheckCircle2 } from 'lucide-react';
+import { Plus, ShoppingBag, FileText, Clock, Check, Trash2, AlertTriangle, DollarSign, MapPin, Car, BarChart2, Wand2, Pencil, Image, Star, TrendingDown, Percent, Circle, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
 import { getItemImage, getBestProductImage, getCompanyLogo } from '@/lib/imageUtils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const ShoppingListComponent: React.FC = () => {
   const { toast } = useToast();
@@ -30,6 +31,9 @@ const ShoppingListComponent: React.FC = () => {
   const [isGeneratingList, setIsGeneratingList] = useState(false);
   const [generationSteps, setGenerationSteps] = useState<string[]>([]);
   const [currentStep, setCurrentStep] = useState(-1);
+  const [categorizedItems, setCategorizedItems] = useState<Record<string, ShoppingListItem[]>>({});
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
+  const [isCategorizingItems, setIsCategorizingItems] = useState(false);
 
   const importRecipeMutation = useMutation({
     mutationFn: async () => {
@@ -69,6 +73,113 @@ const ShoppingListComponent: React.FC = () => {
     queryKey: ['/api/shopping-lists/suggestions'],
     enabled: !!shoppingLists,
   });
+
+  // Category definitions with icons and colors
+  const categoryConfig = {
+    'Produce': { icon: '🍎', color: 'bg-green-100 text-green-800 border-green-200', aisle: 'Aisle 1' },
+    'Dairy & Eggs': { icon: '🥛', color: 'bg-blue-100 text-blue-800 border-blue-200', aisle: 'Aisle 2' },
+    'Meat & Seafood': { icon: '🥩', color: 'bg-red-100 text-red-800 border-red-200', aisle: 'Aisle 3' },
+    'Pantry & Canned Goods': { icon: '🥫', color: 'bg-yellow-100 text-yellow-800 border-yellow-200', aisle: 'Aisle 4-6' },
+    'Frozen Foods': { icon: '❄️', color: 'bg-cyan-100 text-cyan-800 border-cyan-200', aisle: 'Aisle 7' },
+    'Bakery': { icon: '🍞', color: 'bg-orange-100 text-orange-800 border-orange-200', aisle: 'Aisle 8' },
+    'Personal Care': { icon: '🧼', color: 'bg-purple-100 text-purple-800 border-purple-200', aisle: 'Aisle 9' },
+    'Household Items': { icon: '🏠', color: 'bg-gray-100 text-gray-800 border-gray-200', aisle: 'Aisle 10' },
+  };
+
+  // Auto-categorize items using AI categorization service
+  const categorizeItems = async (items: ShoppingListItem[]) => {
+    if (!items.length) {
+      setCategorizedItems({});
+      return;
+    }
+
+    setIsCategorizingItems(true);
+    try {
+      const categorized: Record<string, ShoppingListItem[]> = {};
+
+      // Process items in parallel for better performance
+      const categorizedPromises = items.map(async (item) => {
+        let category = 'Pantry & Canned Goods'; // Default category
+        
+        try {
+          // Use AI categorization service
+          const result = await aiCategorizationService.categorizeProduct(
+            item.productName, 
+            item.quantity, 
+            item.unit
+          );
+          
+          if (result && result.category) {
+            category = result.category;
+          } else {
+            // Fallback to quick categorization
+            const quickResult = aiCategorizationService.getQuickCategory(
+              item.productName, 
+              item.quantity, 
+              item.unit
+            );
+            category = quickResult.category;
+          }
+        } catch (error) {
+          console.warn('Failed to categorize item:', item.productName, error);
+          // Use quick categorization as fallback
+          const quickResult = aiCategorizationService.getQuickCategory(
+            item.productName, 
+            item.quantity, 
+            item.unit
+          );
+          category = quickResult.category;
+        }
+
+        return { item, category };
+      });
+
+      const results = await Promise.all(categorizedPromises);
+
+      // Group items by category
+      results.forEach(({ item, category }) => {
+        if (!categorized[category]) {
+          categorized[category] = [];
+        }
+        categorized[category].push(item);
+      });
+
+      // Sort items within each category alphabetically
+      Object.keys(categorized).forEach(category => {
+        categorized[category].sort((a, b) => a.productName.localeCompare(b.productName));
+      });
+
+      setCategorizedItems(categorized);
+    } catch (error) {
+      console.error('Error categorizing items:', error);
+      // Fallback: group all items under default category
+      setCategorizedItems({
+        'Pantry & Canned Goods': items
+      });
+    } finally {
+      setIsCategorizingItems(false);
+    }
+  };
+
+  // Toggle category collapse state
+  const toggleCategory = (category: string) => {
+    setCollapsedCategories(prev => ({
+      ...prev,
+      [category]: !prev[category]
+    }));
+  };
+
+  // Auto-categorize items whenever the shopping list changes
+  useEffect(() => {
+    const defaultList = shoppingLists?.[0];
+    const items = defaultList?.items || [];
+    
+    if (items.length > 0) {
+      categorizeItems(items);
+    } else {
+      setCategorizedItems({});
+    }
+  }, [shoppingLists]);
 
   // AI List Generation Animation and Auto-generation
   useEffect(() => {
@@ -254,6 +365,12 @@ const ShoppingListComponent: React.FC = () => {
         title: "Item added",
         description: "Item has been added to your shopping list",
       });
+      
+      // Re-categorize items after adding new item
+      const updatedList = queryClient.getQueryData<ShoppingListType[]>(['/api/shopping-lists']);
+      if (updatedList && updatedList[0]?.items) {
+        categorizeItems(updatedList[0].items);
+      }
     }
   });
 
@@ -547,52 +664,163 @@ const ShoppingListComponent: React.FC = () => {
 
       
 
-      <div className="space-y-2">
-        {items.map((item) => (
-          <Card key={item.id} className={`${item.completed ? 'opacity-60' : ''}`}>
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3 flex-1">
-                  <button
-                    onClick={() => handleToggleItem(item.id, item.completed)}
-                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                      item.completed
-                        ? 'bg-green-500 border-green-500'
-                        : 'border-gray-300 hover:border-green-400'
-                    }`}
-                  >
-                    {item.completed && <Check className="h-3 w-3 text-white" />}
-                  </button>
-                  <div className="flex-1">
-                    <span className={`${item.completed ? 'line-through' : ''}`}>
-                      {item.productName}
-                    </span>
-                    <div className="text-sm text-gray-500">
-                      {item.quantity} {item.unit}
+      {/* Categorized Shopping List */}
+      {isCategorizingItems && (
+        <div className="flex items-center justify-center py-4 text-gray-500">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-2"></div>
+          <span>Categorizing items...</span>
+        </div>
+      )}
+
+      {Object.keys(categorizedItems).length > 0 && !isCategorizingItems && (
+        <div className="space-y-3">
+          {Object.entries(categorizedItems)
+            .sort(([a], [b]) => {
+              // Sort categories by typical shopping order
+              const order = ['Produce', 'Dairy & Eggs', 'Meat & Seafood', 'Pantry & Canned Goods', 'Frozen Foods', 'Bakery', 'Personal Care', 'Household Items'];
+              return order.indexOf(a) - order.indexOf(b);
+            })
+            .map(([category, categoryItems]) => {
+              const config = categoryConfig[category as keyof typeof categoryConfig] || {
+                icon: '🛒',
+                color: 'bg-gray-100 text-gray-800 border-gray-200',
+                aisle: 'General'
+              };
+              const isCollapsed = collapsedCategories[category];
+              const completedCount = categoryItems.filter(item => item.completed).length;
+              const totalCount = categoryItems.length;
+
+              return (
+                <Collapsible key={category} open={!isCollapsed} onOpenChange={() => toggleCategory(category)}>
+                  <Card className={`border-2 ${config.color.split(' ')[0]} border-opacity-30`}>
+                    <CollapsibleTrigger className="w-full">
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <span className="text-2xl">{config.icon}</span>
+                            <div className="text-left">
+                              <h3 className="font-semibold text-lg">{category}</h3>
+                              <p className="text-sm text-gray-600">{config.aisle}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <Badge variant="secondary" className={config.color}>
+                              {completedCount}/{totalCount} items
+                            </Badge>
+                            {isCollapsed ? (
+                              <ChevronRight className="h-5 w-5 text-gray-400" />
+                            ) : (
+                              <ChevronDown className="h-5 w-5 text-gray-400" />
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </CollapsibleTrigger>
+                    
+                    <CollapsibleContent>
+                      <div className="px-3 pb-3 space-y-2">
+                        {categoryItems.map((item) => (
+                          <Card key={item.id} className={`${item.completed ? 'opacity-60' : ''} border border-gray-200`}>
+                            <CardContent className="p-3">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3 flex-1">
+                                  <button
+                                    onClick={() => handleToggleItem(item.id, item.completed)}
+                                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                      item.completed
+                                        ? 'bg-green-500 border-green-500'
+                                        : 'border-gray-300 hover:border-green-400'
+                                    }`}
+                                  >
+                                    {item.completed && <Check className="h-3 w-3 text-white" />}
+                                  </button>
+                                  <div className="flex-1">
+                                    <span className={`${item.completed ? 'line-through' : ''}`}>
+                                      {item.productName}
+                                    </span>
+                                    <div className="text-sm text-gray-500">
+                                      {item.quantity} {item.unit}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex space-x-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEditItem(item)}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteItem(item.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </CollapsibleContent>
+                  </Card>
+                </Collapsible>
+              );
+            })}
+        </div>
+      )}
+
+      {/* Fallback for uncategorized view */}
+      {Object.keys(categorizedItems).length === 0 && !isCategorizingItems && items.length > 0 && (
+        <div className="space-y-2">
+          {items.map((item) => (
+            <Card key={item.id} className={`${item.completed ? 'opacity-60' : ''}`}>
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3 flex-1">
+                    <button
+                      onClick={() => handleToggleItem(item.id, item.completed)}
+                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        item.completed
+                          ? 'bg-green-500 border-green-500'
+                          : 'border-gray-300 hover:border-green-400'
+                      }`}
+                    >
+                      {item.completed && <Check className="h-3 w-3 text-white" />}
+                    </button>
+                    <div className="flex-1">
+                      <span className={`${item.completed ? 'line-through' : ''}`}>
+                        {item.productName}
+                      </span>
+                      <div className="text-sm text-gray-500">
+                        {item.quantity} {item.unit}
+                      </div>
                     </div>
                   </div>
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditItem(item)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteItem(item.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleEditItem(item)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDeleteItem(item.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {items.length === 0 && (
         <div className="text-center py-8 text-gray-500">
