@@ -1129,87 +1129,229 @@ const ShoppingListComponent: React.FC = () => {
         </div>
       )}
 
-      <div className="mt-6 mb-6 flex gap-2">
-        <Button
-          variant="outline"
-          onClick={() => setRecipeDialogOpen(true)}
-          className="flex items-center gap-1"
-        >
-          <FileText className="h-4 w-4" />
-          <span>Import Recipe</span>
-        </Button>
-
-        <Button
-          variant="outline"
-          onClick={handleRegenerateList}
-          disabled={regenerateListMutation.isPending}
-          className="flex items-center gap-1"
-        >
-          <Wand2 className="h-4 w-4" />
-          <span>{regenerateListMutation.isPending ? "Regenerating..." : "Regenerate List"}</span>
-        </Button>
-      </div>
+      
 
       <form onSubmit={handleAddItem} className="mb-4">
-        <div className="flex space-x-2 mb-2">
-          <Input
-            type="text"
-            placeholder="Add an item..."
-            value={newItemName}
-            onChange={(e) => setNewItemName(e.target.value)}
-            className="flex-1 border-4 border-gray-600 focus:border-blue-600 focus:ring-4 focus:ring-blue-300 bg-gray-50 text-black font-bold text-lg placeholder-gray-600 px-6 py-3 rounded-lg shadow-inner"
-          />
-          <Button 
-            type="submit" 
-            disabled={addItemMutation.isPending}
-            className="bg-blue-600 hover:bg-blue-700 text-white border-4 border-blue-600 hover:border-blue-700 shadow-lg min-w-[48px] rounded-lg"
-          >
-            <Plus className="h-5 w-5" />
-          </Button>
-        </div>
-        <div className="flex space-x-2">
-          <div className="flex-1">
+        <Card className="bg-white rounded-lg shadow-md border border-gray-200">
+          <CardContent className="p-4">
+            {/* Item Name Input */}
             <Input
-              type="number"
-              placeholder="Quantity"
-              value={newItemQuantity}
-              onChange={(e) => setNewItemQuantity(e.target.value)}
-              min="1"
-              className="w-full border-4 border-orange-400 focus:border-orange-600 focus:ring-4 focus:ring-orange-200 bg-orange-50 text-black font-bold text-lg placeholder-orange-600 px-4 py-3 rounded-lg shadow-md"
+              type="text"
+              placeholder="Add item name"
+              value={newItemName}
+              onChange={(e) => setNewItemName(e.target.value)}
+              className="h-12 text-base border-2 border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 bg-white rounded-lg transition-all duration-200"
             />
-          </div>
-          <div className="flex-1">
-            <select
-              value={newItemUnit}
-              onChange={(e) => setNewItemUnit(e.target.value)}
-              className="w-full border-4 border-orange-400 focus:border-orange-600 focus:ring-4 focus:ring-orange-200 bg-orange-50 text-black font-bold text-lg px-4 py-3 rounded-lg shadow-md"
-            >
-              <option value="COUNT">Count</option>
-              <option value="LB">Pounds</option>
-              <option value="OZ">Ounces</option>
-              <option value="GALLON">Gallon</option>
-              <option value="QUART">Quart</option>
-              <option value="PINT">Pint</option>
-              <option value="CUP">Cup</option>
-              <option value="LITER">Liter</option>
-              <option value="ML">Milliliters</option>
-              <option value="DOZEN">Dozen</option>
-              <option value="LOAF">Loaf</option>
-              <option value="BAG">Bag</option>
-              <option value="BOX">Box</option>
-              <option value="BOTTLE">Bottle</option>
-              <option value="CAN">Can</option>
-              <option value="JAR">Jar</option>
-              <option value="PACK">Pack</option>
-              <option value="CONTAINER">Container</option>
-              <option value="BUNCH">Bunch</option>
-              <option value="HEAD">Head</option>
-              <option value="BLOCK">Block</option>
-              <option value="BOTTLES">Bottles</option>
-            </select>
-          </div>
-        </div>
+
+            {/* Quantity and Unit Row */}
+            <div className="flex space-x-3 mt-3">
+              <div className="flex-1">
+                <Input
+                  type="number"
+                  placeholder="Quantity"
+                  value={newItemQuantity}
+                  onChange={(e) => setNewItemQuantity(e.target.value)}
+                  min="1"
+                  className="h-11 text-base border-2 border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 bg-white rounded-lg transition-all duration-200"
+                />
+              </div>
+
+              <div className="flex-1">
+                <select
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                
+onChange={(e) => setNewItemUnit(e.target.value as ShoppingListItem['unit'])}
+                  className="h-11 text-base border-2 border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 bg-white rounded-lg transition-all duration-200 cursor-pointer"
+                >
+                  <option value="COUNT">Count</option>
+                  <option value="LB">Pound</option>
+                  <option value="OZ">Ounce</option>
+                  <option value="GALLON">Gallon</option>
+                  <option value="CUP">Cup</option>
+                  <option value="TSP">Teaspoon</option>
+                  <option value="TBSP">Tablespoon</option>
+                  <option value="PINT">Pint</option>
+                  <option value="QUART">Quart</option>
+                  <option value="LITER">Liter</option>
+                  <option value="ML">Milliliter</option>
+                  <option value="GRAMS">Grams</option>
+                  <option value="KG">Kilogram</option>
+                  <option value="BAG">Bag</option>
+                  <option value="BOX">Box</option>
+                  <option value="BOTTLE">Bottle</option>
+                  <option value="JAR">Jar</option>
+                  <option value="CAN">Can</option>
+                  <option value="PACK">Pack</option>
+                  <option value="LOAF">Loaf</option>
+                  <option value="BUNCH">Bunch</option>
+                  <option value="HEAD">Head</option>
+                  <option value="CLOVE">Clove</option>
+                  <option value="SLICE">Slice</option>
+                  <option value="PIECE">Piece</option>
+                  <option value="SHEET">Sheet</option>
+                  <option value="ROLL">Roll</option>
+                  <option value="TUBE">Tube</option>
+                  <option value="BLOCK">Block</option>
+                  <option value="STICK">Stick</option>
+                  <option value="DOZEN">Dozen</option>
+                  <option value="CASE">Case</option>
+                  <option value="CARTON">Carton</option>
+                  <option value="CONTAINER">Container</option>
+                  <option value="PACKAGE">Package</option>
+                  <option value="BUNDLE">Bundle</option>
+                  <option value="BASKET">Basket</option>
+                  <option value="TRAY">Tray</option>
+                  <option value="CRATE">Crate</option>
+                  <option value="SACK">Sack</option>
+                  <option value="BUCKET">Bucket</option>
+                  <option value="BARREL">Barrel</option>
+                  <option value="BOTTLES">Bottles</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Action buttons row */}
+            <div className="flex items-center justify-between pt-2">
+              <div className="flex space-x-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setRecipeDialogOpen(true)}
+                  className="h-10 px-4 border-2 border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 text-gray-700 rounded-lg transition-all duration-200 flex items-center space-x-2"
+                >
+                  <FileText className="h-4 w-4" />
+                  <span className="text-sm font-medium">Import Recipe</span>
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleRegenerateList}
+                  disabled={regenerateListMutation.isPending}
+                  className="h-10 px-4 border-2 border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 text-gray-700 rounded-lg transition-all duration-200 flex items-center space-x-2"
+                >
+                  <Wand2 className="h-4 w-4" />
+                  <span className="text-sm font-medium">Regenerate List</span>
+                </Button>
+              </div>
+
+              {newItemName.trim() && (
+                <Badge variant="secondary" className="bg-blue-50 text-blue-700 border border-blue-200">
+                  Ready to add
+                </Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </form>
+
+      
 
       {/* Recipe Import Dialog */}
       <Dialog open={recipeDialogOpen} onOpenChange={setRecipeDialogOpen}>
