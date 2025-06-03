@@ -60,7 +60,7 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
       const response = await apiRequest('POST', '/api/shopping-list/items', {
         productName: deal.productName,
         suggestedRetailerId: deal.retailerId,
-        suggestedPrice: deal.salePrice
+        suggestedPrice: Math.round(deal.salePrice * 100) // Convert dollars to cents
       });
       return response.json();
     },
