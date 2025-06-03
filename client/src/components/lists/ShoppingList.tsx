@@ -460,17 +460,23 @@ const ShoppingListComponent: React.FC = () => {
       const isEmptyList = currentItems.length === 0;
 
       console.log(`Regenerating list - Current items: ${currentItems.length}, Empty: ${isEmptyList}`);
+      console.log('Making API call to /api/shopping-lists/generate');
 
       // Use the unified API endpoint for all scenarios
       const response = await apiRequest('POST', '/api/shopping-lists/generate', {
         shoppingListId: defaultList.id
       });
 
+      console.log('API response status:', response.status);
+
       if (!response.ok) {
-        throw new Error('Failed to generate shopping list');
+        const errorText = await response.text();
+        console.error('API error response:', errorText);
+        throw new Error(`Failed to generate shopping list: ${response.status} ${errorText}`);
       }
 
       const result = await response.json();
+      console.log('API response data:', result);
       
       return {
         ...result,
@@ -479,6 +485,7 @@ const ShoppingListComponent: React.FC = () => {
       };
     },
     onSuccess: (data) => {
+      console.log('Regeneration successful, invalidating queries');
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
 
       let title, description;
@@ -494,12 +501,15 @@ const ShoppingListComponent: React.FC = () => {
         }
       }
 
+      console.log('Showing success toast:', title, description);
+
       toast({
         title,
         description
       });
     },
     onError: (error: any) => {
+      console.error('Regeneration failed:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to enhance list",
@@ -522,6 +532,7 @@ const ShoppingListComponent: React.FC = () => {
     const hasItems = defaultList?.items && defaultList.items.length > 0;
     
     console.log('Manual regeneration triggered - hasItems:', hasItems);
+    console.log('Current shopping list:', defaultList);
     
     // Show animation during regeneration
     setIsGeneratingList(true);
@@ -542,7 +553,6 @@ const ShoppingListComponent: React.FC = () => {
     setGenerationSteps(steps);
     setCurrentStep(0);
 
-    let currentStepIndex = 0;
     let animationInterval: NodeJS.Timeout | null = null;
     
     // Start the animation
@@ -561,9 +571,11 @@ const ShoppingListComponent: React.FC = () => {
     }, 1200);
 
     // Start the actual mutation after a brief delay to ensure animation starts
+    console.log('Starting regeneration mutation...');
     setTimeout(() => {
       regenerateListMutation.mutate(undefined, {
         onSettled: () => {
+          console.log('Mutation settled, cleaning up animation');
           // Clean up animation when mutation is done
           if (animationInterval) {
             clearInterval(animationInterval);
@@ -576,13 +588,16 @@ const ShoppingListComponent: React.FC = () => {
           }, 1000);
         },
         onError: (error) => {
-          console.error('Regeneration failed:', error);
+          console.error('Regeneration failed in handler:', error);
           // Ensure animation stops on error
           if (animationInterval) {
             clearInterval(animationInterval);
           }
           setIsGeneratingList(false);
           setCurrentStep(-1);
+        },
+        onSuccess: (data) => {
+          console.log('Regeneration completed successfully in handler:', data);
         }
       });
     }, 200);
