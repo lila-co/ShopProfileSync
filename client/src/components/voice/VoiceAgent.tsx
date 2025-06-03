@@ -287,8 +287,29 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
     return null;
   }, []);
 
-  // AI-powered conversational query handler
+  // AI-powered conversational query handler with recipe fallback
   const handleConversationalQuery = useCallback(async (query: string): Promise<string> => {
+    const lowerQuery = query.toLowerCase();
+    
+    // Check if this is a recipe-related query
+    const recipeKeywords = ['recipe', 'cook', 'make', 'meal', 'how to', 'ingredients', 'preparation', 'dish'];
+    const isRecipeQuery = recipeKeywords.some(keyword => lowerQuery.includes(keyword));
+    
+    if (isRecipeQuery) {
+      // Handle recipe queries without OpenAI
+      if (lowerQuery.includes('chicken')) {
+        return "Here's a simple chicken recipe: Season chicken breast with salt, pepper, and herbs. Cook in a pan with olive oil for 6-7 minutes per side. Would you like me to add chicken breast to your shopping list?";
+      } else if (lowerQuery.includes('pasta')) {
+        return "For a great pasta dish, try this: Cook pasta according to package directions. Sauté garlic in olive oil, add tomatoes and herbs. Mix with pasta and top with parmesan. Should I add pasta, tomatoes, and garlic to your list?";
+      } else if (lowerQuery.includes('soup')) {
+        return "Here's a hearty soup recipe: Sauté onions, carrots, and celery. Add broth, potatoes, and herbs. Simmer for 20 minutes. Would you like me to add these ingredients to your shopping list?";
+      } else if (lowerQuery.includes('salad')) {
+        return "For a fresh salad: Mix greens, cherry tomatoes, cucumber, and your favorite dressing. Add some protein like chicken or cheese. Should I add salad ingredients to your list?";
+      } else {
+        return "I'd love to help with recipes! While I don't have access to specific recipes right now, I can help you add ingredients to your shopping list. What dish are you planning to make?";
+      }
+    }
+    
     try {
       // Add current query to context
       const updatedContext = [...conversationContext.slice(-4), query]; // Keep last 5 exchanges
@@ -318,15 +339,21 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
     } catch (error) {
       console.error('Error getting AI response:', error);
       
-      // Fallback to simple responses if AI fails
-      const fallbackResponses = [
-        "I'm having trouble connecting to my AI brain right now, but I can still help you add items to your list! What would you like to add?",
-        "My AI conversation feature is having a moment, but I can still assist with your shopping list. What can I add for you?",
-        "Sorry, I'm experiencing some technical difficulties with my conversational AI. Let me help you with your shopping list instead!"
-      ];
-      return fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+      // Enhanced fallback responses based on query type
+      if (lowerQuery.includes('help')) {
+        return "I'm here to help! You can ask me to add items like 'add milk' or 'I need 2 pounds of chicken'. I can also suggest simple recipes. What would you like to do?";
+      } else if (lowerQuery.includes('suggest') || lowerQuery.includes('recommend')) {
+        return "I'd recommend some staples like chicken, vegetables, pasta, and rice for versatile meal options. Would you like me to add any of these to your list?";
+      } else {
+        const fallbackResponses = [
+          "I can help you with your shopping list! Try saying 'add milk' or ask me about simple recipes. What would you like to add?",
+          "Let me help you build your shopping list! You can ask me to add items or suggest ingredients for meals. What are you planning to cook?",
+          "I'm ready to help with your shopping! Tell me what to add to your list or ask about meal ideas. What sounds good to you?"
+        ];
+        return fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+      }
     }
-  }, []);
+  }, [conversationContext]);
 
   // Process voice command
   const processVoiceCommand = useCallback(async (command: string) => {
@@ -469,11 +496,11 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
     try {
       recognitionRef.current.start();
       const greetings = [
-        "Hi there! I'm your shopping assistant and I'm now listening continuously. You can ask me to add items, suggest recipes, or help plan your meals. I'll keep listening until you tell me to stop!",
-        "Hey! I'm here to help with your shopping and cooking. I'll stay active and listen for your commands. What would you like to talk about?",
-        "Hello! I can help you add items to your list or chat about what you're planning to cook. I'm listening continuously now, so just talk to me naturally!",
-        "Hi! Ready to help with your shopping list and meal planning. I'll keep listening for your voice commands. What are you thinking about making?",
-        "Hey there! I'm your kitchen companion and I'm staying active to listen. Ask me about recipes, meal ideas, or tell me what to add to your list!"
+        "Hi there! I'm your shopping assistant and I'm now listening continuously. You can ask me to add items, suggest simple recipes, or help plan your meals. I'll keep listening until you tell me to stop!",
+        "Hey! I'm here to help with your shopping and cooking. I can suggest recipes for chicken, pasta, soups, and salads. I'll stay active and listen for your commands. What would you like to talk about?",
+        "Hello! I can help you add items to your list or share simple recipe ideas. I'm listening continuously now, so just talk to me naturally!",
+        "Hi! Ready to help with your shopping list and meal planning. I know some great recipes for common ingredients. I'll keep listening for your voice commands. What are you thinking about making?",
+        "Hey there! I'm your kitchen companion and I'm staying active to listen. Ask me about simple recipes, meal ideas, or tell me what to add to your list!"
       ];
       speak(greetings[Math.floor(Math.random() * greetings.length)]);
     } catch (error) {
