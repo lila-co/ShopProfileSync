@@ -1447,8 +1447,10 @@ export class MemStorage implements IStorage {
       return updatedAccount;
   }
 
-  async deleteRetailerAccount(id: number): Promise<void> {
+  async deleteRetailerAccount(id: number): Promise<boolean> {
+      const existed = this.retailerAccounts.has(id);
       this.retailerAccounts.delete(id);
+      return existed;
   }
 
   async getRetailerAccount(id: number): Promise<RetailerAccount | undefined> {

@@ -24,7 +24,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 import { Eye, EyeOff, Lock, ExternalLink, RefreshCw, Plus, Check, AlertCircle, Store, CheckCircle } from 'lucide-react';
 import { getCompanyLogo } from '@/lib/imageUtils';
@@ -52,6 +60,10 @@ const RetailerLinking: React.FC = () => {
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [selectedRetailer, setSelectedRetailer] = useState<any>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [showAddStore, setShowAddStore] = useState(false);
+  const [newStoreName, setNewStoreName] = useState('');
+  const [newStoreWebsite, setNewStoreWebsite] = useState('');
+  const [selectedAvailableRetailer, setSelectedAvailableRetailer] = useState<string>('');
 
   // Form state
   const [username, setUsername] = useState('');
@@ -60,6 +72,7 @@ const RetailerLinking: React.FC = () => {
   const [allowOrdering, setAllowOrdering] = useState(true);
   const [loyaltyCardNumber, setLoyaltyCardNumber] = useState('');
   const [loyaltyMemberId, setLoyaltyMemberId] = useState('');
+  const [connectionType, setConnectionType] = useState<'account' | 'email'>('account'); // Added connection type state
 
   // Get all available retailers
   const { data: retailers, isLoading: retailersLoading } = useQuery({
@@ -83,15 +96,20 @@ const RetailerLinking: React.FC = () => {
       setPassword('');
       setLoyaltyCardNumber('');
       setLoyaltyMemberId('');
+      setSelectedAvailableRetailer('');
       setLinkDialogOpen(false);
 
       // Invalidate queries to refresh the data
       queryClient.invalidateQueries({ queryKey: ['/api/user/retailer-accounts'] });
 
       // Show success message
+      const message = connectionType === 'circular' 
+        ? `${selectedRetailer?.name} circular subscription activated.`
+        : `Your ${selectedRetailer?.name} account has been connected to SmartCart.`;
+
       toast({
-        title: 'Account Linked Successfully',
-        description: `Your ${selectedRetailer?.name} account has been connected to SmartCart.`,
+        title: connectionType === 'circular' ? 'Circular Subscription Active' : 'Account Linked Successfully',
+        description: message,
       });
     },
     onError: (error: any) => {
@@ -143,18 +161,55 @@ const RetailerLinking: React.FC = () => {
     }
   });
 
+  // Mutation to add custom store
+  const addStoreMutation = useMutation({
+    mutationFn: async (storeData: {name: string, logoColor: string, websiteUrl?: string}) => {
+      const response = await apiRequest('POST', '/api/retailers', storeData);
+      return response.json();
+    },
+    onSuccess: (newRetailer) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/retailers'] });
+      setShowAddStore(false);
+      setNewStoreName('');
+      setNewStoreWebsite('');
+      
+      // Automatically open the connection dialog for the newly added store
+      setSelectedRetailer(newRetailer);
+      setConnectionType('account'); // Default to account connection
+      setLinkDialogOpen(true);
+      
+      toast({
+        title: "Store Added",
+        description: "Your custom store has been added successfully. Now connect your account."
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to add store. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
   // Handle linking a new retailer account
   const handleLinkAccount = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!selectedRetailer) return;
 
-    const accountData = {
+    const accountData = connectionType === 'circular' ? {
+      retailerId: selectedRetailer.id,
+      connectionType: 'circular',
+      isConnected: true,
+      circularOnly: true
+    } : {
       retailerId: selectedRetailer.id,
       username,
       password,
       storeCredentials: rememberMe,
       allowOrdering,
+      connectionType: 'account'
     };
 
     // If loyalty card info is provided, save it separately
@@ -175,9 +230,37 @@ const RetailerLinking: React.FC = () => {
     linkAccountMutation.mutate(accountData);
   };
 
+    const resetForm = () => {
+    setUsername('');
+    setPassword('');
+    setLoyaltyCardNumber('');
+    setLoyaltyMemberId('');
+    setConnectionType('account');
+    setSelectedAvailableRetailer('');
+  };
+
+  const handleAddStore = () => {
+    const trimmedName = newStoreName.trim();
+    if (trimmedName) {
+      addStoreMutation.mutate({
+        name: trimmedName,
+        logoColor: 'blue',
+        websiteUrl: newStoreWebsite.trim() || undefined
+      });
+    } else {
+      toast({
+        title: "Invalid Store Name",
+        description: "Please enter a valid store name.",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Open the link dialog for a specific retailer
   const openLinkDialog = (retailer: any) => {
     setSelectedRetailer(retailer);
+    setConnectionType('account'); // Reset to default
+    setSelectedAvailableRetailer(''); // Reset dropdown
     setLinkDialogOpen(true);
   };
 
@@ -207,10 +290,10 @@ const RetailerLinking: React.FC = () => {
         Your credentials are securely stored and can be removed at any time.
       </p>
 
-      {/* Linked Accounts */}
+      {/* Connected Accounts Only */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {!accountsLoading && retailerAccounts?.length > 0 ? (
-          retailerAccounts.map((account: any) => {
+        {!accountsLoading && retailerAccounts?.filter((account: any) => account.isConnected).length > 0 ? (
+          retailerAccounts.filter((account: any) => account.isConnected).map((account: any) => {
             const retailer = retailers?.find((r: any) => r.id === account.retailerId);
             const logoUrl = retailer ? getCompanyLogo(retailer.name) : undefined;
 
@@ -305,71 +388,70 @@ const RetailerLinking: React.FC = () => {
             <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
             <h4 className="font-medium text-gray-700 mb-1">No Connected Accounts</h4>
             <p className="text-gray-500 text-sm mb-4">
-              Link your retailer accounts to automatically track purchases and enable personalized shopping recommendations.
+              Connect retailer accounts below to automatically track purchases and enable personalized shopping recommendations.
             </p>
           </div>
         )}
       </div>
 
-      {/* Available Retailers */}
-      <h3 className="text-lg font-semibold mt-8 mb-3">Available Retailers</h3>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {!retailersLoading && retailers?.map((retailer: any) => {
-          const isLinked = isRetailerLinked(retailer.id);
-          const account = getLinkedAccount(retailer.id);
-          const logoUrl = getCompanyLogo(retailer.name);
-
-          return (
-            <Card key={retailer.id} className={isLinked ? "border-primary/30" : ""}>
-              <CardContent className="p-4">
-                <div className="flex flex-col items-center text-center">
-                  {logoUrl ? (
-                    <img src={logoUrl} alt={retailer.name} className="h-12 w-12 mb-2 object-contain" />
-                  ) : (
-                    <div 
-                      className="h-12 w-12 rounded-full flex items-center justify-center text-white mb-2"
-                      style={{backgroundColor: retailer.logoColor || '#4A7CFA'}}
-                    >
-                      <span className="text-lg font-bold">{retailer.name.charAt(0)}</span>
-                    </div>
-                  )}
-                  <h5 className="font-medium">{retailer.name}</h5>
-
-                  {isLinked ? (
-                    <div className="mt-2 w-full">
-                      <Badge className="w-full mb-2 bg-primary/20 text-primary border border-primary/30">
-                        <Check className="h-3 w-3 mr-1" /> Connected
-                      </Badge>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full text-xs"
-                        onClick={() => {
-                          setSelectedRetailer(retailer);
-                          setUsername(account?.username || '');
-                          setAllowOrdering(account?.allowOrdering !== false);
-                          setRememberMe(account?.storeCredentials !== false);
-                          setLinkDialogOpen(true);
-                        }}
+      {/* Available Retailers Dropdown */}
+      <h3 className="text-lg font-semibold mt-8 mb-3">Connect New Retailer</h3>
+      <div className="space-y-4">
+        <Select value={selectedAvailableRetailer} onValueChange={(value) => {
+          setSelectedAvailableRetailer(value);
+          
+          // Auto-open connection dialog when a retailer is selected (not custom store)
+          if (value !== 'add-custom-store' && value) {
+            const retailerId = parseInt(value);
+            const retailer = retailers?.find((r: any) => r.id === retailerId);
+            if (retailer) {
+              openLinkDialog(retailer);
+            }
+          }
+        }}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select a retailer to connect..." />
+          </SelectTrigger>
+          <SelectContent className="max-h-60">
+            {!retailersLoading && retailers?.filter((retailer: any) => !isRetailerLinked(retailer.id)).map((retailer: any) => {
+              const logoUrl = getCompanyLogo(retailer.name);
+              
+              return (
+                <SelectItem key={retailer.id} value={retailer.id.toString()}>
+                  <div className="flex items-center space-x-2">
+                    {logoUrl ? (
+                      <img src={logoUrl} alt={retailer.name} className="h-5 w-5 object-contain" />
+                    ) : (
+                      <div 
+                        className="h-5 w-5 rounded-full flex items-center justify-center text-white text-xs"
+                        style={{backgroundColor: retailer.logoColor || '#4A7CFA'}}
                       >
-                        Manage Connection
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="mt-2 w-full"
-                      onClick={() => openLinkDialog(retailer)}
-                    >
-                      <Plus className="h-3 w-3 mr-1" /> Connect
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                        {retailer.name.charAt(0)}
+                      </div>
+                    )}
+                    <span>{retailer.name}</span>
+                  </div>
+                </SelectItem>
+              );
+            })}
+            <SelectItem value="add-custom-store">
+              <div className="flex items-center space-x-2">
+                <Plus className="h-5 w-5 text-gray-500" />
+                <span>Add Custom Store</span>
+              </div>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+        
+        {selectedAvailableRetailer === 'add-custom-store' && (
+          <Button 
+            onClick={() => setShowAddStore(true)}
+            className="w-full"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Custom Store
+          </Button>
+        )}
       </div>
 
       {/* Link Account Dialog */}
@@ -404,57 +486,133 @@ const RetailerLinking: React.FC = () => {
 
           <form onSubmit={handleLinkAccount}>
             <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                <Label htmlFor="username">Email or Username</Label>
-                <Input
-                  id="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="your.email@example.com"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-full px-3"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
+              {/* Connection Type Selection */}
+              <div className="space-y-3">
+                <Label>Connection Type</Label>
+                <div className="flex space-x-4">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="connectionType"
+                      value="account"
+                      checked={connectionType === 'account'}
+                      onChange={(e) => setConnectionType('account')}
+                      className="text-primary"
+                    />
+                    <span className="text-sm">Store Account</span>
+                  </label>
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="connectionType"
+                      value="circular"
+                      checked={connectionType === 'circular'}
+                      onChange={(e) => setConnectionType('circular')}
+                      className="text-primary"
+                    />
+                    <span className="text-sm">Circular Only</span>
+                  </label>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="remember-me"
-                  checked={rememberMe}
-                  onCheckedChange={setRememberMe}
-                />
-                <Label htmlFor="remember-me">Remember my credentials</Label>
-              </div>
+              {connectionType === 'account' && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="username">Email or Username</Label>
+                    <Input
+                      id="username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="your.email@example.com"
+                      required
+                    />
+                  </div>
+                </>
+              )}
 
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="allow-ordering"
-                  checked={allowOrdering}
-                  onCheckedChange={setAllowOrdering}
-                />
-                <Label htmlFor="allow-ordering">Allow SmartCart to place orders for me</Label>
-              </div>
+              {connectionType === 'circular' && (
+                <div className="bg-blue-50 p-4 rounded-md">
+                  <h4 className="font-medium text-blue-900 mb-2">Circular-Only Subscription</h4>
+                  <p className="text-sm text-blue-700 mb-3">
+                    We'll automatically fetch weekly circulars from {selectedRetailer?.name} to find deals for you. 
+                    No account login required.
+                  </p>
+                  <div className="text-xs text-blue-600">
+                    ✓ Get weekly deals and promotions<br/>
+                    ✓ AI-powered deal matching<br/>
+                    ✓ No personal account access needed
+                  </div>
+                </div>
+              )}
+
+              {connectionType === 'account' && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        required
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-0 h-full px-3"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="remember-me"
+                      checked={rememberMe}
+                      onCheckedChange={setRememberMe}
+                    />
+                    <Label htmlFor="remember-me">Remember my credentials</Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="allow-ordering"
+                      checked={allowOrdering}
+                      onCheckedChange={setAllowOrdering}
+                    />
+                    <Label htmlFor="allow-ordering">Allow SmartCart to place orders for me</Label>
+                  </div>
+                </>
+              )}
+
+              {connectionType === 'circular' && (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    We'll automatically fetch this store's weekly circulars for deal identification. 
+                    No personal account connection required.
+                  </p>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="circularUrl">Circular URL (Optional)</Label>
+                    <Input
+                      id="circularUrl"
+                      name="circularUrl"
+                      type="url"
+                      placeholder="https://store.com/weekly-ad"
+                      className="w-full"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      If you know the specific URL for this store's weekly circular, enter it here. 
+                      Otherwise, we'll try to find it automatically.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <Separator />
 
@@ -463,7 +621,7 @@ const RetailerLinking: React.FC = () => {
                 <p className="text-xs text-gray-600">
                   Add your loyalty card to earn points and access member discounts during shopping.
                 </p>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="loyalty-card">Loyalty Card Number</Label>
                   <Input
@@ -506,7 +664,12 @@ const RetailerLinking: React.FC = () => {
                 type="submit" 
                 disabled={linkAccountMutation.isPending}
               >
-                {linkAccountMutation.isPending ? "Connecting..." : "Connect Account"}
+                {linkAccountMutation.isPending 
+                  ? "Connecting..." 
+                  : connectionType === 'circular' 
+                    ? "Subscribe to Circular" 
+                    : "Connect Account"
+                }
               </Button>
             </DialogFooter>
           </form>

@@ -32,6 +32,10 @@ const ShoppingInsights: React.FC = () => {
     queryKey: ['/api/insights/demographic-insights'],
   });
 
+  if (showReceiptScanner) {
+    return <ReceiptScanner />;
+  }
+
   const renderTopItems = () => {
     if (loadingTopItems) {
       return Array(5).fill(0).map((_, i) => (

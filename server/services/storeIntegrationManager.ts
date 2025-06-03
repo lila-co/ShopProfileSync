@@ -35,6 +35,13 @@ export interface StoreIntegrationConfig {
   };
   lastCircularUpdate?: Date;
   circularUpdateFrequency: 'daily' | 'weekly' | 'biweekly';
+  storeLocations?: Array<{
+    storeId: string;
+    address: string;
+    lat: number;
+    lng: number;
+  }>;
+  circularUrlTemplate?: string; // Template for generating store-specific URLs
 }
 
 export class StoreIntegrationManager {
@@ -108,7 +115,12 @@ export class StoreIntegrationManager {
     this.integrationConfigs.set(config.id, config);
   }
 
-  async addCustomStore(storeName: string, websiteUrl?: string): Promise<StoreIntegrationConfig> {
+  async addCustomStore(storeName: string, websiteUrl?: string, storeLocations?: Array<{
+    storeId: string;
+    address: string;
+    lat: number;
+    lng: number;
+  }>): Promise<StoreIntegrationConfig> {
     // First, try to detect what integration level is possible
     const detectedLevel = await this.detectIntegrationLevel(storeName, websiteUrl);
     
@@ -127,7 +139,8 @@ export class StoreIntegrationManager {
       circularUrl: detectedLevel.circularUrl,
       scrapingConfig: detectedLevel.scrapingConfig,
       supportedFeatures: detectedLevel.supportedFeatures,
-      circularUpdateFrequency: 'weekly'
+      circularUpdateFrequency: 'weekly',
+      storeLocations: storeLocations || []
     };
 
     this.addIntegrationConfig(config);

@@ -31,7 +31,11 @@ const Header: React.FC<HeaderProps> = ({
   const [, navigate] = useLocation();
 
   const handleBack = () => {
-    navigate(-1);
+    if (onBack) {
+      onBack();
+    } else {
+      navigate(-1);
+    }
   };
 
   return (
