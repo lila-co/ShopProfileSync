@@ -397,7 +397,18 @@ const RetailerLinking: React.FC = () => {
       {/* Available Retailers Dropdown */}
       <h3 className="text-lg font-semibold mt-8 mb-3">Connect New Retailer</h3>
       <div className="space-y-4">
-        <Select value={selectedAvailableRetailer} onValueChange={setSelectedAvailableRetailer}>
+        <Select value={selectedAvailableRetailer} onValueChange={(value) => {
+          setSelectedAvailableRetailer(value);
+          
+          // Auto-open connection dialog when a retailer is selected (not custom store)
+          if (value !== 'add-custom-store' && value) {
+            const retailerId = parseInt(value);
+            const retailer = retailers?.find((r: any) => r.id === retailerId);
+            if (retailer) {
+              openLinkDialog(retailer);
+            }
+          }
+        }}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Select a retailer to connect..." />
           </SelectTrigger>
@@ -432,50 +443,14 @@ const RetailerLinking: React.FC = () => {
           </SelectContent>
         </Select>
         
-        {selectedAvailableRetailer && (
-          <div className="flex space-x-2">
-            {selectedAvailableRetailer === 'add-custom-store' ? (
-              <Button 
-                onClick={() => setShowAddStore(true)}
-                className="w-full"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Custom Store
-              </Button>
-            ) : (
-              <>
-                <Button 
-                  onClick={() => {
-                    const retailerId = parseInt(selectedAvailableRetailer);
-                    const retailer = retailers?.find((r: any) => r.id === retailerId);
-                    if (retailer) {
-                      openLinkDialog(retailer);
-                    }
-                  }}
-                  className="flex-1"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Connect Account
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    const retailerId = parseInt(selectedAvailableRetailer);
-                    const retailer = retailers?.find((r: any) => r.id === retailerId);
-                    if (retailer) {
-                      setSelectedRetailer(retailer);
-                      setConnectionType('circular');
-                      setLinkDialogOpen(true);
-                    }
-                  }}
-                  className="flex-1"
-                >
-                  <Store className="h-4 w-4 mr-2" />
-                  Circular Only
-                </Button>
-              </>
-            )}
-          </div>
+        {selectedAvailableRetailer === 'add-custom-store' && (
+          <Button 
+            onClick={() => setShowAddStore(true)}
+            className="w-full"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Custom Store
+          </Button>
         )}
       </div>
 
