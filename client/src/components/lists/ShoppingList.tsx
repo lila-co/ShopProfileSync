@@ -473,10 +473,39 @@ const ShoppingListComponent: React.FC = () => {
       const defaultList = shoppingLists?.[0];
       if (!defaultList) throw new Error('No shopping list found');
 
-      // Get existing items to avoid duplicates
-      const existingItems = new Set(
-        (defaultList.items || []).map(item => item.productName.toLowerCase().trim())
-      );
+      // Get existing items and create normalized versions for similarity checking
+      const existingItems = new Map<string, string>(); // normalized -> original
+      const existingNormalizedSet = new Set<string>();
+
+      for (const item of defaultList.items || []) {
+        const original = item.productName.toLowerCase().trim();
+        
+        // Normalize the product name for similarity checking
+        let normalized = original
+          .replace(/\b(organic|free-range|grass-fed|natural|premium|select|fresh)\b/gi, '') // Remove quality descriptors
+          .replace(/\b(whole|2%|1%|skim|low-fat|non-fat)\b/gi, '') // Remove milk type descriptors for dairy
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        // Handle specific product normalizations
+        if (normalized.includes('milk')) normalized = 'milk';
+        if (normalized.includes('bread')) normalized = 'bread';
+        if (normalized.includes('yogurt')) normalized = 'yogurt';
+        if (normalized.includes('cheese')) normalized = 'cheese';
+        if (normalized.includes('chicken breast')) normalized = 'chicken breast';
+        if (normalized.includes('ground turkey')) normalized = 'ground turkey';
+        if (normalized.includes('ground beef')) normalized = 'ground beef';
+        if (normalized.includes('eggs')) normalized = 'eggs';
+        if (normalized.includes('butter')) normalized = 'butter';
+        if (normalized.includes('bananas')) normalized = 'bananas';
+        if (normalized.includes('tomatoes')) normalized = 'tomatoes';
+        if (normalized.includes('spinach')) normalized = 'spinach';
+        if (normalized.includes('bell pepper')) normalized = 'bell peppers';
+        if (normalized.includes('avocado')) normalized = 'avocados';
+
+        existingItems.set(normalized, original);
+        existingNormalizedSet.add(normalized);
+      }
 
       // Enhanced recommendation items that complement existing list
       const enhancementItems = [
@@ -535,10 +564,42 @@ const ShoppingListComponent: React.FC = () => {
         { productName: 'Sea Salt', quantity: 1, unit: 'COUNT' }
       ];
 
-      // Filter out items that already exist in the list
-      const newItems = enhancementItems.filter(item => 
-        !existingItems.has(item.productName.toLowerCase().trim())
-      );
+      // Filter out items that already exist in the list using normalized names
+      const newItems = enhancementItems.filter(item => {
+        const itemName = item.productName.toLowerCase().trim();
+        
+        // Normalize the enhancement item name the same way
+        let normalized = itemName
+          .replace(/\b(organic|free-range|grass-fed|natural|premium|select|fresh)\b/gi, '')
+          .replace(/\b(whole|2%|1%|skim|low-fat|non-fat)\b/gi, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        // Apply same specific normalizations
+        if (normalized.includes('milk')) normalized = 'milk';
+        if (normalized.includes('bread')) normalized = 'bread';
+        if (normalized.includes('yogurt')) normalized = 'yogurt';
+        if (normalized.includes('cheese')) normalized = 'cheese';
+        if (normalized.includes('chicken breast')) normalized = 'chicken breast';
+        if (normalized.includes('ground turkey')) normalized = 'ground turkey';
+        if (normalized.includes('ground beef')) normalized = 'ground beef';
+        if (normalized.includes('eggs')) normalized = 'eggs';
+        if (normalized.includes('butter')) normalized = 'butter';
+        if (normalized.includes('bananas')) normalized = 'bananas';
+        if (normalized.includes('tomatoes')) normalized = 'tomatoes';
+        if (normalized.includes('spinach')) normalized = 'spinach';
+        if (normalized.includes('bell pepper')) normalized = 'bell peppers';
+        if (normalized.includes('avocado')) normalized = 'avocados';
+
+        // Check if this normalized product already exists
+        const alreadyExists = existingNormalizedSet.has(normalized);
+        
+        if (alreadyExists) {
+          console.log(`Skipping "${item.productName}" - similar to existing "${existingItems.get(normalized)}"`);
+        }
+        
+        return !alreadyExists;
+      });
 
       // Add only new items to enhance the existing list
       const addedItems = [];
@@ -565,9 +626,15 @@ const ShoppingListComponent: React.FC = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      
+      let description = `Added ${data.itemsAdded} new items to your shopping list`;
+      if (data.itemsSkipped > 0) {
+        description += ` (${data.itemsSkipped} similar items already existed)`;
+      }
+      
       toast({
         title: "List Enhanced",
-        description: `Added ${data.itemsAdded} new items to your shopping list${data.itemsSkipped > 0 ? ` (${data.itemsSkipped} items already existed)` : ''}`
+        description: description
       });
     },
     onError: (error: any) => {
