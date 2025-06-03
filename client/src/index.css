@@ -77,6 +77,27 @@
   --ring: 99, 102, 241;
 }
 
+.dark input[type="text"],
+.dark input[type="number"],
+.dark input[type="email"],
+.dark input[type="password"],
+.dark select,
+.dark textarea {
+  background-color: rgba(51, 65, 85, 0.95) !important;
+  border: 2px solid rgba(71, 85, 105, 0.8) !important;
+  color: rgb(248, 250, 252) !important;
+}
+
+.dark input[type="text"]:focus,
+.dark input[type="number"]:focus,
+.dark input[type="email"]:focus,
+.dark input[type="password"]:focus,
+.dark select:focus,
+.dark textarea:focus {
+  background-color: rgba(30, 41, 59, 0.95) !important;
+  border-color: hsl(var(--primary)) !important;
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -132,12 +153,13 @@
   input[type="password"],
   select,
   textarea {
-    background-color: hsl(var(--input)) !important;
-    border: 1px solid hsl(var(--border)) !important;
+    background-color: rgba(248, 250, 252, 0.95) !important;
+    border: 2px solid hsl(var(--border)) !important;
     border-radius: 0.75rem !important;
     padding: 0.75rem !important;
     transition: all 0.2s ease !important;
     color: hsl(var(--foreground)) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
   }
 
   input[type="text"]:focus,
@@ -147,9 +169,9 @@
   select:focus,
   textarea:focus {
     border-color: hsl(var(--primary)) !important;
-    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2) !important;
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.2), 0 2px 6px rgba(0, 0, 0, 0.15) !important;
     outline: none !important;
-    background-color: hsl(var(--input)) !important;
+    background-color: white !important;
   }
 
   /* Better line heights */
