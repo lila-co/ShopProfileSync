@@ -11,7 +11,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab }) => {
   const tabs = [
     { id: 'lists', label: 'Home', icon: Home, href: '/shopping-list' },
     { id: 'deals', label: 'Deals', icon: Tag, href: '/deals' },
-    { id: 'shop', label: 'Shop Now', icon: ShoppingCart, href: '/shopping-list' },
+    { id: 'shop', label: 'Shop Now', icon: ShoppingCart, href: '/plan-details?listId=1&planType=balanced' },
     { id: 'stores', label: 'Stores', icon: Store, href: '/retailers' },
     { id: 'profile', label: 'Profile', icon: User, href: '/profile' },
   ];
