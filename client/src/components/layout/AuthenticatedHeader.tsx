@@ -9,9 +9,15 @@ const AuthenticatedHeader: React.FC = () => {
   const { user, logout } = useAuth();
   const [, navigate] = useLocation();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // Navigation will be handled by the logout function's page reload
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Force navigation even if logout fails
+      navigate('/');
+    }
   };
 
   return (

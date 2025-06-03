@@ -92,22 +92,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async () => {
     try {
       // Call server logout endpoint to invalidate session
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'x-current-user-id': user?.id?.toString() || '1',
+          },
+        });
+      }
     } catch (error) {
       console.error('Server logout failed:', error);
+      // Continue with client-side cleanup even if server call fails
     } finally {
       // Clear all client-side state and session data
       localStorage.removeItem('auth_token');
       localStorage.removeItem('listGenerationShown');
       localStorage.removeItem('lastLoginTime');
       localStorage.removeItem('forceShowAnimation');
+      
+      // Clear any other auth-related data
+      localStorage.removeItem('user_preferences');
+      localStorage.removeItem('shopping_cart');
+      
+      // Reset user state
       setUser(null);
+      setIsLoading(false);
+      
+      // Force a page reload to ensure complete session cleanup
+      window.location.href = '/';
     }
   };
 

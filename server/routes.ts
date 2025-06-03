@@ -282,15 +282,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.headers['x-current-user-id'] ? 
         parseInt(req.headers['x-current-user-id'] as string) : null;
       
+      // Get the authorization token
+      const authHeader = req.headers.authorization;
+      const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+      
       // In production, you would invalidate the session/token in your session store
       // For this demo, we'll clear any user-specific cached data
       if (userId) {
-        // Clear any cached user data or session information
         console.log(`User ${userId} logged out, clearing session data`);
+        
+        // Clear any server-side cached user data
+        // In a real app, you would:
+        // - Remove the token from your session store (Redis, database, etc.)
+        // - Mark the token as invalid in your blacklist
+        // - Clear any user-specific cached data
+        
+        if (token) {
+          console.log(`Invalidating token for user ${userId}: ${token.substring(0, 10)}...`);
+          // Here you would add the token to a blacklist or remove it from your session store
+        }
       }
       
-      res.json({ message: 'Logout successful' });
+      // Set headers to ensure no caching
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
+      res.json({ 
+        message: 'Logout successful',
+        timestamp: new Date().toISOString()
+      });
     } catch (error) {
+      console.error('Logout error:', error);
       handleError(res, error);
     }
   });
