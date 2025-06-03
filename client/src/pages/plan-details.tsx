@@ -320,20 +320,6 @@ const PlanDetails: React.FC = () => {
             <ShoppingCart className="h-4 w-4 mr-2" />
             Start Shopping Route
           </Button>
-
-          <Button 
-            variant="outline"
-            className="w-full"
-            onClick={() => {
-              const params = new URLSearchParams({
-                listId: listId || '1',
-                retailerId: planData.stores[0]?.retailer?.id?.toString() || '1'
-              });
-              navigate(`/shop?${params.toString()}`);
-            }}
-          >
-            Customize Plan
-          </Button>
         </div>
       </div>
 
