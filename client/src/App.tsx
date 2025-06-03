@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { queryClient } from '@/lib/queryClient';
 import AuthPage from './pages/auth';
+import OnboardingPage from './pages/onboarding';
 import ShoppingListPage from './pages/shopping-list';
 import DealsPage from './pages/deals';
 import RetailersPage from './pages/retailers';
@@ -41,6 +42,7 @@ function AppContent() {
       <Route path="/retailers/:id" component={RetailerDetailsPage} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/scan" component={ScanPage} />
+      <Route path="/onboarding" component={OnboardingPage} />
       <Route path="/" component={() => <Redirect to="/shopping-list" />} />
       <Route component={() => <Redirect to="/shopping-list" />} />
     </Switch>
