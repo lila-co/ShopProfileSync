@@ -59,6 +59,8 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
     mutationFn: async (deal: StoreDeal) => {
       const response = await apiRequest('POST', '/api/shopping-list/items', {
         productName: deal.productName,
+        quantity: 1,
+        unit: 'COUNT',
         suggestedRetailerId: deal.retailerId,
         suggestedPrice: Math.round(deal.salePrice * 100) // Convert dollars to cents
       });
