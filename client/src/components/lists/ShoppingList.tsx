@@ -548,7 +548,7 @@ const ShoppingListComponent: React.FC = () => {
             shoppingListId: defaultList.id,
             productName: item.productName,
             quantity: item.quantity,
-            unit: item.unit
+            unit: item.unit || 'COUNT' // Ensure unit is always set
           });
           addedItems.push(await response.json());
         } catch (error) {
