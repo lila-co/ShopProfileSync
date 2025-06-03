@@ -219,10 +219,16 @@ const ShoppingListComponent: React.FC = () => {
             setGenerationSteps(steps);
             setCurrentStep(0);
 
-            const interval = setInterval(() => {
+            let autoAnimationInterval: NodeJS.Timeout | null = null;
+            let autoAnimationTimeout: NodeJS.Timeout | null = null;
+            
+            autoAnimationInterval = setInterval(() => {
               setCurrentStep((prev) => {
                 if (prev >= steps.length - 1) {
-                  clearInterval(interval);
+                  if (autoAnimationInterval) {
+                    clearInterval(autoAnimationInterval);
+                    autoAnimationInterval = null;
+                  }
                   return prev;
                 }
                 return prev + 1;
@@ -230,16 +236,20 @@ const ShoppingListComponent: React.FC = () => {
             }, 1500);
 
             // Trigger regeneration after animation
-            setTimeout(() => {
-              clearInterval(interval);
+            autoAnimationTimeout = setTimeout(() => {
+              if (autoAnimationInterval) {
+                clearInterval(autoAnimationInterval);
+              }
               localStorage.setItem('listGenerationShown', 'true');
               localStorage.removeItem('forceShowAnimation');
               
               // Use the unified regenerate mutation
               regenerateListMutation.mutate(undefined, {
                 onSettled: () => {
-                  setIsGeneratingList(false);
-                  setCurrentStep(-1);
+                  setTimeout(() => {
+                    setIsGeneratingList(false);
+                    setCurrentStep(-1);
+                  }, 500);
                 }
               });
             }, steps.length * 1500 + 1000);
@@ -509,23 +519,32 @@ const ShoppingListComponent: React.FC = () => {
     setCurrentStep(0);
 
     let currentStepIndex = 0;
-    const interval = setInterval(() => {
+    let animationInterval: NodeJS.Timeout | null = null;
+    
+    animationInterval = setInterval(() => {
       currentStepIndex++;
       setCurrentStep(currentStepIndex);
 
       if (currentStepIndex >= steps.length - 1) {
-        clearInterval(interval);
+        if (animationInterval) {
+          clearInterval(animationInterval);
+          animationInterval = null;
+        }
       }
     }, 1000);
 
     regenerateListMutation.mutate(undefined, {
       onSettled: () => {
-        // Ensure animation completes before hiding
+        // Clean up animation immediately when mutation is done
+        if (animationInterval) {
+          clearInterval(animationInterval);
+        }
+        
+        // Always hide the animation within a reasonable time
         setTimeout(() => {
-          clearInterval(interval);
           setIsGeneratingList(false);
           setCurrentStep(-1);
-        }, Math.max(1000, (steps.length - currentStepIndex) * 1000));
+        }, 500); // Short delay to ensure smooth transition
       }
     });
   };
