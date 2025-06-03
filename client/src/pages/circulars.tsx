@@ -74,6 +74,7 @@ const CircularsPage: React.FC = () => {
       if (location) {
         params.append('lat', location.lat.toString());
         params.append('lng', location.lng.toString());
+        params.append('maxDistance', '25'); // 25 mile radius
       }
 
       // Append params to endpoint if any exist
@@ -81,7 +82,12 @@ const CircularsPage: React.FC = () => {
         endpoint += `?${params.toString()}`;
       }
 
-      const response = await fetch(endpoint);
+      const response = await fetch(endpoint, {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch circulars');
+      }
       return response.json();
     },
   });
