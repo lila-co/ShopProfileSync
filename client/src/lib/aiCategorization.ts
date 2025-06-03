@@ -415,7 +415,7 @@ function detectCountOptimization(category: string, name: string, quantity?: numb
     // Liquids and bottles
     { patterns: ['olive oil', 'oil', 'vinegar', 'honey', 'syrup', 'vanilla'], unit: 'BOTTLE' },
     // Canned goods
-    { patterns: ['beans', 'black beans', 'kidney beans', 'diced tomato', 'crushed tomato', 'tomato sauce', 'marinara', 'pasta sauce'], unit: 'CAN' },
+    { patterns: ['beans', 'black beans', 'kidney beans', 'pinto beans', 'navy beans', 'chickpeas', 'diced tomato', 'crushed tomato', 'tomato sauce', 'marinara', 'pasta sauce', 'canned'], unit: 'CAN' },
     // Jars
     { patterns: ['jam', 'jelly', 'peanut butter', 'almond butter', 'salsa', 'pickles'], unit: 'JAR' },
     // Bags
@@ -460,7 +460,7 @@ function detectCountOptimization(category: string, name: string, quantity?: numb
       suggestedUnit = 'JAR';
     } else if (name.includes('baking soda') || name.includes('baking powder') || name.includes('salt') || name.includes('sugar')) {
       suggestedUnit = 'BOX';
-    } else if (name.includes('can') || name.includes('beans') || name.includes('tomato')) {
+    } else if (name.includes('beans') || name.includes('diced tomato') || name.includes('coconut milk') || name.includes('pasta sauce')) {
       suggestedUnit = 'CAN';
     }
   }
