@@ -1,12 +1,13 @@
 import React from 'react';
 import { Home, List, User, Store, Tag } from 'lucide-react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 
 interface BottomNavigationProps {
   activeTab: 'lists' | 'profile' | 'stores' | 'deals';
 }
 
 const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab }) => {
+  const location = useLocation();
   const tabs = [
     { id: 'lists', label: 'Home', icon: Home, href: '/shopping-list' },
     { id: 'deals', label: 'Deals', icon: Tag, href: '/deals' },
@@ -26,8 +27,8 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab }) => {
               key={tab.id}
               to={tab.href}
               className={`flex flex-col items-center justify-center flex-1 py-2 px-1 rounded-lg transition-all duration-200 ${
-                isActive 
-                  ? 'text-primary bg-primary/10 scale-105' 
+                isActive || location.pathname === tab.href
+                  ? 'text-primary bg-primary/10 scale-105'
                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
               }`}
             >

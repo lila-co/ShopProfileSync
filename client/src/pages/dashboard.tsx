@@ -8,6 +8,7 @@ import ReceiptScanner from '@/components/receipt/ReceiptScanner';
 import ProfileSetup from '@/components/profile/ProfileSetup';
 import { useQuery } from '@tanstack/react-query';
 import { User, Recommendation } from '@/lib/types';
+import { ShoppingCart, Plus, Receipt, Camera, Star, Calendar, TrendingUp, TrendingDown, DollarSign, Package, Users, BarChart3, Clock, Target, Zap, MapPin, Store } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
   const [showReceiptScanner, setShowReceiptScanner] = useState(false);
@@ -22,7 +23,7 @@ const Dashboard: React.FC = () => {
     queryKey: ['/api/recommendations'],
   });
 
-  
+
 
   return (
     <div className="max-w-md sm:max-w-4xl mx-auto bg-white min-h-screen flex flex-col">
@@ -78,7 +79,7 @@ const Dashboard: React.FC = () => {
             </div>
           </section>
 
-          
+
         </div>
 
         {/* Conditional Modals */}
