@@ -52,6 +52,9 @@ const RetailerLinking: React.FC = () => {
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [selectedRetailer, setSelectedRetailer] = useState<any>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [showAddStore, setShowAddStore] = useState(false);
+  const [newStoreName, setNewStoreName] = useState('');
+  const [newStoreWebsite, setNewStoreWebsite] = useState('');
 
   // Form state
   const [username, setUsername] = useState('');
@@ -148,6 +151,31 @@ const RetailerLinking: React.FC = () => {
     }
   });
 
+  // Mutation to add custom store
+  const addStoreMutation = useMutation({
+    mutationFn: async (storeData: {name: string, logoColor: string, websiteUrl?: string}) => {
+      const response = await apiRequest('POST', '/api/retailers', storeData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/retailers'] });
+      setShowAddStore(false);
+      setNewStoreName('');
+      setNewStoreWebsite('');
+      toast({
+        title: "Store Added",
+        description: "Your custom store has been added successfully."
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to add store. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
   // Handle linking a new retailer account
   const handleLinkAccount = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -192,6 +220,23 @@ const RetailerLinking: React.FC = () => {
     setLoyaltyCardNumber('');
     setLoyaltyMemberId('');
     setConnectionType('account');
+  };
+
+  const handleAddStore = () => {
+    const trimmedName = newStoreName.trim();
+    if (trimmedName) {
+      addStoreMutation.mutate({
+        name: trimmedName,
+        logoColor: 'blue',
+        websiteUrl: newStoreWebsite.trim() || undefined
+      });
+    } else {
+      toast({
+        title: "Invalid Store Name",
+        description: "Please enter a valid store name.",
+        variant: "destructive"
+      });
+    }
   };
 
   // Open the link dialog for a specific retailer
@@ -329,6 +374,55 @@ const RetailerLinking: React.FC = () => {
             </p>
           </div>
         )}
+      </div>
+
+      {/* Add Custom Store Section */}
+      <div className="mt-8">
+        <h3 className="text-lg font-semibold mb-3">Add Custom Store</h3>
+        <Dialog open={showAddStore} onOpenChange={setShowAddStore}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="w-full">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Custom Store
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Custom Store</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="storeName">Store Name</Label>
+                <Input
+                  id="storeName"
+                  value={newStoreName}
+                  onChange={(e) => setNewStoreName(e.target.value)}
+                  placeholder="Enter store name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="storeWebsite">Store Website</Label>
+                <Input
+                  id="storeWebsite"
+                  value={newStoreWebsite}
+                  onChange={(e) => setNewStoreWebsite(e.target.value)}
+                  placeholder="Enter store website"
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setShowAddStore(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleAddStore}
+                  disabled={!newStoreName.trim() || addStoreMutation.isPending}
+                >
+                  {addStoreMutation.isPending ? 'Adding...' : 'Add Store'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Available Retailers */}
