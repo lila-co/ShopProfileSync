@@ -727,7 +727,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const accountId = parseInt(req.params.id);
       
-      await storage.deleteRetailerAccount(accountId);
+      const success = await storage.deleteRetailerAccount(accountId);
+      if (!success) {
+        return res.status(404).json({ message: 'Retailer account not found' });
+      }
+      
       res.status(204).send();
     } catch (error) {
       handleError(res, error);
