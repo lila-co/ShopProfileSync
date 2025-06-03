@@ -25,7 +25,7 @@ interface RetailerAccount {
 }
 
 const RetailersPage: React.FC = () => {
-  const [, navigate] = useLocation();
+  const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showAddStore, setShowAddStore] = useState(false);
@@ -75,10 +75,9 @@ const RetailersPage: React.FC = () => {
   };
 
   const handleRetailerClick = (retailerId: number) => {
-    // Use setTimeout to avoid blocking the main thread
-    setTimeout(() => {
-      navigate(`/retailers/${retailerId}`);
-    }, 0);
+    console.log('Navigating to retailer:', retailerId);
+    console.log('Current location:', location);
+    setLocation(`/retailers/${retailerId}`);
   };
 
   const handleAddStore = () => {
@@ -120,8 +119,8 @@ const RetailersPage: React.FC = () => {
 
         <div className="space-y-4">
           {retailers?.map((retailer) => (
-            <Card key={retailer.id} className="cursor-pointer hover:shadow-md transition-shadow">
-              <CardContent className="p-4" onClick={() => handleRetailerClick(retailer.id)}>
+            <Card key={retailer.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleRetailerClick(retailer.id)}>
+              <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div 
@@ -210,14 +209,14 @@ const RetailersPage: React.FC = () => {
           <Button 
             variant="ghost" 
             className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-            onClick={() => navigate('/profile')}
+            onClick={() => setLocation('/profile')}
           >
             Manage Connected Retailer Accounts
           </Button>
         </div>
       </main>
 
-      <BottomNavigation activeTab="stores" />
+      <BottomNavigation activeTab="retailers" />
     </div>
   );
 };

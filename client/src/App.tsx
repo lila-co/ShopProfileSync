@@ -13,6 +13,7 @@ import ScanPage from '@/pages/scan';
 import ShopPage from './pages/shop';
 import ShoppingRoute from './pages/shopping-route';
 import PlanDetailsPage from '@/pages/plan-details';
+import RetailerDetailsPage from './pages/retailer-details'; // Added import
 
 function AppContent() {
   const { isLoading, isAuthenticated } = useAuth();
@@ -37,6 +38,7 @@ function AppContent() {
       <Route path="/deals" component={DealsPage} />
       <Route path="/plan-details" component={PlanDetailsPage} />
       <Route path="/retailers" component={RetailersPage} />
+      <Route path="/retailers/:id" component={RetailerDetailsPage} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/scan" component={ScanPage} />
       <Route path="/" component={() => <Redirect to="/shopping-list" />} />
