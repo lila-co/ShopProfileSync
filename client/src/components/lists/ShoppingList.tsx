@@ -475,7 +475,7 @@ const ShoppingListComponent: React.FC = () => {
       if (!defaultList) throw new Error('No shopping list found');
 
       const currentItems = defaultList.items || [];
-      
+
       // If list is empty, generate a basic starter list
       if (currentItems.length === 0) {
         const starterItems = [
@@ -520,7 +520,7 @@ const ShoppingListComponent: React.FC = () => {
 
       for (const item of currentItems) {
         const original = item.productName.toLowerCase().trim();
-        
+
         // Normalize the product name for similarity checking (less aggressive)
         let normalized = original
           .replace(/\b(organic|free-range|grass-fed|natural|premium|select|fresh)\s+/gi, '') // Remove quality descriptors
@@ -604,12 +604,12 @@ const ShoppingListComponent: React.FC = () => {
       // Filter out items that already exist in the list using a more precise matching
       const newItems = enhancementItems.filter(item => {
         const itemName = item.productName.toLowerCase().trim();
-        
+
         // Check for exact matches first (case-insensitive)
         const exactMatch = currentItems.some(existing => 
           existing.productName.toLowerCase().trim() === itemName
         );
-        
+
         if (exactMatch) {
           console.log(`Skipping "${item.productName}" - exact match found`);
           return false;
@@ -637,7 +637,7 @@ const ShoppingListComponent: React.FC = () => {
             .replace(/\b(organic|free-range|grass-fed|natural|premium|select|fresh|baby|roma|yellow|red|brown|whole\s+wheat|whole\s+grain)\s*/gi, '')
             .replace(/\s+/g, ' ')
             .trim();
-          
+
           let existingNormalized = existingCore;
           if (existingCore === 'milk' || existingCore.endsWith(' milk')) {
             existingNormalized = 'milk';
@@ -649,12 +649,12 @@ const ShoppingListComponent: React.FC = () => {
 
           return existingNormalized === normalizedCore;
         });
-        
+
         if (coreExists) {
           console.log(`Skipping "${item.productName}" - core product already exists`);
           return false;
         }
-        
+
         return true;
       });
 
@@ -693,7 +693,7 @@ const ShoppingListComponent: React.FC = () => {
               item.unit || 'COUNT'
             );
             console.log(`Quick categorization for ${item.productName}:`, quickResult);
-            
+
             if (quickResult.suggestedUnit && quickResult.suggestedUnit !== 'COUNT') {
               finalUnit = quickResult.suggestedUnit;
               console.log(`Using quick suggested unit: ${finalUnit} for ${item.productName}`);
@@ -728,9 +728,9 @@ const ShoppingListComponent: React.FC = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-      
+
       let title, description;
-      
+
       if (data.isNewList) {
         title = "Shopping List Created";
         description = `Created a new list with ${data.itemsAdded} essential items`;
@@ -741,7 +741,7 @@ const ShoppingListComponent: React.FC = () => {
           description += ` (${data.itemsSkipped} similar items already existed)`;
         }
       }
-      
+
       toast({
         title,
         description
@@ -962,18 +962,6 @@ const ShoppingListComponent: React.FC = () => {
   return (
     <div className="p-4 pb-20">
       <h2 className="text-xl font-bold mb-4">Shopping List</h2>
-
-      {/* Voice AI Agent */}
-      <div className="mb-6">
-        <VoiceAgent
-          onAddItem={handleVoiceAddItem}
-          onToggleItem={handleVoiceToggleItem}
-          onDeleteItem={handleVoiceDeleteItem}
-          isProcessing={addItemMutation.isPending || toggleItemMutation.isPending || deleteItemMutation.isPending}
-        />
-      </div>
-
-
 
       {/* Categorized Shopping List */}
       {isCategorizingItems && (
@@ -1308,6 +1296,16 @@ const ShoppingListComponent: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Voice AI Agent - Moved to bottom */}
+      <div className="mt-6 mb-4">
+        <VoiceAgent
+          onAddItem={handleVoiceAddItem}
+          onToggleItem={handleVoiceToggleItem}
+          onDeleteItem={handleVoiceDeleteItem}
+          isProcessing={addItemMutation.isPending || toggleItemMutation.isPending || deleteItemMutation.isPending}
+        />
+      </div>
     </div>
   );
 };
