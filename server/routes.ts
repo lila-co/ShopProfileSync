@@ -4122,6 +4122,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Notification Preferences Endpoints
+  // Get notification preferences
+  app.get('/api/user/notification-preferences', async (req: Request, res: Response) => {
+    try {
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+
+      const preferences = await storage.getNotificationPreferences(userId);
+      res.json(preferences);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Update notification preferences
+  app.patch('/api/user/notification-preferences', async (req: Request, res: Response) => {
+    try {
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+
+      const updatedPreferences = await storage.updateNotificationPreferences(userId, req.body);
+      
+      console.log(`Notification preferences updated for user ${userId}:`, req.body);
+
+      res.json(updatedPreferences);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
   // Security audit logs (admin only)
   app.get('/api/admin/security-logs', async (req: Request, res: Response) => {
     try {

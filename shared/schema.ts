@@ -495,3 +495,28 @@ export type PrivacyPreferences = typeof dataPrivacyPreferences.$inferSelect;
 
 export type InsertSession = z.infer<typeof insertSessionSchema>;
 export type UserSession = typeof userSessions.$inferSelect;
+
+// Notification Preferences Schema
+export const notificationPreferences = pgTable("notification_preferences", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  dealAlerts: boolean("deal_alerts").default(true),
+  priceDropAlerts: boolean("price_drop_alerts").default(true),
+  weeklyDigest: boolean("weekly_digest").default(false),
+  expirationAlerts: boolean("expiration_alerts").default(true),
+  recommendationUpdates: boolean("recommendation_updates").default(true),
+  pushNotifications: boolean("push_notifications").default(false),
+  emailNotifications: boolean("email_notifications").default(true),
+  smsNotifications: boolean("sms_notifications").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  lastUpdated: timestamp("last_updated").defaultNow(),
+});
+
+export const insertNotificationPreferencesSchema = createInsertSchema(notificationPreferences).omit({
+  id: true,
+  createdAt: true,
+  lastUpdated: true,
+});
+
+export type InsertNotificationPreferences = z.infer<typeof insertNotificationPreferencesSchema>;
+export type NotificationPreferences = typeof notificationPreferences.$inferSelect;
