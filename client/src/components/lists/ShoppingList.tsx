@@ -194,17 +194,21 @@ const ShoppingListComponent: React.FC = () => {
         const defaultList = shoppingLists[0];
         const hasItems = defaultList?.items && defaultList.items.length > 0;
 
-        // Check if this is a new session
-        const lastSessionId = localStorage.getItem('sessionId');
-        const currentSessionId = Date.now().toString();
-        const isNewSession = !lastSessionId || lastSessionId !== currentSessionId;
-
-        // Store current session ID
+        // Check if this is a truly new session (browser restart/new tab)
+        const lastSessionTimestamp = sessionStorage.getItem('shoppingListSessionStart');
+        const browserSessionId = localStorage.getItem('browserSessionId');
+        const currentBrowserSession = Date.now().toString();
+        
+        // If no session timestamp exists, this is the first visit in this browser session
+        const isNewSession = !lastSessionTimestamp;
+        
+        // Store session data
         if (isNewSession) {
-          localStorage.setItem('sessionId', currentSessionId);
+          sessionStorage.setItem('shoppingListSessionStart', Date.now().toString());
+          localStorage.setItem('browserSessionId', currentBrowserSession);
         }
 
-        // Auto-generate for empty lists OR auto-regenerate for new sessions with existing items
+        // Auto-generate for empty lists OR auto-regenerate for truly new sessions with existing items
         const shouldAutoGenerate = (!hasItems && !userHasClearedList) || (hasItems && isNewSession);
 
         if (shouldAutoGenerate) {
