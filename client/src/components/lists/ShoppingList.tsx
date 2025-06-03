@@ -14,6 +14,7 @@ import { getItemImage, getBestProductImage, getCompanyLogo } from '@/lib/imageUt
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import VoiceAgent from '@/components/voice/VoiceAgent';
 
 const ShoppingListComponent: React.FC = () => {
   const { toast } = useToast();
@@ -837,6 +838,47 @@ const ShoppingListComponent: React.FC = () => {
     }
   };
 
+  // Voice command handlers
+  const handleVoiceAddItem = async (itemName: string, quantity: number, unit: string) => {
+    return new Promise<void>((resolve, reject) => {
+      addItemMutation.mutate(
+        { itemName, quantity, unit },
+        {
+          onSuccess: () => resolve(),
+          onError: (error) => reject(error)
+        }
+      );
+    });
+  };
+
+  const handleVoiceToggleItem = (itemName: string) => {
+    const defaultList = shoppingLists?.[0];
+    if (!defaultList?.items) return;
+
+    // Find item by name (case-insensitive)
+    const item = defaultList.items.find(
+      item => item.productName.toLowerCase().includes(itemName.toLowerCase())
+    );
+
+    if (item) {
+      toggleItemMutation.mutate({ itemId: item.id, completed: !item.completed });
+    }
+  };
+
+  const handleVoiceDeleteItem = (itemName: string) => {
+    const defaultList = shoppingLists?.[0];
+    if (!defaultList?.items) return;
+
+    // Find item by name (case-insensitive)
+    const item = defaultList.items.find(
+      item => item.productName.toLowerCase().includes(itemName.toLowerCase())
+    );
+
+    if (item) {
+      deleteItemMutation.mutate(item.id);
+    }
+  };
+
   // Show AI generation animation
   if (isGeneratingList) {
     return (
@@ -920,6 +962,16 @@ const ShoppingListComponent: React.FC = () => {
   return (
     <div className="p-4 pb-20">
       <h2 className="text-xl font-bold mb-4">Shopping List</h2>
+
+      {/* Voice AI Agent */}
+      <div className="mb-6">
+        <VoiceAgent
+          onAddItem={handleVoiceAddItem}
+          onToggleItem={handleVoiceToggleItem}
+          onDeleteItem={handleVoiceDeleteItem}
+          isProcessing={addItemMutation.isPending || toggleItemMutation.isPending || deleteItemMutation.isPending}
+        />
+      </div>
 
 
 
