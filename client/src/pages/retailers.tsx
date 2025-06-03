@@ -75,6 +75,8 @@ const RetailersPage: React.FC = () => {
   };
 
   const handleRetailerClick = (retailerId: number) => {
+    console.log('Navigating to retailer:', retailerId);
+    console.log('Current location:', location);
     setLocation(`/retailers/${retailerId}`);
   };
 
@@ -117,8 +119,8 @@ const RetailersPage: React.FC = () => {
 
         <div className="space-y-4">
           {retailers?.map((retailer) => (
-            <Card key={retailer.id} className="cursor-pointer hover:shadow-md transition-shadow">
-              <CardContent className="p-4" onClick={() => handleRetailerClick(retailer.id)}>
+            <Card key={retailer.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleRetailerClick(retailer.id)}>
+              <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div 
