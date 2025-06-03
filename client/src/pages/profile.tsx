@@ -497,38 +497,6 @@ const ProfilePage: React.FC = () => {
                 <RetailerLinking />
               </CardContent>
             </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <CreditCard className="w-5 h-5 mr-2 text-blue-600" />
-                  Payment Methods
-                </CardTitle>
-                <CardDescription>Manage cards and payment preferences</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button variant="outline" className="w-full">
-                  <CreditCard className="w-4 h-4 mr-2" />
-                  Add Payment Method
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <MapPin className="w-5 h-5 mr-2 text-green-600" />
-                  Delivery Addresses
-                </CardTitle>
-                <CardDescription>Manage your delivery locations</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button variant="outline" className="w-full">
-                  <MapPin className="w-4 h-4 mr-2" />
-                  Add New Address
-                </Button>
-              </CardContent>
-            </Card>
           </div>
         )}
       </main>
