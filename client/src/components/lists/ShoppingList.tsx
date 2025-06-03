@@ -579,61 +579,61 @@ const ShoppingListComponent: React.FC = () => {
       // Enhanced recommendation items that complement existing list
       const enhancementItems = [
         // Produce
-        { productName: 'Organic Bananas', quantity: 2, unit: 'LB' },
-        { productName: 'Fresh Strawberries', quantity: 1, unit: 'LB' },
-        { productName: 'Avocados', quantity: 4, unit: 'COUNT' },
-        { productName: 'Baby Spinach', quantity: 1, unit: 'BAG' },
-        { productName: 'Roma Tomatoes', quantity: 2, unit: 'LB' },
-        { productName: 'Yellow Onions', quantity: 3, unit: 'LB' },
-        { productName: 'Red Bell Peppers', quantity: 3, unit: 'COUNT' },
-        { productName: 'Carrots', quantity: 2, unit: 'LB' },
-        { productName: 'Broccoli Crowns', quantity: 2, unit: 'COUNT' },
-        { productName: 'Cucumber', quantity: 2, unit: 'COUNT' },
+        { productName: 'Organic Bananas', quantity: 2 },
+        { productName: 'Fresh Strawberries', quantity: 1 },
+        { productName: 'Avocados', quantity: 4 },
+        { productName: 'Baby Spinach', quantity: 1 },
+        { productName: 'Roma Tomatoes', quantity: 2 },
+        { productName: 'Yellow Onions', quantity: 3 },
+        { productName: 'Red Bell Peppers', quantity: 3 },
+        { productName: 'Carrots', quantity: 2 },
+        { productName: 'Broccoli Crowns', quantity: 2 },
+        { productName: 'Cucumber', quantity: 2 },
 
         // Dairy & Eggs
-        { productName: 'Organic Milk', quantity: 1, unit: 'GALLON' },
-        { productName: 'Free-Range Eggs', quantity: 1, unit: 'DOZEN' },
-        { productName: 'Greek Yogurt', quantity: 4, unit: 'CONTAINER' },
-        { productName: 'Cheddar Cheese', quantity: 1, unit: 'BLOCK' },
-        { productName: 'Butter', quantity: 1, unit: 'COUNT' },
-        { productName: 'Cream Cheese', quantity: 1, unit: 'COUNT' },
+        { productName: 'Organic Milk', quantity: 1 },
+        { productName: 'Free-Range Eggs', quantity: 1 },
+        { productName: 'Greek Yogurt', quantity: 4 },
+        { productName: 'Cheddar Cheese', quantity: 1 },
+        { productName: 'Butter', quantity: 1 },
+        { productName: 'Cream Cheese', quantity: 1 },
 
         // Meat & Seafood
-        { productName: 'Chicken Breast', quantity: 2, unit: 'LB' },
-        { productName: 'Ground Turkey', quantity: 1, unit: 'LB' },
-        { productName: 'Salmon Fillet', quantity: 1, unit: 'LB' },
+        { productName: 'Chicken Breast', quantity: 2 },
+        { productName: 'Ground Turkey', quantity: 1 },
+        { productName: 'Salmon Fillet', quantity: 1 },
 
         // Pantry & Canned Goods
-        { productName: 'Brown Rice', quantity: 1, unit: 'BAG' },
-        { productName: 'Quinoa', quantity: 1, unit: 'BAG' },
-        { productName: 'Whole Wheat Pasta', quantity: 2, unit: 'BOX' },
-        { productName: 'Olive Oil', quantity: 1, unit: 'BOTTLE' },
-        { productName: 'Black Beans', quantity: 2, unit: 'CAN' },
-        { productName: 'Diced Tomatoes', quantity: 2, unit: 'CAN' },
-        { productName: 'Chicken Broth', quantity: 2, unit: 'CONTAINER' },
-        { productName: 'Oatmeal', quantity: 1, unit: 'CONTAINER' },
-        { productName: 'Almond Butter', quantity: 1, unit: 'JAR' },
-        { productName: 'Honey', quantity: 1, unit: 'BOTTLE' },
-        { productName: 'Sparkling Water', quantity: 12, unit: 'CAN' },
-        { productName: 'Coconut Milk', quantity: 2, unit: 'CAN' },
-        { productName: 'Pasta Sauce', quantity: 1, unit: 'JAR' },
-        { productName: 'Baking Soda', quantity: 1, unit: 'BOX' },
+        { productName: 'Brown Rice', quantity: 1 },
+        { productName: 'Quinoa', quantity: 1 },
+        { productName: 'Whole Wheat Pasta', quantity: 2 },
+        { productName: 'Olive Oil', quantity: 1 },
+        { productName: 'Black Beans', quantity: 2 },
+        { productName: 'Diced Tomatoes', quantity: 2 },
+        { productName: 'Chicken Broth', quantity: 2 },
+        { productName: 'Oatmeal', quantity: 1 },
+        { productName: 'Almond Butter', quantity: 1 },
+        { productName: 'Honey', quantity: 1 },
+        { productName: 'Sparkling Water', quantity: 12 },
+        { productName: 'Coconut Milk', quantity: 2 },
+        { productName: 'Pasta Sauce', quantity: 1 },
+        { productName: 'Baking Soda', quantity: 1 },
 
         // Bakery
-        { productName: 'Whole Wheat Bread', quantity: 1, unit: 'LOAF' },
+        { productName: 'Whole Wheat Bread', quantity: 1 },
 
         // Household Items
-        { productName: 'Paper Towels', quantity: 6, unit: 'COUNT' },
-        { productName: 'Toilet Paper', quantity: 12, unit: 'COUNT' },
+        { productName: 'Paper Towels', quantity: 6 },
+        { productName: 'Toilet Paper', quantity: 12 },
 
         // Personal Care
-        { productName: 'Shampoo', quantity: 1, unit: 'BOTTLE' },
-        { productName: 'Toothpaste', quantity: 1, unit: 'COUNT' },
+        { productName: 'Shampoo', quantity: 1 },
+        { productName: 'Toothpaste', quantity: 1 },
 
         // Spices & Seasonings
-        { productName: 'Garlic Powder', quantity: 1, unit: 'COUNT' },
-        { productName: 'Black Pepper', quantity: 1, unit: 'COUNT' },
-        { productName: 'Sea Salt', quantity: 1, unit: 'COUNT' }
+        { productName: 'Garlic Powder', quantity: 1 },
+        { productName: 'Black Pepper', quantity: 1 },
+        { productName: 'Sea Salt', quantity: 1 }
       ];
 
       // Filter out items that already exist in the list using a more precise matching
@@ -698,46 +698,46 @@ const ShoppingListComponent: React.FC = () => {
       for (const item of newItems) {
         try {
           // Use AI categorization to get the proper unit
-          let finalUnit = item.unit || 'COUNT';
+          let finalUnit = 'COUNT'; // Start with default
           let finalQuantity = item.quantity || 1;
 
           try {
-              // Try to get AI-suggested unit and quantity
-              const aiResult = await aiCategorizationService.categorizeProduct(
-                item.productName, 
-                item.quantity || 1, 
-                item.unit || 'COUNT'
-              );
+            // Always try to get AI-suggested unit and quantity
+            const aiResult = await aiCategorizationService.categorizeProduct(
+              item.productName, 
+              item.quantity || 1, 
+              'COUNT' // Always start with COUNT to let AI decide the best unit
+            );
 
-              console.log(`AI categorization for ${item.productName}:`, aiResult);
+            console.log(`AI categorization for ${item.productName}:`, aiResult);
 
-              if (aiResult?.suggestedUnit) {
-                finalUnit = aiResult.suggestedUnit;
-                console.log(`Using AI suggested unit: ${finalUnit} for ${item.productName}`);
-              }
-              if (aiResult?.suggestedQuantity) {
-                finalQuantity = aiResult.suggestedQuantity;
-                console.log(`Using AI suggested quantity: ${finalQuantity} for ${item.productName}`);
-              }
-            } catch (aiError) {
-              console.warn('AI categorization failed, using quick categorization fallback:', aiError);
-              // If AI fails, use quick categorization fallback
-              const quickResult = aiCategorizationService.getQuickCategory(
-                item.productName, 
-                item.quantity || 1, 
-                item.unit || 'COUNT'
-              );
-              console.log(`Quick categorization for ${item.productName}:`, quickResult);
-
-              if (quickResult.suggestedUnit) {
-                finalUnit = quickResult.suggestedUnit;
-                console.log(`Using quick suggested unit: ${finalUnit} for ${item.productName}`);
-              }
-              if (quickResult.suggestedQuantity) {
-                finalQuantity = quickResult.suggestedQuantity;
-                console.log(`Using quick suggested quantity: ${finalQuantity} for ${item.productName}`);
-              }
+            if (aiResult?.suggestedUnit) {
+              finalUnit = aiResult.suggestedUnit;
+              console.log(`Using AI suggested unit: ${finalUnit} for ${item.productName}`);
             }
+            if (aiResult?.suggestedQuantity && aiResult.suggestedQuantity > 0) {
+              finalQuantity = aiResult.suggestedQuantity;
+              console.log(`Using AI suggested quantity: ${finalQuantity} for ${item.productName}`);
+            }
+          } catch (aiError) {
+            console.warn('AI categorization failed, using quick categorization fallback:', aiError);
+            // If AI fails, use quick categorization fallback
+            const quickResult = aiCategorizationService.getQuickCategory(
+              item.productName, 
+              item.quantity || 1, 
+              'COUNT'
+            );
+            console.log(`Quick categorization for ${item.productName}:`, quickResult);
+
+            if (quickResult.suggestedUnit) {
+              finalUnit = quickResult.suggestedUnit;
+              console.log(`Using quick suggested unit: ${finalUnit} for ${item.productName}`);
+            }
+            if (quickResult.suggestedQuantity && quickResult.suggestedQuantity > 0) {
+              finalQuantity = quickResult.suggestedQuantity;
+              console.log(`Using quick suggested quantity: ${finalQuantity} for ${item.productName}`);
+            }
+          }
 
           console.log(`Adding ${item.productName} with quantity: ${finalQuantity}, unit: ${finalUnit}`);
 

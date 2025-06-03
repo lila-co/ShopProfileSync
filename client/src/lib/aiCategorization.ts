@@ -413,29 +413,33 @@ function detectCountOptimization(category: string, name: string, quantity?: numb
   // More comprehensive unit detection patterns
   const unitPatterns = [
     // Liquids and bottles
-    { patterns: ['olive oil', 'oil', 'vinegar', 'honey', 'syrup', 'vanilla'], unit: 'BOTTLE' },
+    { patterns: ['olive oil', 'vegetable oil', 'canola oil', 'coconut oil', 'oil', 'vinegar', 'honey', 'syrup', 'vanilla', 'extract', 'shampoo', 'conditioner'], unit: 'BOTTLE' },
     // Canned goods
-    { patterns: ['beans', 'black beans', 'kidney beans', 'pinto beans', 'navy beans', 'chickpeas', 'diced tomato', 'crushed tomato', 'tomato sauce', 'marinara', 'pasta sauce', 'canned'], unit: 'CAN' },
+    { patterns: ['beans', 'black beans', 'kidney beans', 'pinto beans', 'navy beans', 'chickpeas', 'garbanzo beans', 'diced tomato', 'crushed tomato', 'tomato sauce', 'marinara', 'coconut milk', 'broth', 'stock', 'corn', 'peas', 'canned'], unit: 'CAN' },
     // Jars
-    { patterns: ['jam', 'jelly', 'peanut butter', 'almond butter', 'salsa', 'pickles'], unit: 'JAR' },
+    { patterns: ['jam', 'jelly', 'peanut butter', 'almond butter', 'salsa', 'pickles', 'pasta sauce', 'marinara sauce', 'alfredo'], unit: 'JAR' },
     // Bags
-    { patterns: ['rice', 'quinoa', 'flour', 'sugar', 'spinach', 'lettuce', 'carrots'], unit: 'BAG' },
+    { patterns: ['rice', 'brown rice', 'white rice', 'quinoa', 'flour', 'sugar', 'spinach', 'baby spinach', 'lettuce', 'salad mix', 'frozen'], unit: 'BAG' },
     // Boxes
-    { patterns: ['cereal', 'crackers', 'pasta', 'baking soda', 'baking powder', 'salt'], unit: 'BOX' },
+    { patterns: ['cereal', 'crackers', 'pasta', 'baking soda', 'baking powder', 'salt', 'tea', 'granola bars'], unit: 'BOX' },
     // Loaves
-    { patterns: ['bread', 'loaf'], unit: 'LOAF' },
+    { patterns: ['bread', 'whole wheat bread', 'white bread', 'sourdough', 'loaf'], unit: 'LOAF' },
     // Gallons for milk
-    { patterns: ['milk'], unit: 'GALLON' },
+    { patterns: ['milk', 'almond milk', 'soy milk', 'oat milk'], unit: 'GALLON' },
     // Dozens for eggs
-    { patterns: ['egg'], unit: 'DOZEN' },
+    { patterns: ['egg', 'eggs', 'free-range eggs', 'organic eggs'], unit: 'DOZEN' },
     // Pounds for produce and meat
-    { patterns: ['banana', 'apple', 'potato', 'onion', 'tomato', 'carrot', 'chicken', 'beef', 'ground'], unit: 'LB' },
-    // Bottles for beverages
-    { patterns: ['sparkling water', 'water', 'soda', 'juice'], unit: 'BOTTLE' },
-    // Containers for dairy
-    { patterns: ['yogurt', 'cottage cheese', 'sour cream'], unit: 'CONTAINER' },
+    { patterns: ['banana', 'apple', 'potato', 'onion', 'yellow onion', 'red onion', 'tomato', 'roma tomato', 'carrot', 'chicken', 'chicken breast', 'beef', 'ground turkey', 'ground beef', 'salmon', 'strawberries'], unit: 'LB' },
+    // Containers for dairy and others
+    { patterns: ['yogurt', 'greek yogurt', 'cottage cheese', 'sour cream', 'oatmeal', 'oats', 'chicken broth', 'vegetable broth'], unit: 'CONTAINER' },
     // Blocks for cheese
-    { patterns: ['cheese', 'cheddar', 'swiss'], unit: 'BLOCK' }
+    { patterns: ['cheddar cheese', 'swiss cheese', 'mozzarella cheese', 'cheese block', 'butter'], unit: 'BLOCK' },
+    // Count items (vegetables, individual items)
+    { patterns: ['avocado', 'bell pepper', 'red bell pepper', 'green bell pepper', 'cucumber', 'broccoli', 'cauliflower', 'lime', 'lemon', 'garlic powder', 'black pepper', 'sea salt', 'toothpaste', 'deodorant'], unit: 'COUNT' },
+    // Bottles for water and beverages
+    { patterns: ['sparkling water', 'bottled water', 'water bottle', 'soda', 'juice', 'apple juice', 'orange juice'], unit: 'BOTTLE' },
+    // Rolls for paper products
+    { patterns: ['paper towel', 'toilet paper', 'paper towels'], unit: 'ROLL' }
   ];
 
   // Find the best matching unit pattern
