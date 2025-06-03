@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import { useLocation } from 'wouter';
+import { useLocation, useRoute } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
 import { aiCategorizationService } from '@/lib/aiCategorization';
 
@@ -31,15 +31,23 @@ const ShoppingRoute: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Get URL parameters
-  const params = new URLSearchParams(window.location.search);
-  const listId = params.get('listId');
-  const mode = params.get('mode') || 'instore';
-  const planDataParam = params.get('planData');
+  // Get URL parameters from current location
+  const searchParams = new URLSearchParams(location.split('?')[1] || '');
+  const listId = searchParams.get('listId');
+  const mode = searchParams.get('mode') || 'instore';
+  const planDataParam = searchParams.get('planData');
+  
+  console.log('Shopping route loaded with location:', location);
+  console.log('Shopping route loaded with params:', {
+    listId,
+    mode,
+    planDataParam: planDataParam ? 'present' : 'missing'
+  });
 
   const [optimizedRoute, setOptimizedRoute] = useState<any>(null);
   const [selectedPlanData, setSelectedPlanData] = useState<any>(null);
   const [currentAisleIndex, setCurrentAisleIndex] = useState(0);
+  const [currentStoreIndex, setCurrentStoreIndex] = useState(0);
   const [completedItems, setCompletedItems] = useState<Set<number>>(new Set());
   const [loyaltyCard, setLoyaltyCard] = useState<any>(null);
   const [startTime, setStartTime] = useState<Date | null>(null);
@@ -97,63 +105,148 @@ const ShoppingRoute: React.FC = () => {
 
   // Parse plan data and generate route when component loads
   useEffect(() => {
-    if (planDataParam) {
+    console.log('Shopping route useEffect triggered');
+    console.log('planDataParam:', planDataParam);
+    console.log('shoppingList:', shoppingList);
+    console.log('Current location:', location);
+    
+    let planDataToUse = null;
+    
+    // Try sessionStorage first (more reliable)
+    const storedPlanData = sessionStorage.getItem('shoppingPlanData');
+    if (storedPlanData) {
       try {
-        const planData = JSON.parse(decodeURIComponent(planDataParam));
-        setSelectedPlanData(planData);
-
-        // Generate route from the selected plan instead of raw shopping list items
-        const route = generateOptimizedShoppingRouteFromPlan(planData);
-        setOptimizedRoute(route);
+        planDataToUse = JSON.parse(storedPlanData);
+        console.log('Using stored plan data from sessionStorage:', planDataToUse);
       } catch (error) {
-        console.error('Error parsing plan data:', error);
-        // Fallback to original method if plan data is invalid
-        if (shoppingList?.items) {
-          const route = generateOptimizedShoppingRoute(shoppingList.items);
-          setOptimizedRoute(route);
-          setStartTime(new Date());
-        }
+        console.error('Error parsing stored plan data:', error);
       }
-    } else if (shoppingList?.items) {
-      // Fallback to original method if no plan data is provided
+    }
+    
+    // If no sessionStorage data, try URL parameter
+    if (!planDataToUse && planDataParam) {
+      try {
+        planDataToUse = JSON.parse(decodeURIComponent(planDataParam));
+        console.log('Successfully parsed plan data from URL:', planDataToUse);
+      } catch (error) {
+        console.error('Error parsing URL plan data:', error);
+      }
+    }
+    
+    if (planDataToUse) {
+      setSelectedPlanData(planDataToUse);
+
+      // Generate route from the selected plan
+      const route = generateOptimizedShoppingRouteFromPlan(planDataToUse);
+      console.log('Generated route from plan:', route);
+      setOptimizedRoute(route);
+      setStartTime(new Date());
+      
+      toast({
+        title: "Shopping Route Ready!",
+        description: `Your shopping route has been created`,
+        duration: 3000
+      });
+    } else if (shoppingList?.items && shoppingList.items.length > 0) {
+      console.log('Using shopping list items as fallback');
       const route = generateOptimizedShoppingRoute(shoppingList.items);
       setOptimizedRoute(route);
+      setStartTime(new Date());
+      
+      toast({
+        title: "Shopping Route Created",
+        description: "Using your shopping list items",
+        duration: 3000
+      });
+    } else {
+      console.log('No data available for shopping route');
+      toast({
+        title: "No Shopping Data",
+        description: "Unable to create shopping route. Please go back and select a plan.",
+        variant: "destructive",
+        duration: 5000
+      });
     }
-  }, [shoppingList, planDataParam]);
+  }, [shoppingList, planDataParam, location, toast]);
 
-  
+
 
   // Generate optimized shopping route from selected plan data
   const generateOptimizedShoppingRouteFromPlan = (planData: any) => {
+    console.log('generateOptimizedShoppingRouteFromPlan called with:', planData);
+    
     let items: any[] = [];
     let retailerName = 'Store';
+    let isMultiStore = false;
+    let stores: any[] = [];
 
     // Extract items from different plan structures
     if (planData.stores && planData.stores.length > 0) {
-      // Multi-store plan - use first store for route or combine all stores
+      console.log('Processing plan with stores:', planData.stores);
+      
       if (planData.stores.length === 1) {
-        items = planData.stores[0].items || [];
-        retailerName = planData.stores[0].retailerName || 'Store';
+        // Single store plan
+        const store = planData.stores[0];
+        items = store.items || [];
+        retailerName = store.retailer?.name || store.retailerName || 'Store';
+        stores = [{
+          ...store,
+          retailerName: retailerName,
+          items: items
+        }];
+        console.log('Single store plan - items:', items.length, 'retailer:', retailerName);
       } else {
-        // For multi-store plans, combine all items and let user know it's multi-store
-        items = planData.stores.flatMap((store: any) => 
-          (store.items || []).map((item: any) => ({
+        // Multi-store plan - keep stores separate
+        isMultiStore = true;
+        stores = planData.stores.map((store: any) => ({
+          ...store,
+          retailerName: store.retailer?.name || store.retailerName || 'Store',
+          items: (store.items || []).map((item: any) => ({
             ...item,
-            storeName: store.retailerName // Add store name to each item
+            storeName: store.retailer?.name || store.retailerName || 'Store'
           }))
-        );
-        retailerName = `Multi-Store (${planData.stores.map((s: any) => s.retailerName).join(', ')})`;
+        }));
+        retailerName = `Multi-Store Plan (${stores.length} stores)`;
+        // For the main route, use items from first store initially
+        items = stores[0]?.items || [];
+        console.log('Multi-store plan - stores:', stores.length, 'first store items:', items.length);
       }
     } else if (planData.items) {
-      // Single store plan
+      // Single store plan with items directly
       items = planData.items;
       retailerName = planData.retailerName || 'Store';
+      stores = [{ retailerName, items }];
+      console.log('Plan with direct items - items:', items.length);
     } else {
       // Fallback - use shopping list items
+      console.log('Using fallback - shopping list items');
       items = shoppingList?.items || [];
+      stores = [{ retailerName: 'Store', items }];
     }
 
-    return generateOptimizedShoppingRoute(items, retailerName, planData);
+    // Ensure items have required properties
+    const processedItems = items.map((item: any) => ({
+      id: item.id || Math.random(),
+      productName: item.productName || 'Unknown Product',
+      quantity: item.quantity || 1,
+      unit: item.unit || 'item',
+      isCompleted: item.isCompleted || false,
+      suggestedPrice: item.suggestedPrice || 0,
+      ...item
+    }));
+
+    console.log('Processed items for route generation:', processedItems);
+    const route = generateOptimizedShoppingRoute(processedItems, retailerName, planData);
+    
+    // Add multi-store specific data
+    if (isMultiStore) {
+      route.isMultiStore = true;
+      route.stores = stores;
+      route.currentStoreIndex = 0;
+    }
+
+    console.log('Generated final route:', route);
+    return route;
   };
 
   // Generate optimized shopping route with AI-powered categorization
@@ -211,7 +304,7 @@ const ShoppingRoute: React.FC = () => {
       // Enhanced shelf location logic with more comprehensive patterns
       let shelfLocation = '';
       const name = item.productName.toLowerCase();
-      
+
       // Dairy specific locations
       if (name.includes('milk') || name.includes('yogurt') || name.includes('cheese')) {
         shelfLocation = 'Dairy Cooler';
@@ -249,7 +342,7 @@ const ShoppingRoute: React.FC = () => {
           // Find the item and update its categorization if AI is more confident
           const currentAisle = aisleGroups[fallbackAisleInfo.aisle];
           const itemIndex = currentAisle.items.findIndex((i: any) => i.id === item.id);
-          
+
           if (itemIndex !== -1) {
             currentAisle.items[itemIndex] = {
               ...currentAisle.items[itemIndex],
@@ -280,18 +373,18 @@ const ShoppingRoute: React.FC = () => {
     // Calculate route optimization with AI insights
     const totalAisles = sortedAisleGroups.length;
     let estimatedTime = Math.max(15, totalAisles * 3 + items.length * 0.5);
-    
+
     // Adjust time estimates based on item complexity and store layout
     const complexItems = items.filter((item: any) => {
       const name = item.productName.toLowerCase();
       return name.includes('organic') || name.includes('specialty') || name.includes('imported');
     }).length;
-    
+
     const freshItems = items.filter((item: any) => {
       const name = item.productName.toLowerCase();
       return name.includes('fresh') || name.includes('produce') || name.includes('meat') || name.includes('seafood');
     }).length;
-    
+
     // Add extra time for complex/fresh items that require more selection time
     estimatedTime += complexItems * 1.5 + freshItems * 1;
     estimatedTime = Math.round(estimatedTime);
@@ -332,11 +425,31 @@ const ShoppingRoute: React.FC = () => {
 
   const getProgressPercentage = () => {
     if (!optimizedRoute) return 0;
+    
+    // For multi-store plans, calculate progress across all stores
+    if (optimizedRoute.isMultiStore && optimizedRoute.stores) {
+      const totalItems = optimizedRoute.stores.reduce((sum: number, store: any) => sum + store.items.length, 0);
+      return totalItems > 0 ? (completedItems.size / totalItems) * 100 : 0;
+    }
+    
     return (completedItems.size / optimizedRoute.totalItems) * 100;
   };
 
   const getCurrentAisle = () => {
     if (!optimizedRoute?.aisleGroups) return null;
+    
+    // For multi-store plans, generate aisles from current store's items
+    if (optimizedRoute.isMultiStore && optimizedRoute.stores) {
+      const currentStore = optimizedRoute.stores[currentStoreIndex];
+      if (!currentStore) return null;
+      
+      // Generate aisles for current store
+      const storeRoute = generateOptimizedShoppingRoute(currentStore.items, currentStore.retailerName);
+      if (!storeRoute.aisleGroups || !storeRoute.aisleGroups[currentAisleIndex]) return null;
+      
+      return storeRoute.aisleGroups[currentAisleIndex];
+    }
+    
     return optimizedRoute.aisleGroups[currentAisleIndex];
   };
 
@@ -383,7 +496,7 @@ const ShoppingRoute: React.FC = () => {
     };
   };
 
-  
+
 
   if (isLoading) {
     return (
@@ -407,9 +520,28 @@ const ShoppingRoute: React.FC = () => {
           <Card>
             <CardContent className="p-6 text-center">
               <p className="text-gray-500 mb-4">No shopping route available</p>
-              <Button onClick={() => navigate('/')}>
-                Go Back to Shopping List
-              </Button>
+              <p className="text-sm text-gray-400 mb-4">
+                Debug info: listId={listId}, planData={planDataParam ? 'present' : 'missing'}, 
+                sessionStorage={sessionStorage.getItem('shoppingPlanData') ? 'present' : 'missing'}
+              </p>
+              <div className="space-y-2">
+                <Button onClick={() => navigate('/plan-details?listId=' + (listId || '1'))}>
+                  Go Back to Plan Details
+                </Button>
+                <Button onClick={() => navigate('/shopping-list')}>
+                  Go to Shopping List
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    // Clear any stored data and try again
+                    sessionStorage.removeItem('shoppingPlanData');
+                    navigate('/shopping-list');
+                  }}
+                >
+                  Start Over
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </main>
@@ -454,7 +586,7 @@ const ShoppingRoute: React.FC = () => {
                   Show Barcode
                 </Button>
               </div>
-              
+
               {/* Barcode Display Area */}
               <div className="bg-white p-3 rounded border text-center">
                 <div className="text-xs text-gray-500 mb-1">Loyalty Card</div>
@@ -496,7 +628,7 @@ const ShoppingRoute: React.FC = () => {
                   )}
                 </div>
               </div>
-              
+
             </div>
 
             {/* Plan Summary */}
@@ -534,6 +666,102 @@ const ShoppingRoute: React.FC = () => {
           </CardContent>
         </Card>
 
+        {/* Multi-Store Navigation */}
+        {optimizedRoute?.isMultiStore && (
+          <Card className="mb-4">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Store className="h-5 w-5 text-purple-600" />
+                Multi-Store Shopping Plan
+              </CardTitle>
+              <p className="text-sm text-gray-600">Shop at {optimizedRoute.stores.length} stores for best prices</p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {optimizedRoute.stores.map((store: any, index: number) => {
+                  const storeCompletedItems = store.items.filter((item: any) => 
+                    completedItems.has(item.id) || item.isCompleted
+                  ).length;
+                  const isCurrent = index === currentStoreIndex;
+                  const isCompleted = storeCompletedItems === store.items.length;
+
+                  return (
+                    <div
+                      key={index}
+                      className={`p-3 rounded-lg border transition-all cursor-pointer ${
+                        isCurrent 
+                          ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200' 
+                          : isCompleted
+                          ? 'bg-green-50 border-green-200'
+                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                      }`}
+                      onClick={() => setCurrentStoreIndex(index)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-sm">{store.retailerName}</div>
+                          <div className="text-xs text-gray-500">
+                            {store.items.length} items • ${((store.subtotal || 0) / 100).toFixed(2)}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-xs text-gray-600">
+                            {storeCompletedItems}/{store.items.length}
+                          </div>
+                          {isCurrent && (
+                            <Badge className="bg-blue-600 text-white text-xs">
+                              Current
+                            </Badge>
+                          )}
+                          {isCompleted && !isCurrent && (
+                            <Badge className="bg-green-600 text-white text-xs">
+                              Complete
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* Store Navigation Buttons */}
+              <div className="mt-4 pt-3 border-t">
+                <div className="grid grid-cols-2 gap-3">
+                  <Button 
+                    variant="outline"
+                    onClick={() => setCurrentStoreIndex(Math.max(0, currentStoreIndex - 1))}
+                    disabled={currentStoreIndex === 0}
+                    className="w-full"
+                  >
+                    <ArrowRight className="h-4 w-4 mr-2 rotate-180" />
+                    Previous Store
+                  </Button>
+
+                  <Button 
+                    className="w-full"
+                    onClick={() => {
+                      if (currentStoreIndex < optimizedRoute.stores.length - 1) {
+                        setCurrentStoreIndex(currentStoreIndex + 1);
+                        setCurrentAisleIndex(0); // Reset to first aisle of new store
+                        toast({
+                          title: "Moving to next store",
+                          description: `Now shopping at ${optimizedRoute.stores[currentStoreIndex + 1].retailerName}`,
+                          duration: 3000
+                        });
+                      }
+                    }}
+                    disabled={currentStoreIndex >= optimizedRoute.stores.length - 1}
+                  >
+                    Next Store
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Current Aisle */}
         {currentAisle && (
           <Card className="mb-4">
@@ -543,6 +771,11 @@ const ShoppingRoute: React.FC = () => {
                   <CardTitle className="text-lg flex items-center gap-2">
                     <MapPin className="h-5 w-5 text-blue-600" />
                     {currentAisle.aisleName}
+                    {optimizedRoute?.isMultiStore && (
+                      <span className="text-sm font-normal text-gray-500">
+                        @ {optimizedRoute.stores[currentStoreIndex]?.retailerName}
+                      </span>
+                    )}
                   </CardTitle>
                   <p className="text-sm text-gray-600 mt-1">{currentAisle.category}</p>
                 </div>

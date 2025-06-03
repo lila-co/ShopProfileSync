@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
@@ -8,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, MapPin, DollarSign, Clock, ShoppingCart } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface ShoppingItem {
   id: number;
@@ -38,6 +38,7 @@ interface PlanData {
 
 const PlanDetails: React.FC = () => {
   const [location, navigate] = useLocation();
+  const { toast } = useToast();
   const searchParams = new URLSearchParams(location.split('?')[1] || '');
   const [selectedPlanType, setSelectedPlanType] = useState(
     searchParams.get('planType') || 'single-store'
@@ -71,16 +72,16 @@ const PlanDetails: React.FC = () => {
           }
           return acc;
         }, {} as Record<number, number>);
-        
+
         const retailerKeys = Object.keys(retailerCounts);
         if (retailerKeys.length === 0) {
           return { totalCost: 0, estimatedTime: '0 min', stores: [] };
         }
-        
+
         const mostCommonRetailerId = retailerKeys.reduce((a, b) =>
           retailerCounts[Number(a)] > retailerCounts[Number(b)] ? a : b
         );
-        
+
         const primaryRetailer = items.find(item => 
           item.suggestedRetailer?.id === Number(mostCommonRetailerId)
         )?.suggestedRetailer;
@@ -302,6 +303,60 @@ const PlanDetails: React.FC = () => {
         </TabsContent>
       </Tabs>
 
+      {/* Action Buttons */}
+      <div className="flex gap-4 mb-6">
+        <div className="space-y-2 w-full">
+          <Button 
+            className="w-full"
+            size="lg"
+            onClick={() => {
+              console.log('Start Shopping Route clicked with planData:', planData);
+
+              if (!planData || !planData.stores || planData.stores.length === 0) {
+                toast({
+                  title: "No Plan Data",
+                  description: "Please select a plan type first",
+                  variant: "destructive"
+                });
+                return;
+              }
+
+              const enhancedPlanData = {
+                ...planData,
+                planType: selectedPlanType === 'single-store' ? 'Single Store' :
+                         selectedPlanType === 'multi-store' ? 'Multi-Store Best Value' :
+                         selectedPlanType === 'balanced' ? 'Balanced Plan' : 'Shopping Plan',
+                selectedPlanType: selectedPlanType,
+                listId: listId
+              };
+
+              console.log('Enhanced plan data for navigation:', enhancedPlanData);
+
+              // Store in sessionStorage as primary method
+              sessionStorage.setItem('shoppingPlanData', JSON.stringify(enhancedPlanData));
+              sessionStorage.setItem('shoppingListId', listId);
+              sessionStorage.setItem('shoppingMode', 'instore');
+
+              // Navigate with simple parameters to avoid URL corruption
+              const targetUrl = `/shopping-route?listId=${listId}&mode=instore&fromPlan=true`;
+              console.log('Navigating to:', targetUrl);
+
+              // Force navigation using window.location to ensure it works
+              window.location.href = targetUrl;
+
+              toast({
+                title: "Loading Shopping Route",
+                description: "Preparing your optimized shopping route...",
+                duration: 2000
+              });
+            }}
+          >
+            <ShoppingCart className="h-4 w-4 mr-2" />
+            Start Shopping Route
+          </Button>
+        </div>
+      </div>
+
       {/* Store Details */}
       <div className="space-y-4">
         {planData.stores.map((store, index) => (
@@ -338,16 +393,6 @@ const PlanDetails: React.FC = () => {
             </CardContent>
           </Card>
         ))}
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex gap-4 pt-6">
-        <Button className="flex-1" size="lg">
-          Start Shopping
-        </Button>
-        <Button variant="outline" size="lg">
-          Export List
-        </Button>
       </div>
     </div>
   );
