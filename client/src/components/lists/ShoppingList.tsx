@@ -387,7 +387,7 @@ const ShoppingListComponent: React.FC = () => {
         }
       });
     }
-  });
+  };
 
   const handleRegenerateList = () => {
     // Show animation during regeneration
