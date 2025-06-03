@@ -226,7 +226,8 @@ export class ProductCategorizerService {
     ]);
 
     this.categoryPatterns.set('household', [
-      /\b(cleaner|detergent|soap|towel|tissue|trash|garbage)\w*\b/i,
+      /\b(toilet\s*paper|paper\s*towel|tissue|napkin|paper\s*plate|paper\s*cup)\b/i,
+      /\b(cleaner|detergent|soap|trash|garbage)\w*\b/i,
       /\b(cleaning|laundry|kitchen|bathroom)\b.*\b(supplies|products)\b/i
     ]);
 

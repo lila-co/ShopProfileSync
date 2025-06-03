@@ -1,4 +1,3 @@
-
 export interface AICategorization {
   category: string;
   confidence: number;
@@ -44,7 +43,7 @@ class AICategorationService {
   // Get categorization from cache or API
   async categorizeProduct(productName: string, quantity: number = 1, unit: string = 'COUNT'): Promise<AICategorization | null> {
     const normalizedName = productName.toLowerCase().trim();
-    
+
     // Check cache first
     const cached = this.cache[normalizedName];
     if (cached && Date.now() < cached.timestamp + cached.ttl) {
@@ -110,7 +109,7 @@ class AICategorationService {
     items.forEach((item, index) => {
       const normalizedName = item.productName.toLowerCase().trim();
       const cached = this.cache[normalizedName];
-      
+
       if (cached && Date.now() < cached.timestamp + cached.ttl) {
         results[index] = cached.result;
       } else {
@@ -133,7 +132,7 @@ class AICategorationService {
 
         if (response.ok) {
           const apiResults = await response.json();
-          
+
           apiResults.forEach((apiResult: any, index: number) => {
             const originalIndex = itemIndexMap[index];
             const result: AICategorization = {
@@ -168,71 +167,18 @@ class AICategorationService {
   // Enhanced quick categorization with research-based patterns and semantic understanding
   getQuickCategory(productName: string, quantity?: number, unit?: string): { category: string; confidence: number; suggestedUnit?: string; suggestedQuantity?: number } {
     const name = productName.toLowerCase().trim();
-    
-    // Enhanced count-based item detection for better quantity suggestions
-    const detectCountOptimization = (category: string, productName: string, quantity?: number, unit?: string) => {
-      const name = productName.toLowerCase();
-      let suggestedQuantity = quantity;
-      let suggestedUnit = unit;
-      
-      // Smart count suggestions based on category and common purchase patterns
-      if (category === 'Dairy & Eggs') {
-        if (name.includes('egg') && unit === 'COUNT') {
-          if (quantity && quantity < 6) {
-            suggestedQuantity = 12;
-            suggestedUnit = 'DOZEN';
-          } else if (quantity && quantity > 24) {
-            suggestedQuantity = 24;
-            suggestedUnit = 'COUNT';
-          } else if (quantity && quantity >= 6 && quantity <= 24) {
-            suggestedQuantity = Math.ceil(quantity / 12) * 12;
-            suggestedUnit = 'DOZEN';
-          }
-        } else if (name.includes('milk') && unit === 'COUNT') {
-          suggestedQuantity = 1;
-          suggestedUnit = 'GALLON';
-        }
-      } else if (category === 'Household Items') {
-        if (name.includes('paper towel') && unit === 'COUNT') {
-          if (quantity && quantity < 6) {
-            suggestedQuantity = 6;
-          } else if (quantity && quantity > 12) {
-            suggestedQuantity = 12;
-          }
-        } else if (name.includes('toilet paper') && unit === 'COUNT') {
-          if (quantity && quantity < 12) {
-            suggestedQuantity = 12;
-          } else if (quantity && quantity > 24) {
-            suggestedQuantity = 24;
-          }
-        }
-      } else if (category === 'Pantry & Canned Goods') {
-        // Handle beverages specifically
-        if (name.includes('sparkling water') || name.includes('carbonated water') || name.includes('seltzer') || 
-            name.includes('soda') || name.includes('cola')) {
-          if (unit === 'GALLON' || unit === 'LB') {
-            suggestedQuantity = 12;
-            suggestedUnit = 'CAN';
-          } else if (quantity && quantity > 24 && unit === 'CAN') {
-            suggestedQuantity = 12;
-          } else if (quantity && quantity < 6 && unit === 'CAN') {
-            suggestedQuantity = 6;
-          }
-        }
-      } else if (category === 'Pantry & Canned Goods') {
-        if (name.includes('can') || name.includes('soup') || name.includes('sauce')) {
-          if (quantity && quantity === 1 && unit === 'COUNT') {
-            suggestedQuantity = 3;
-          } else if (quantity && quantity > 6) {
-            suggestedQuantity = 6;
-          }
-        }
-      }
-      
-      return { suggestedQuantity, suggestedUnit };
-    };
-    
-    // Advanced categorization patterns based on grocery industry research
+
+    // Check for household items first to prevent miscategorization
+    if (/\b(toilet\s*paper|paper\s*towel|tissue|napkin)\b/i.test(name)) {
+      return { 
+        category: 'Household Items', 
+        confidence: 0.95,
+        suggestedQuantity: quantity,
+        suggestedUnit: unit
+      };
+    }
+
+    // Enhanced categorization patterns based on grocery industry research
     const categoryPatterns = [
       {
         category: 'Produce',
@@ -382,7 +328,7 @@ class AICategorationService {
 
       // Boost confidence for multiple pattern matches
       const adjustedConfidence = confidence + (matchedPatterns > 1 ? 0.1 : 0);
-      
+
       if (score > bestScore || (score === bestScore && adjustedConfidence > bestConfidence)) {
         bestScore = score;
         bestCategory = category;
@@ -457,4 +403,3 @@ class AICategorationService {
 }
 
 export const aiCategorizationService = new AICategorationService();
-
