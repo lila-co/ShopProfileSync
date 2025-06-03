@@ -38,9 +38,31 @@ const PlanDetails: React.FC = () => {
   const [planData, setPlanData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Fetch shopping list to verify we have items before generating plans
+  const { data: shoppingList } = useQuery({
+    queryKey: [`/api/shopping-lists/${listId}`],
+    enabled: !!listId,
+    queryFn: async () => {
+      const response = await apiRequest('GET', `/api/shopping-lists/${listId}`);
+      return response.json();
+    }
+  });
+
   // Fetch plan data based on type
   const fetchPlanData = async () => {
     if (!listId || !planType) {
+      setIsLoading(false);
+      return;
+    }
+
+    // Verify we have shopping list items before generating plan
+    if (!shoppingList?.items || shoppingList.items.length === 0) {
+      console.log('No shopping list items found, cannot generate plan');
+      toast({
+        title: "No Items Found",
+        description: "Please add items to your shopping list before viewing plans",
+        variant: "destructive"
+      });
       setIsLoading(false);
       return;
     }
@@ -62,16 +84,24 @@ const PlanDetails: React.FC = () => {
           throw new Error('Invalid plan type');
       }
 
+      console.log(`Generating ${planType} plan for shopping list ${listId} with ${shoppingList.items.length} items`);
+
       const response = await apiRequest('POST', endpoint, {
         shoppingListId: parseInt(listId)
       });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to generate plan: ${response.status} ${response.statusText}`);
+      }
+      
       const data = await response.json();
+      console.log('Plan data received:', data);
       setPlanData(data);
     } catch (error) {
       console.error('Error fetching plan data:', error);
       toast({
         title: "Error",
-        description: "Failed to load plan details",
+        description: "Failed to load plan details. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -80,8 +110,11 @@ const PlanDetails: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchPlanData();
-  }, [listId, planType]);
+    // Only fetch plan data when we have shopping list data
+    if (shoppingList) {
+      fetchPlanData();
+    }
+  }, [listId, planType, shoppingList]);
 
   const getPlanTitle = () => {
     switch (planType) {
@@ -212,6 +245,11 @@ const PlanDetails: React.FC = () => {
               <div className="flex-1">
                 <h1 className="text-xl font-bold text-gray-900">{getPlanTitle()}</h1>
                 <p className="text-sm text-gray-600 mt-1">{getPlanDescription()}</p>
+                {shoppingList && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Based on {shoppingList.items?.length || 0} items from "{shoppingList.name}"
+                  </p>
+                )}
               </div>
             </div>
 
