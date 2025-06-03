@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
@@ -71,16 +70,16 @@ const PlanDetails: React.FC = () => {
           }
           return acc;
         }, {} as Record<number, number>);
-        
+
         const retailerKeys = Object.keys(retailerCounts);
         if (retailerKeys.length === 0) {
           return { totalCost: 0, estimatedTime: '0 min', stores: [] };
         }
-        
+
         const mostCommonRetailerId = retailerKeys.reduce((a, b) =>
           retailerCounts[Number(a)] > retailerCounts[Number(b)] ? a : b
         );
-        
+
         const primaryRetailer = items.find(item => 
           item.suggestedRetailer?.id === Number(mostCommonRetailerId)
         )?.suggestedRetailer;
@@ -342,12 +341,37 @@ const PlanDetails: React.FC = () => {
 
       {/* Action Buttons */}
       <div className="flex gap-4 pt-6">
-        <Button className="flex-1" size="lg">
-          Start Shopping
-        </Button>
-        <Button variant="outline" size="lg">
-          Export List
-        </Button>
+        <div className="space-y-2">
+                    <Button 
+                      className="w-full"
+                      onClick={() => {
+                        const params = new URLSearchParams({
+                          listId: listId || '1',
+                          retailerId: planData.stores[0]?.retailer?.id?.toString() || '1',
+                          planData: encodeURIComponent(JSON.stringify(planData)),
+                          autoStart: 'true'
+                        });
+                        navigate(`/shop?${params.toString()}`);
+                      }}
+                    >
+                      <ShoppingCart className="h-4 w-4 mr-2" />
+                      Start Shopping Route
+                    </Button>
+
+                    <Button 
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        const params = new URLSearchParams({
+                          listId: listId || '1',
+                          retailerId: planData.stores[0]?.retailer?.id?.toString() || '1'
+                        });
+                        navigate(`/shop?${params.toString()}`);
+                      }}
+                    >
+                      Customize Plan
+                    </Button>
+                  </div>
       </div>
     </div>
   );

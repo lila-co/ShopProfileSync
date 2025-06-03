@@ -33,11 +33,13 @@ const Shop: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [selectedRetailerInfo, setSelectedRetailerInfo] = useState<any>(null);
 
-  // Check URL parameters for pre-selected retailer and list
+  // Check URL parameters for pre-selected retailer, list, and plan data
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const retailerId = params.get('retailerId');
     const listId = params.get('listId');
+    const planData = params.get('planData');
+    const autoStart = params.get('autoStart');
 
     if (retailerId) {
       setSelectedRetailer(parseInt(retailerId));
@@ -46,6 +48,19 @@ const Shop: React.FC = () => {
 
     if (listId) {
       setSelectedList(parseInt(listId));
+    }
+
+    // If we have plan data and autoStart flag, automatically generate the route
+    if (planData && autoStart === 'true') {
+      try {
+        const parsedPlan = JSON.parse(decodeURIComponent(planData));
+        // Automatically trigger shopping route generation
+        setTimeout(() => {
+          generateShoppingRouteFromPlan(parsedPlan);
+        }, 500); // Small delay to ensure state is set
+      } catch (error) {
+        console.error('Error parsing plan data:', error);
+      }
     }
   }, []);
 
@@ -280,6 +295,74 @@ const Shop: React.FC = () => {
     return listItems.reduce((sum: number, item: any) => {
       return sum + ((item.suggestedPrice || 0) * item.quantity);
     }, 0);
+  };
+
+  const generateShoppingRouteFromPlan = (planData: any) => {
+    // Extract retailer and items from plan
+    let retailerName = 'Store';
+    let items: any[] = [];
+
+    if (planData.stores && planData.stores.length > 0) {
+      // Use the first store from the plan
+      const store = planData.stores[0];
+      retailerName = store.retailerName;
+      items = store.items;
+    }
+
+    // Generate shopping route
+    const route = {
+      aisles: generateAislesFromItems(items),
+      estimatedTime: planData.estimatedTime || '25-35 min',
+      retailer: retailerName,
+      totalItems: items.length,
+      other: null
+    };
+
+    setShoppingRoute(route);
+    setOrderCompleted(true);
+    setShoppingMode('instore');
+
+    toast({
+      title: "Shopping Route Ready!",
+      description: `Your in-store shopping route has been created for ${retailerName}.`,
+      duration: 5000
+    });
+  };
+
+  const generateAislesFromItems = (items: any[]) => {
+    // Categorize items into aisles
+    const aisleMap: { [key: string]: any[] } = {
+      'Produce': [],
+      'Dairy & Eggs': [],
+      'Meat & Seafood': [],
+      'Pantry & Canned Goods': [],
+      'Frozen Foods': [],
+      'Bakery': [],
+      'Other': []
+    };
+
+    items.forEach(item => {
+      const name = item.productName.toLowerCase();
+      
+      if (name.includes('milk') || name.includes('cheese') || name.includes('yogurt') || name.includes('eggs')) {
+        aisleMap['Dairy & Eggs'].push(item);
+      } else if (name.includes('banana') || name.includes('apple') || name.includes('tomato') || name.includes('spinach') || name.includes('pepper') || name.includes('avocado')) {
+        aisleMap['Produce'].push(item);
+      } else if (name.includes('chicken') || name.includes('beef') || name.includes('turkey') || name.includes('meat')) {
+        aisleMap['Meat & Seafood'].push(item);
+      } else if (name.includes('bread') || name.includes('bagel')) {
+        aisleMap['Bakery'].push(item);
+      } else if (name.includes('frozen') || name.includes('ice cream')) {
+        aisleMap['Frozen Foods'].push(item);
+      } else {
+        aisleMap['Pantry & Canned Goods'].push(item);
+      }
+    });
+
+    // Convert to aisle format and filter out empty aisles
+    return Object.entries(aisleMap)
+      .filter(([_, items]) => items.length > 0)
+      .map(([name, items]) => ({ name, items }));
   };
 
   const startNewShop = () => {
