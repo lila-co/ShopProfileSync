@@ -70,6 +70,8 @@ const ShoppingListComponent: React.FC = () => {
 
   const { data: shoppingLists, isLoading } = useQuery<ShoppingListType[]>({
     queryKey: ['/api/shopping-lists'],
+    refetchOnWindowFocus: true,
+    refetchInterval: 2000, // Refetch every 2 seconds to catch updates from other pages
   });
 
   const { data: suggestions, isLoading: suggestionsLoading } = useQuery({
