@@ -63,6 +63,7 @@ export const retailerAccounts = pgTable("retailer_accounts", {
   accountUsername: text("account_username"),
   accountToken: text("account_token"),
   isConnected: boolean("is_connected").default(false),
+  customCircularUrl: text("custom_circular_url"),
 });
 
 // Product Schema

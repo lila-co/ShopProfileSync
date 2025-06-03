@@ -679,7 +679,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           username: null,
           allowOrdering: false,
           storeCredentials: false,
-          lastSync: new Date().toISOString()
+          lastSync: new Date().toISOString(),
+          customCircularUrl: req.body.circularUrl || null
         };
         
         const newAccount = await storage.createRetailerAccount(circularAccount);
@@ -687,7 +688,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Trigger circular fetching for this retailer
         try {
           const { circularFetcher } = await import('./services/circularFetcher');
-          await circularFetcher.fetchCircularForRetailer(retailerId);
+          await circularFetcher.fetchCircularForRetailer(retailerId, req.body.circularUrl);
         } catch (error) {
           console.warn('Failed to fetch initial circular:', error);
         }

@@ -29,7 +29,7 @@ export class CircularFetcher {
   /**
    * Fetch circular for a specific retailer
    */
-  async fetchRetailerCircular(retailerId: number): Promise<void> {
+  async fetchRetailerCircular(retailerId: number, customUrl?: string): Promise<void> {
     const retailer = await storage.getRetailer(retailerId);
     if (!retailer) {
       throw new Error(`Retailer ${retailerId} not found`);
@@ -51,7 +51,7 @@ export class CircularFetcher {
     }
 
     try {
-      const circularData = await this.scrapeRetailerCircular(retailer);
+      const circularData = await this.scrapeRetailerCircular(retailer, customUrl);
       
       if (circularData) {
         // Create the circular in database
@@ -80,13 +80,30 @@ export class CircularFetcher {
   /**
    * Scrape circular from retailer website
    */
-  private async scrapeRetailerCircular(retailer: any): Promise<{
+  private async scrapeRetailerCircular(retailer: any, customUrl?: string): Promise<{
     title: string;
     description: string;
     imageUrl?: string;
     pdfUrl?: string;
     pages?: number;
   } | null> {
+    // Use custom URL if provided, otherwise use retailer configuration
+    if (customUrl) {
+      console.log(`Using custom circular URL for ${retailer.name}: ${customUrl}`);
+      try {
+        return {
+          title: `${retailer.name} Weekly Circular`,
+          description: `Weekly deals from ${retailer.name}`,
+          imageUrl: customUrl.endsWith('.pdf') ? null : customUrl,
+          pdfUrl: customUrl.endsWith('.pdf') ? customUrl : null,
+          pages: 1
+        };
+      } catch (error) {
+        console.error(`Error with custom URL for ${retailer.name}:`, error);
+        // Fall through to auto-detection
+      }
+    }
+
     // Get retailer's base URL and circular patterns
     const circularConfig = this.getRetailerCircularConfig(retailer.name);
     

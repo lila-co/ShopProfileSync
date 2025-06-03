@@ -93,7 +93,7 @@ const RetailerLinking: React.FC = () => {
       const message = connectionType === 'circular' 
         ? `${selectedRetailer?.name} circular subscription activated.`
         : `Your ${selectedRetailer?.name} account has been connected to SmartCart.`;
-      
+
       toast({
         title: connectionType === 'circular' ? 'Circular Subscription Active' : 'Account Linked Successfully',
         description: message,
@@ -526,6 +526,30 @@ const RetailerLinking: React.FC = () => {
                     <Label htmlFor="allow-ordering">Allow SmartCart to place orders for me</Label>
                   </div>
                 </>
+              )}
+
+              {connectionType === 'circular' && (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    We'll automatically fetch this store's weekly circulars for deal identification. 
+                    No personal account connection required.
+                  </p>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="circularUrl">Circular URL (Optional)</Label>
+                    <Input
+                      id="circularUrl"
+                      name="circularUrl"
+                      type="url"
+                      placeholder="https://store.com/weekly-ad"
+                      className="w-full"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      If you know the specific URL for this store's weekly circular, enter it here. 
+                      Otherwise, we'll try to find it automatically.
+                    </p>
+                  </div>
+                </div>
               )}
 
               <Separator />
