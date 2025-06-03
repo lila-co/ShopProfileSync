@@ -60,6 +60,7 @@ const RetailerLinking: React.FC = () => {
   const [allowOrdering, setAllowOrdering] = useState(true);
   const [loyaltyCardNumber, setLoyaltyCardNumber] = useState('');
   const [loyaltyMemberId, setLoyaltyMemberId] = useState('');
+  const [connectionType, setConnectionType] = useState<'account' | 'email'>('account'); // Added connection type state
 
   // Get all available retailers
   const { data: retailers, isLoading: retailersLoading } = useQuery({
@@ -173,6 +174,14 @@ const RetailerLinking: React.FC = () => {
     }
 
     linkAccountMutation.mutate(accountData);
+  };
+
+    const resetForm = () => {
+    setUsername('');
+    setPassword('');
+    setLoyaltyCardNumber('');
+    setLoyaltyMemberId('');
+    setConnectionType('account');
   };
 
   // Open the link dialog for a specific retailer
@@ -463,7 +472,7 @@ const RetailerLinking: React.FC = () => {
                 <p className="text-xs text-gray-600">
                   Add your loyalty card to earn points and access member discounts during shopping.
                 </p>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="loyalty-card">Loyalty Card Number</Label>
                   <Input
