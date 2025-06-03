@@ -38,6 +38,18 @@ const VoiceHelp: React.FC = () => {
               </div>
 
               <div>
+                <p className="font-medium text-gray-700 mb-1">Conversational Queries:</p>
+                <ul className="space-y-1 text-gray-600 ml-2">
+                  <li>• "What should I cook tonight?"</li>
+                  <li>• "Help me plan meals for the week"</li>
+                  <li>• "What goes well with chicken?"</li>
+                  <li>• "I want to make pasta, what do I need?"</li>
+                  <li>• "Suggest a healthy recipe"</li>
+                  <li>• "What ingredients make a good salad?"</li>
+                </ul>
+              </div>
+
+              <div>
                 <p className="font-medium text-gray-700 mb-1">Managing Items:</p>
                 <ul className="space-y-1 text-gray-600 ml-2">
                   <li>• "I got the milk" (mark as done)</li>

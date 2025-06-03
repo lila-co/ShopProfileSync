@@ -92,11 +92,21 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
   const parseVoiceCommand = useCallback((command: string) => {
     const lowerCommand = command.toLowerCase().trim();
     
+    // Check for conversational queries first
+    const conversationalKeywords = ['recipe', 'cook', 'make', 'meal', 'plan', 'what', 'how', 'help', 'suggest'];
+    const isConversational = conversationalKeywords.some(keyword => lowerCommand.includes(keyword)) &&
+                            !lowerCommand.match(/(?:add|get|buy|remove|delete|complete|check|mark)/i);
+    
+    if (isConversational) {
+      return { action: 'conversation', query: command };
+    }
+    
     // Add item commands
     const addPatterns = [
       /add (\d+(?:\.\d+)?)\s*((?:pounds?|lbs?|ounces?|oz|gallons?|quarts?|pints?|cups?|liters?|ml|dozens?|count|loaves?|bags?|boxes?|bottles?|cans?|jars?|packs?|containers?|bunches?|heads?|blocks?))?\s*(?:of\s+)?(.+)/i,
       /add (.+?)(?:\s+(\d+(?:\.\d+)?)\s*((?:pounds?|lbs?|ounces?|oz|gallons?|quarts?|pints?|cups?|liters?|ml|dozens?|count|loaves?|bags?|boxes?|bottles?|cans?|jars?|packs?|containers?|bunches?|heads?|blocks?)))?/i,
-      /(\d+(?:\.\d+)?)\s*((?:pounds?|lbs?|ounces?|oz|gallons?|quarts?|pints?|cups?|liters?|ml|dozens?|count|loaves?|bags?|boxes?|bottles?|cans?|jars?|packs?|containers?|bunches?|heads?|blocks?))?\s*(?:of\s+)?(.+)/i
+      /(\d+(?:\.\d+)?)\s*((?:pounds?|lbs?|ounces?|oz|gallons?|quarts?|pints?|cups?|liters?|ml|dozens?|count|loaves?|bags?|boxes?|bottles?|cans?|jars?|packs?|containers?|bunches?|heads?|blocks?))?\s*(?:of\s+)?(.+)/i,
+      /(?:i need|get me|buy)\s+(.+)/i
     ];
 
     for (const pattern of addPatterns) {
@@ -121,6 +131,11 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
           quantity = parseFloat(match[1]);
           unit = normalizeUnit(match[2] || 'count');
           itemName = match[3].trim();
+        } else if (pattern === addPatterns[3]) {
+          // Pattern: "I need milk" or "get me bread"
+          itemName = match[1].trim();
+          quantity = 1;
+          unit = 'COUNT';
         }
 
         if (itemName && !isNaN(quantity)) {
@@ -128,7 +143,8 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
             action: 'add',
             itemName: capitalizeWords(itemName),
             quantity,
-            unit: unit.toUpperCase()
+            unit: unit.toUpperCase(),
+            suggestRecipe: true
           };
         }
       }
@@ -141,27 +157,29 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
         action: 'add',
         itemName: capitalizeWords(simpleAdd[1].trim()),
         quantity: 1,
-        unit: 'COUNT'
+        unit: 'COUNT',
+        suggestRecipe: true
       };
     }
 
     // Toggle/complete item commands
-    if (lowerCommand.includes('complete') || lowerCommand.includes('check off') || lowerCommand.includes('mark')) {
-      const item = lowerCommand.replace(/(complete|check off|mark|done)\s*/i, '').trim();
+    if (lowerCommand.includes('complete') || lowerCommand.includes('check off') || lowerCommand.includes('mark') || lowerCommand.includes('got')) {
+      const item = lowerCommand.replace(/(complete|check off|mark|done|got|i got)\s*/i, '').trim();
       if (item && onToggleItem) {
         return { action: 'toggle', itemName: capitalizeWords(item) };
       }
     }
 
     // Delete item commands
-    if (lowerCommand.includes('remove') || lowerCommand.includes('delete')) {
-      const item = lowerCommand.replace(/(remove|delete)\s*/i, '').trim();
+    if (lowerCommand.includes('remove') || lowerCommand.includes('delete') || lowerCommand.includes('take off')) {
+      const item = lowerCommand.replace(/(remove|delete|take off)\s*/i, '').trim();
       if (item && onDeleteItem) {
         return { action: 'delete', itemName: capitalizeWords(item) };
       }
     }
 
-    return null;
+    // If no pattern matches, treat as conversational
+    return { action: 'conversation', query: command };
   }, [onToggleItem, onDeleteItem]);
 
   // Normalize units
@@ -199,15 +217,15 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
       .join(' ');
   };
 
-  // Generate conversational responses
+  // Generate conversational responses with follow-up questions
   const getConversationalResponse = useCallback((action: string, itemName: string, quantity?: number, unit?: string) => {
     const responses = {
       add: [
-        `Perfect! I've added ${quantity === 1 ? '' : quantity + ' '}${unit && unit !== 'COUNT' ? unit.toLowerCase() + ' of ' : ''}${itemName} to your list.`,
-        `Got it! ${itemName} is now on your shopping list${quantity && quantity > 1 ? ` - ${quantity} ${unit?.toLowerCase()}` : ''}.`,
-        `Done! Added ${itemName} to your list${quantity && quantity > 1 ? ` (${quantity} ${unit?.toLowerCase()})` : ''}. What else do you need?`,
-        `Great choice! ${itemName} is added${quantity && quantity > 1 ? ` - ${quantity} ${unit?.toLowerCase()}` : ''}. Anything else?`,
-        `Nice! I've put ${itemName} on your list${quantity && quantity > 1 ? ` with ${quantity} ${unit?.toLowerCase()}` : ''}. Keep going!`
+        `Perfect! I've added ${quantity === 1 ? '' : quantity + ' '}${unit && unit !== 'COUNT' ? unit.toLowerCase() + ' of ' : ''}${itemName} to your list. What are you planning to make with that?`,
+        `Got it! ${itemName} is now on your shopping list${quantity && quantity > 1 ? ` - ${quantity} ${unit?.toLowerCase()}` : ''}. Are you cooking something special?`,
+        `Done! Added ${itemName} to your list${quantity && quantity > 1 ? ` (${quantity} ${unit?.toLowerCase()})` : ''}. Need any ingredients to go with that?`,
+        `Great choice! ${itemName} is added${quantity && quantity > 1 ? ` - ${quantity} ${unit?.toLowerCase()}` : ''}. What else can I help you find?`,
+        `Nice! I've put ${itemName} on your list${quantity && quantity > 1 ? ` with ${quantity} ${unit?.toLowerCase()}` : ''}. Tell me about your meal plans!`
       ],
       toggle: [
         `Awesome! I've marked ${itemName} as done. One less thing to worry about!`,
@@ -227,6 +245,81 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
     return actionResponses[Math.floor(Math.random() * actionResponses.length)];
   }, []);
 
+  // Recipe and meal suggestions based on ingredients
+  const suggestRecipeIngredients = useCallback((ingredient: string) => {
+    const recipeMap: Record<string, string[]> = {
+      'chicken': ['onions', 'garlic', 'olive oil', 'salt', 'pepper', 'herbs'],
+      'pasta': ['tomatoes', 'garlic', 'basil', 'parmesan cheese', 'olive oil'],
+      'eggs': ['milk', 'butter', 'cheese', 'bread', 'bacon'],
+      'rice': ['soy sauce', 'vegetables', 'garlic', 'ginger', 'sesame oil'],
+      'salmon': ['lemon', 'dill', 'asparagus', 'olive oil', 'garlic'],
+      'beef': ['onions', 'carrots', 'potatoes', 'beef broth', 'herbs'],
+      'bread': ['butter', 'jam', 'eggs', 'milk', 'avocado'],
+      'milk': ['cereal', 'cookies', 'coffee', 'bananas'],
+      'tomatoes': ['basil', 'mozzarella', 'balsamic vinegar', 'olive oil'],
+      'potatoes': ['butter', 'sour cream', 'chives', 'bacon'],
+      'bananas': ['peanut butter', 'honey', 'oats', 'yogurt'],
+      'apples': ['cinnamon', 'oats', 'honey', 'walnuts']
+    };
+
+    const baseIngredient = ingredient.toLowerCase().replace(/s$/, ''); // Remove plural
+    const suggestions = recipeMap[baseIngredient];
+    
+    if (suggestions) {
+      const randomSuggestions = suggestions.slice(0, 3);
+      return `Since you're getting ${ingredient}, you might also want ${randomSuggestions.join(', ')} for a delicious meal!`;
+    }
+    
+    return null;
+  }, []);
+
+  // Handle conversational queries
+  const handleConversationalQuery = useCallback((query: string) => {
+    const lowerQuery = query.toLowerCase();
+    
+    // Recipe requests
+    if (lowerQuery.includes('recipe') || lowerQuery.includes('cook') || lowerQuery.includes('make')) {
+      const recipeResponses = [
+        "I'd love to help with recipes! What type of meal are you thinking? Italian, Mexican, Asian, or something else?",
+        "Great question! Are you looking for something quick and easy, or do you have time for a more elaborate dish?",
+        "I can suggest ingredients! What's your main protein - chicken, beef, fish, or are you going vegetarian?",
+        "Tell me what you're in the mood for - comfort food, healthy options, or maybe something new to try?"
+      ];
+      return recipeResponses[Math.floor(Math.random() * recipeResponses.length)];
+    }
+
+    // Meal planning
+    if (lowerQuery.includes('meal') || lowerQuery.includes('plan') || lowerQuery.includes('week')) {
+      const mealPlanResponses = [
+        "Meal planning is smart! How many people are you cooking for this week?",
+        "Let's plan your meals! Do you prefer to batch cook or make fresh meals daily?",
+        "Great idea! What's your budget like this week? I can suggest cost-effective ingredients.",
+        "I can help with meal prep! Do you have any dietary restrictions I should know about?"
+      ];
+      return mealPlanResponses[Math.floor(Math.random() * mealPlanResponses.length)];
+    }
+
+    // Ingredient questions
+    if (lowerQuery.includes('what') && (lowerQuery.includes('need') || lowerQuery.includes('buy'))) {
+      const ingredientResponses = [
+        "What kind of meal are you planning? I can suggest everything you'll need!",
+        "Tell me about your cooking plans and I'll help you get organized!",
+        "Are you stocking up for the week or planning a specific dish?",
+        "What's your cooking skill level? I can suggest beginner-friendly or more advanced ingredients!"
+      ];
+      return ingredientResponses[Math.floor(Math.random() * ingredientResponses.length)];
+    }
+
+    // Generic helpful responses
+    const helpfulResponses = [
+      "I'm here to help with your shopping! You can ask me to add items, suggest recipes, or help plan meals.",
+      "I can help you add items to your list, or we can chat about what you're planning to cook!",
+      "Tell me what you're thinking about making, and I can suggest ingredients you might need!",
+      "I love helping with meal planning! What kind of cuisine are you in the mood for?"
+    ];
+    return helpfulResponses[Math.floor(Math.random() * helpfulResponses.length)];
+  }, []);
+
   // Process voice command
   const processVoiceCommand = useCallback(async (command: string) => {
     setIsProcessingVoice(true);
@@ -238,34 +331,51 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
         switch (parsedCommand.action) {
           case 'add':
             await onAddItem(parsedCommand.itemName, parsedCommand.quantity, parsedCommand.unit);
-            speak(getConversationalResponse('add', parsedCommand.itemName, parsedCommand.quantity, parsedCommand.unit));
+            let response = getConversationalResponse('add', parsedCommand.itemName, parsedCommand.quantity, parsedCommand.unit);
+            
+            // Add recipe suggestions if enabled
+            if (parsedCommand.suggestRecipe) {
+              const recipeSuggestion = suggestRecipeIngredients(parsedCommand.itemName);
+              if (recipeSuggestion) {
+                response += ` ${recipeSuggestion}`;
+              }
+            }
+            
+            speak(response);
             break;
+            
           case 'toggle':
             if (onToggleItem) {
               onToggleItem(parsedCommand.itemName);
               speak(getConversationalResponse('toggle', parsedCommand.itemName));
             }
             break;
+            
           case 'delete':
             if (onDeleteItem) {
               onDeleteItem(parsedCommand.itemName);
               speak(getConversationalResponse('delete', parsedCommand.itemName));
             }
             break;
+            
+          case 'conversation':
+            const conversationalResponse = handleConversationalQuery(parsedCommand.query);
+            speak(conversationalResponse);
+            break;
         }
       } else {
         const notUnderstoodResponses = [
-          "Hmm, I didn't quite catch that. Could you try saying something like 'add milk' or 'add 2 pounds of chicken'?",
-          "Sorry, I'm not sure what you meant. Try saying 'add' followed by the item you need.",
-          "I didn't understand that command. Can you say it differently? Maybe 'add bananas' or 'remove bread'?",
-          "Oops, I missed that. Try telling me to 'add' something to your list, like 'add apples'."
+          "I'm not sure what you meant. You can ask me to add items, suggest recipes, or help plan meals!",
+          "Let me help you! Try saying 'add milk' or ask me 'what should I cook tonight?'",
+          "I can help with shopping and cooking! What would you like to know?",
+          "Tell me what you're planning to make, or ask me to add something to your list!"
         ];
         speak(notUnderstoodResponses[Math.floor(Math.random() * notUnderstoodResponses.length)]);
         
         toast({
-          title: "Command Not Recognized",
-          description: "Try saying 'add [item]' or 'add [quantity] [unit] of [item]'",
-          variant: "destructive"
+          title: "Let's Chat!",
+          description: "Ask me about recipes, meal planning, or tell me to add items to your list",
+          variant: "default"
         });
       }
     } catch (error) {
@@ -286,7 +396,7 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
     } finally {
       setIsProcessingVoice(false);
     }
-  }, [parseVoiceCommand, onAddItem, onToggleItem, onDeleteItem, speak, toast, getConversationalResponse]);
+  }, [parseVoiceCommand, onAddItem, onToggleItem, onDeleteItem, speak, toast, getConversationalResponse, suggestRecipeIngredients, handleConversationalQuery]);
 
   // Start listening
   const startListening = useCallback(() => {
@@ -339,11 +449,11 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
     try {
       recognitionRef.current.start();
       const greetings = [
-        "Hi there! I'm ready to help. What would you like to add to your shopping list?",
-        "Hey! I'm all ears. What do you need to add today?",
-        "Hello! I'm listening. What can I add to your list?",
-        "Hi! What would you like to put on your shopping list?",
-        "Ready when you are! What should I add to your list?"
+        "Hi there! I'm your shopping assistant. You can ask me to add items, suggest recipes, or help plan your meals. What's on your mind?",
+        "Hey! I'm here to help with your shopping and cooking. What would you like to talk about?",
+        "Hello! I can help you add items to your list or chat about what you're planning to cook. What can I do for you?",
+        "Hi! Ready to help with your shopping list and meal planning. What are you thinking about making?",
+        "Hey there! I'm your kitchen companion. Ask me about recipes, meal ideas, or tell me what to add to your list!"
       ];
       speak(greetings[Math.floor(Math.random() * greetings.length)]);
     } catch (error) {
