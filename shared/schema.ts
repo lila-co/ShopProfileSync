@@ -407,3 +407,91 @@ export const insertAffiliateConversionSchema = createInsertSchema(affiliateConve
 });
 export type InsertAffiliateConversion = z.infer<typeof insertAffiliateConversionSchema>;
 export type AffiliateConversion = typeof affiliateConversions.$inferSelect;
+
+// Security Audit Log Schema
+export const securityAuditLog = pgTable("security_audit_log", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  action: text("action").notNull(),
+  details: json("details"),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  severity: pgEnum('severity', ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'])("severity").default('MEDIUM'),
+  timestamp: timestamp("timestamp").defaultNow(),
+  resolved: boolean("resolved").default(false),
+}, (table) => ({
+  userIdIdx: index("security_log_user_id_idx").on(table.userId),
+  timestampIdx: index("security_log_timestamp_idx").on(table.timestamp),
+  severityIdx: index("security_log_severity_idx").on(table.severity),
+}));
+
+// Data Privacy Preferences Schema
+export const dataPrivacyPreferences = pgTable("data_privacy_preferences", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  allowAnalytics: boolean("allow_analytics").default(true),
+  allowMarketing: boolean("allow_marketing").default(false),
+  allowDataSharing: boolean("allow_data_sharing").default(false),
+  dataRetentionPeriod: integer("data_retention_period").default(2555), // 7 years in days
+  allowLocationTracking: boolean("allow_location_tracking").default(true),
+  allowPersonalization: boolean("allow_personalization").default(true),
+  gdprConsent: boolean("gdpr_consent").default(false),
+  ccpaOptOut: boolean("ccpa_opt_out").default(false),
+  consentDate: timestamp("consent_date").defaultNow(),
+  lastUpdated: timestamp("last_updated").defaultNow(),
+});
+
+// User Sessions Schema for Security
+export const userSessions = pgTable("user_sessions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  sessionToken: text("session_token").notNull().unique(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow(),
+  lastActivity: timestamp("last_activity").defaultNow(),
+  expiresAt: timestamp("expires_at").notNull(),
+  isActive: boolean("is_active").default(true),
+}, (table) => ({
+  userIdIdx: index("sessions_user_id_idx").on(table.userId),
+  tokenIdx: index("sessions_token_idx").on(table.sessionToken),
+  expiryIdx: index("sessions_expiry_idx").on(table.expiresAt),
+}));
+
+// Encrypted User Data Schema
+export const encryptedUserData = pgTable("encrypted_user_data", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  dataType: text("data_type").notNull(), // 'payment_info', 'address', 'phone', etc.
+  encryptedData: text("encrypted_data").notNull(),
+  encryptionIv: text("encryption_iv").notNull(),
+  encryptionTag: text("encryption_tag").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  lastAccessed: timestamp("last_accessed"),
+});
+
+export const insertSecurityLogSchema = createInsertSchema(securityAuditLog).omit({
+  id: true,
+  timestamp: true,
+});
+
+export const insertPrivacyPreferencesSchema = createInsertSchema(dataPrivacyPreferences).omit({
+  id: true,
+  consentDate: true,
+  lastUpdated: true,
+});
+
+export const insertSessionSchema = createInsertSchema(userSessions).omit({
+  id: true,
+  createdAt: true,
+  lastActivity: true,
+});
+
+export type InsertSecurityLog = z.infer<typeof insertSecurityLogSchema>;
+export type SecurityLog = typeof securityAuditLog.$inferSelect;
+
+export type InsertPrivacyPreferences = z.infer<typeof insertPrivacyPreferencesSchema>;
+export type PrivacyPreferences = typeof dataPrivacyPreferences.$inferSelect;
+
+export type InsertSession = z.infer<typeof insertSessionSchema>;
+export type UserSession = typeof userSessions.$inferSelect;

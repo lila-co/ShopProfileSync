@@ -4005,6 +4005,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Privacy & Security Endpoints
+  
+  // Get user privacy preferences
+  app.get('/api/user/privacy-preferences', async (req: Request, res: Response) => {
+    try {
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+
+      const preferences = await storage.getPrivacyPreferences(userId);
+      res.json(preferences);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Update privacy preferences
+  app.patch('/api/user/privacy-preferences', async (req: Request, res: Response) => {
+    try {
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+
+      const { SecurityManager } = await import('./services/securityManager');
+      
+      const updatedPreferences = await storage.updatePrivacyPreferences(userId, req.body);
+      
+      // Log privacy setting change
+      await SecurityManager.logSecurityEvent(
+        userId, 
+        'privacy_preferences_updated', 
+        req.body,
+        req.ip
+      );
+
+      res.json(updatedPreferences);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // GDPR Data Export
+  app.get('/api/user/data-export', async (req: Request, res: Response) => {
+    try {
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+
+      const { SecurityManager } = await import('./services/securityManager');
+      
+      const userData = await SecurityManager.exportUserData(userId);
+      
+      // Log data export
+      await SecurityManager.logSecurityEvent(
+        userId, 
+        'data_export', 
+        { exportType: 'gdpr_request' },
+        req.ip
+      );
+
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename=user-data-${userId}-${Date.now()}.json`);
+      res.json(userData);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Account Deletion (GDPR Right to be Forgotten)
+  app.delete('/api/user/account', async (req: Request, res: Response) => {
+    try {
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+      const { retainAnalytics = true } = req.body;
+
+      const { SecurityManager } = await import('./services/securityManager');
+      
+      await SecurityManager.deleteUserData(userId, retainAnalytics);
+      
+      res.json({ 
+        message: 'Account deletion completed',
+        analyticsRetained: retainAnalytics 
+      });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Security audit logs (admin only)
+  app.get('/api/admin/security-logs', async (req: Request, res: Response) => {
+    try {
+      const currentUserId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+      
+      const currentUser = await storage.getUser(currentUserId);
+      if (!currentUser || (currentUser.role !== 'owner' && currentUser.role !== 'admin')) {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+
+      const { limit = 100, severity, userId } = req.query;
+      const logs = await storage.getSecurityLogs({
+        limit: parseInt(limit as string),
+        severity: severity as string,
+        userId: userId ? parseInt(userId as string) : undefined
+      });
+
+      res.json(logs);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
   // Name normalization
   const normalizeProductName = (productName: string) => {
       const words = productName.split(" ");
