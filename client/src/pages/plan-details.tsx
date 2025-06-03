@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,8 +37,8 @@ interface PlanData {
 }
 
 const PlanDetails: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const [location, navigate] = useLocation();
+  const searchParams = new URLSearchParams(location.split('?')[1] || '');
   const [selectedPlanType, setSelectedPlanType] = useState(
     searchParams.get('planType') || 'single-store'
   );
