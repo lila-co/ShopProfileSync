@@ -55,7 +55,7 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
       recognitionRef.current = new SpeechRecognition();
       
       if (recognitionRef.current) {
-        recognitionRef.current.continuous = false;
+        recognitionRef.current.continuous = true;
         recognitionRef.current.interimResults = true;
         recognitionRef.current.lang = 'en-US';
       }
@@ -434,14 +434,26 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
           clearTimeout(timeoutRef.current);
         }
 
-        // Process the final command
+        // Process the final command but keep listening
         processVoiceCommand(finalTranscript);
-        setIsListening(false);
+        
+        // Clear transcript after processing
+        setTimeout(() => {
+          setTranscript('');
+        }, 2000);
       }
     };
 
     recognitionRef.current.onend = () => {
-      setIsListening(false);
+      // If we're supposed to be listening, restart the recognition
+      if (isListening) {
+        try {
+          recognitionRef.current?.start();
+        } catch (error) {
+          console.warn('Failed to restart speech recognition:', error);
+          setIsListening(false);
+        }
+      }
     };
 
     recognitionRef.current.onerror = (event) => {
@@ -457,11 +469,11 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
     try {
       recognitionRef.current.start();
       const greetings = [
-        "Hi there! I'm your shopping assistant. You can ask me to add items, suggest recipes, or help plan your meals. What's on your mind?",
-        "Hey! I'm here to help with your shopping and cooking. What would you like to talk about?",
-        "Hello! I can help you add items to your list or chat about what you're planning to cook. What can I do for you?",
-        "Hi! Ready to help with your shopping list and meal planning. What are you thinking about making?",
-        "Hey there! I'm your kitchen companion. Ask me about recipes, meal ideas, or tell me what to add to your list!"
+        "Hi there! I'm your shopping assistant and I'm now listening continuously. You can ask me to add items, suggest recipes, or help plan your meals. I'll keep listening until you tell me to stop!",
+        "Hey! I'm here to help with your shopping and cooking. I'll stay active and listen for your commands. What would you like to talk about?",
+        "Hello! I can help you add items to your list or chat about what you're planning to cook. I'm listening continuously now, so just talk to me naturally!",
+        "Hi! Ready to help with your shopping list and meal planning. I'll keep listening for your voice commands. What are you thinking about making?",
+        "Hey there! I'm your kitchen companion and I'm staying active to listen. Ask me about recipes, meal ideas, or tell me what to add to your list!"
       ];
       speak(greetings[Math.floor(Math.random() * greetings.length)]);
     } catch (error) {
@@ -553,7 +565,7 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({
             ) : (
               <Mic className="h-4 w-4" />
             )}
-            {isProcessingVoice ? 'Processing...' : isListening ? 'Stop' : 'Start Voice'}
+            {isProcessingVoice ? 'Processing...' : isListening ? 'Stop Listening' : 'Start Conversation'}
           </Button>
 
           {(isListening || isSpeaking) && (
