@@ -1262,7 +1262,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             let finalUnit = item.unit || 'COUNT';
             let finalQuantity = item.quantity || 1;
 
-            // Use AI categorization for unit optimization
+            // Use AI categorization for unit optimization only if no specific unit is provided
             try {
               const { productCategorizer } = await import('./services/productCategorizer');
               const normalized = productCategorizer.normalizeQuantity(
@@ -1271,14 +1271,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 item.unit || 'COUNT'
               );
 
-              if (normalized.suggestedUnit) {
+              // Only apply AI suggestions if the original unit was generic (COUNT) or not specified
+              if ((!item.unit || item.unit === 'COUNT') && normalized.suggestedUnit) {
                 finalUnit = normalized.suggestedUnit;
+                if (normalized.suggestedQuantity && normalized.suggestedQuantity > 0) {
+                  finalQuantity = normalized.suggestedQuantity;
+                }
+                console.log(`AI optimization for ${item.productName}: ${item.quantity || 1} ${item.unit || 'COUNT'} -> ${finalQuantity} ${finalUnit}`);
+              } else {
+                console.log(`Keeping original units for ${item.productName}: ${finalQuantity} ${finalUnit}`);
               }
-              if (normalized.suggestedQuantity && normalized.suggestedQuantity > 0) {
-                finalQuantity = normalized.suggestedQuantity;
-              }
-
-              console.log(`AI optimization for ${item.productName}: ${item.quantity} ${item.unit} -> ${finalQuantity} ${finalUnit}`);
             } catch (aiError) {
               console.warn('AI categorization failed for:', item.productName, aiError);
             }
