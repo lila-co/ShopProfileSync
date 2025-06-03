@@ -2484,6 +2484,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI-powered voice conversation endpoint
+  app.post('/api/voice/conversation', async (req: Request, res: Response) => {
+    try {
+      const { message, context = [] } = req.body;
+      
+      if (!message) {
+        return res.status(400).json({ error: 'Message is required' });
+      }
+
+      // Initialize OpenAI if not already done
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(500).json({ 
+          error: 'OpenAI not configured',
+          response: "I'm not fully set up yet, but I can still help you add items to your shopping list! What would you like to add?"
+        });
+      }
+
+      try {
+        const { OpenAI } = await import('openai');
+        const openai = new OpenAI({
+          apiKey: process.env.OPENAI_API_KEY
+        });
+
+        // Build conversation messages with context
+        const messages = [
+          {
+            role: "system",
+            content: `You are a helpful shopping and cooking assistant. You help users with:
+            1. Adding items to their shopping lists
+            2. Recipe suggestions and meal planning
+            3. Cooking advice and ingredient recommendations
+            4. General conversation about food and cooking
+
+            Key guidelines:
+            - Be conversational, friendly, and helpful
+            - If someone asks to add items, guide them to use voice commands like "add milk" or "I need 2 pounds of chicken"
+            - Provide specific, actionable cooking and shopping advice
+            - Ask follow-up questions to understand their needs better
+            - Keep responses concise but informative (2-3 sentences max)
+            - Stay focused on food, cooking, and shopping topics
+            - Be encouraging and enthusiastic about cooking and meal planning
+            - Remember the conversation context to provide relevant responses`
+          }
+        ];
+
+        // Add context if available
+        if (context && context.length > 0) {
+          for (let i = 0; i < context.length; i += 2) {
+            if (context[i]) {
+              messages.push({ role: "user", content: context[i] });
+            }
+            if (context[i + 1]) {
+              messages.push({ role: "assistant", content: context[i + 1] });
+            }
+          }
+        }
+
+        // Add current message
+        messages.push({ role: "user", content: message });
+
+        const completion = await openai.chat.completions.create({
+          model: "gpt-3.5-turbo",
+          messages,
+          max_tokens: 150,
+          temperature: 0.7
+        });
+
+        const response = completion.choices[0]?.message?.content?.trim();
+        
+        if (!response) {
+          throw new Error('No response from OpenAI');
+        }
+
+        res.json({ response });
+      } catch (openaiError) {
+        console.error('OpenAI API error:', openaiError);
+        
+        // Provide a helpful fallback response
+        const fallbackResponse = "I'm having trouble with my AI brain right now, but I'm still here to help! You can ask me to add items to your list by saying things like 'add milk' or 'I need 2 pounds of chicken'. What would you like to add?";
+        
+        res.json({ response: fallbackResponse });
+      }
+    } catch (error) {
+      console.error('Error in voice conversation endpoint:', error);
+      res.status(500).json({ 
+        error: 'Internal server error',
+        response: "Sorry, I'm having some technical difficulties. Let me help you add items to your shopping list instead!"
+      });
+    }
+  });
+
   // AI trend predictions based on demographic analysis
   app.get('/api/internal/analytics/trend-predictions', async (req: Request, res: Response) => {
     try {
