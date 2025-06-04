@@ -16,6 +16,7 @@ import {
   MapPin, 
   Clock, 
   ArrowRight, 
+  ArrowLeft,
   Store, 
   ShoppingCart,
   CheckCircle2,
@@ -680,7 +681,23 @@ const ShoppingRoute: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
-      <Header title="Shopping Route" />
+      {/* Custom Header with Back Navigation */}
+      <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 sticky top-0 z-10">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/plan-details?listId=' + listId)}
+          className="p-2"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-lg font-semibold flex-1">Shopping Route</h1>
+        {optimizedRoute && (
+          <Badge variant="outline" className="text-xs">
+            {Math.round(getProgressPercentage())}% Complete
+          </Badge>
+        )}
+      </header>
 
       <main className="flex-1 overflow-y-auto p-4 pb-20">
         {/* Debug Info */}
