@@ -4038,7 +4038,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             retailerSpecific: {
               redCardDiscount: Math.floor(estimatedTotal * 0.05), // 5% RedCard discount
               freeShippingEligible: estimatedTotal >= 3500,
-              sameDay DeliveryAvailable: true
+              sameDayDeliveryAvailable: true
             }
           };
           break;
