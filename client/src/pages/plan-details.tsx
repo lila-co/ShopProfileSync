@@ -293,9 +293,7 @@ const PlanDetails: React.FC = () => {
                 action: {
                   label: "Open Cart",
                   onClick: () => {
-                    window.open(demoCartUrl, '_blank', 'noopener,noreferrer');
-                    // Auto-process next store after a delay
-                    setTimeout(processNextStore, 2000);
+                    window.location.href = demoCartUrl;
                   }
                 },
                 duration: 8000
@@ -377,24 +375,17 @@ const PlanDetails: React.FC = () => {
                 const urlParams = new URLSearchParams(result.cartUrl.split('?')[1] || '');
                 const demoCartUrl = `/retailer-cart-demo?${urlParams.toString()}&retailer=${encodeURIComponent(store.retailer.name.toLowerCase().replace(/\s+/g, ''))}`;
 
-                // Open demo cart page in new tab
-                const linkElement = document.createElement('a');
-                linkElement.href = demoCartUrl;
-                linkElement.target = '_blank';
-                linkElement.rel = 'noopener noreferrer';
-                linkElement.click();
+                // Use window.location.href instead of popup to avoid blocking
+                setTimeout(() => {
+                  window.location.href = demoCartUrl;
+                }, i * 2000); // Stagger the redirects for multi-store
 
                 successCount++;
 
                 toast({
                   title: `${store.retailer.name} Cart Ready`,
-                  description: `Items added to cart. Opening demo cart page...`,
-                  action: {
-                    label: "Open Cart",
-                    onClick: () => {
-                      window.open(demoCartUrl, '_blank', 'noopener,noreferrer');
-                    }
-                  }
+                  description: `Redirecting to ${store.retailer.name} cart...`,
+                  duration: 3000
                 });
               } else {
                 console.error(`Failed to add items to ${store.retailer.name} cart`);
@@ -483,13 +474,13 @@ const PlanDetails: React.FC = () => {
 
           toast({
             title: "Cart Ready!",
-            description: `Your items have been added to ${store.retailer.name} cart. Opening demo cart...`,
-            duration: 3000
+            description: `Your items have been added to ${store.retailer.name} cart. Redirecting to cart...`,
+            duration: 2000
           });
 
-          // Short delay then open demo cart in new tab
+          // Redirect to demo cart page instead of popup
           setTimeout(() => {
-            window.open(demoCartUrl, '_blank', 'noopener,noreferrer');
+            window.location.href = demoCartUrl;
           }, 1500);
         } else {
           toast({
