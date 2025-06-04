@@ -20,12 +20,11 @@ import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -145,7 +144,7 @@ const RetailerLinking: React.FC = () => {
     mutationFn: async (id: number) => {
       console.log(`Attempting to delete retailer account with ID: ${id}`);
       const response = await apiRequest('DELETE', `/api/user/retailer-accounts/${id}`);
-      
+
       // Check if the response is successful (204 No Content)
       if (response.status === 204) {
         return { success: true, id };
@@ -174,10 +173,10 @@ const RetailerLinking: React.FC = () => {
     },
     onError: (error: any, id) => {
       console.error('Failed to unlink account:', error);
-      
+
       // Find the retailer name for the error message
       const account = retailerAccounts?.find((acc: any) => acc.id === id);
-      
+
       toast({
         title: 'Failed to Disconnect',
         description: error.message || `Failed to disconnect ${account?.retailerName || 'retailer'} account. Please try again.`,
@@ -197,12 +196,12 @@ const RetailerLinking: React.FC = () => {
       setShowAddStore(false);
       setNewStoreName('');
       setNewStoreWebsite('');
-      
+
       // Automatically open the connection dialog for the newly added store
       setSelectedRetailer(newRetailer);
       setConnectionType('account'); // Default to account connection
       setLinkDialogOpen(true);
-      
+
       toast({
         title: "Store Added",
         description: "Your custom store has been added successfully. Now connect your account."
@@ -424,7 +423,7 @@ const RetailerLinking: React.FC = () => {
       <div className="space-y-4">
         <Select value={selectedAvailableRetailer} onValueChange={(value) => {
           setSelectedAvailableRetailer(value);
-          
+
           if (value === 'add-custom-store') {
             // Auto-open custom store dialog
             setShowAddStore(true);
@@ -445,7 +444,7 @@ const RetailerLinking: React.FC = () => {
               .sort((a: any, b: any) => a.name.localeCompare(b.name))
               .map((retailer: any) => {
               const logoUrl = getCompanyLogo(retailer.name);
-              
+
               return (
                 <SelectItem key={retailer.id} value={retailer.id.toString()}>
                   <div className="flex items-center space-x-2">
@@ -542,7 +541,7 @@ const RetailerLinking: React.FC = () => {
 
       {/* Link Account Dialog */}
       <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center">
               {selectedRetailer && (
@@ -571,172 +570,174 @@ const RetailerLinking: React.FC = () => {
           </DialogHeader>
 
           <form onSubmit={handleLinkAccount}>
-            <div className="space-y-4 py-2">
-              {/* Connection Type Selection */}
-              <div className="space-y-3">
-                <Label>Connection Type</Label>
-                <div className="flex space-x-4">
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="connectionType"
-                      value="account"
-                      checked={connectionType === 'account'}
-                      onChange={(e) => setConnectionType('account')}
-                      className="text-primary"
-                    />
-                    <span className="text-sm">Store Account</span>
-                  </label>
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="connectionType"
-                      value="circular"
-                      checked={connectionType === 'circular'}
-                      onChange={(e) => setConnectionType('circular')}
-                      className="text-primary"
-                    />
-                    <span className="text-sm">Circular Only</span>
-                  </label>
-                </div>
-              </div>
-
-              {connectionType === 'account' && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="username">Email or Username</Label>
-                    <Input
-                      id="username"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      placeholder="your.email@example.com"
-                      required
-                    />
-                  </div>
-                </>
-              )}
-
-              {connectionType === 'circular' && (
-                <div className="bg-blue-50 p-4 rounded-md">
-                  <h4 className="font-medium text-blue-900 mb-2">Circular-Only Subscription</h4>
-                  <p className="text-sm text-blue-700 mb-3">
-                    We'll automatically fetch weekly circulars from {selectedRetailer?.name} to find deals for you. 
-                    No account login required.
-                  </p>
-                  <div className="text-xs text-blue-600">
-                    ✓ Get weekly deals and promotions<br/>
-                    ✓ AI-powered deal matching<br/>
-                    ✓ No personal account access needed
+            <ScrollArea className="max-h-[60vh] pr-4">
+              <div className="space-y-4 py-2">
+                {/* Connection Type Selection */}
+                <div className="space-y-3">
+                  <Label>Connection Type</Label>
+                  <div className="flex space-x-4">
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="connectionType"
+                        value="account"
+                        checked={connectionType === 'account'}
+                        onChange={(e) => setConnectionType('account')}
+                        className="text-primary"
+                      />
+                      <span className="text-sm">Store Account</span>
+                    </label>
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="connectionType"
+                        value="circular"
+                        checked={connectionType === 'circular'}
+                        onChange={(e) => setConnectionType('circular')}
+                        className="text-primary"
+                      />
+                      <span className="text-sm">Circular Only</span>
+                    </label>
                   </div>
                 </div>
-              )}
 
-              {connectionType === 'account' && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <div className="relative">
+                {connectionType === 'account' && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="username">Email or Username</Label>
                       <Input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
+                        id="username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        placeholder="your.email@example.com"
                         required
                       />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-0 top-0 h-full px-3"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
+                    </div>
+                  </>
+                )}
+
+                {connectionType === 'circular' && (
+                  <div className="bg-blue-50 p-4 rounded-md">
+                    <h4 className="font-medium text-blue-900 mb-2">Circular-Only Subscription</h4>
+                    <p className="text-sm text-blue-700 mb-3">
+                      We'll automatically fetch weekly circulars from {selectedRetailer?.name} to find deals for you. 
+                      No account login required.
+                    </p>
+                    <div className="text-xs text-blue-600">
+                      ✓ Get weekly deals and promotions<br/>
+                      ✓ AI-powered deal matching<br/>
+                      ✓ No personal account access needed
                     </div>
                   </div>
+                )}
 
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="remember-me"
-                      checked={rememberMe}
-                      onCheckedChange={setRememberMe}
-                    />
-                    <Label htmlFor="remember-me">Remember my credentials</Label>
+                {connectionType === 'account' && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="••••••••"
+                          required
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-0 top-0 h-full px-3"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="remember-me"
+                        checked={rememberMe}
+                        onCheckedChange={setRememberMe}
+                      />
+                      <Label htmlFor="remember-me">Remember my credentials</Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="allow-ordering"
+                        checked={allowOrdering}
+                        onCheckedChange={setAllowOrdering}
+                      />
+                      <Label htmlFor="allow-ordering">Allow SmartCart to place orders for me</Label>
+                    </div>
+                  </>
+                )}
+
+                {connectionType === 'circular' && (
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      We'll automatically fetch this store's weekly circulars for deal identification. 
+                      No personal account connection required.
+                    </p>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="circularUrl">Circular URL (Optional)</Label>
+                      <Input
+                        id="circularUrl"
+                        name="circularUrl"
+                        type="url"
+                        placeholder="https://store.com/weekly-ad"
+                        className="w-full"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        If you know the specific URL for this store's weekly circular, enter it here. 
+                        Otherwise, we'll try to find it automatically.
+                      </p>
+                    </div>
                   </div>
+                )}
 
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="allow-ordering"
-                      checked={allowOrdering}
-                      onCheckedChange={setAllowOrdering}
-                    />
-                    <Label htmlFor="allow-ordering">Allow SmartCart to place orders for me</Label>
-                  </div>
-                </>
-              )}
+                <Separator />
 
-              {connectionType === 'circular' && (
                 <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    We'll automatically fetch this store's weekly circulars for deal identification. 
-                    No personal account connection required.
+                  <h4 className="font-medium">Loyalty Card (Optional)</h4>
+                  <p className="text-xs text-gray-600">
+                    Add your loyalty card to earn points and access member discounts during shopping.
                   </p>
 
                   <div className="space-y-2">
-                    <Label htmlFor="circularUrl">Circular URL (Optional)</Label>
+                    <Label htmlFor="loyalty-card">Loyalty Card Number</Label>
                     <Input
-                      id="circularUrl"
-                      name="circularUrl"
-                      type="url"
-                      placeholder="https://store.com/weekly-ad"
-                      className="w-full"
+                      id="loyalty-card"
+                      value={loyaltyCardNumber}
+                      onChange={(e) => setLoyaltyCardNumber(e.target.value)}
+                      placeholder="1234567890123456"
                     />
-                    <p className="text-xs text-muted-foreground">
-                      If you know the specific URL for this store's weekly circular, enter it here. 
-                      Otherwise, we'll try to find it automatically.
-                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="member-id">Member ID (if different)</Label>
+                    <Input
+                      id="member-id"
+                      value={loyaltyMemberId}
+                      onChange={(e) => setLoyaltyMemberId(e.target.value)}
+                      placeholder="Optional member ID"
+                    />
                   </div>
                 </div>
-              )}
 
-              <Separator />
-
-              <div className="space-y-4">
-                <h4 className="font-medium">Loyalty Card (Optional)</h4>
-                <p className="text-xs text-gray-600">
-                  Add your loyalty card to earn points and access member discounts during shopping.
-                </p>
-
-                <div className="space-y-2">
-                  <Label htmlFor="loyalty-card">Loyalty Card Number</Label>
-                  <Input
-                    id="loyalty-card"
-                    value={loyaltyCardNumber}
-                    onChange={(e) => setLoyaltyCardNumber(e.target.value)}
-                    placeholder="1234567890123456"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="member-id">Member ID (if different)</Label>
-                  <Input
-                    id="member-id"
-                    value={loyaltyMemberId}
-                    onChange={(e) => setLoyaltyMemberId(e.target.value)}
-                    placeholder="Optional member ID"
-                  />
+                <div className="bg-blue-50 p-3 rounded-md">
+                  <p className="text-xs text-blue-600">
+                    <strong>Privacy Note:</strong> SmartCart uses the highest security standards to protect your data. 
+                    Your credentials will only be used to access your shopping history and place orders on your behalf 
+                    when authorized. You can remove access at any time.
+                  </p>
                 </div>
               </div>
-
-              <div className="bg-blue-50 p-3 rounded-md">
-                <p className="text-xs text-blue-600">
-                  <strong>Privacy Note:</strong> SmartCart uses the highest security standards to protect your data. 
-                  Your credentials will only be used to access your shopping history and place orders on your behalf 
-                  when authorized. You can remove access at any time.
-                </p>
-              </div>
-            </div>
+            </ScrollArea>
 
             <DialogFooter className="mt-4">
               <Button 
