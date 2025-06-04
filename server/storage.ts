@@ -474,7 +474,7 @@ export class MemStorage implements IStorage {
       const unitPrice = Math.floor(Math.random() * 500) + 100; // $1 - $6
       const totalPrice = unitPrice * quantity;
 
-      const purchaseItem:PurchaseItem = {
+      const purchaseItem:PurchaseItem ={
         id: this.purchaseItemIdCounter++,
         purchaseId: purchase.id,
         productId,
@@ -950,21 +950,27 @@ export class MemStorage implements IStorage {
     return this.weeklyCirculars.get(id);
   }
 
-  async createWeeklyCircular(circular: InsertWeeklyCircular): Promise<WeeklyCircular> {
+  async createWeeklyCircular(circular: Omit<WeeklyCircular, 'id' | 'createdAt' | 'updatedAt'>): Promise<WeeklyCircular> {
     const id = this.weeklyCircularIdCounter++;
-    const newCircular: WeeklyCircular = { 
-      ...circular, 
+    const now = new Date();
+    const newCircular: WeeklyCircular = {
+      ...circular,
       id,
-      isActive: circular.isActive !== undefined ? circular.isActive : true,
-      createdAt: new Date()
+      createdAt: now,
+      updatedAt: now,
+      isActive: circular.isActive ?? true
     };
     this.weeklyCirculars.set(id, newCircular);
     return newCircular;
   }
 
+  async createStoreDeal(deal: any): Promise<StoreDeal> {
+    return this.createDeal(deal);
+  }
+
   async getDealsFromCircular(circularId: number): Promise<StoreDeal[]> {
-    return Array.from(this.storeDeals.values())
-      .filter(deal => deal.circularId === circularId);
+    const deals = Array.from(this.storeDeals.values());
+    return deals.filter(deal => deal.circularId === circularId);
   }
 
   // Recommendation methods
@@ -1400,8 +1406,7 @@ export class MemStorage implements IStorage {
                 { month: 'Jan', amount: 42000 },
                 { month: 'Feb', amount: 38000 },
                 { month: 'Mar', amount: 45000 }
-            ],
-            savingsThisMonth: 1500 // $15.00
+            ],            savingsThisMonth: 1500 // $15.00
         };
     }
 
@@ -2344,8 +2349,7 @@ const [updatedUser] = await db
     }
   }
 
-  async getDealsFromCircular(circularId: number): Promise<StoreDeal[]> {
-    try {
+  async getDealsFromCircular(circularId: number): Promise<StoreDeal[]> {    try {
       return db.select().from(storeDeals).where(eq(storeDeals.circularId, circularId));
     } catch (error) {
       console.error("Error getting deals from circular:", error);
