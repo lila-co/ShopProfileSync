@@ -195,19 +195,23 @@ const RetailerLinking: React.FC = () => {
     },
     onSuccess: (newRetailer) => {
       queryClient.invalidateQueries({ queryKey: ['/api/retailers'] });
-      setShowAddStore(false);
       setNewStoreName('');
       setNewStoreWebsite('');
 
-      // Automatically open the connection dialog for the newly added store
-      setSelectedRetailer(newRetailer);
-      setConnectionType('account'); // Default to account connection
-      setLinkDialogOpen(true);
-
       toast({
         title: "Store Added",
-        description: "Your custom store has been added successfully. Now connect your account."
+        description: `${newRetailer.name} has been added successfully. You can now connect to it.`
       });
+
+      // Close the add store dialog first
+      setShowAddStore(false);
+      
+      // Small delay to ensure the add store dialog closes completely before opening connection dialog
+      setTimeout(() => {
+        setSelectedRetailer(newRetailer);
+        setConnectionType('account'); // Default to account connection
+        setLinkDialogOpen(true);
+      }, 100);
     },
     onError: (error) => {
       toast({
@@ -424,12 +428,11 @@ const RetailerLinking: React.FC = () => {
       <h3 className="text-lg font-semibold mt-8 mb-3">Connect New Retailer</h3>
       <div className="space-y-4">
         <Select value={selectedAvailableRetailer} onValueChange={(value) => {
-          setSelectedAvailableRetailer(value);
-
           if (value === 'add-custom-store') {
-            // Auto-open custom store dialog
+            // Don't set the value for add custom store to prevent auto-close
             setShowAddStore(true);
           } else if (value) {
+            setSelectedAvailableRetailer(value);
             // Auto-open connection dialog when a retailer is selected
             const retailerId = parseInt(value);
             const retailer = retailers?.find((r: any) => r.id === retailerId);
