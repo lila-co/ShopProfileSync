@@ -196,7 +196,6 @@ const ShoppingListComponent: React.FC = () => {
 
         // Check if this is a truly new session (browser restart/new tab)
         const lastSessionTimestamp = sessionStorage.getItem('shoppingListSessionStart');
-        const browserSessionId = localStorage.getItem('browserSessionId');
         const currentBrowserSession = Date.now().toString();
         
         // If no session timestamp exists, this is the first visit in this browser session
@@ -204,21 +203,25 @@ const ShoppingListComponent: React.FC = () => {
         
         // Store session data
         if (isNewSession) {
-          sessionStorage.setItem('shoppingListSessionStart', Date.now().toString());
+          sessionStorage.setItem('shoppingListSessionStart', currentBrowserSession);
           localStorage.setItem('browserSessionId', currentBrowserSession);
         }
 
         // Auto-generate for empty lists OR auto-regenerate for truly new sessions with existing items
         const shouldAutoGenerate = (!hasItems && !userHasClearedList) || (hasItems && isNewSession);
 
-        if (shouldAutoGenerate) {
+        console.log('Animation trigger check:', {
+          hasItems,
+          isNewSession,
+          shouldAutoGenerate,
+          userHasClearedList,
+          isGeneratingList
+        });
+
+        if (shouldAutoGenerate && !isGeneratingList) {
           const isEmptyList = !hasItems;
           
-          if (isEmptyList) {
-            console.log('Empty shopping list detected, generating new list...');
-          } else {
-            console.log('New session detected with existing items, regenerating list...');
-          }
+          console.log(isEmptyList ? 'Empty shopping list detected, generating new list...' : 'New session detected with existing items, regenerating list...');
           
           // Show animation for all scenarios
           setIsGeneratingList(true);
@@ -242,6 +245,7 @@ const ShoppingListComponent: React.FC = () => {
           let autoAnimationInterval: NodeJS.Timeout | null = null;
           let autoAnimationTimeout: NodeJS.Timeout | null = null;
           
+          // Start animation immediately
           autoAnimationInterval = setInterval(() => {
             setCurrentStep((prev) => {
               const nextStep = prev + 1;
@@ -254,40 +258,49 @@ const ShoppingListComponent: React.FC = () => {
               }
               return nextStep;
             });
-          }, 1500);
+          }, 1200);
 
           // Trigger regeneration after animation
           autoAnimationTimeout = setTimeout(() => {
             if (autoAnimationInterval) {
               clearInterval(autoAnimationInterval);
             }
-            localStorage.setItem('listGenerationShown', 'true');
-            localStorage.removeItem('forceShowAnimation');
+            
+            console.log('Starting regeneration mutation after animation...');
             
             // Use the unified regenerate mutation
             regenerateListMutation.mutate(undefined, {
               onSettled: () => {
+                console.log('Regeneration completed, hiding animation...');
                 setTimeout(() => {
                   setIsGeneratingList(false);
                   setCurrentStep(-1);
-                }, 500);
+                }, 800);
+              },
+              onError: (error) => {
+                console.error('Auto-regeneration failed:', error);
+                setIsGeneratingList(false);
+                setCurrentStep(-1);
               }
             });
-          }, steps.length * 1500 + 1000);
+          }, steps.length * 1200 + 1000);
         } else if (hasItems && !isNewSession) {
           console.log('Existing session with items, no auto-regeneration needed');
           // Reset the flag when list has items again
           setUserHasClearedList(false);
         } else {
-          console.log('User has manually cleared list, not auto-generating');
+          console.log('User has manually cleared list or animation already running');
         }
       } else {
         console.log('No shopping lists found yet');
       }
     };
 
-    triggerListGeneration();
-  }, [shoppingLists, userHasClearedList]); // React to changes in shoppingLists and userHasClearedList
+    // Add a small delay to ensure the component is fully mounted
+    const timeoutId = setTimeout(triggerListGeneration, 100);
+    
+    return () => clearTimeout(timeoutId);
+  }, [shoppingLists, userHasClearedList, isGeneratingList]); // React to changes in shoppingLists and userHasClearedList
 
   const addItemMutation = useMutation({
     mutationFn: async ({ itemName, quantity, unit }: { itemName: string; quantity: number; unit: string }) => {
@@ -532,7 +545,6 @@ const ShoppingListComponent: React.FC = () => {
     const hasItems = defaultList?.items && defaultList.items.length > 0;
     
     console.log('Manual regeneration triggered - hasItems:', hasItems);
-    console.log('Current shopping list:', defaultList);
     
     // Show animation during regeneration
     setIsGeneratingList(true);
@@ -553,12 +565,15 @@ const ShoppingListComponent: React.FC = () => {
     setGenerationSteps(steps);
     setCurrentStep(0);
 
+    console.log('Starting animation with steps:', steps);
+
     let animationInterval: NodeJS.Timeout | null = null;
     
-    // Start the animation
+    // Start the animation immediately
     animationInterval = setInterval(() => {
       setCurrentStep((prevStep) => {
         const nextStep = prevStep + 1;
+        console.log('Animation step:', nextStep, 'of', steps.length);
         if (nextStep >= steps.length) {
           if (animationInterval) {
             clearInterval(animationInterval);
@@ -568,11 +583,11 @@ const ShoppingListComponent: React.FC = () => {
         }
         return nextStep;
       });
-    }, 1200);
+    }, 1000);
 
-    // Start the actual mutation after a brief delay to ensure animation starts
-    console.log('Starting regeneration mutation...');
+    // Start the actual mutation after animation has time to show
     setTimeout(() => {
+      console.log('Starting regeneration mutation...');
       regenerateListMutation.mutate(undefined, {
         onSettled: () => {
           console.log('Mutation settled, cleaning up animation');
@@ -585,7 +600,7 @@ const ShoppingListComponent: React.FC = () => {
           setTimeout(() => {
             setIsGeneratingList(false);
             setCurrentStep(-1);
-          }, 1000);
+          }, 800);
         },
         onError: (error) => {
           console.error('Regeneration failed in handler:', error);
@@ -600,7 +615,7 @@ const ShoppingListComponent: React.FC = () => {
           console.log('Regeneration completed successfully in handler:', data);
         }
       });
-    }, 200);
+    }, 500);
   };
 
   const handleAddItem = (e: React.FormEvent) => {
