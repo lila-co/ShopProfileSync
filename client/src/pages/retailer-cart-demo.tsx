@@ -66,7 +66,7 @@ const RetailerCartDemo: React.FC = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto bg-white min-h-screen p-6">
+    <div className="max-w-2xl mx-auto bg-white min-h-screen p-4 sm:p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
@@ -170,10 +170,10 @@ const RetailerCartDemo: React.FC = () => {
 
       {/* Action Buttons */}
       <div className="space-y-4">
-        <Button className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3">
+        <Button className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-4 text-lg min-h-[56px] touch-manipulation">
           Proceed to Checkout
         </Button>
-        <Button variant="outline" className="w-full" onClick={() => window.close()}>
+        <Button variant="outline" className="w-full py-4 text-lg min-h-[56px] touch-manipulation" onClick={() => window.close()}>
           Continue Shopping
         </Button>
       </div>
