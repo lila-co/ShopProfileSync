@@ -164,6 +164,17 @@ const PlanDetails: React.FC = () => {
     return `$${(price / 100).toFixed(2)}`;
   };
 
+  // Fetch deals for price comparison
+  const { data: deals } = useQuery({
+    queryKey: ['/api/deals'],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Filter deals by retailer for current plan
+  const getDealsForRetailer = (retailerId: number) => {
+    return deals?.filter((deal: any) => deal.retailerId === retailerId) || [];
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">

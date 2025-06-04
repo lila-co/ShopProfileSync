@@ -21,10 +21,108 @@ import {
   CheckCircle2,
   Circle,
   Navigation,
-  Package
+  Package,
+  Tag,
+  Star
 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
+
+// Component to show retailer-specific deals for route items
+const DealsForRetailer: React.FC<{ retailerName: string; routeItems: any[] }> = ({ retailerName, routeItems }) => {
+  const { data: retailers } = useQuery({
+    queryKey: ['/api/retailers'],
+  });
+
+  const { data: deals } = useQuery({
+    queryKey: ['/api/deals', { retailerName }],
+    queryFn: async () => {
+      // Find the retailer ID by name
+      const retailer = retailers?.find((r: any) => r.name === retailerName);
+      if (!retailer) return [];
+
+      const response = await fetch(`/api/deals?retailerId=${retailer.id}`, {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch deals');
+      }
+      return response.json();
+    },
+    enabled: !!retailers && !!retailerName,
+  });
+
+  // Filter deals to only include items that are in the current route
+  const relevantDeals = deals?.filter((deal: any) => {
+    return routeItems.some((item: any) => {
+      const itemName = item.productName.toLowerCase();
+      const dealName = deal.productName.toLowerCase();
+      
+      // Check for exact matches or partial matches
+      return itemName === dealName || 
+             itemName.includes(dealName) || 
+             dealName.includes(itemName) ||
+             // Check for category/type matches
+             (itemName.includes('milk') && dealName.includes('milk')) ||
+             (itemName.includes('bread') && dealName.includes('bread')) ||
+             (itemName.includes('egg') && dealName.includes('egg')) ||
+             (itemName.includes('chicken') && dealName.includes('chicken')) ||
+             (itemName.includes('yogurt') && dealName.includes('yogurt'));
+    });
+  }) || [];
+
+  if (!relevantDeals.length) {
+    return null;
+  }
+
+  const calculateSavings = (regular: number, sale: number) => {
+    return Math.round((1 - sale / regular) * 100);
+  };
+
+  return (
+    <Card className="mb-4 border-green-200 bg-green-50">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Tag className="h-5 w-5 text-green-600" />
+          Deals at {retailerName}
+        </CardTitle>
+        <p className="text-sm text-green-600">Special offers on items in your route</p>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {relevantDeals.slice(0, 3).map((deal: any) => (
+            <div key={deal.id} className="flex items-center justify-between p-3 bg-white rounded-lg border">
+              <div className="flex-1">
+                <div className="font-medium text-sm text-gray-900">{deal.productName}</div>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-lg font-bold text-green-700">
+                    ${deal.salePrice.toFixed(2)}
+                  </span>
+                  <span className="text-sm text-gray-500 line-through">
+                    ${deal.regularPrice.toFixed(2)}
+                  </span>
+                  <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
+                    {calculateSavings(deal.regularPrice, deal.salePrice)}% off
+                  </Badge>
+                </div>
+                <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  Valid until {new Date(deal.endDate).toLocaleDateString()}
+                </div>
+              </div>
+              <Star className="h-4 w-4 text-green-600" />
+            </div>
+          ))}
+          {relevantDeals.length > 3 && (
+            <div className="text-center text-sm text-green-600">
+              +{relevantDeals.length - 3} more deals available
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
 const ShoppingRoute: React.FC = () => {
   const [location, navigate] = useLocation();
@@ -802,6 +900,14 @@ const ShoppingRoute: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Retailer-Specific Deals Section */}
+        {optimizedRoute?.retailerName && (
+          <DealsForRetailer 
+            retailerName={optimizedRoute.retailerName}
+            routeItems={optimizedRoute.aisleGroups?.flatMap(aisle => aisle.items) || []}
+          />
         )}
 
         {/* Current Aisle */}

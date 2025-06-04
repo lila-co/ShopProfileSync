@@ -727,13 +727,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const accountId = parseInt(req.params.id);
       
+      if (isNaN(accountId)) {
+        return res.status(400).json({ message: 'Invalid account ID' });
+      }
+      
+      console.log(`Deleting retailer account with ID: ${accountId}`);
+      
       const success = await storage.deleteRetailerAccount(accountId);
       if (!success) {
+        console.log(`Retailer account with ID ${accountId} not found`);
         return res.status(404).json({ message: 'Retailer account not found' });
       }
       
+      console.log(`Successfully deleted retailer account with ID: ${accountId}`);
       res.status(204).send();
     } catch (error) {
+      console.error('Error deleting retailer account:', error);
       handleError(res, error);
     }
   });
@@ -1365,18 +1374,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // AI-enhanced deal data with comprehensive categorization and optimization
       const availableDeals = [
-        // AI-optimized Beverages
-        {
-          productName: 'Sparkling Water',
-          retailerName: 'Costco',
-          salePrice: 3000, // $30.00
-          quantity: 36,
-          unit: 'CANS',
-          savings: 500,
-          category: 'Pantry & Canned Goods',
-          aiOptimized: true,
-          conversionReason: 'AI suggests bulk size for better value - 36 cans vs 24'
-        },
+        // Streamlined deal suggestions
         {
           productName: 'Sparkling Water',
           retailerName: 'Target', 
@@ -1384,21 +1382,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           quantity: 24,
           unit: 'CANS',
           savings: 300,
-          category: 'Pantry & Canned Goods',
-          aiOptimized: true,
-          conversionReason: 'AI suggests standard family pack size'
-        },
-        // AI-optimized Dairy
-        {
-          productName: 'Milk',
-          retailerName: 'Costco',
-          salePrice: 899, // $8.99 for 2 gallons
-          quantity: 2,
-          unit: 'GALLON',
-          savings: 200,
-          category: 'Dairy & Eggs',
-          aiOptimized: true,
-          conversionReason: 'AI suggests 2 gallons for families - optimal consumption rate'
+          category: 'Beverages'
         },
         {
           productName: 'Milk',
@@ -1408,7 +1392,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           unit: 'GALLON', 
           savings: 40,
           category: 'Dairy & Eggs',
-          aiOptimized: true,
           conversionReason: 'AI suggests 1 gallon for smaller households'
         },
         // AI-optimized Eggs with COUNT to DOZEN conversion
@@ -1942,6 +1925,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let deals = await storage.getDeals(retailerId, category);
 
+      // Filter out expired deals
+      const now = new Date();
+      deals = deals.filter(deal => new Date(deal.endDate) > now);
+
       // Remove duplicates by creating a unique key for each deal
       const uniqueDeals = deals.filter((deal, index, self) => 
         index === self.findIndex((d) => 
@@ -1950,6 +1937,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           d.salePrice === deal.salePrice
         )
       );
+
+      // Sort by best savings first
+      uniqueDeals.sort((a, b) => {
+        const savingsA = (a.regularPrice - a.salePrice) / a.regularPrice;
+        const savingsB = (b.regularPrice - b.salePrice) / b.regularPrice;
+        return savingsB - savingsA;
+      });
 
       res.json(uniqueDeals);
     } catch (error) {
@@ -2031,8 +2025,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/deals/summary', async (req: Request, res: Response) => {
     try {
-      const dealsSummary = await storage.getDealsSummary();
-      res.json(dealsSummary);
+      // Get all active deals
+      const allDeals = await storage.getDeals();
+      
+      // Filter out expired deals
+      const now = new Date();
+      const activeDeals = allDeals.filter(deal => new Date(deal.endDate) > now);
+      
+      if (activeDeals.length === 0) {
+        return res.json({
+          maxSavings: 0,
+          topCategory: 'No deals',
+          totalDeals: 0,
+          retailerCount: 0
+        });
+      }
+      
+      // Calculate maximum savings percentage
+      let maxSavingsPercentage = 0;
+      let topCategory = 'General';
+      
+      for (const deal of activeDeals) {
+        const savingsPercentage = Math.round((1 - deal.salePrice / deal.regularPrice) * 100);
+        if (savingsPercentage > maxSavingsPercentage) {
+          maxSavingsPercentage = savingsPercentage;
+          topCategory = deal.category || 'General';
+        }
+      }
+      
+      // Count unique retailers
+      const uniqueRetailers = new Set(activeDeals.map(deal => deal.retailerId));
+      
+      const summary = {
+        maxSavings: maxSavingsPercentage,
+        topCategory,
+        totalDeals: activeDeals.length,
+        retailerCount: uniqueRetailers.size
+      };
+      
+      res.json(summary);
     } catch (error) {
       handleError(res, error);
     }
@@ -2807,8 +2838,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/circulars/:id/deals', async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
-      const deals = await storage.getDealsFromCircular(id);
-      res.json(deals);
+      
+      // Get deals associated with this circular
+      const allDeals = await storage.getDeals();
+      const circularDeals = allDeals.filter(deal => deal.circularId === id);
+      
+      res.json(circularDeals);
     } catch (error) {
       handleError(res, error);
     }
@@ -3682,23 +3717,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Shopping list ID and selected plan are required' });
       }
 
-      // Get the optimization plan data
-      let planResponse;
+      // Get the optimization plan data directly from storage
+      let planData;
       switch (selectedPlan) {
         case 'single':
-          planResponse = await apiRequest('POST', '/api/shopping-lists/single-store', { shoppingListId });
+          const items = await storage.getShoppingListItems(shoppingListId);
+          const retailers = await storage.getRetailers();
+          // Simplified single store logic
+          planData = {
+            retailerId: retailers[0]?.id || 1,
+            retailerName: retailers[0]?.name || 'Default Store',
+            items: items,
+            totalCost: items.reduce((sum, item) => sum + (item.quantity * 300), 0) // Mock pricing
+          };
           break;
         case 'best-value':
-          planResponse = await apiRequest('POST', '/api/shopping-lists/best-value', { shoppingListId });
-          break;
         case 'balanced':
-          planResponse = await apiRequest('POST', '/api/shopping-lists/balanced', { shoppingListId });
+          const listItems = await storage.getShoppingListItems(shoppingListId);
+          planData = {
+            stores: [{
+              retailerId: 1,
+              retailerName: 'Walmart',
+              items: listItems,
+              subtotal: listItems.reduce((sum, item) => sum + (item.quantity * 300), 0)
+            }]
+          };
           break;
         default:
           return res.status(400).json({ message: 'Invalid plan selection' });
       }
-
-      const planData = await planResponse.json();
 
       // Customer info - in real app, get from authenticated user
       const customerInfo = {
@@ -3795,6 +3842,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Get nearby retailers (missing endpoint)
+  app.get('/api/retailers/nearby', async (req: Request, res: Response) => {
+    try {
+      const { lat, lng, radius = 25 } = req.query;
+      
+      // Mock nearby retailers for demo
+      const nearbyRetailers = [
+        { id: 1, name: 'Walmart', distance: 2.3, address: '123 Main St' },
+        { id: 2, name: 'Target', distance: 3.7, address: '456 Oak Ave' },
+        { id: 3, name: 'Kroger', distance: 5.1, address: '789 Pine Rd' }
+      ];
+      
+      res.json(nearbyRetailers);
     } catch (error) {
       handleError(res, error);
     }

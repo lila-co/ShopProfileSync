@@ -129,6 +129,8 @@ export interface IStorage {
   updatePrivacyPreferences(userId: number, preferences: any): Promise<any>;
   exportUserData(userId: number): Promise<any>;
   deleteUserAccount(userId: number): Promise<boolean>;
+  getNotificationPreferences(userId: number): Promise<any>;
+  updateNotificationPreferences(userId: number, preferences: any): Promise<any>;
 }
 
 export class MemStorage implements IStorage {
@@ -204,7 +206,12 @@ export class MemStorage implements IStorage {
       buyInBulk: true,
       prioritizeCostSavings: true,
       shoppingRadius: 10,
-      role: 'owner'
+      role: 'owner',
+      dealAlerts: true,
+      priceDropAlerts: true,
+      weeklyDigest: false,
+      expirationAlerts: true,
+      recommendationUpdates: true
     };
     this.users.set(defaultUser.id, defaultUser);
 
@@ -223,7 +230,12 @@ export class MemStorage implements IStorage {
       buyInBulk: false,
       prioritizeCostSavings: false,
       shoppingRadius: 5,
-      role: 'test_user'
+      role: 'test_user',
+      dealAlerts: true,
+      priceDropAlerts: true,
+      weeklyDigest: false,
+      expirationAlerts: true,
+      recommendationUpdates: true
     };
     this.users.set(testUser.id, testUser);
 
@@ -474,7 +486,7 @@ export class MemStorage implements IStorage {
       const unitPrice = Math.floor(Math.random() * 500) + 100; // $1 - $6
       const totalPrice = unitPrice * quantity;
 
-      const purchaseItem: PurchaseItem = {
+      const purchaseItem:PurchaseItem ={
         id: this.purchaseItemIdCounter++,
         purchaseId: purchase.id,
         productId,
@@ -873,50 +885,47 @@ export class MemStorage implements IStorage {
     return deals;
   }
 
-  async getDealsSummary(): Promise<any[]> {
-    const retailers = await this.getRetailers();
+  async getDealCategories(): Promise<string[]> {
     const deals = Array.from(this.storeDeals.values());
+    const categories = [...new Set(deals.map(deal => deal.category).filter(Boolean))];
+    return categories.sort();
+  }
 
-    // Group deals by retailer
-    const summaryMap = new Map<number, { retailerId: number, retailerName: string, logoColor: string, dealsCount: number, validUntil: string }>();
+  async getDealsSummary() {
+    // This method is handled directly in the routes now
+    // but keeping for backward compatibility
+    const allDeals = await this.getDeals();
+    const now = new Date();
+    const activeDeals = allDeals.filter(deal => new Date(deal.endDate) > now);
 
-    for (const deal of deals) {
-      const retailer = retailers.find(r => r.id === deal.retailerId);
-      if (!retailer) continue;
+    if (activeDeals.length === 0) {
+      return {
+        maxSavings: 0,
+        topCategory: 'No deals',
+        totalDeals: 0,
+        retailerCount: 0
+      };
+    }
 
-      if (!summaryMap.has(retailer.id)) {
-        summaryMap.set(retailer.id, {
-          retailerId: retailer.id,
-          retailerName: retailer.name,
-          logoColor: retailer.logoColor || 'blue',
-          dealsCount: 0,
-          validUntil: deal.endDate // Initialize with this deal's end date
-        });
-      }
+    let maxSavingsPercentage = 0;
+    let topCategory = 'General';
 
-      const summary = summaryMap.get(retailer.id)!;
-      summary.dealsCount++;
-
-      // Keep the latest valid until date
-      if (new Date(deal.endDate) > new Date(summary.validUntil)) {
-        summary.validUntil = deal.endDate;
+    for (const deal of activeDeals) {
+      const savingsPercentage = Math.round((1 - deal.salePrice / deal.regularPrice) * 100);
+      if (savingsPercentage > maxSavingsPercentage) {
+        maxSavingsPercentage = savingsPercentage;
+        topCategory = deal.category || 'General';
       }
     }
 
-    return Array.from(summaryMap.values());
-  }
+    const uniqueRetailers = new Set(activeDeals.map(deal => deal.retailerId));
 
-  async getDealCategories(): Promise<string[]> {
-    const deals = Array.from(this.storeDeals.values());
-    const categories = new Set<string>();
-
-    deals.forEach(deal => {
-      if (deal.category) {
-        categories.add(deal.category);
-      }
-    });
-
-    return Array.from(categories);
+    return {
+      maxSavings: maxSavingsPercentage,
+      topCategory,
+      totalDeals: activeDeals.length,
+      retailerCount: uniqueRetailers.size
+    };
   }
 
   async createDeal(deal: InsertStoreDeal): Promise<StoreDeal> {
@@ -953,21 +962,27 @@ export class MemStorage implements IStorage {
     return this.weeklyCirculars.get(id);
   }
 
-  async createWeeklyCircular(circular: InsertWeeklyCircular): Promise<WeeklyCircular> {
+  async createWeeklyCircular(circular: Omit<WeeklyCircular, 'id' | 'createdAt' | 'updatedAt'>): Promise<WeeklyCircular> {
     const id = this.weeklyCircularIdCounter++;
-    const newCircular: WeeklyCircular = { 
-      ...circular, 
+    const now = new Date();
+    const newCircular: WeeklyCircular = {
+      ...circular,
       id,
-      isActive: circular.isActive !== undefined ? circular.isActive : true,
-      createdAt: new Date()
+      createdAt: now,
+      updatedAt: now,
+      isActive: circular.isActive ?? true
     };
     this.weeklyCirculars.set(id, newCircular);
     return newCircular;
   }
 
+  async createStoreDeal(deal: any): Promise<StoreDeal> {
+    return this.createDeal(deal);
+  }
+
   async getDealsFromCircular(circularId: number): Promise<StoreDeal[]> {
-    return Array.from(this.storeDeals.values())
-      .filter(deal => deal.circularId === circularId);
+    const deals = Array.from(this.storeDeals.values());
+    return deals.filter(deal => deal.circularId === circularId);
   }
 
   // Recommendation methods
@@ -1396,6 +1411,7 @@ export class MemStorage implements IStorage {
             mostShoppedRetailer: 'Walmart',
             topCategories: [
                 { category: 'Groceries', amount: 85000, percentage: 68 },
+                { category: 'Groceries', amount: 85000, percentage: 68 },
                 { category: 'Household', amount: 25000, percentage: 20 },
                 { category: 'Personal Care', amount: 15000, percentage: 12 }
             ],
@@ -1403,8 +1419,7 @@ export class MemStorage implements IStorage {
                 { month: 'Jan', amount: 42000 },
                 { month: 'Feb', amount: 38000 },
                 { month: 'Mar', amount: 45000 }
-            ],
-            savingsThisMonth: 1500 // $15.00
+            ],            savingsThisMonth: 1500 // $15.00
         };
     }
 
@@ -1437,9 +1452,33 @@ export class MemStorage implements IStorage {
       ...preferences,
       lastUpdated: new Date()
     };
-    
+
     console.log(`Updated privacy preferences for user ${userId}:`, updated);
     return updated;
+  }
+
+  async getNotificationPreferences(userId: number): Promise<any> {
+    const user = await this.getUser(userId);
+    return {
+      userId,
+      dealAlerts: user?.dealAlerts ?? true,
+      priceDropAlerts: user?.priceDropAlerts ?? true,
+      weeklyDigest: user?.weeklyDigest ?? false,
+      expirationAlerts: user?.expirationAlerts ?? true,
+      recommendationUpdates: user?.recommendationUpdates ?? true
+    };
+  }
+
+  async updateNotificationPreferences(userId: number, preferences: any): Promise<any> {
+    const user = await this.getUser(userId);
+    if (!user) throw new Error('User not found');
+
+    const updatedUser = await this.updateUser({
+      ...user,
+      ...preferences
+    });
+
+    return this.getNotificationPreferences(userId);
   }
 
   async exportUserData(userId: number): Promise<any> {
@@ -1504,20 +1543,20 @@ export class MemStorage implements IStorage {
 
   async deleteUserAccount(userId: number): Promise<boolean> {
     console.log(`Account deletion requested for user ${userId}`);
-    
+
     // In a real implementation, this would:
     // 1. Delete all user data
     // 2. Anonymize any data that needs to be retained
     // 3. Send confirmation emails
     // 4. Log the deletion for audit purposes
-    
+
     // For demo, just log the request
     const user = await this.getUser(userId);
     if (user) {
       console.log(`Deleting account for user: ${user.username} (${user.email})`);
       return true;
     }
-    
+
     return false;
   }
 
@@ -1563,9 +1602,21 @@ export class MemStorage implements IStorage {
   }
 
   async deleteRetailerAccount(id: number): Promise<boolean> {
-      const existed = this.retailerAccounts.has(id);
-      this.retailerAccounts.delete(id);
-      return existed;
+    console.log(`Attempting to delete retailer account with ID: ${id}`);
+    console.log(`Current retailer accounts:`, this.retailerAccounts);
+
+    const index = this.retailerAccounts.findIndex(account => account.id === id);
+    console.log(`Found account at index: ${index}`);
+
+    if (index === -1) {
+      console.log(`Retailer account with ID ${id} not found`);
+      return false;
+    }
+
+    this.retailerAccounts.splice(index, 1);
+    console.log(`Deleted retailer account with ID: ${id}`);
+    console.log(`Remaining retailer accounts:`, this.retailerAccounts);
+    return true;
   }
 
   async getRetailerAccount(id: number): Promise<RetailerAccount | undefined> {
@@ -1594,7 +1645,12 @@ export class DatabaseStorage implements IStorage {
       preferOrganic: true,
       buyInBulk: true,
       prioritizeCostSavings: true,
-      shoppingRadius: 15
+      shoppingRadius: 15,
+      dealAlerts: true,
+      priceDropAlerts: true,
+      weeklyDigest: false,
+      expirationAlerts: true,
+      recommendationUpdates: true
     });
   }
 
@@ -1651,7 +1707,7 @@ export class DatabaseStorage implements IStorage {
         ...preferences,
         lastUpdated: new Date()
       };
-      
+
       console.log(`Updated privacy preferences for user ${userId}:`, updated);
       return updated;
     } catch (error) {
@@ -1693,7 +1749,7 @@ export class DatabaseStorage implements IStorage {
         ...preferences,
         lastUpdated: new Date()
       };
-      
+
       console.log(`Updated notification preferences for user ${userId}:`, updated);
       return updated;
     } catch (error) {
@@ -1748,19 +1804,19 @@ export class DatabaseStorage implements IStorage {
   async deleteUserAccount(userId: number): Promise<boolean> {
     try {
       console.log(`Account deletion requested for user ${userId}`);
-      
+
       // In a real implementation, this would:
       // 1. Delete all user data from all tables
       // 2. Anonymize any data that needs to be retained for legal/business reasons
       // 3. Send confirmation emails
       // 4. Log the deletion for audit purposes
-      
+
       const user = await this.getUser(userId);
       if (user) {
         console.log(`Deleting account for user: ${user.username} (${user.email})`);
         return true;
       }
-      
+
       return false;
     } catch (error) {
       console.error("Error deleting user account:", error);
@@ -1838,6 +1894,55 @@ const [updatedUser] = await db
       console.error("Error creating retailer:", error);
       throw error;
     }
+  }
+
+  async initializeRetailers() {
+    await this.run(`
+      INSERT OR IGNORE INTO retailers (id, name, logoColor, apiEndpoint, apiKey) VALUES
+      (1, 'Walmart', 'blue', 'https://api.walmart.com', 'mock_api_key_walmart'),
+      (2, 'Target', 'red', 'https://api.target.com', 'mock_api_key_target'),
+      (3, 'Whole Foods', 'green', 'https://api.wholefoods.com', 'mock_api_key_whole_foods'),
+      (4, 'Costco', 'orange', 'https://api.costco.com', 'mock_api_key_costco'),
+      (5, 'Food King', 'yellow', 'https://www.foodkingcostplus.com', 'mock_api_key_food_king')
+    `);
+
+    // Initialize store locations for location-based filtering
+    this.initializeStoreLocations();
+  }
+
+  private async initializeStoreLocations() {
+    const { locationBasedCircularManager } = await import('./services/locationBasedCircularManager');
+
+    // Add sample store locations for each retailer (using major US cities)
+    await locationBasedCircularManager.addStoreLocations(1, [ // Walmart
+      { storeId: '1001', address: '123 Main St, New York, NY', lat: 40.7128, lng: -74.0060 },
+      { storeId: '1002', address: '456 Oak Ave, Los Angeles, CA', lat: 34.0522, lng: -118.2437 },
+      { storeId: '1003', address: '789 Pine St, Chicago, IL', lat: 41.8781, lng: -87.6298 }
+    ]);
+
+    await locationBasedCircularManager.addStoreLocations(2, [ // Target
+      { storeId: '2001', address: '321 Elm St, New York, NY', lat: 40.7589, lng: -73.9851 },
+      { storeId: '2002', address: '654 Maple Ave, Los Angeles, CA', lat: 34.0928, lng: -118.3287 },
+      { storeId: '2003', address: '987 Cedar St, Chicago, IL', lat: 41.8986, lng: -87.6153 }
+    ]);
+
+    await locationBasedCircularManager.addStoreLocations(3, [ // Whole Foods
+      { storeId: '3001', address: '111 Broadway, New York, NY', lat: 40.7505, lng: -73.9934 },
+      { storeId: '3002', address: '222 Sunset Blvd, Los Angeles, CA', lat: 34.0983, lng: -118.3267 },
+      { storeId: '3003', address: '333 Lake Shore Dr, Chicago, IL', lat: 41.8896, lng: -87.6227 }
+    ]);
+
+    await locationBasedCircularManager.addStoreLocations(4, [ // Costco
+      { storeId: '4001', address: '444 Queens Blvd, New York, NY', lat: 40.7282, lng: -73.7949 },
+      { storeId: '4002', address: '555 Hollywood Blvd, Los Angeles, CA', lat: 34.1022, lng: -118.3406 },
+      { storeId: '4003', address: '666 Michigan Ave, Chicago, IL', lat: 41.8955, lng: -87.6233 }
+    ]);
+
+    await locationBasedCircularManager.addStoreLocations(5, [ // Food King
+      { storeId: '5001', address: '777 Bronx Ave, New York, NY', lat: 40.8176, lng: -73.8781 },
+      { storeId: '5002', address: '888 Venice Beach, Los Angeles, CA', lat: 33.9850, lng: -118.4695 },
+      { storeId: '5003', address: '999 Navy Pier, Chicago, IL', lat: 41.8919, lng: -87.6051 }
+    ]);
   }
 
   // Retailer Account methods
@@ -1941,11 +2046,11 @@ const [updatedUser] = await db
   async getPurchases(userId?: number, limit: number = 50, offset: number = 0, startDate?: Date, endDate?: Date): Promise<Purchase[]> {
     try {
       let query = db.select().from(purchases);
-      
+
       if (userId) {
         query = query.where(eq(purchases.userId, userId));
       }
-      
+
       if (startDate && endDate) {
         query = query.where(
           and(
@@ -1954,7 +2059,7 @@ const [updatedUser] = await db
           )
         );
       }
-      
+
       return query
         .orderBy(desc(purchases.purchaseDate))
         .limit(limit)
@@ -1970,7 +2075,7 @@ const [updatedUser] = await db
     try {
       const startDate = new Date();
       startDate.setMonth(startDate.getMonth() - monthsBack);
-      
+
       return db.select()
         .from(purchases)
         .where(
@@ -2199,6 +2304,12 @@ const [updatedUser] = await db
     }
   }
 
+  async getDealCategories(): Promise<string[]> {
+    const deals = await this.getDeals();
+    const categories = [...new Set(deals.map(deal => deal.category).filter(Boolean))];
+    return categories.sort();
+  }
+
   async getDealsSummary(): Promise<any[]> {
     try {
       const deals = await this.getDeals();
@@ -2226,24 +2337,6 @@ const [updatedUser] = await db
       return Object.values(dealsByRetailer);
     } catch (error) {
       console.error("Error getting deals summary:", error);
-      throw error;
-    }
-  }
-
-  async getDealCategories(): Promise<string[]> {
-    try {
-      const deals = await this.getDeals();
-      const categories = new Set<string>();
-
-      deals.forEach(deal => {
-        if (deal.category) {
-          categories.add(deal.category);
-        }
-      });
-
-      return Array.from(categories);
-    } catch (error) {
-      console.error("Error getting deal categories:", error);
       throw error;
     }
   }
@@ -2310,14 +2403,12 @@ const [updatedUser] = await db
     }
   }
 
-  async getDealsFromCircular(circularId: number): Promise<StoreDeal[]> {
-    try {
+  async getDealsFromCircular(circularId: number): Promise<StoreDeal[]> {    try {
       return db.select().from(storeDeals).where(eq(storeDeals.circularId, circularId));
     } catch (error) {
       console.error("Error getting deals from circular:", error);
       throw error;
-    }
-  }
+    }}
 
   // Recommendation methods
   async getRecommendations(): Promise<Recommendation[]> {

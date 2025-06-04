@@ -49,36 +49,9 @@ export class CircularDealExtractor {
    * In a production app, this would use OCR and image processing
    */
   private async processCircularImage(circular: WeeklyCircular): Promise<Partial<StoreDeal>[]> {
-    // Sample extracted deals - in production, this would use OCR/ML
-    return [
-      {
-        productName: 'Organic Bananas',
-        regularPrice: 499, // cents
-        salePrice: 399,
-        category: 'Produce',
-        startDate: circular.startDate,
-        endDate: circular.endDate,
-        retailerId: circular.retailerId,
-      },
-      {
-        productName: 'Whole Grain Bread',
-        regularPrice: 349,
-        salePrice: 299,
-        category: 'Bakery',
-        startDate: circular.startDate,
-        endDate: circular.endDate,
-        retailerId: circular.retailerId,
-      },
-      {
-        productName: 'Ground Beef (1lb)',
-        regularPrice: 799,
-        salePrice: 649,
-        category: 'Meat',
-        startDate: circular.startDate,
-        endDate: circular.endDate,
-        retailerId: circular.retailerId,
-      }
-    ];
+    // This would integrate with OCR service in production
+    // For now, return empty array - deals should come from actual API integrations
+    return [];
   }
 
   /**
@@ -142,11 +115,8 @@ export class CircularDealExtractor {
    */
   private async getShoppingListItems(shoppingListId: number) {
     // In a real implementation, this would fetch from the database
-    return [
-      { id: 1, productName: 'Bananas', quantity: 1 },
-      { id: 2, productName: 'Bread', quantity: 1 },
-      { id: 3, productName: 'Ground Beef', quantity: 1 }
-    ];
+    // For now, return empty array to avoid mock data conflicts
+    return [];
   }
 
   /**
@@ -154,35 +124,8 @@ export class CircularDealExtractor {
    */
   private async getAllCurrentDeals(): Promise<StoreDeal[]> {
     // In a real implementation, this would fetch from the database
-    // For now returning a sample list
-    return [
-      {
-        id: 1,
-        productName: 'Organic Bananas',
-        regularPrice: 499,
-        salePrice: 399,
-        category: 'Produce',
-        startDate: new Date(),
-        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        retailerId: 1,
-        circularId: 1,
-        imageUrl: null,
-        terms: null
-      },
-      {
-        id: 2,
-        productName: 'Whole Grain Bread',
-        regularPrice: 349,
-        salePrice: 299,
-        category: 'Bakery',
-        startDate: new Date(),
-        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        retailerId: 1,
-        circularId: 1,
-        imageUrl: null,
-        terms: null
-      }
-    ];
+    // Return empty array to rely on actual deal data sources
+    return [];
   }
 
   /**

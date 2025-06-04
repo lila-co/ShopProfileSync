@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { ShoppingCart, Store, Clock, Plus } from 'lucide-react';
+import { ShoppingCart, Store, Clock, Plus, MapPin } from 'lucide-react';
 
 import type { StoreDeal, Retailer } from '@/lib/types';
 
@@ -20,18 +20,59 @@ interface DealsViewProps {
 const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = null, retailerId = null }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedRetailerId, setSelectedRetailerId] = useState<number | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [nearbyRetailerIds, setNearbyRetailerIds] = useState<number[]>([]);
   const { data: retailers, isLoading: loadingRetailers } = useQuery<Retailer[]>({
     queryKey: ['/api/retailers'],
   });
 
-  // Determine effective category from either dropdown or quick filter
-  const effectiveCategory = selectedCategory || (activeFilter && !['featured', 'nearby'].includes(activeFilter) ? activeFilter : null);
+  // Get user location for nearby filtering
+  useEffect(() => {
+    if (activeFilter === 'nearby' && !userLocation) {
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const location = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            };
+            setUserLocation(location);
+            fetchNearbyRetailers(location);
+          },
+          (error) => {
+            console.warn('Geolocation failed, using fallback nearby logic:', error);
+            // Fallback to nearby retailers based on common locations
+            setNearbyRetailerIds([1, 2, 3]);
+          }
+        );
+      } else {
+        // Fallback for browsers without geolocation
+        setNearbyRetailerIds([1, 2, 3]);
+      }
+    }
+  }, [activeFilter]);
+
+  const fetchNearbyRetailers = async (location: {lat: number, lng: number}) => {
+    try {
+      const response = await fetch(`/api/retailers/nearby?lat=${location.lat}&lng=${location.lng}&maxDistance=25`, {
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const nearbyStores = await response.json();
+        const retailerIds = nearbyStores.map((store: any) => store.retailerId);
+        setNearbyRetailerIds(retailerIds);
+      } else {
+        // Fallback to default nearby retailers
+        setNearbyRetailerIds([1, 2, 3]);
+      }
+    } catch (error) {
+      console.warn('Failed to fetch nearby retailers:', error);
+      setNearbyRetailerIds([1, 2, 3]);
+    }
+  };
 
   const { data: storeDeals, isLoading: loadingDeals } = useQuery<StoreDeal[]>({
-    queryKey: ['/api/deals', { retailerId, category: activeFilter }],
+    queryKey: ['/api/deals', { retailerId, category: activeFilter, nearbyRetailerIds }],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (retailerId) {
@@ -51,9 +92,7 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
     },
   });
 
-  const { data: categories } = useQuery<string[]>({
-    queryKey: ['/api/deals/categories'],
-  });
+  
 
   const addToShoppingListMutation = useMutation({
     mutationFn: async (deal: StoreDeal) => {
@@ -131,10 +170,10 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
 
   return (
     <div className="px-4">
-      {/* Filter Controls */}
-      <div className="mb-6 space-y-3">
-        <div className="grid grid-cols-2 gap-3">
-          <Select value={selectedRetailerId?.toString() || 'all'} onValueChange={(value) => setSelectedRetailerId(value === 'all' ? null : parseInt(value))}>
+      {/* Store Filter - Only show if not filtered by retailerId prop */}
+      {!retailerId && (
+        <div className="mb-4">
+          <Select value="all" onValueChange={() => {}}>
             <SelectTrigger className="h-10 bg-gray-50 border-0">
               <SelectValue placeholder="All Stores" />
             </SelectTrigger>
@@ -147,35 +186,22 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
               ))}
             </SelectContent>
           </Select>
-
-          <Select value={selectedCategory || 'all'} onValueChange={(value) => setSelectedCategory(value === 'all' ? null : value)}>
-            <SelectTrigger className="h-10 bg-gray-50 border-0">
-              <SelectValue placeholder="All Categories" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {categories?.map((category) => (
-                <SelectItem key={category} value={category}>
-                  {category}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
-      </div>
+      )}
 
       {/* Deals Grid */}
       {storeDeals && storeDeals.length > 0 ? (
         <div className="space-y-3 pb-8">
           {storeDeals
             .filter(deal => {
-              // Filter deals based on search query and special filters
+              // Filter by search query
               const matchesSearch = searchQuery === '' || 
                 deal.productName.toLowerCase().includes(searchQuery.toLowerCase());
 
+              // Filter by active filter
               const matchesFilter = !activeFilter || 
                 (activeFilter === 'featured' && deal.salePrice < deal.regularPrice * 0.7) ||
-                (activeFilter === 'nearby' && deal.retailerId <= 3);
+                (activeFilter === 'nearby' && nearbyRetailerIds.includes(deal.retailerId));
 
               return matchesSearch && matchesFilter;
             })

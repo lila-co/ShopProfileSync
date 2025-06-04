@@ -108,15 +108,17 @@ const AuthPage: React.FC = () => {
       return await new Promise((resolve) => {
         // Simulate API delay
         setTimeout(() => {
-          resolve({ success: true, user: { email: data.email, name: data.name } });
+          resolve({ success: true, user: { email: data.email, name: data.name }, needsOnboarding: true });
         }, 1000);
       });
     },
     onSuccess: (data: any) => {
       toast({
         title: "Registration successful",
-        description: `Welcome to SavvyCart, ${data.user.name}!`,
+        description: `Welcome to SmartCart, ${data.user.name}!`,
       });
+      // Set a flag to show onboarding after authentication
+      localStorage.setItem('needsOnboarding', 'true');
       // Navigation will be handled by ProtectedRoute after registration
     },
     onError: (error: any) => {
