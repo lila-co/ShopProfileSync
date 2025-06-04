@@ -124,17 +124,28 @@ const AuthPage: React.FC = () => {
 
       return result;
     },
-    onSuccess: (data: any) => {
+    onSuccess: async (data: any) => {
       toast({
         title: "Registration successful",
         description: `Welcome to SmartCart, ${data.user.name}!`,
       });
       // Set a flag to show onboarding after authentication
       localStorage.setItem('needsOnboarding', 'true');
-      // Switch to login tab so user can sign in with their new account
-      setActiveTab('login');
-      // Pre-fill login form with the email they just registered with
-      loginForm.setValue('username', data.user.email || '');
+      
+      // Auto-login the user with their new credentials
+      try {
+        await login(data.user.email, registerForm.getValues('password'));
+        // User will be automatically redirected to onboarding by ProtectedRoute
+      } catch (error) {
+        console.error('Auto-login failed:', error);
+        // Fall back to manual login if auto-login fails
+        setActiveTab('login');
+        loginForm.setValue('username', data.user.email || '');
+        toast({
+          title: "Please sign in",
+          description: "Your account was created successfully. Please sign in to continue.",
+        });
+      }
     },
     onError: (error: any) => {
       toast({
