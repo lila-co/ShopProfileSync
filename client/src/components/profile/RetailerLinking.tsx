@@ -546,8 +546,8 @@ const RetailerLinking: React.FC = () => {
 
       {/* Link Account Dialog */}
       <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
-        <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-md max-h-[85vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center">
               {selectedRetailer && (
                 <>
@@ -574,9 +574,9 @@ const RetailerLinking: React.FC = () => {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleLinkAccount}>
-            <ScrollArea className="max-h-[60vh] pr-4">
-              <div className="space-y-4 py-2">
+          <form onSubmit={handleLinkAccount} className="flex flex-col flex-1 overflow-hidden">
+            <ScrollArea className="flex-1 pr-4">
+              <div className="space-y-3 py-2">
                 {/* Connection Type Selection */}
                 <div className="space-y-3">
                   <Label>Connection Type</Label>
@@ -622,16 +622,16 @@ const RetailerLinking: React.FC = () => {
                 )}
 
                 {connectionType === 'circular' && (
-                  <div className="bg-blue-50 p-4 rounded-md">
-                    <h4 className="font-medium text-blue-900 mb-2">Circular-Only Subscription</h4>
-                    <p className="text-sm text-blue-700 mb-3">
+                  <div className="bg-blue-50 p-3 rounded-md">
+                    <h4 className="font-medium text-blue-900 mb-1">Circular-Only Subscription</h4>
+                    <p className="text-sm text-blue-700 mb-2">
                       We'll automatically fetch weekly circulars from {selectedRetailer?.name} to find deals for you. 
                       No account login required.
                     </p>
-                    <div className="text-xs text-blue-600">
-                      ✓ Get weekly deals and promotions<br/>
-                      ✓ AI-powered deal matching<br/>
-                      ✓ No personal account access needed
+                    <div className="text-xs text-blue-600 space-y-0.5">
+                      <div>✓ Get weekly deals and promotions</div>
+                      <div>✓ AI-powered deal matching</div>
+                      <div>✓ No personal account access needed</div>
                     </div>
                   </div>
                 )}
@@ -682,13 +682,13 @@ const RetailerLinking: React.FC = () => {
                 )}
 
                 {connectionType === 'circular' && (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <p className="text-sm text-muted-foreground">
                       We'll automatically fetch this store's weekly circulars for deal identification. 
                       No personal account connection required.
                     </p>
 
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       <Label htmlFor="circularUrl">Circular URL (Optional)</Label>
                       <Input
                         id="circularUrl"
@@ -707,13 +707,13 @@ const RetailerLinking: React.FC = () => {
 
                 <Separator />
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <h4 className="font-medium">Loyalty Card (Optional)</h4>
                   <p className="text-xs text-gray-600">
                     Add your loyalty card to earn points and access member discounts during shopping.
                   </p>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <Label htmlFor="loyalty-card">Loyalty Card Number</Label>
                     <Input
                       id="loyalty-card"
@@ -723,7 +723,7 @@ const RetailerLinking: React.FC = () => {
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <Label htmlFor="member-id">Member ID (if different)</Label>
                     <Input
                       id="member-id"
@@ -734,7 +734,7 @@ const RetailerLinking: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="bg-blue-50 p-3 rounded-md">
+                <div className="bg-blue-50 p-2 rounded-md">
                   <p className="text-xs text-blue-600">
                     <strong>Privacy Note:</strong> SmartCart uses the highest security standards to protect your data. 
                     Your credentials will only be used to access your shopping history and place orders on your behalf 
@@ -744,7 +744,7 @@ const RetailerLinking: React.FC = () => {
               </div>
             </ScrollArea>
 
-            <DialogFooter className="mt-4">
+            <DialogFooter className="mt-3 flex-shrink-0 border-t pt-3">
               <Button 
                 type="button" 
                 variant="outline" 
