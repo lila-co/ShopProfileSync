@@ -1382,7 +1382,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           quantity: 1,
           unit: 'GALLON', 
           savings: 40,
-          category: 'Dairy & Eggs'
+          category: 'Dairy & Eggs',
           conversionReason: 'AI suggests 1 gallon for smaller households'
         },
         // AI-optimized Eggs with COUNT to DOZEN conversion
