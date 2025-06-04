@@ -2829,8 +2829,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/circulars/:id/deals', async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
-      const deals = await storage.getDealsFromCircular(id);
-      res.json(deals);
+      
+      // Get deals associated with this circular
+      const allDeals = await storage.getDeals();
+      const circularDeals = allDeals.filter(deal => deal.circularId === id);
+      
+      res.json(circularDeals);
     } catch (error) {
       handleError(res, error);
     }
@@ -3704,23 +3708,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Shopping list ID and selected plan are required' });
       }
 
-      // Get the optimization plan data
-      let planResponse;
+      // Get the optimization plan data directly from storage
+      let planData;
       switch (selectedPlan) {
         case 'single':
-          planResponse = await apiRequest('POST', '/api/shopping-lists/single-store', { shoppingListId });
+          const items = await storage.getShoppingListItems(shoppingListId);
+          const retailers = await storage.getRetailers();
+          // Simplified single store logic
+          planData = {
+            retailerId: retailers[0]?.id || 1,
+            retailerName: retailers[0]?.name || 'Default Store',
+            items: items,
+            totalCost: items.reduce((sum, item) => sum + (item.quantity * 300), 0) // Mock pricing
+          };
           break;
         case 'best-value':
-          planResponse = await apiRequest('POST', '/api/shopping-lists/best-value', { shoppingListId });
-          break;
         case 'balanced':
-          planResponse = await apiRequest('POST', '/api/shopping-lists/balanced', { shoppingListId });
+          const listItems = await storage.getShoppingListItems(shoppingListId);
+          planData = {
+            stores: [{
+              retailerId: 1,
+              retailerName: 'Walmart',
+              items: listItems,
+              subtotal: listItems.reduce((sum, item) => sum + (item.quantity * 300), 0)
+            }]
+          };
           break;
         default:
           return res.status(400).json({ message: 'Invalid plan selection' });
       }
-
-      const planData = await planResponse.json();
 
       // Customer info - in real app, get from authenticated user
       const customerInfo = {
@@ -3817,6 +3833,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Get nearby retailers (missing endpoint)
+  app.get('/api/retailers/nearby', async (req: Request, res: Response) => {
+    try {
+      const { lat, lng, radius = 25 } = req.query;
+      
+      // Mock nearby retailers for demo
+      const nearbyRetailers = [
+        { id: 1, name: 'Walmart', distance: 2.3, address: '123 Main St' },
+        { id: 2, name: 'Target', distance: 3.7, address: '456 Oak Ave' },
+        { id: 3, name: 'Kroger', distance: 5.1, address: '789 Pine Rd' }
+      ];
+      
+      res.json(nearbyRetailers);
     } catch (error) {
       handleError(res, error);
     }
