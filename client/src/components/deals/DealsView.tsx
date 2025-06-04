@@ -20,15 +20,9 @@ interface DealsViewProps {
 const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = null, retailerId = null }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedRetailerId, setSelectedRetailerId] = useState<number | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-
   const { data: retailers, isLoading: loadingRetailers } = useQuery<Retailer[]>({
     queryKey: ['/api/retailers'],
   });
-
-  // Determine effective category from either dropdown or quick filter
-  const effectiveCategory = selectedCategory || (activeFilter && !['featured', 'nearby'].includes(activeFilter) ? activeFilter : null);
 
   const { data: storeDeals, isLoading: loadingDeals } = useQuery<StoreDeal[]>({
     queryKey: ['/api/deals', { retailerId, category: activeFilter }],
@@ -51,9 +45,7 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
     },
   });
 
-  const { data: categories } = useQuery<string[]>({
-    queryKey: ['/api/deals/categories'],
-  });
+  
 
   const addToShoppingListMutation = useMutation({
     mutationFn: async (deal: StoreDeal) => {
@@ -131,10 +123,10 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
 
   return (
     <div className="px-4">
-      {/* Filter Controls */}
-      <div className="mb-6 space-y-3">
-        <div className="grid grid-cols-2 gap-3">
-          <Select value={selectedRetailerId?.toString() || 'all'} onValueChange={(value) => setSelectedRetailerId(value === 'all' ? null : parseInt(value))}>
+      {/* Store Filter - Only show if not filtered by retailerId prop */}
+      {!retailerId && (
+        <div className="mb-4">
+          <Select value="all" onValueChange={() => {}}>
             <SelectTrigger className="h-10 bg-gray-50 border-0">
               <SelectValue placeholder="All Stores" />
             </SelectTrigger>
@@ -147,32 +139,19 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
               ))}
             </SelectContent>
           </Select>
-
-          <Select value={selectedCategory || 'all'} onValueChange={(value) => setSelectedCategory(value === 'all' ? null : value)}>
-            <SelectTrigger className="h-10 bg-gray-50 border-0">
-              <SelectValue placeholder="All Categories" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {categories?.map((category) => (
-                <SelectItem key={category} value={category}>
-                  {category}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
-      </div>
+      )}
 
       {/* Deals Grid */}
       {storeDeals && storeDeals.length > 0 ? (
         <div className="space-y-3 pb-8">
           {storeDeals
             .filter(deal => {
-              // Filter deals based on search query and special filters
+              // Filter by search query
               const matchesSearch = searchQuery === '' || 
                 deal.productName.toLowerCase().includes(searchQuery.toLowerCase());
 
+              // Filter by active filter
               const matchesFilter = !activeFilter || 
                 (activeFilter === 'featured' && deal.salePrice < deal.regularPrice * 0.7) ||
                 (activeFilter === 'nearby' && deal.retailerId <= 3);
