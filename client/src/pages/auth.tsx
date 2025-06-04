@@ -103,14 +103,26 @@ const AuthPage: React.FC = () => {
   // Register mutation
   const registerMutation = useMutation({
     mutationFn: async (data: z.infer<typeof registerSchema>) => {
-      // In a real app, you would make a POST request to your registration endpoint
-      // For now, we're simulating a successful registration
-      return await new Promise((resolve) => {
-        // Simulate API delay
-        setTimeout(() => {
-          resolve({ success: true, user: { email: data.email, name: data.name }, needsOnboarding: true });
-        }, 1000);
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: data.email, // Use email as username
+          password: data.password,
+          email: data.email,
+          name: data.name
+        }),
       });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Registration failed');
+      }
+
+      return result;
     },
     onSuccess: (data: any) => {
       toast({
@@ -119,7 +131,10 @@ const AuthPage: React.FC = () => {
       });
       // Set a flag to show onboarding after authentication
       localStorage.setItem('needsOnboarding', 'true');
-      // Navigation will be handled by ProtectedRoute after registration
+      // Switch to login tab so user can sign in with their new account
+      setActiveTab('login');
+      // Pre-fill login form with the email they just registered with
+      loginForm.setValue('username', data.user.email || '');
     },
     onError: (error: any) => {
       toast({
