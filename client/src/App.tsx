@@ -15,7 +15,6 @@ import ShopPage from './pages/shop';
 import ShoppingRoute from './pages/shopping-route';
 import PlanDetailsPage from '@/pages/plan-details';
 import RetailerDetailsPage from './pages/retailer-details';
-import OrderOnline from '@/pages/order-online';
 import AutoOrder from '@/pages/auto-order';
 
 function AppContent() {
@@ -42,7 +41,6 @@ function AppContent() {
       <Route path="/plan-details" component={PlanDetailsPage} />
       <Route path="/retailers" component={RetailersPage} />
       <Route path="/retailers/:id" component={RetailerDetailsPage} />
-      <Route path="/order-online" component={OrderOnline} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/scan" component={ScanPage} />
       <Route path="/onboarding" component={OnboardingPage} />

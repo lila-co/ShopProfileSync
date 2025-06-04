@@ -1294,6 +1294,29 @@ export class MemStorage implements IStorage {
     return newRetailer;
   }
 
+  async createAffiliateConversion(conversionData: {
+    affiliateId: string;
+    retailerId: number;
+    userId: number;
+    planId?: string;
+    trackingId: string;
+    cartToken: string;
+    estimatedValue: number;
+    itemCount: number;
+    status: string;
+    metadata?: any;
+  }): Promise<AffiliateConversion> {
+    const newConversion: AffiliateConversion = {
+      id: this.affiliateIdCounter++,
+      ...conversionData,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    this.affiliateConversions.set(newConversion.id, newConversion);
+    return newConversion;
+  }
+
   async updateShoppingList(id: number, data: any): Promise<ShoppingList> {
       const shoppingList = this.shoppingLists.get(id);
       if (!shoppingList) {

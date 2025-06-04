@@ -3942,6 +3942,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add items to retailer cart with affiliate attribution
+  app.post('/api/retailers/add-to-cart', async (req: Request, res: Response) => {
+    try {
+      const { retailerId, items, affiliateData, userInfo } = req.body;
+
+      if (!retailerId || !items || !Array.isArray(items)) {
+        return res.status(400).json({ 
+          message: 'Retailer ID and items array are required' 
+        });
+      }
+
+      // Get retailer information
+      const retailer = await storage.getRetailer(retailerId);
+      if (!retailer) {
+        return res.status(404).json({ message: 'Retailer not found' });
+      }
+
+      // Generate unique cart token and tracking ID for affiliate attribution
+      const cartToken = `cart_${retailerId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const trackingId = `track_${affiliateData?.planId || Date.now()}_${retailerId}`;
+
+      // In a real implementation, this would:
+      // 1. Call the retailer's API to add items to cart
+      // 2. Store affiliate tracking information in database
+      // 3. Set up commission tracking
+
+      // For demo purposes, simulate the API call
+      console.log(`Adding ${items.length} items to ${retailer.name} cart with affiliate tracking:`, {
+        cartToken,
+        trackingId,
+        affiliateData,
+        items: items.map(item => `${item.quantity} ${item.productName}`)
+      });
+
+      // Store affiliate conversion tracking
+      try {
+        await storage.createAffiliateConversion({
+          affiliateId: affiliateData?.affiliateId || 'smartcart-001',
+          retailerId,
+          userId: userInfo?.userId || 1,
+          planId: affiliateData?.planId,
+          trackingId,
+          cartToken,
+          estimatedValue: affiliateData?.trackingParams?.estimatedValue || 0,
+          itemCount: items.length,
+          status: 'cart_created',
+          metadata: {
+            planType: affiliateData?.trackingParams?.planType,
+            listId: affiliateData?.trackingParams?.listId,
+            items: items.map(item => ({
+              productName: item.productName,
+              quantity: item.quantity,
+              estimatedPrice: item.estimatedPrice
+            }))
+          }
+        });
+      } catch (conversionError) {
+        console.warn('Failed to create affiliate conversion tracking:', conversionError);
+        // Don't fail the request if affiliate tracking fails
+      }
+
+      // Simulate different retailer API responses
+      let apiResponse;
+      switch (retailer.name.toLowerCase()) {
+        case 'walmart':
+          apiResponse = {
+            success: true,
+            cartId: `walmart_${cartToken}`,
+            message: 'Items added to Walmart cart',
+            itemsAdded: items.length,
+            estimatedTotal: items.reduce((sum, item) => sum + (item.estimatedPrice * item.quantity), 0)
+          };
+          break;
+        case 'target':
+          apiResponse = {
+            success: true,
+            cartId: `target_${cartToken}`,
+            message: 'Items added to Target cart',
+            itemsAdded: items.length,
+            estimatedTotal: items.reduce((sum, item) => sum + (item.estimatedPrice * item.quantity), 0)
+          };
+          break;
+        case 'kroger':
+          apiResponse = {
+            success: true,
+            cartId: `kroger_${cartToken}`,
+            message: 'Items added to Kroger cart',
+            itemsAdded: items.length,
+            estimatedTotal: items.reduce((sum, item) => sum + (item.estimatedPrice * item.quantity), 0)
+          };
+          break;
+        default:
+          apiResponse = {
+            success: true,
+            cartId: `${retailer.name.toLowerCase()}_${cartToken}`,
+            message: `Items added to ${retailer.name} cart`,
+            itemsAdded: items.length,
+            estimatedTotal: items.reduce((sum, item) => sum + (item.estimatedPrice * item.quantity), 0)
+          };
+      }
+
+      res.json({
+        ...apiResponse,
+        cartToken,
+        trackingId,
+        retailerName: retailer.name,
+        affiliateAttributionActive: true,
+        commissionRate: '3-5%', // This would be dynamically determined
+        expectedCommission: Math.round(apiResponse.estimatedTotal * 0.04) // 4% average
+      });
+
+    } catch (error) {
+      console.error('Error adding items to retailer cart:', error);
+      handleError(res, error);
+    }
+  });
+
   // Get nearby retailers (missing endpoint)
   app.get('/api/retailers/nearby', async (req: Request, res: Response) => {
     try {
