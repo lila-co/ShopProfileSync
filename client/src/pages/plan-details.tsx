@@ -321,54 +321,101 @@ const PlanDetails: React.FC = () => {
       {/* Action Buttons */}
       <div className="flex gap-4 mb-6">
         <div className="space-y-2 w-full">
-          <Button 
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-lg"
-            size="lg"
-            onClick={() => {
-              console.log('Start Shopping Route clicked with planData:', planData);
+          <div className="flex gap-3">
+            <Button 
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-lg"
+              size="lg"
+              onClick={() => {
+                console.log('Start Shopping Route clicked with planData:', planData);
 
-              if (!planData || !planData.stores || planData.stores.length === 0) {
+                if (!planData || !planData.stores || planData.stores.length === 0) {
+                  toast({
+                    title: "No Plan Data",
+                    description: "Please select a plan type first",
+                    variant: "destructive"
+                  });
+                  return;
+                }
+
+                const enhancedPlanData = {
+                  ...planData,
+                  planType: selectedPlanType === 'single-store' ? 'Single Store' :
+                           selectedPlanType === 'multi-store' ? 'Multi-Store Best Value' :
+                           selectedPlanType === 'balanced' ? 'Balanced Plan' : 'Shopping Plan',
+                  selectedPlanType: selectedPlanType,
+                  listId: listId
+                };
+
+                console.log('Enhanced plan data for navigation:', enhancedPlanData);
+
+                // Store in sessionStorage as primary method
+                sessionStorage.setItem('shoppingPlanData', JSON.stringify(enhancedPlanData));
+                sessionStorage.setItem('shoppingListId', listId);
+                sessionStorage.setItem('shoppingMode', 'instore');
+
+                // Navigate with simple parameters to avoid URL corruption
+                const targetUrl = `/shopping-route?listId=${listId}&mode=instore&fromPlan=true`;
+                console.log('Navigating to:', targetUrl);
+
+                // Use the navigate function instead of window.location for better routing
+                navigate(targetUrl);
+
                 toast({
-                  title: "No Plan Data",
-                  description: "Please select a plan type first",
-                  variant: "destructive"
+                  title: "Loading Shopping Route",
+                  description: "Preparing your optimized shopping route...",
+                  duration: 2000
                 });
-                return;
-              }
+              }}
+            >
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              Begin Shopping
+            </Button>
+            <Button 
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold shadow-lg"
+              size="lg"
+              onClick={() => {
+                console.log('Order Online clicked with planData:', planData);
 
-              const enhancedPlanData = {
-                ...planData,
-                planType: selectedPlanType === 'single-store' ? 'Single Store' :
-                         selectedPlanType === 'multi-store' ? 'Multi-Store Best Value' :
-                         selectedPlanType === 'balanced' ? 'Balanced Plan' : 'Shopping Plan',
-                selectedPlanType: selectedPlanType,
-                listId: listId
-              };
+                if (!planData || !planData.stores || planData.stores.length === 0) {
+                  toast({
+                    title: "No Plan Data",
+                    description: "Please select a plan type first",
+                    variant: "destructive"
+                  });
+                  return;
+                }
 
-              console.log('Enhanced plan data for navigation:', enhancedPlanData);
+                const enhancedPlanData = {
+                  ...planData,
+                  planType: selectedPlanType === 'single-store' ? 'Single Store' :
+                           selectedPlanType === 'multi-store' ? 'Multi-Store Best Value' :
+                           selectedPlanType === 'balanced' ? 'Balanced Plan' : 'Shopping Plan',
+                  selectedPlanType: selectedPlanType,
+                  listId: listId
+                };
 
-              // Store in sessionStorage as primary method
-              sessionStorage.setItem('shoppingPlanData', JSON.stringify(enhancedPlanData));
-              sessionStorage.setItem('shoppingListId', listId);
-              sessionStorage.setItem('shoppingMode', 'instore');
+                // Store in sessionStorage for online ordering
+                sessionStorage.setItem('shoppingPlanData', JSON.stringify(enhancedPlanData));
+                sessionStorage.setItem('shoppingListId', listId);
+                sessionStorage.setItem('shoppingMode', 'online');
 
-              // Navigate with simple parameters to avoid URL corruption
-              const targetUrl = `/shopping-route?listId=${listId}&mode=instore&fromPlan=true`;
-              console.log('Navigating to:', targetUrl);
+                // Navigate to online ordering page
+                const targetUrl = `/order-online?listId=${listId}&fromPlan=true`;
+                console.log('Navigating to online ordering:', targetUrl);
 
-              // Use the navigate function instead of window.location for better routing
-              navigate(targetUrl);
+                navigate(targetUrl);
 
-              toast({
-                title: "Loading Shopping Route",
-                description: "Preparing your optimized shopping route...",
-                duration: 2000
-              });
-            }}
-          >
-            <ShoppingCart className="h-4 w-4 mr-2" />
-            Begin Shopping
-          </Button>
+                toast({
+                  title: "Loading Online Order",
+                  description: "Preparing your online order with affiliate benefits...",
+                  duration: 2000
+                });
+              }}
+            >
+              <MapPin className="h-4 w-4 mr-2" />
+              Order Online
+            </Button>
+          </div>
         </div>
       </div>
 

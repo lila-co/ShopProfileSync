@@ -3550,6 +3550,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Submit online order with affiliate attribution
+  app.post('/api/orders/submit', async (req: Request, res: Response) => {
+    try {
+      const { 
+        retailerId, 
+        items, 
+        fulfillmentMethod, 
+        customerInfo, 
+        affiliateData 
+      } = req.body;
+
+      if (!retailerId || !items || !fulfillmentMethod || !customerInfo) {
+        return res.status(400).json({ 
+          message: 'Missing required order information' 
+        });
+      }
+
+      // Get retailer API integration
+      const { getRetailerAPI } = await import('./services/retailerIntegration');
+      const retailerAPI = await getRetailerAPI(retailerId);
+
+      // Prepare items for retailer API
+      const orderItems = items.map((item: any) => ({
+        productName: item.productName,
+        quantity: item.quantity
+      }));
+
+      // Add affiliate tracking to customer info
+      const enhancedCustomerInfo = {
+        ...customerInfo,
+        affiliateSource: affiliateData?.source || 'smartcart',
+        affiliateId: affiliateData?.affiliateId || 'smartcart-affiliate-001',
+        trackingParams: {
+          ...affiliateData?.trackingParams,
+          submissionTime: new Date().toISOString(),
+          userAgent: req.headers['user-agent'],
+          sessionId: req.sessionID || 'anonymous'
+        }
+      };
+
+      // Submit order to retailer
+      const orderResult = await retailerAPI.submitOrder(
+        orderItems, 
+        fulfillmentMethod as 'pickup' | 'delivery', 
+        enhancedCustomerInfo
+      );
+
+      // Store order record for tracking
+      const orderRecord = {
+        orderId: orderResult.orderId,
+        retailerId,
+        userId: getCurrentUserId(req),
+        items: orderItems,
+        fulfillmentMethod,
+        customerInfo: enhancedCustomerInfo,
+        affiliateData,
+        totalAmount: orderResult.total,
+        status: orderResult.status,
+        estimatedReady: orderResult.estimatedReady,
+        createdAt: new Date().toISOString()
+      };
+
+      // Log the order for analytics and affiliate tracking
+      console.log('Order submitted with affiliate tracking:', {
+        orderId: orderResult.orderId,
+        retailerId,
+        affiliateSource: affiliateData?.source,
+        totalValue: orderResult.total
+      });
+
+      // In a production environment, you would:
+      // 1. Store the order in a database
+      // 2. Send confirmation emails
+      // 3. Trigger affiliate commission tracking
+      // 4. Set up order status monitoring
+
+      res.json({
+        success: true,
+        orderId: orderResult.orderId,
+        status: orderResult.status,
+        estimatedReady: orderResult.estimatedReady,
+        total: orderResult.total,
+        affiliateTrackingId: affiliateData?.planId,
+        message: 'Order submitted successfully with SmartCart benefits applied'
+      });
+
+    } catch (error: any) {
+      console.error('Order submission error:', error);
+      res.status(500).json({ 
+        message: error.message || 'Failed to submit order',
+        error: 'ORDER_SUBMISSION_FAILED'
+      });
+    }
+  });
+
   // Purchase Anomalies routes
   // Get all purchase anomalies
   app.get('/api/anomalies', async (req: Request, res: Response) => {

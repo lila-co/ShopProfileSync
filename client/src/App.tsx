@@ -15,6 +15,9 @@ import ShopPage from './pages/shop';
 import ShoppingRoute from './pages/shopping-route';
 import PlanDetailsPage from '@/pages/plan-details';
 import RetailerDetailsPage from './pages/retailer-details'; // Added import
+import OrderOnline from '@/pages/order-online';
+import PlanDetails from '@/pages/plan-details';
+import AutoOrder from '@/pages/auto-order';
 
 function AppContent() {
   const { isLoading, isAuthenticated } = useAuth();
