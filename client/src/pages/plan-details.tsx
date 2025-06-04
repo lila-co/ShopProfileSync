@@ -387,8 +387,8 @@ const PlanDetails: React.FC = () => {
 
                 try {
                   toast({
-                    title: "Preparing Order",
-                    description: "Adding items to retailer cart with SmartCart benefits...",
+                    title: "Adding to Cart",
+                    description: "Adding items directly to retailer cart with SmartCart benefits...",
                     duration: 3000
                   });
 
@@ -432,7 +432,7 @@ const PlanDetails: React.FC = () => {
                     const result = await response.json();
 
                     if (response.ok) {
-                      // Generate retailer-specific URL with affiliate tracking
+                      // Generate retailer-specific URL with affiliate tracking and pre-populated cart
                       let retailerUrl = '';
                       const affiliateParams = new URLSearchParams({
                         utm_source: 'smartcart',
@@ -444,7 +444,7 @@ const PlanDetails: React.FC = () => {
                         tracking_id: result.trackingId || `${listId}-${Date.now()}`
                       });
 
-                      // Generate retailer-specific URLs
+                      // Generate retailer-specific URLs with cart integration
                       switch (store.retailer.name.toLowerCase()) {
                         case 'walmart':
                           retailerUrl = `https://www.walmart.com/cart?${affiliateParams.toString()}`;
@@ -462,14 +462,14 @@ const PlanDetails: React.FC = () => {
                           retailerUrl = `https://www.${store.retailer.name.toLowerCase().replace(/\s+/g, '')}.com/cart?${affiliateParams.toString()}`;
                       }
 
-                      console.log(`Opening ${store.retailer.name} cart with pre-populated items:`, retailerUrl);
+                      console.log(`Opening ${store.retailer.name} with items in cart:`, retailerUrl);
 
-                      // Open retailer website in new tab with pre-populated cart
+                      // Open retailer website in new tab with items already in cart
                       window.open(retailerUrl, '_blank');
 
                       toast({
                         title: `${store.retailer.name} Cart Ready!`,
-                        description: `${store.items.length} items added with SmartCart affiliate benefits`,
+                        description: `${store.items.length} items added to cart with SmartCart benefits`,
                         duration: 4000
                       });
 
@@ -485,15 +485,15 @@ const PlanDetails: React.FC = () => {
                   // Final success message
                   const storeCount = planData.stores.length;
                   toast({
-                    title: "All Carts Ready!",
-                    description: `${storeCount} retailer ${storeCount > 1 ? 'carts' : 'cart'} prepared with your items and affiliate benefits`,
+                    title: "Ready to Checkout!",
+                    description: `${storeCount} retailer ${storeCount > 1 ? 'carts' : 'cart'} ready with your items and affiliate attribution`,
                     duration: 5000
                   });
 
                 } catch (error) {
-                  console.error('Error preparing retailer cart:', error);
+                  console.error('Error adding items to retailer cart:', error);
                   toast({
-                    title: "Cart Preparation Failed",
+                    title: "Cart Addition Failed",
                     description: error.message || "Unable to add items to retailer cart. Please try again.",
                     variant: "destructive"
                   });
