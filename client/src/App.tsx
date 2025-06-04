@@ -11,7 +11,7 @@ import DealsPage from './pages/deals';
 import RetailersPage from './pages/retailers';
 import ProfilePage from './pages/profile';
 import ScanPage from '@/pages/scan';
-import ShopPage from './pages/shop';
+
 import ShoppingRoute from './pages/shopping-route';
 import PlanDetailsPage from '@/pages/plan-details';
 import RetailerDetailsPage from './pages/retailer-details';
@@ -37,7 +37,7 @@ function AppContent() {
   return (
     <Switch>
       <Route path="/shopping-list" component={ShoppingListPage} />
-      <Route path="/shop" component={ShopPage} />
+      
       <Route path="/shopping-route" component={ShoppingRoute} />
       <Route path="/deals" component={DealsPage} />
       <Route path="/plan-details" component={PlanDetailsPage} />
