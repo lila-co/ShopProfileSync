@@ -322,7 +322,7 @@ const PlanDetails: React.FC = () => {
       <div className="flex gap-4 mb-6">
         <div className="space-y-2 w-full">
           <Button 
-            className="w-full"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-lg"
             size="lg"
             onClick={() => {
               console.log('Start Shopping Route clicked with planData:', planData);
@@ -367,7 +367,7 @@ const PlanDetails: React.FC = () => {
             }}
           >
             <ShoppingCart className="h-4 w-4 mr-2" />
-            Start Shopping Route
+            Begin Shopping
           </Button>
         </div>
       </div>
