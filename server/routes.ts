@@ -3959,10 +3959,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Retailer not found' });
       }
 
+      // Import enhanced item matcher
+      const { itemMatcher } = await import('./services/itemMatcher');
+      
+      // Get available products and deals for this retailer
+      const availableProducts = await getRetailerAPI(retailerId).then(api => 
+        Promise.all(items.map(item => api.searchProducts(item.productName)))
+      ).then(results => results.flat());
+      
+      const availableDeals = await storage.getDeals(retailerId);
+      
+      // Generate optimized cart payload with proper matching
+      const cartPayload = await itemMatcher.generateCartPayload(
+        items, 
+        retailerId, 
+        availableProducts, 
+        availableDeals
+      );
+
       // Generate unique cart token and tracking ID for affiliate attribution
       const cartToken = `cart_${retailerId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const trackingId = `track_${affiliateData?.planId || Date.now()}_${retailerId}`;
-      const estimatedTotal = items.reduce((sum, item) => sum + (item.estimatedPrice * item.quantity), 0);
+      const estimatedTotal = cartPayload.totalEstimatedValue;
 
       // In a real implementation, this would:
       // 1. Call the retailer's API to add items directly to their cart
@@ -4100,7 +4118,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expectedCommission: Math.round(estimatedTotal * 0.04), // 4% average
         integrationMethod: 'direct_cart_api',
         readyForCheckout: true,
-        nextStep: 'User can proceed directly to checkout on retailer website'
+        nextStep: 'User can proceed directly to checkout on retailer website',
+        // Enhanced matching information
+        matchingDetails: {
+          totalItems: items.length,
+          matchedItems: cartPayload.items.length,
+          unmatchedItems: cartPayload.unmatchedItems.length,
+          totalSavings: cartPayload.dealsSaved,
+          matchSummary: cartPayload.matchSummary,
+          unmatchedItemsList: cartPayload.unmatchedItems
+        }
       });
 
     } catch (error) {
