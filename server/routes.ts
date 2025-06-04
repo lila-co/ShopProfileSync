@@ -2016,8 +2016,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/deals/summary', async (req: Request, res: Response) => {
     try {
-      const dealsSummary = await storage.getDealsSummary();
-      res.json(dealsSummary);
+      // Get all active deals
+      const allDeals = await storage.getDeals();
+      
+      // Filter out expired deals
+      const now = new Date();
+      const activeDeals = allDeals.filter(deal => new Date(deal.endDate) > now);
+      
+      if (activeDeals.length === 0) {
+        return res.json({
+          maxSavings: 0,
+          topCategory: 'No deals',
+          totalDeals: 0,
+          retailerCount: 0
+        });
+      }
+      
+      // Calculate maximum savings percentage
+      let maxSavingsPercentage = 0;
+      let topCategory = 'General';
+      
+      for (const deal of activeDeals) {
+        const savingsPercentage = Math.round((1 - deal.salePrice / deal.regularPrice) * 100);
+        if (savingsPercentage > maxSavingsPercentage) {
+          maxSavingsPercentage = savingsPercentage;
+          topCategory = deal.category || 'General';
+        }
+      }
+      
+      // Count unique retailers
+      const uniqueRetailers = new Set(activeDeals.map(deal => deal.retailerId));
+      
+      const summary = {
+        maxSavings: maxSavingsPercentage,
+        topCategory,
+        totalDeals: activeDeals.length,
+        retailerCount: uniqueRetailers.size
+      };
+      
+      res.json(summary);
     } catch (error) {
       handleError(res, error);
     }
