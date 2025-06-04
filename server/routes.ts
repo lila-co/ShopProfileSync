@@ -727,13 +727,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const accountId = parseInt(req.params.id);
       
+      if (isNaN(accountId)) {
+        return res.status(400).json({ message: 'Invalid account ID' });
+      }
+      
+      console.log(`Deleting retailer account with ID: ${accountId}`);
+      
       const success = await storage.deleteRetailerAccount(accountId);
       if (!success) {
+        console.log(`Retailer account with ID ${accountId} not found`);
         return res.status(404).json({ message: 'Retailer account not found' });
       }
       
+      console.log(`Successfully deleted retailer account with ID: ${accountId}`);
       res.status(204).send();
     } catch (error) {
+      console.error('Error deleting retailer account:', error);
       handleError(res, error);
     }
   });

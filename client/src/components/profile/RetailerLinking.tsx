@@ -143,8 +143,21 @@ const RetailerLinking: React.FC = () => {
   // Mutation to unlink a retailer account
   const unlinkAccountMutation = useMutation({
     mutationFn: async (id: number) => {
+      console.log(`Attempting to delete retailer account with ID: ${id}`);
       const response = await apiRequest('DELETE', `/api/user/retailer-accounts/${id}`);
-      return response.json();
+      
+      // Check if the response is successful (204 No Content)
+      if (response.status === 204) {
+        return { success: true, id };
+      } else if (response.status === 404) {
+        throw new Error('Account not found');
+      } else {
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to disconnect account');
+        }
+        return data;
+      }
     },
     onSuccess: (_, id) => {
       // Invalidate queries to refresh the data
@@ -156,7 +169,19 @@ const RetailerLinking: React.FC = () => {
       // Show success message
       toast({
         title: 'Account Unlinked',
-        description: `Your ${account?.retailerName} account has been disconnected from SmartCart.`,
+        description: `Your ${account?.retailerName || 'retailer'} account has been disconnected from SmartCart.`,
+      });
+    },
+    onError: (error: any, id) => {
+      console.error('Failed to unlink account:', error);
+      
+      // Find the retailer name for the error message
+      const account = retailerAccounts?.find((acc: any) => acc.id === id);
+      
+      toast({
+        title: 'Failed to Disconnect',
+        description: error.message || `Failed to disconnect ${account?.retailerName || 'retailer'} account. Please try again.`,
+        variant: 'destructive',
       });
     }
   });

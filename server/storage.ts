@@ -129,6 +129,8 @@ export interface IStorage {
   updatePrivacyPreferences(userId: number, preferences: any): Promise<any>;
   exportUserData(userId: number): Promise<any>;
   deleteUserAccount(userId: number): Promise<boolean>;
+  getNotificationPreferences(userId: number): Promise<any>;
+  updateNotificationPreferences(userId: number, preferences: any): Promise<any>;
 }
 
 export class MemStorage implements IStorage {
@@ -204,7 +206,12 @@ export class MemStorage implements IStorage {
       buyInBulk: true,
       prioritizeCostSavings: true,
       shoppingRadius: 10,
-      role: 'owner'
+      role: 'owner',
+      dealAlerts: true,
+      priceDropAlerts: true,
+      weeklyDigest: false,
+      expirationAlerts: true,
+      recommendationUpdates: true
     };
     this.users.set(defaultUser.id, defaultUser);
 
@@ -223,7 +230,12 @@ export class MemStorage implements IStorage {
       buyInBulk: false,
       prioritizeCostSavings: false,
       shoppingRadius: 5,
-      role: 'test_user'
+      role: 'test_user',
+      dealAlerts: true,
+      priceDropAlerts: true,
+      weeklyDigest: false,
+      expirationAlerts: true,
+      recommendationUpdates: true
     };
     this.users.set(testUser.id, testUser);
 
@@ -1399,6 +1411,7 @@ export class MemStorage implements IStorage {
             mostShoppedRetailer: 'Walmart',
             topCategories: [
                 { category: 'Groceries', amount: 85000, percentage: 68 },
+                { category: 'Groceries', amount: 85000, percentage: 68 },
                 { category: 'Household', amount: 25000, percentage: 20 },
                 { category: 'Personal Care', amount: 15000, percentage: 12 }
             ],
@@ -1442,6 +1455,30 @@ export class MemStorage implements IStorage {
 
     console.log(`Updated privacy preferences for user ${userId}:`, updated);
     return updated;
+  }
+
+  async getNotificationPreferences(userId: number): Promise<any> {
+    const user = await this.getUser(userId);
+    return {
+      userId,
+      dealAlerts: user?.dealAlerts ?? true,
+      priceDropAlerts: user?.priceDropAlerts ?? true,
+      weeklyDigest: user?.weeklyDigest ?? false,
+      expirationAlerts: user?.expirationAlerts ?? true,
+      recommendationUpdates: user?.recommendationUpdates ?? true
+    };
+  }
+
+  async updateNotificationPreferences(userId: number, preferences: any): Promise<any> {
+    const user = await this.getUser(userId);
+    if (!user) throw new Error('User not found');
+
+    const updatedUser = await this.updateUser({
+      ...user,
+      ...preferences
+    });
+
+    return this.getNotificationPreferences(userId);
   }
 
   async exportUserData(userId: number): Promise<any> {
@@ -1565,9 +1602,21 @@ export class MemStorage implements IStorage {
   }
 
   async deleteRetailerAccount(id: number): Promise<boolean> {
-      const existed = this.retailerAccounts.has(id);
-      this.retailerAccounts.delete(id);
-      return existed;
+    console.log(`Attempting to delete retailer account with ID: ${id}`);
+    console.log(`Current retailer accounts:`, this.retailerAccounts);
+
+    const index = this.retailerAccounts.findIndex(account => account.id === id);
+    console.log(`Found account at index: ${index}`);
+
+    if (index === -1) {
+      console.log(`Retailer account with ID ${id} not found`);
+      return false;
+    }
+
+    this.retailerAccounts.splice(index, 1);
+    console.log(`Deleted retailer account with ID: ${id}`);
+    console.log(`Remaining retailer accounts:`, this.retailerAccounts);
+    return true;
   }
 
   async getRetailerAccount(id: number): Promise<RetailerAccount | undefined> {
@@ -1596,7 +1645,12 @@ export class DatabaseStorage implements IStorage {
       preferOrganic: true,
       buyInBulk: true,
       prioritizeCostSavings: true,
-      shoppingRadius: 15
+      shoppingRadius: 15,
+      dealAlerts: true,
+      priceDropAlerts: true,
+      weeklyDigest: false,
+      expirationAlerts: true,
+      recommendationUpdates: true
     });
   }
 
