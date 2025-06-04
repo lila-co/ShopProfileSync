@@ -474,7 +474,7 @@ export class MemStorage implements IStorage {
       const unitPrice = Math.floor(Math.random() * 500) + 100; // $1 - $6
       const totalPrice = unitPrice * quantity;
 
-      const purchaseItem: PurchaseItem = {
+      const purchaseItem:PurchaseItem = {
         id: this.purchaseItemIdCounter++,
         purchaseId: purchase.id,
         productId,
@@ -873,50 +873,47 @@ export class MemStorage implements IStorage {
     return deals;
   }
 
-  async getDealsSummary(): Promise<any[]> {
-    const retailers = await this.getRetailers();
+  async getDealCategories(): Promise<string[]> {
     const deals = Array.from(this.storeDeals.values());
+    const categories = [...new Set(deals.map(deal => deal.category).filter(Boolean))];
+    return categories.sort();
+  }
 
-    // Group deals by retailer
-    const summaryMap = new Map<number, { retailerId: number, retailerName: string, logoColor: string, dealsCount: number, validUntil: string }>();
+  async getDealsSummary() {
+    // This method is handled directly in the routes now
+    // but keeping for backward compatibility
+    const allDeals = await this.getDeals();
+    const now = new Date();
+    const activeDeals = allDeals.filter(deal => new Date(deal.endDate) > now);
 
-    for (const deal of deals) {
-      const retailer = retailers.find(r => r.id === deal.retailerId);
-      if (!retailer) continue;
+    if (activeDeals.length === 0) {
+      return {
+        maxSavings: 0,
+        topCategory: 'No deals',
+        totalDeals: 0,
+        retailerCount: 0
+      };
+    }
 
-      if (!summaryMap.has(retailer.id)) {
-        summaryMap.set(retailer.id, {
-          retailerId: retailer.id,
-          retailerName: retailer.name,
-          logoColor: retailer.logoColor || 'blue',
-          dealsCount: 0,
-          validUntil: deal.endDate // Initialize with this deal's end date
-        });
-      }
+    let maxSavingsPercentage = 0;
+    let topCategory = 'General';
 
-      const summary = summaryMap.get(retailer.id)!;
-      summary.dealsCount++;
-
-      // Keep the latest valid until date
-      if (new Date(deal.endDate) > new Date(summary.validUntil)) {
-        summary.validUntil = deal.endDate;
+    for (const deal of activeDeals) {
+      const savingsPercentage = Math.round((1 - deal.salePrice / deal.regularPrice) * 100);
+      if (savingsPercentage > maxSavingsPercentage) {
+        maxSavingsPercentage = savingsPercentage;
+        topCategory = deal.category || 'General';
       }
     }
 
-    return Array.from(summaryMap.values());
-  }
+    const uniqueRetailers = new Set(activeDeals.map(deal => deal.retailerId));
 
-  async getDealCategories(): Promise<string[]> {
-    const deals = Array.from(this.storeDeals.values());
-    const categories = new Set<string>();
-
-    deals.forEach(deal => {
-      if (deal.category) {
-        categories.add(deal.category);
-      }
-    });
-
-    return Array.from(categories);
+    return {
+      maxSavings: maxSavingsPercentage,
+      topCategory,
+      totalDeals: activeDeals.length,
+      retailerCount: uniqueRetailers.size
+    };
   }
 
   async createDeal(deal: InsertStoreDeal): Promise<StoreDeal> {
@@ -1437,7 +1434,7 @@ export class MemStorage implements IStorage {
       ...preferences,
       lastUpdated: new Date()
     };
-    
+
     console.log(`Updated privacy preferences for user ${userId}:`, updated);
     return updated;
   }
@@ -1504,20 +1501,20 @@ export class MemStorage implements IStorage {
 
   async deleteUserAccount(userId: number): Promise<boolean> {
     console.log(`Account deletion requested for user ${userId}`);
-    
+
     // In a real implementation, this would:
     // 1. Delete all user data
     // 2. Anonymize any data that needs to be retained
     // 3. Send confirmation emails
     // 4. Log the deletion for audit purposes
-    
+
     // For demo, just log the request
     const user = await this.getUser(userId);
     if (user) {
       console.log(`Deleting account for user: ${user.username} (${user.email})`);
       return true;
     }
-    
+
     return false;
   }
 
@@ -1651,7 +1648,7 @@ export class DatabaseStorage implements IStorage {
         ...preferences,
         lastUpdated: new Date()
       };
-      
+
       console.log(`Updated privacy preferences for user ${userId}:`, updated);
       return updated;
     } catch (error) {
@@ -1693,7 +1690,7 @@ export class DatabaseStorage implements IStorage {
         ...preferences,
         lastUpdated: new Date()
       };
-      
+
       console.log(`Updated notification preferences for user ${userId}:`, updated);
       return updated;
     } catch (error) {
@@ -1748,19 +1745,19 @@ export class DatabaseStorage implements IStorage {
   async deleteUserAccount(userId: number): Promise<boolean> {
     try {
       console.log(`Account deletion requested for user ${userId}`);
-      
+
       // In a real implementation, this would:
       // 1. Delete all user data from all tables
       // 2. Anonymize any data that needs to be retained for legal/business reasons
       // 3. Send confirmation emails
       // 4. Log the deletion for audit purposes
-      
+
       const user = await this.getUser(userId);
       if (user) {
         console.log(`Deleting account for user: ${user.username} (${user.email})`);
         return true;
       }
-      
+
       return false;
     } catch (error) {
       console.error("Error deleting user account:", error);
@@ -1941,11 +1938,11 @@ const [updatedUser] = await db
   async getPurchases(userId?: number, limit: number = 50, offset: number = 0, startDate?: Date, endDate?: Date): Promise<Purchase[]> {
     try {
       let query = db.select().from(purchases);
-      
+
       if (userId) {
         query = query.where(eq(purchases.userId, userId));
       }
-      
+
       if (startDate && endDate) {
         query = query.where(
           and(
@@ -1954,7 +1951,7 @@ const [updatedUser] = await db
           )
         );
       }
-      
+
       return query
         .orderBy(desc(purchases.purchaseDate))
         .limit(limit)
@@ -1970,7 +1967,7 @@ const [updatedUser] = await db
     try {
       const startDate = new Date();
       startDate.setMonth(startDate.getMonth() - monthsBack);
-      
+
       return db.select()
         .from(purchases)
         .where(
@@ -2199,6 +2196,12 @@ const [updatedUser] = await db
     }
   }
 
+  async getDealCategories(): Promise<string[]> {
+    const deals = await this.getDeals();
+    const categories = [...new Set(deals.map(deal => deal.category).filter(Boolean))];
+    return categories.sort();
+  }
+
   async getDealsSummary(): Promise<any[]> {
     try {
       const deals = await this.getDeals();
@@ -2226,24 +2229,6 @@ const [updatedUser] = await db
       return Object.values(dealsByRetailer);
     } catch (error) {
       console.error("Error getting deals summary:", error);
-      throw error;
-    }
-  }
-
-  async getDealCategories(): Promise<string[]> {
-    try {
-      const deals = await this.getDeals();
-      const categories = new Set<string>();
-
-      deals.forEach(deal => {
-        if (deal.category) {
-          categories.add(deal.category);
-        }
-      });
-
-      return Array.from(categories);
-    } catch (error) {
-      console.error("Error getting deal categories:", error);
       throw error;
     }
   }
