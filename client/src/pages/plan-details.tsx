@@ -200,6 +200,152 @@ const PlanDetails: React.FC = () => {
     );
   }
 
+  const handleOrderOnline = async () => {
+    if (!selectedPlanType) {
+      toast({
+        title: "Please select a plan type first",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const enhancedPlanData = {
+      ...planData,
+      planType: selectedPlanType === 'single-store' ? 'Single Store' :
+               selectedPlanType === 'multi-store' ? 'Multi-Store Best Value' :
+               selectedPlanType === 'balanced' ? 'Balanced Plan' : 'Shopping Plan',
+      selectedPlanType: selectedPlanType,
+      listId: listId
+    };
+
+    // Store plan data for the order page
+    sessionStorage.setItem('shoppingPlanData', JSON.stringify(enhancedPlanData));
+    sessionStorage.setItem('shoppingListId', listId);
+
+    console.log('Order Online clicked with planData:', planData);
+
+    // For multi-store plans, we need to open multiple retailer pages
+    if (planData.stores && planData.stores.length > 1) {
+      // Multi-store: open each retailer's cart page with a small delay to ensure all tabs open
+      let successCount = 0;
+
+      for (let i = 0; i < planData.stores.length; i++) {
+        const store = planData.stores[i];
+
+        // Add a small delay between opening tabs to prevent browser blocking
+        setTimeout(async () => {
+          try {
+            const affiliateData = {
+              source: 'smartcart',
+              planId: `${listId}-${Date.now()}`,
+              affiliateId: 'smartcart-affiliate-001',
+              trackingParams: {
+                listId,
+                planType: selectedPlanType,
+                totalItems: store.items.length,
+                estimatedValue: store.subtotal,
+                retailerId: store.retailer.id
+              }
+            };
+
+            const response = await fetch('/api/retailers/add-to-cart', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                retailerId: store.retailer.id,
+                items: store.items.map(item => ({
+                  productName: item.productName,
+                  quantity: item.quantity,
+                  unit: item.unit,
+                  estimatedPrice: item.suggestedPrice
+                })),
+                affiliateData,
+                userInfo: {
+                  userId: 1, // This would come from auth context in production
+                  listId: listId
+                }
+              })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+              // Generate retailer-specific URL with affiliate tracking and pre-populated cart
+              let retailerUrl = '';
+              const affiliateParams = new URLSearchParams({
+                utm_source: 'smartcart',
+                utm_medium: 'affiliate',
+                utm_campaign: `plan-${selectedPlanType}`,
+                utm_content: `list-${listId}`,
+                affiliate_id: 'smartcart-001',
+                cart_token: result.cartToken || '',
+                tracking_id: result.trackingId || `${listId}-${Date.now()}`
+              });
+
+              // Generate retailer-specific URLs with cart integration
+              switch (store.retailer.name.toLowerCase()) {
+                case 'walmart':
+                  retailerUrl = `https://www.walmart.com/cart?${affiliateParams.toString()}`;
+                  break;
+                case 'target':
+                  retailerUrl = `https://www.target.com/cart?${affiliateParams.toString()}`;
+                  break;
+                case 'kroger':
+                  retailerUrl = `https://www.kroger.com/cart?${affiliateParams.toString()}`;
+                  break;
+                case 'whole foods':
+                  retailerUrl = `https://www.wholefoodsmarket.com/cart?${affiliateParams.toString()}`;
+                  break;
+                default:
+                  retailerUrl = `https://www.${store.retailer.name.toLowerCase().replace(/\s+/g, '')}.com/cart?${affiliateParams.toString()}`;
+              }
+              
+              console.log(`Opening ${store.retailer.name} with items in cart:`, retailerUrl);
+
+              // Open in new tab
+              const newWindow = window.open(retailerUrl, '_blank');
+              if (newWindow) {
+                successCount++;
+              } else {
+                console.warn(`Failed to open ${store.retailer.name} - popup blocked?`);
+              }
+            } else {
+              throw new Error(result.message || `Failed to add items to ${store.retailer.name} cart`);
+            }
+          } catch (error) {
+            console.error(`Failed to add items to ${store.retailer.name} cart:`, error);
+            toast({
+              title: "Cart Error",
+              description: `Failed to add items to ${store.retailer.name} cart`,
+              variant: "destructive"
+            });
+          }
+        }, i * 500); // 500ms delay between each tab opening
+      }
+
+      // Show initial success message
+      toast({
+        title: "Opening Retailer Carts",
+        description: `Opening ${planData.stores.length} retailer pages with your items. Please allow popups if prompted.`,
+      });
+
+      // Show follow-up message about popup blocker
+      setTimeout(() => {
+        toast({
+          title: "Tip",
+          description: "If some tabs didn't open, please allow popups for this site and try again.",
+          variant: "default"
+        });
+      }, 2000);
+
+    } else {
+      // Single store: use the existing order online page
+      navigate(`/order-online?listId=${listId}&fromPlan=true`);
+    }
+  };
+
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
       {/* Header */}
@@ -373,132 +519,7 @@ const PlanDetails: React.FC = () => {
             <Button 
               className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold shadow-lg"
               size="lg"
-              onClick={async () => {
-                console.log('Order Online clicked with planData:', planData);
-
-                if (!planData || !planData.stores || planData.stores.length === 0) {
-                  toast({
-                    title: "No Plan Data",
-                    description: "Please select a plan type first",
-                    variant: "destructive"
-                  });
-                  return;
-                }
-
-                try {
-                  toast({
-                    title: "Adding to Cart",
-                    description: "Adding items directly to retailer cart with SmartCart benefits...",
-                    duration: 3000
-                  });
-
-                  // For multi-store plans, handle each store separately
-                  for (const store of planData.stores) {
-                    const affiliateData = {
-                      source: 'smartcart',
-                      planId: `${listId}-${Date.now()}`,
-                      affiliateId: 'smartcart-affiliate-001',
-                      trackingParams: {
-                        listId,
-                        planType: selectedPlanType,
-                        totalItems: store.items.length,
-                        estimatedValue: store.subtotal,
-                        retailerId: store.retailer.id
-                      }
-                    };
-
-                    // Call API to add items to retailer cart with affiliate attribution
-                    const response = await fetch('/api/retailers/add-to-cart', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify({
-                        retailerId: store.retailer.id,
-                        items: store.items.map(item => ({
-                          productName: item.productName,
-                          quantity: item.quantity,
-                          unit: item.unit,
-                          estimatedPrice: item.suggestedPrice
-                        })),
-                        affiliateData,
-                        userInfo: {
-                          userId: 1, // This would come from auth context in production
-                          listId: listId
-                        }
-                      })
-                    });
-
-                    const result = await response.json();
-
-                    if (response.ok) {
-                      // Generate retailer-specific URL with affiliate tracking and pre-populated cart
-                      let retailerUrl = '';
-                      const affiliateParams = new URLSearchParams({
-                        utm_source: 'smartcart',
-                        utm_medium: 'affiliate',
-                        utm_campaign: `plan-${selectedPlanType}`,
-                        utm_content: `list-${listId}`,
-                        affiliate_id: 'smartcart-001',
-                        cart_token: result.cartToken || '',
-                        tracking_id: result.trackingId || `${listId}-${Date.now()}`
-                      });
-
-                      // Generate retailer-specific URLs with cart integration
-                      switch (store.retailer.name.toLowerCase()) {
-                        case 'walmart':
-                          retailerUrl = `https://www.walmart.com/cart?${affiliateParams.toString()}`;
-                          break;
-                        case 'target':
-                          retailerUrl = `https://www.target.com/cart?${affiliateParams.toString()}`;
-                          break;
-                        case 'kroger':
-                          retailerUrl = `https://www.kroger.com/cart?${affiliateParams.toString()}`;
-                          break;
-                        case 'whole foods':
-                          retailerUrl = `https://www.wholefoodsmarket.com/cart?${affiliateParams.toString()}`;
-                          break;
-                        default:
-                          retailerUrl = `https://www.${store.retailer.name.toLowerCase().replace(/\s+/g, '')}.com/cart?${affiliateParams.toString()}`;
-                      }
-
-                      console.log(`Opening ${store.retailer.name} with items in cart:`, retailerUrl);
-
-                      // Open retailer website in new tab with items already in cart
-                      window.open(retailerUrl, '_blank');
-
-                      toast({
-                        title: `${store.retailer.name} Cart Ready!`,
-                        description: `${store.items.length} items added to cart with SmartCart benefits`,
-                        duration: 4000
-                      });
-
-                      // Small delay between stores for multi-store plans
-                      if (planData.stores.length > 1) {
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-                      }
-                    } else {
-                      throw new Error(result.message || `Failed to add items to ${store.retailer.name} cart`);
-                    }
-                  }
-
-                  // Final success message
-                  const storeCount = planData.stores.length;
-                  toast({
-                    title: "Ready to Checkout!",
-                    description: `${storeCount} retailer ${storeCount > 1 ? 'carts' : 'cart'} ready with your items and affiliate attribution`,
-                    duration: 5000
-                  });
-
-                } catch (error) {
-                  console.error('Error adding items to retailer cart:', error);
-                  toast({
-                    title: "Cart Addition Failed",
-                    description: error.message || "Unable to add items to retailer cart. Please try again.",
-                    variant: "destructive"
-                  });
-                }
-              }}
+              onClick={handleOrderOnline}
             >
               <MapPin className="h-4 w-4 mr-2" />
               Order Online
