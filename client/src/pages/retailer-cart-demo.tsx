@@ -1,8 +1,4 @@
 
-<file_path>client/src/pages/retailer-cart-demo.tsx</file_path>
-<change_summary>Create demo retailer cart page to show items when redirected</change_summary>
-
-```tsx
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -193,4 +189,3 @@ const RetailerCartDemo: React.FC = () => {
 };
 
 export default RetailerCartDemo;
-```
