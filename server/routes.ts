@@ -1365,18 +1365,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // AI-enhanced deal data with comprehensive categorization and optimization
       const availableDeals = [
-        // AI-optimized Beverages
-        {
-          productName: 'Sparkling Water',
-          retailerName: 'Costco',
-          salePrice: 3000, // $30.00
-          quantity: 36,
-          unit: 'CANS',
-          savings: 500,
-          category: 'Pantry & Canned Goods',
-          aiOptimized: true,
-          conversionReason: 'AI suggests bulk size for better value - 36 cans vs 24'
-        },
+        // Streamlined deal suggestions
         {
           productName: 'Sparkling Water',
           retailerName: 'Target', 
@@ -1384,21 +1373,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           quantity: 24,
           unit: 'CANS',
           savings: 300,
-          category: 'Pantry & Canned Goods',
-          aiOptimized: true,
-          conversionReason: 'AI suggests standard family pack size'
-        },
-        // AI-optimized Dairy
-        {
-          productName: 'Milk',
-          retailerName: 'Costco',
-          salePrice: 899, // $8.99 for 2 gallons
-          quantity: 2,
-          unit: 'GALLON',
-          savings: 200,
-          category: 'Dairy & Eggs',
-          aiOptimized: true,
-          conversionReason: 'AI suggests 2 gallons for families - optimal consumption rate'
+          category: 'Beverages'
         },
         {
           productName: 'Milk',
@@ -1407,8 +1382,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           quantity: 1,
           unit: 'GALLON', 
           savings: 40,
-          category: 'Dairy & Eggs',
-          aiOptimized: true,
+          category: 'Dairy & Eggs'
           conversionReason: 'AI suggests 1 gallon for smaller households'
         },
         // AI-optimized Eggs with COUNT to DOZEN conversion
