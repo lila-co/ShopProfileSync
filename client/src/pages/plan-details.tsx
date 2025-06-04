@@ -272,77 +272,132 @@ const PlanDetails: React.FC = () => {
             const result = await response.json();
 
             if (response.ok) {
-              // Generate retailer-specific URL with affiliate tracking and pre-populated cart
-              let retailerUrl = '';
-              const affiliateParams = new URLSearchParams({
-                utm_source: 'smartcart',
-                utm_medium: 'affiliate',
-                utm_campaign: `plan-${selectedPlanType}`,
-                utm_content: `list-${listId}`,
-                affiliate_id: 'smartcart-001',
-                cart_token: result.cartToken || '',
-                tracking_id: result.trackingId || `${listId}-${Date.now()}`
+              console.log(`Cart prepared for ${store.retailer.name}:`, result.cartUrl);
+
+              // Create clickable link instead of popup
+              const linkElement = document.createElement('a');
+              linkElement.href = result.cartUrl;
+              linkElement.target = '_blank';
+              linkElement.rel = 'noopener noreferrer';
+              linkElement.click();
+
+              successCount++;
+
+              toast({
+                title: `${store.retailer.name} Cart Ready`,
+                description: `Items added to cart. Click to open if tab didn't open automatically.`,
+                action: {
+                  label: "Open Cart",
+                  onClick: () => {
+                    window.open(result.cartUrl, '_blank', 'noopener,noreferrer');
+                  }
+                }
               });
-
-              // Generate retailer-specific URLs with cart integration
-              switch (store.retailer.name.toLowerCase()) {
-                case 'walmart':
-                  retailerUrl = `https://www.walmart.com/cart?${affiliateParams.toString()}`;
-                  break;
-                case 'target':
-                  retailerUrl = `https://www.target.com/cart?${affiliateParams.toString()}`;
-                  break;
-                case 'kroger':
-                  retailerUrl = `https://www.kroger.com/cart?${affiliateParams.toString()}`;
-                  break;
-                case 'whole foods':
-                  retailerUrl = `https://www.wholefoodsmarket.com/cart?${affiliateParams.toString()}`;
-                  break;
-                default:
-                  retailerUrl = `https://www.${store.retailer.name.toLowerCase().replace(/\s+/g, '')}.com/cart?${affiliateParams.toString()}`;
-              }
-              
-              console.log(`Opening ${store.retailer.name} with items in cart:`, retailerUrl);
-
-              // Open in new tab
-              const newWindow = window.open(retailerUrl, '_blank');
-              if (newWindow) {
-                successCount++;
-              } else {
-                console.warn(`Failed to open ${store.retailer.name} - popup blocked?`);
-              }
             } else {
-              throw new Error(result.message || `Failed to add items to ${store.retailer.name} cart`);
+              console.error(`Failed to add items to ${store.retailer.name} cart`);
+              toast({
+                title: "Cart Error",
+                description: `Failed to add items to ${store.retailer.name} cart`,
+                variant: "destructive"
+              });
             }
           } catch (error) {
-            console.error(`Failed to add items to ${store.retailer.name} cart:`, error);
+            console.error(`Error with ${store.retailer.name}:`, error);
             toast({
-              title: "Cart Error",
-              description: `Failed to add items to ${store.retailer.name} cart`,
+              title: "Integration Error",
+              description: `Error connecting to ${store.retailer.name}`,
               variant: "destructive"
             });
           }
-        }, i * 500); // 500ms delay between each tab opening
+        }, i * 1500); // 1.5 second delay between each store
       }
 
-      // Show initial success message
-      toast({
-        title: "Opening Retailer Carts",
-        description: `Opening ${planData.stores.length} retailer pages with your items. Please allow popups if prompted.`,
-      });
-
-      // Show follow-up message about popup blocker
+      // Show summary after all stores are processed
       setTimeout(() => {
-        toast({
-          title: "Tip",
-          description: "If some tabs didn't open, please allow popups for this site and try again.",
-          variant: "default"
-        });
-      }, 2000);
-
+        if (successCount > 0) {
+          toast({
+            title: "Multi-Store Cart Integration Complete",
+            description: `Successfully prepared ${successCount} retailer cart${successCount > 1 ? 's' : ''} with your items. Check your browser tabs.`,
+            duration: 6000
+          });
+        }
+      }, planData.stores.length * 1500 + 1000);
     } else {
-      // Single store: use the existing order online page
-      navigate(`/order-online?listId=${listId}&fromPlan=true`);
+      // Single store: direct cart integration
+      const store = planData.stores?.[0];
+      if (!store) {
+        toast({
+          title: "Error",
+          description: "No store information available",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      try {
+        const affiliateData = {
+          source: 'smartcart',
+          planId: `${listId}-${Date.now()}`,
+          affiliateId: 'smartcart-affiliate-001',
+          trackingParams: {
+            listId,
+            planType: selectedPlanType,
+            totalItems: store.items.length,
+            estimatedValue: store.subtotal,
+            retailerId: store.retailer.id
+          }
+        };
+
+        const response = await fetch('/api/retailers/add-to-cart', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            retailerId: store.retailer.id,
+            items: store.items.map(item => ({
+              productName: item.productName,
+              quantity: item.quantity,
+              unit: item.unit,
+              estimatedPrice: item.suggestedPrice
+            })),
+            affiliateData,
+            userInfo: {
+              userId: 1, // This would come from auth context in production
+              listId: listId
+            }
+          })
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log(`Cart prepared for ${store.retailer.name}:`, result.cartUrl);
+
+          toast({
+            title: "Cart Ready!",
+            description: `Your items have been added to ${store.retailer.name} cart. Redirecting...`,
+            duration: 3000
+          });
+
+          // Short delay then redirect to retailer cart
+          setTimeout(() => {
+            window.location.href = result.cartUrl;
+          }, 1500);
+        } else {
+          toast({
+            title: "Cart Error",
+            description: `Failed to add items to ${store.retailer.name} cart`,
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
+        console.error(`Error with ${store.retailer.name}:`, error);
+        toast({
+          title: "Integration Error",
+          description: `Error connecting to ${store.retailer.name}`,
+          variant: "destructive"
+        });
+      }
     }
   };
 
