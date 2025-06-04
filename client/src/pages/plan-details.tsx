@@ -200,6 +200,306 @@ const PlanDetails: React.FC = () => {
     );
   }
 
+  const handleOrderOnline = async () => {
+    if (!selectedPlanType) {
+      toast({
+        title: "Please select a plan type first",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const enhancedPlanData = {
+      ...planData,
+      planType: selectedPlanType === 'single-store' ? 'Single Store' :
+               selectedPlanType === 'multi-store' ? 'Multi-Store Best Value' :
+               selectedPlanType === 'balanced' ? 'Balanced Plan' : 'Shopping Plan',
+      selectedPlanType: selectedPlanType,
+      listId: listId
+    };
+
+    // Store plan data for the order page
+    sessionStorage.setItem('shoppingPlanData', JSON.stringify(enhancedPlanData));
+    sessionStorage.setItem('shoppingListId', listId);
+
+    console.log('Order Online clicked with planData:', planData);
+
+    // For multi-store plans, handle mobile differently
+    if (planData.stores && planData.stores.length > 1) {
+      // Check if user is on mobile device
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+
+      if (isMobile) {
+        // On mobile, process stores one by one with user confirmation
+        let currentStoreIndex = 0;
+
+        const processNextStore = async () => {
+          if (currentStoreIndex >= planData.stores.length) {
+            toast({
+              title: "All Stores Processed",
+              description: `Successfully set up ${planData.stores.length} retailer carts`,
+              duration: 4000
+            });
+            return;
+          }
+
+          const store = planData.stores[currentStoreIndex];
+          currentStoreIndex++;
+
+          try {
+            const affiliateData = {
+              source: 'smartcart',
+              planId: `${listId}-${Date.now()}`,
+              affiliateId: 'smartcart-affiliate-001',
+              trackingParams: {
+                listId,
+                planType: selectedPlanType,
+                totalItems: store.items.length,
+                estimatedValue: store.subtotal,
+                retailerId: store.retailer.id
+              }
+            };
+
+            const response = await fetch('/api/retailers/add-to-cart', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                retailerId: store.retailer.id,
+                items: store.items.map(item => ({
+                  productName: item.productName,
+                  quantity: item.quantity,
+                  unit: item.unit,
+                  estimatedPrice: item.suggestedPrice
+                })),
+                affiliateData,
+                userInfo: {
+                  userId: 1,
+                  listId: listId
+                }
+              })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+              const urlParams = new URLSearchParams(result.cartUrl.split('?')[1] || '');
+              const demoCartUrl = `/retailer-cart-demo?${urlParams.toString()}&retailer=${encodeURIComponent(store.retailer.name.toLowerCase().replace(/\s+/g, ''))}`;
+
+              toast({
+                title: `${store.retailer.name} Cart Ready`,
+                description: `${store.items.length} items added. Tap to open cart.`,
+                action: {
+                  label: "Open Cart",
+                  onClick: () => {
+                    window.location.href = demoCartUrl;
+                  }
+                },
+                duration: 8000
+              });
+
+              // Auto-process next store if user doesn't interact
+              setTimeout(processNextStore, 8000);
+            } else {
+              toast({
+                title: "Cart Error",
+                description: `Failed to add items to ${store.retailer.name}`,
+                variant: "destructive"
+              });
+              setTimeout(processNextStore, 2000);
+            }
+          } catch (error) {
+            console.error(`Error with ${store.retailer.name}:`, error);
+            toast({
+              title: "Integration Error",
+              description: `Error connecting to ${store.retailer.name}`,
+              variant: "destructive"
+            });
+            setTimeout(processNextStore, 2000);
+          }
+        };
+
+        // Start processing stores
+        processNextStore();
+      } else {
+        // Desktop: open multiple tabs as before
+        let successCount = 0;
+
+        for (let i = 0; i < planData.stores.length; i++) {
+          const store = planData.stores[i];
+
+          // Add a small delay between opening tabs to prevent browser blocking
+          setTimeout(async () => {
+            try {
+              const affiliateData = {
+                source: 'smartcart',
+                planId: `${listId}-${Date.now()}`,
+                affiliateId: 'smartcart-affiliate-001',
+                trackingParams: {
+                  listId,
+                  planType: selectedPlanType,
+                  totalItems: store.items.length,
+                  estimatedValue: store.subtotal,
+                  retailerId: store.retailer.id
+                }
+              };
+
+              const response = await fetch('/api/retailers/add-to-cart', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  retailerId: store.retailer.id,
+                  items: store.items.map(item => ({
+                    productName: item.productName,
+                    quantity: item.quantity,
+                    unit: item.unit,
+                    estimatedPrice: item.suggestedPrice
+                  })),
+                  affiliateData,
+                  userInfo: {
+                    userId: 1, // This would come from auth context in production
+                    listId: listId
+                  }
+                })
+              });
+
+              const result = await response.json();
+
+              if (response.ok) {
+                console.log(`Cart prepared for ${store.retailer.name}:`, result.cartUrl);
+
+                // Extract URL parameters and create demo cart URL
+                const urlParams = new URLSearchParams(result.cartUrl.split('?')[1] || '');
+                const demoCartUrl = `/retailer-cart-demo?${urlParams.toString()}&retailer=${encodeURIComponent(store.retailer.name.toLowerCase().replace(/\s+/g, ''))}`;
+
+                // Use window.location.href instead of popup to avoid blocking
+                setTimeout(() => {
+                  window.location.href = demoCartUrl;
+                }, i * 2000); // Stagger the redirects for multi-store
+
+                successCount++;
+
+                toast({
+                  title: `${store.retailer.name} Cart Ready`,
+                  description: `Redirecting to ${store.retailer.name} cart...`,
+                  duration: 3000
+                });
+              } else {
+                console.error(`Failed to add items to ${store.retailer.name} cart`);
+                toast({
+                  title: "Cart Error",
+                  description: `Failed to add items to ${store.retailer.name} cart`,
+                  variant: "destructive"
+                });
+              }
+            } catch (error) {
+              console.error(`Error with ${store.retailer.name}:`, error);
+              toast({
+                title: "Integration Error",
+                description: `Error connecting to ${store.retailer.name}`,
+                variant: "destructive"
+              });
+            }
+          }, i * 1500); // 1.5 second delay between each store
+        }
+
+        // Show summary after all stores are processed
+        setTimeout(() => {
+          if (successCount > 0) {
+            toast({
+              title: "Multi-Store Cart Integration Complete",
+              description: `Successfully prepared ${successCount} retailer cart${successCount > 1 ? 's' : ''} with your items. Check your browser tabs.`,
+              duration: 6000
+            });
+          }
+        }, planData.stores.length * 1500 + 1000);
+      }
+    } else {
+      // Single store: direct cart integration
+      const store = planData.stores?.[0];
+      if (!store) {
+        toast({
+          title: "Error",
+          description: "No store information available",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      try {
+        const affiliateData = {
+          source: 'smartcart',
+          planId: `${listId}-${Date.now()}`,
+          affiliateId: 'smartcart-affiliate-001',
+          trackingParams: {
+            listId,
+            planType: selectedPlanType,
+            totalItems: store.items.length,
+            estimatedValue: store.subtotal,
+            retailerId: store.retailer.id
+          }
+        };
+
+        const response = await fetch('/api/retailers/add-to-cart', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            retailerId: store.retailer.id,
+            items: store.items.map(item => ({
+              productName: item.productName,
+              quantity: item.quantity,
+              unit: item.unit,
+              estimatedPrice: item.suggestedPrice
+            })),
+            affiliateData,
+            userInfo: {
+              userId: 1, // This would come from auth context in production
+              listId: listId
+            }
+          })
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log(`Cart prepared for ${store.retailer.name}:`, result.cartUrl);
+
+          // Extract URL parameters and create demo cart URL
+          const urlParams = new URLSearchParams(result.cartUrl.split('?')[1] || '');
+          const demoCartUrl = `/retailer-cart-demo?${urlParams.toString()}&retailer=${encodeURIComponent(store.retailer.name.toLowerCase().replace(/\s+/g, ''))}`;
+
+          toast({
+            title: "Cart Ready!",
+            description: `Your items have been added to ${store.retailer.name} cart. Redirecting to cart...`,
+            duration: 2000
+          });
+
+          // Redirect to demo cart page instead of popup
+          setTimeout(() => {
+            window.location.href = demoCartUrl;
+          }, 1500);
+        } else {
+          toast({
+            title: "Cart Error",
+            description: `Failed to add items to ${store.retailer.name} cart`,
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
+        console.error(`Error with ${store.retailer.name}:`, error);
+        toast({
+          title: "Integration Error",
+          description: `Error connecting to ${store.retailer.name}`,
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
       {/* Header */}
@@ -321,54 +621,64 @@ const PlanDetails: React.FC = () => {
       {/* Action Buttons */}
       <div className="flex gap-4 mb-6">
         <div className="space-y-2 w-full">
-          <Button 
-            className="w-full"
-            size="lg"
-            onClick={() => {
-              console.log('Start Shopping Route clicked with planData:', planData);
+          <div className="flex gap-3">
+            <Button 
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-lg"
+              size="lg"
+              onClick={() => {
+                console.log('Start Shopping Route clicked with planData:', planData);
 
-              if (!planData || !planData.stores || planData.stores.length === 0) {
+                if (!planData || !planData.stores || planData.stores.length === 0) {
+                  toast({
+                    title: "No Plan Data",
+                    description: "Please select a plan type first",
+                    variant: "destructive"
+                  });
+                  return;
+                }
+
+                const enhancedPlanData = {
+                  ...planData,
+                  planType: selectedPlanType === 'single-store' ? 'Single Store' :
+                           selectedPlanType === 'multi-store' ? 'Multi-Store Best Value' :
+                           selectedPlanType === 'balanced' ? 'Balanced Plan' : 'Shopping Plan',
+                  selectedPlanType: selectedPlanType,
+                  listId: listId
+                };
+
+                console.log('Enhanced plan data for navigation:', enhancedPlanData);
+
+                // Store in sessionStorage as primary method
+                sessionStorage.setItem('shoppingPlanData', JSON.stringify(enhancedPlanData));
+                sessionStorage.setItem('shoppingListId', listId);
+                sessionStorage.setItem('shoppingMode', 'instore');
+
+                // Navigate with simple parameters to avoid URL corruption
+                const targetUrl = `/shopping-route?listId=${listId}&mode=instore&fromPlan=true`;
+                console.log('Navigating to:', targetUrl);
+
+                // Use the navigate function instead of window.location for better routing
+                navigate(targetUrl);
+
                 toast({
-                  title: "No Plan Data",
-                  description: "Please select a plan type first",
-                  variant: "destructive"
+                  title: "Loading Shopping Route",
+                  description: "Preparing your optimized shopping route...",
+                  duration: 2000
                 });
-                return;
-              }
-
-              const enhancedPlanData = {
-                ...planData,
-                planType: selectedPlanType === 'single-store' ? 'Single Store' :
-                         selectedPlanType === 'multi-store' ? 'Multi-Store Best Value' :
-                         selectedPlanType === 'balanced' ? 'Balanced Plan' : 'Shopping Plan',
-                selectedPlanType: selectedPlanType,
-                listId: listId
-              };
-
-              console.log('Enhanced plan data for navigation:', enhancedPlanData);
-
-              // Store in sessionStorage as primary method
-              sessionStorage.setItem('shoppingPlanData', JSON.stringify(enhancedPlanData));
-              sessionStorage.setItem('shoppingListId', listId);
-              sessionStorage.setItem('shoppingMode', 'instore');
-
-              // Navigate with simple parameters to avoid URL corruption
-              const targetUrl = `/shopping-route?listId=${listId}&mode=instore&fromPlan=true`;
-              console.log('Navigating to:', targetUrl);
-
-              // Use the navigate function instead of window.location for better routing
-              navigate(targetUrl);
-
-              toast({
-                title: "Loading Shopping Route",
-                description: "Preparing your optimized shopping route...",
-                duration: 2000
-              });
-            }}
-          >
-            <ShoppingCart className="h-4 w-4 mr-2" />
-            Start Shopping Route
-          </Button>
+              }}
+            >
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              Begin Shopping
+            </Button>
+            <Button 
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold shadow-lg"
+              size="lg"
+              onClick={handleOrderOnline}
+            >
+              <MapPin className="h-4 w-4 mr-2" />
+              Order Online
+            </Button>
+          </div>
         </div>
       </div>
 
