@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DealsView } from '@/components/deals/DealsView';
 import { useQuery } from '@tanstack/react-query';
 import { Search, TrendingDown, Tag } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 import type { User } from '@/lib/types';
 
@@ -31,6 +32,10 @@ const DealsPage: React.FC = () => {
 
   const { data: dealsSummary } = useQuery({
     queryKey: ['/api/deals/summary'],
+  });
+
+    const { data: retailers } = useQuery({
+    queryKey: ['/api/retailers'],
   });
 
   return (
@@ -96,6 +101,35 @@ const DealsPage: React.FC = () => {
 
         {/* Main Content Tabs */}
         <div className="px-4 mb-4">
+            {/* Store Filter */}
+            <div className="mb-4">
+            <Select 
+                value={selectedRetailerId ? selectedRetailerId.toString() : "all"} 
+                onValueChange={(value) => {
+                if (value === "all") {
+                    setSelectedRetailerId(null);
+                    // Remove retailer query parameter from URL
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('retailer');
+                    window.history.replaceState({}, '', url.toString());
+                } else {
+                    setSelectedRetailerId(parseInt(value));
+                }
+                }}
+            >
+                <SelectTrigger className="h-10 bg-gray-50 border-0">
+                <SelectValue placeholder="All Stores" />
+                </SelectTrigger>
+                <SelectContent>
+                <SelectItem value="all">All Stores</SelectItem>
+                {retailers?.map((retailer) => (
+                    <SelectItem key={retailer.id} value={retailer.id.toString()}>
+                    {retailer.name}
+                    </SelectItem>
+                ))}
+                </SelectContent>
+            </Select>
+            </div>
           <Tabs defaultValue="all" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="all">All Deals</TabsTrigger>
