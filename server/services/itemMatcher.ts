@@ -49,7 +49,13 @@ export class ItemMatcherService {
     shoppingListItems: any[], 
     retailerId: number, 
     availableProducts: any[], 
-    availableDeals: any[]
+    availableDeals: any[],
+    userPreferences?: {
+      preferNameBrand?: boolean;
+      preferOrganic?: boolean;
+      buyInBulk?: boolean;
+      prioritizeCostSavings?: boolean;
+    }
   ): Promise<Map<number, MatchResult>> {
     const matches = new Map<number, MatchResult>();
 
@@ -58,7 +64,8 @@ export class ItemMatcherService {
         item, 
         retailerId, 
         availableProducts, 
-        availableDeals
+        availableDeals,
+        userPreferences
       );
       matches.set(item.id, bestMatch);
     }
@@ -67,74 +74,87 @@ export class ItemMatcherService {
   }
 
   /**
-   * Find the best match for a single item
+   * Find the best match for a single item considering user preferences
    */
   private async findBestMatch(
     shoppingListItem: any,
     retailerId: number,
     availableProducts: any[],
-    availableDeals: any[]
+    availableDeals: any[],
+    userPreferences?: {
+      preferNameBrand?: boolean;
+      preferOrganic?: boolean;
+      buyInBulk?: boolean;
+      prioritizeCostSavings?: boolean;
+    }
   ): Promise<MatchResult> {
     const itemName = this.normalizeProductName(shoppingListItem.productName);
     
-    // 1. Try exact match first
-    let exactMatch = this.findExactMatch(itemName, availableProducts);
-    if (exactMatch) {
-      const deal = this.findDealForProduct(exactMatch, availableDeals);
-      return {
+    // Get all potential matches first
+    const potentialMatches = [];
+    
+    // 1. Exact matches
+    const exactMatches = this.findAllExactMatches(itemName, availableProducts);
+    exactMatches.forEach(product => {
+      potentialMatches.push({
+        product,
+        matchType: 'exact' as const,
         confidence: 1.0,
-        matchType: 'exact',
-        retailerProduct: exactMatch,
-        deal,
-        explanation: `Exact match found: ${exactMatch.name}`
-      };
-    }
+        deal: this.findDealForProduct(product, availableDeals)
+      });
+    });
 
-    // 2. Try brand-aware matching
-    const brandMatch = this.findBrandMatch(itemName, retailerId, availableProducts);
-    if (brandMatch.product) {
-      const deal = this.findDealForProduct(brandMatch.product, availableDeals);
+    // 2. Brand-aware matches
+    const brandMatches = this.findAllBrandMatches(itemName, retailerId, availableProducts);
+    brandMatches.forEach(match => {
+      potentialMatches.push({
+        product: match.product,
+        matchType: 'brand' as const,
+        confidence: match.confidence,
+        deal: this.findDealForProduct(match.product, availableDeals)
+      });
+    });
+
+    // 3. Fuzzy matches
+    const fuzzyMatches = this.findAllFuzzyMatches(itemName, availableProducts);
+    fuzzyMatches.filter(m => m.confidence > 0.7).forEach(match => {
+      potentialMatches.push({
+        product: match.product,
+        matchType: 'fuzzy' as const,
+        confidence: match.confidence,
+        deal: this.findDealForProduct(match.product, availableDeals)
+      });
+    });
+
+    // 4. Category matches
+    const categoryMatches = this.findAllCategoryMatches(itemName, availableProducts);
+    categoryMatches.forEach(match => {
+      potentialMatches.push({
+        product: match.product,
+        matchType: 'category' as const,
+        confidence: match.confidence,
+        deal: this.findDealForProduct(match.product, availableDeals)
+      });
+    });
+
+    if (potentialMatches.length === 0) {
       return {
-        confidence: brandMatch.confidence,
-        matchType: 'brand',
-        retailerProduct: brandMatch.product,
-        deal,
-        explanation: `Brand match: ${brandMatch.explanation}`
+        confidence: 0,
+        matchType: 'none',
+        retailerProduct: null,
+        explanation: `No suitable match found for "${shoppingListItem.productName}"`
       };
     }
 
-    // 3. Try fuzzy matching
-    const fuzzyMatch = this.findFuzzyMatch(itemName, availableProducts);
-    if (fuzzyMatch.confidence > 0.7) {
-      const deal = this.findDealForProduct(fuzzyMatch.product, availableDeals);
-      return {
-        confidence: fuzzyMatch.confidence,
-        matchType: 'fuzzy',
-        retailerProduct: fuzzyMatch.product,
-        deal,
-        explanation: `Fuzzy match: ${fuzzyMatch.product.name} (${Math.round(fuzzyMatch.confidence * 100)}% similarity)`
-      };
-    }
-
-    // 4. Try category-based matching
-    const categoryMatch = this.findCategoryMatch(itemName, availableProducts);
-    if (categoryMatch.product) {
-      const deal = this.findDealForProduct(categoryMatch.product, availableDeals);
-      return {
-        confidence: categoryMatch.confidence,
-        matchType: 'category',
-        retailerProduct: categoryMatch.product,
-        deal,
-        explanation: `Category substitute: ${categoryMatch.product.name}`
-      };
-    }
-
-    // 5. No match found
+    // 5. Apply user preference filtering and cost optimization
+    const bestMatch = this.selectBestMatchWithPreferences(potentialMatches, userPreferences);
+    
     return {
-      confidence: 0,
-      matchType: 'none',
-      retailerProduct: null,
-      explanation: `No suitable match found for "${shoppingListItem.productName}"`
+      confidence: bestMatch.confidence,
+      matchType: bestMatch.matchType,
+      retailerProduct: bestMatch.product,
+      deal: bestMatch.deal,
+      explanation: bestMatch.explanation
     };
   }
 
@@ -144,6 +164,210 @@ export class ItemMatcherService {
       this.normalizeProductName(product.name).includes(itemName) ||
       itemName.includes(this.normalizeProductName(product.name))
     ) || null;
+  }
+
+  private findAllExactMatches(itemName: string, products: any[]): any[] {
+    return products.filter(product => 
+      this.normalizeProductName(product.name) === itemName ||
+      this.normalizeProductName(product.name).includes(itemName) ||
+      itemName.includes(this.normalizeProductName(product.name))
+    );
+  }
+
+  private findAllBrandMatches(itemName: string, retailerId: number, products: any[]): Array<{ product: any, confidence: number }> {
+    const retailerName = this.getRetailerName(retailerId);
+    const storeBrands = this.brandMappings.get(retailerName) || [];
+    const matches = [];
+    
+    for (const product of products) {
+      const productName = this.normalizeProductName(product.name);
+      
+      for (const brand of storeBrands) {
+        if (productName.includes(brand)) {
+          const productWithoutBrand = productName.replace(brand, '').trim();
+          const similarity = this.calculateSimilarity(itemName, productWithoutBrand);
+          if (similarity > 0.8) {
+            matches.push({
+              product,
+              confidence: 0.9
+            });
+          }
+        }
+      }
+    }
+    
+    return matches;
+  }
+
+  private findAllFuzzyMatches(itemName: string, products: any[]): Array<{ product: any, confidence: number }> {
+    const matches = [];
+    
+    for (const product of products) {
+      const productName = this.normalizeProductName(product.name);
+      const similarity = this.calculateSimilarity(itemName, productName);
+      
+      if (similarity > 0.6) {
+        matches.push({ product, confidence: similarity });
+      }
+    }
+    
+    return matches.sort((a, b) => b.confidence - a.confidence);
+  }
+
+  private findAllCategoryMatches(itemName: string, products: any[]): Array<{ product: any, confidence: number }> {
+    const matches = [];
+    
+    for (const [category, variations] of this.categoryMappings.entries()) {
+      if (itemName.includes(category)) {
+        for (const variation of variations) {
+          const categoryMatches = products.filter(product => 
+            this.normalizeProductName(product.name).includes(variation)
+          );
+          categoryMatches.forEach(product => {
+            matches.push({ product, confidence: 0.8 });
+          });
+        }
+      }
+    }
+    
+    return matches;
+  }
+
+  private selectBestMatchWithPreferences(
+    potentialMatches: Array<{
+      product: any;
+      matchType: 'exact' | 'brand' | 'fuzzy' | 'category';
+      confidence: number;
+      deal: any;
+    }>,
+    userPreferences?: {
+      preferNameBrand?: boolean;
+      preferOrganic?: boolean;
+      buyInBulk?: boolean;
+      prioritizeCostSavings?: boolean;
+    }
+  ): any {
+    let scoredMatches = potentialMatches.map(match => {
+      let score = match.confidence * 100; // Base score from match confidence
+      const product = match.product;
+      const productName = product.name.toLowerCase();
+      
+      // Calculate cost per unit for comparison
+      const basePrice = match.deal ? match.deal.salePrice : (product.price || 500);
+      const quantity = product.quantity || 1;
+      const costPerUnit = basePrice / quantity;
+      
+      // Apply user preferences
+      if (userPreferences) {
+        // Prefer organic products if user prefers organic
+        if (userPreferences.preferOrganic && 
+            (productName.includes('organic') || productName.includes('natural'))) {
+          score += 20;
+        }
+        
+        // Prefer name brand if user prefers name brand
+        if (userPreferences.preferNameBrand && product.isNameBrand) {
+          score += 15;
+        } else if (!userPreferences.preferNameBrand && !product.isNameBrand) {
+          // Prefer store brands if user doesn't prefer name brand
+          score += 10;
+        }
+        
+        // Bulk preferences
+        if (userPreferences.buyInBulk && quantity > 6) {
+          score += 25;
+        } else if (!userPreferences.buyInBulk && quantity <= 6) {
+          score += 10;
+        }
+        
+        // Cost savings priority
+        if (userPreferences.prioritizeCostSavings) {
+          if (match.deal) {
+            const savings = (product.price - match.deal.salePrice) / product.price;
+            score += savings * 30; // Up to 30 points for good deals
+          }
+          // Bonus for lower cost per unit
+          score += Math.max(0, 20 - (costPerUnit / 10));
+        }
+      }
+      
+      // Always factor in cost efficiency (lower cost per unit gets higher score)
+      const costEfficiencyScore = Math.max(0, 50 - (costPerUnit / 5));
+      score += costEfficiencyScore;
+      
+      // Bonus for deals regardless of user preference
+      if (match.deal) {
+        score += 15;
+      }
+      
+      // Match type priority (exact > brand > fuzzy > category)
+      const matchTypeBonuses = {
+        'exact': 50,
+        'brand': 30,
+        'fuzzy': 10,
+        'category': 5
+      };
+      score += matchTypeBonuses[match.matchType];
+      
+      return {
+        ...match,
+        score,
+        costPerUnit,
+        explanation: this.generateMatchExplanation(match, userPreferences, costPerUnit)
+      };
+    });
+    
+    // Sort by score (highest first)
+    scoredMatches.sort((a, b) => b.score - a.score);
+    
+    return scoredMatches[0];
+  }
+
+  private generateMatchExplanation(
+    match: any,
+    userPreferences?: any,
+    costPerUnit?: number
+  ): string {
+    const parts = [];
+    
+    // Match type explanation
+    const matchExplanations = {
+      'exact': 'Exact product match',
+      'brand': 'Store brand alternative',
+      'fuzzy': `Similar product (${Math.round(match.confidence * 100)}% match)`,
+      'category': 'Category substitute'
+    };
+    parts.push(matchExplanations[match.matchType]);
+    
+    // Deal information
+    if (match.deal) {
+      const savings = ((match.product.price - match.deal.salePrice) / match.product.price * 100).toFixed(1);
+      parts.push(`${savings}% off sale`);
+    }
+    
+    // Cost per unit
+    if (costPerUnit) {
+      parts.push(`$${(costPerUnit / 100).toFixed(2)}/unit`);
+    }
+    
+    // User preference alignment
+    if (userPreferences) {
+      const productName = match.product.name.toLowerCase();
+      
+      if (userPreferences.preferOrganic && productName.includes('organic')) {
+        parts.push('organic as preferred');
+      }
+      
+      if (userPreferences.buyInBulk && (match.product.quantity || 1) > 6) {
+        parts.push('bulk size as preferred');
+      }
+      
+      if (userPreferences.prioritizeCostSavings && match.deal) {
+        parts.push('great value');
+      }
+    }
+    
+    return parts.join(', ');
   }
 
   private findBrandMatch(itemName: string, retailerId: number, products: any[]): { product: any | null, confidence: number, explanation: string } {
@@ -278,20 +502,34 @@ export class ItemMatcherService {
     shoppingListItems: any[],
     retailerId: number,
     availableProducts: any[],
-    availableDeals: any[]
+    availableDeals: any[],
+    userPreferences?: {
+      preferNameBrand?: boolean;
+      preferOrganic?: boolean;
+      buyInBulk?: boolean;
+      prioritizeCostSavings?: boolean;
+    }
   ): Promise<{
     items: any[];
     totalEstimatedValue: number;
     dealsSaved: number;
     unmatchedItems: any[];
     matchSummary: any;
+    costAnalysis: {
+      averageCostPerUnit: number;
+      totalSavingsFromDeals: number;
+      preferenceAlignment: number;
+    };
   }> {
-    const matches = await this.findMatches(shoppingListItems, retailerId, availableProducts, availableDeals);
+    const matches = await this.findMatches(shoppingListItems, retailerId, availableProducts, availableDeals, userPreferences);
     
     const cartItems = [];
     const unmatchedItems = [];
     let totalEstimatedValue = 0;
     let dealsSaved = 0;
+    let totalCostPerUnit = 0;
+    let totalUnits = 0;
+    let preferenceAlignmentScore = 0;
     
     const matchSummary = {
       exact: 0,
@@ -308,6 +546,32 @@ export class ItemMatcherService {
         const price = match.deal ? match.deal.salePrice : (match.retailerProduct.price || 300);
         const regularPrice = match.retailerProduct.price || price;
         const savings = match.deal ? (regularPrice - price) : 0;
+        const quantity = match.retailerProduct.quantity || 1;
+        const costPerUnit = price / quantity;
+        
+        // Track cost analysis
+        totalCostPerUnit += costPerUnit * item.quantity;
+        totalUnits += item.quantity;
+        
+        // Calculate preference alignment
+        let itemPreferenceScore = 0;
+        if (userPreferences) {
+          const productName = match.retailerProduct.name.toLowerCase();
+          
+          if (userPreferences.preferOrganic && productName.includes('organic')) {
+            itemPreferenceScore += 25;
+          }
+          if (userPreferences.preferNameBrand && match.retailerProduct.isNameBrand) {
+            itemPreferenceScore += 20;
+          }
+          if (userPreferences.buyInBulk && quantity > 6) {
+            itemPreferenceScore += 20;
+          }
+          if (userPreferences.prioritizeCostSavings && match.deal) {
+            itemPreferenceScore += 35;
+          }
+        }
+        preferenceAlignmentScore += itemPreferenceScore;
         
         cartItems.push({
           shoppingListItemId: item.id,
@@ -318,10 +582,12 @@ export class ItemMatcherService {
           estimatedPrice: price,
           originalPrice: regularPrice,
           savings,
+          costPerUnit,
           dealId: match.deal?.id,
           matchType: match.matchType,
           matchConfidence: match.confidence,
-          matchExplanation: match.explanation
+          matchExplanation: match.explanation,
+          preferenceAlignment: itemPreferenceScore
         });
         
         totalEstimatedValue += price * item.quantity;
@@ -336,12 +602,19 @@ export class ItemMatcherService {
       }
     }
 
+    const costAnalysis = {
+      averageCostPerUnit: totalUnits > 0 ? totalCostPerUnit / totalUnits : 0,
+      totalSavingsFromDeals: dealsSaved,
+      preferenceAlignment: cartItems.length > 0 ? preferenceAlignmentScore / cartItems.length : 0
+    };
+
     return {
       items: cartItems,
       totalEstimatedValue,
       dealsSaved,
       unmatchedItems,
-      matchSummary
+      matchSummary,
+      costAnalysis
     };
   }
 }
