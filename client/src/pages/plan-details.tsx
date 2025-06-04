@@ -274,9 +274,13 @@ const PlanDetails: React.FC = () => {
             if (response.ok) {
               console.log(`Cart prepared for ${store.retailer.name}:`, result.cartUrl);
 
-              // Create clickable link instead of popup
+              // Extract URL parameters and create demo cart URL
+              const urlParams = new URLSearchParams(result.cartUrl.split('?')[1] || '');
+              const demoCartUrl = `/retailer-cart-demo?${urlParams.toString()}&retailer=${encodeURIComponent(store.retailer.name.toLowerCase().replace(/\s+/g, ''))}`;
+
+              // Open demo cart page in new tab
               const linkElement = document.createElement('a');
-              linkElement.href = result.cartUrl;
+              linkElement.href = demoCartUrl;
               linkElement.target = '_blank';
               linkElement.rel = 'noopener noreferrer';
               linkElement.click();
@@ -285,11 +289,11 @@ const PlanDetails: React.FC = () => {
 
               toast({
                 title: `${store.retailer.name} Cart Ready`,
-                description: `Items added to cart. Click to open if tab didn't open automatically.`,
+                description: `Items added to cart. Opening demo cart page...`,
                 action: {
                   label: "Open Cart",
                   onClick: () => {
-                    window.open(result.cartUrl, '_blank', 'noopener,noreferrer');
+                    window.open(demoCartUrl, '_blank', 'noopener,noreferrer');
                   }
                 }
               });
@@ -373,15 +377,19 @@ const PlanDetails: React.FC = () => {
           const result = await response.json();
           console.log(`Cart prepared for ${store.retailer.name}:`, result.cartUrl);
 
+          // Extract URL parameters and create demo cart URL
+          const urlParams = new URLSearchParams(result.cartUrl.split('?')[1] || '');
+          const demoCartUrl = `/retailer-cart-demo?${urlParams.toString()}&retailer=${encodeURIComponent(store.retailer.name.toLowerCase().replace(/\s+/g, ''))}`;
+
           toast({
             title: "Cart Ready!",
-            description: `Your items have been added to ${store.retailer.name} cart. Redirecting...`,
+            description: `Your items have been added to ${store.retailer.name} cart. Opening demo cart...`,
             duration: 3000
           });
 
-          // Short delay then redirect to retailer cart
+          // Short delay then open demo cart in new tab
           setTimeout(() => {
-            window.location.href = result.cartUrl;
+            window.open(demoCartUrl, '_blank', 'noopener,noreferrer');
           }, 1500);
         } else {
           toast({

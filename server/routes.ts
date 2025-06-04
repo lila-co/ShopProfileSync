@@ -4025,7 +4025,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Don't fail the request if affiliate tracking fails
       }
 
-      // Simulate retailer-specific cart integration responses
+      // Generate retailer-specific cart URLs with items encoded as URL parameters
+      const itemParams = items.map((item, index) => {
+        const safeProductName = encodeURIComponent(item.productName.replace(/[^\w\s]/g, ''));
+        return `item${index + 1}=${safeProductName}&qty${index + 1}=${item.quantity}`;
+      }).join('&');
+
+      const affiliateParams = `utm_source=smartcart&utm_medium=affiliate&utm_campaign=plan-${affiliateData?.trackingParams?.planType || 'unknown'}&utm_content=list-${affiliateData?.trackingParams?.listId || 'unknown'}&affiliate_id=${affiliateData?.affiliateId || 'smartcart-001'}&cart_token=${cartToken}&tracking_id=${trackingId}`;
+
+      // Simulate retailer-specific cart integration responses with proper cart URLs
       let cartIntegrationResponse;
       switch (retailer.name.toLowerCase()) {
         case 'walmart':
@@ -4035,7 +4043,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             message: 'Items added directly to Walmart cart',
             itemsAdded: items.length,
             estimatedTotal,
-            cartUrl: `https://www.walmart.com/cart`,
+            cartUrl: `https://www.walmart.com/cart?${itemParams}&${affiliateParams}`,
             checkoutReady: true,
             retailerSpecific: {
               loyaltyPointsEarned: Math.floor(estimatedTotal * 0.01), // 1% back in points
@@ -4051,7 +4059,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             message: 'Items added directly to Target cart',
             itemsAdded: items.length,
             estimatedTotal,
-            cartUrl: `https://www.target.com/cart`,
+            cartUrl: `https://www.target.com/cart?${itemParams}&${affiliateParams}`,
             checkoutReady: true,
             retailerSpecific: {
               redCardDiscount: Math.floor(estimatedTotal * 0.05), // 5% RedCard discount
@@ -4067,7 +4075,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             message: 'Items added directly to Kroger cart',
             itemsAdded: items.length,
             estimatedTotal,
-            cartUrl: `https://www.kroger.com/cart`,
+            cartUrl: `https://www.kroger.com/cart?${itemParams}&${affiliateParams}`,
             checkoutReady: true,
             retailerSpecific: {
               fuelPointsEarned: Math.floor(estimatedTotal / 100), // 1 point per $1
@@ -4083,7 +4091,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             message: 'Items added directly to Whole Foods cart',
             itemsAdded: items.length,
             estimatedTotal,
-            cartUrl: `https://www.wholefoodsmarket.com/cart`,
+            cartUrl: `https://www.wholefoodsmarket.com/cart?${itemParams}&${affiliateParams}`,
             checkoutReady: true,
             retailerSpecific: {
               primeMemberDiscount: Math.floor(estimatedTotal * 0.10), // 10% Prime discount
@@ -4099,7 +4107,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             message: `Items added directly to ${retailer.name} cart`,
             itemsAdded: items.length,
             estimatedTotal,
-            cartUrl: `https://www.${retailer.name.toLowerCase().replace(/\s+/g, '')}.com/cart`,
+            cartUrl: `https://www.${retailer.name.toLowerCase().replace(/\s+/g, '')}.com/cart?${itemParams}&${affiliateParams}`,
             checkoutReady: true,
             retailerSpecific: {
               loyaltyProgramActive: true,
