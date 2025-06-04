@@ -1837,6 +1837,55 @@ const [updatedUser] = await db
     }
   }
 
+  async initializeRetailers() {
+    await this.run(`
+      INSERT OR IGNORE INTO retailers (id, name, logoColor, apiEndpoint, apiKey) VALUES
+      (1, 'Walmart', 'blue', 'https://api.walmart.com', 'mock_api_key_walmart'),
+      (2, 'Target', 'red', 'https://api.target.com', 'mock_api_key_target'),
+      (3, 'Whole Foods', 'green', 'https://api.wholefoods.com', 'mock_api_key_whole_foods'),
+      (4, 'Costco', 'orange', 'https://api.costco.com', 'mock_api_key_costco'),
+      (5, 'Food King', 'yellow', 'https://www.foodkingcostplus.com', 'mock_api_key_food_king')
+    `);
+
+    // Initialize store locations for location-based filtering
+    this.initializeStoreLocations();
+  }
+
+  private async initializeStoreLocations() {
+    const { locationBasedCircularManager } = await import('./services/locationBasedCircularManager');
+
+    // Add sample store locations for each retailer (using major US cities)
+    await locationBasedCircularManager.addStoreLocations(1, [ // Walmart
+      { storeId: '1001', address: '123 Main St, New York, NY', lat: 40.7128, lng: -74.0060 },
+      { storeId: '1002', address: '456 Oak Ave, Los Angeles, CA', lat: 34.0522, lng: -118.2437 },
+      { storeId: '1003', address: '789 Pine St, Chicago, IL', lat: 41.8781, lng: -87.6298 }
+    ]);
+
+    await locationBasedCircularManager.addStoreLocations(2, [ // Target
+      { storeId: '2001', address: '321 Elm St, New York, NY', lat: 40.7589, lng: -73.9851 },
+      { storeId: '2002', address: '654 Maple Ave, Los Angeles, CA', lat: 34.0928, lng: -118.3287 },
+      { storeId: '2003', address: '987 Cedar St, Chicago, IL', lat: 41.8986, lng: -87.6153 }
+    ]);
+
+    await locationBasedCircularManager.addStoreLocations(3, [ // Whole Foods
+      { storeId: '3001', address: '111 Broadway, New York, NY', lat: 40.7505, lng: -73.9934 },
+      { storeId: '3002', address: '222 Sunset Blvd, Los Angeles, CA', lat: 34.0983, lng: -118.3267 },
+      { storeId: '3003', address: '333 Lake Shore Dr, Chicago, IL', lat: 41.8896, lng: -87.6227 }
+    ]);
+
+    await locationBasedCircularManager.addStoreLocations(4, [ // Costco
+      { storeId: '4001', address: '444 Queens Blvd, New York, NY', lat: 40.7282, lng: -73.7949 },
+      { storeId: '4002', address: '555 Hollywood Blvd, Los Angeles, CA', lat: 34.1022, lng: -118.3406 },
+      { storeId: '4003', address: '666 Michigan Ave, Chicago, IL', lat: 41.8955, lng: -87.6233 }
+    ]);
+
+    await locationBasedCircularManager.addStoreLocations(5, [ // Food King
+      { storeId: '5001', address: '777 Bronx Ave, New York, NY', lat: 40.8176, lng: -73.8781 },
+      { storeId: '5002', address: '888 Venice Beach, Los Angeles, CA', lat: 33.9850, lng: -118.4695 },
+      { storeId: '5003', address: '999 Navy Pier, Chicago, IL', lat: 41.8919, lng: -87.6051 }
+    ]);
+  }
+
   // Retailer Account methods
   async getRetailerAccounts(): Promise<RetailerAccount[]> {
     try {
@@ -2301,8 +2350,7 @@ const [updatedUser] = await db
     } catch (error) {
       console.error("Error getting deals from circular:", error);
       throw error;
-    }
-  }
+    }}
 
   // Recommendation methods
   async getRecommendations(): Promise<Recommendation[]> {
