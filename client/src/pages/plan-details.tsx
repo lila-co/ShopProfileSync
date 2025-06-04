@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, MapPin, DollarSign, Clock, ShoppingCart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import BottomNavigation from '@/components/layout/BottomNavigation';
 
 interface ShoppingItem {
   id: number;
@@ -200,9 +201,9 @@ const PlanDetails: React.FC = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4 space-y-6">
+    <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-center gap-4 mb-6 p-4">
         <Button
           variant="ghost"
           size="sm"
@@ -214,6 +215,9 @@ const PlanDetails: React.FC = () => {
         </Button>
         <h1 className="text-2xl font-bold">Shopping Plans</h1>
       </div>
+
+      {/* Main Content */}
+      <main className="flex-1 overflow-y-auto p-4 pb-20 space-y-6">
 
       {/* Plan Type Selector */}
       <Tabs value={selectedPlanType} onValueChange={setSelectedPlanType} className="w-full">
@@ -405,6 +409,9 @@ const PlanDetails: React.FC = () => {
           </Card>
         ))}
       </div>
+      </main>
+
+      <BottomNavigation activeTab="shop" />
     </div>
   );
 };
