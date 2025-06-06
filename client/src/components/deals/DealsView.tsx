@@ -8,7 +8,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { ShoppingCart, Store, Clock, Plus, MapPin } from 'lucide-react';
-import { getItemImage } from '@/lib/imageUtils';
+import { getBestProductImage } from "../../lib/imageUtils";
+import { aiCategorizationService } from "../../lib/aiCategorization";
 
 import type { StoreDeal, Retailer } from '@/lib/types';
 
@@ -93,6 +94,39 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
     },
   });
 
+  // Enhanced product image with AI categorization and fallback
+  const [productImages, setProductImages] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const loadProductImages = async () => {
+      if (!storeDeals?.length) return;
+
+      const imagePromises = storeDeals.map(async (deal) => {
+        // Get AI category for better image matching
+        const aiCategory = aiCategorizationService.getQuickCategory(deal.productName);
+
+        // Use enhanced image matching with category awareness
+        const image = await getBestProductImage(
+          deal.productName, 
+          deal.imageUrl, 
+          aiCategory.category,
+          false // Set to true if you want to enable AI image generation
+        );
+
+        return { dealId: deal.id, image };
+      });
+
+      const results = await Promise.all(imagePromises);
+      const imageMap = results.reduce((acc, { dealId, image }) => {
+        if (image) acc[dealId] = image;
+        return acc;
+      }, {} as Record<string, string>);
+
+      setProductImages(imageMap);
+    };
+
+    loadProductImages();
+  }, [storeDeals]);
 
 
   const addToShoppingListMutation = useMutation({
@@ -213,7 +247,7 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
                   {/* Product Image */}
                   <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
                   <img
-                    src={deal.imageUrl || getItemImage(deal.productName) || 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=200&h=200&fit=crop'}
+                    src={productImages[deal.id] || deal.imageUrl || 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=200&h=200&fit=crop'}
                     alt={deal.productName}
                     className="w-full h-full object-cover"
                     onError={(e) => {
