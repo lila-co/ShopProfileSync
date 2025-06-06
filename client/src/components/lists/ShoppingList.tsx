@@ -1063,11 +1063,22 @@ const ShoppingListComponent: React.FC = () => {
                 </Button>
               </div>
 
-              {newItemName.trim() && (
-                <Badge variant="secondary" className="bg-blue-50 text-blue-700 border border-blue-200">
-                  Ready to add
-                </Badge>
-              )}
+              <div className="flex items-center space-x-2">
+                {newItemName.trim() && (
+                  <Badge variant="secondary" className="bg-blue-50 text-blue-700 border border-blue-200">
+                    Ready to add
+                  </Badge>
+                )}
+                
+                <Button
+                  type="submit"
+                  disabled={!newItemName.trim() || addItemMutation.isPending}
+                  className="h-10 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span className="text-sm font-medium">Add Item</span>
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
