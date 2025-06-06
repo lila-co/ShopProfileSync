@@ -1213,11 +1213,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { items: selectedItems, shoppingListId } = req.body;
       const userId = 1; // For demo purposes, use default user
 
+      console.log('Shopping list generation request received:', { selectedItems, shoppingListId });
+
       // Get the target shopping list
       const lists = await storage.getShoppingLists();
       const targetListId = shoppingListId || lists[0]?.id;
 
       if (!targetListId) {
+        console.error('No shopping list available');
         return res.status(400).json({ message: 'No shopping list available' });
       }
 
@@ -1227,9 +1230,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Generating list - Target: ${targetListId}, Existing items: ${existingItems.length}, Empty: ${isEmptyList}`);
 
+      // Define sample items to add
       let itemsToProcess = selectedItems;
 
-      // If no specific items provided, use a comprehensive item set based on list state
+      // If no specific items provided, use sample data
       if (!itemsToProcess || !Array.isArray(itemsToProcess)) {
         if (isEmptyList) {
           // For empty lists, create a comprehensive starter list
@@ -1258,32 +1262,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Fresh additions
             { productName: 'Fresh Strawberries', quantity: 1, unit: 'CONTAINER', isSelected: true },
             { productName: 'Cucumber', quantity: 2, unit: 'COUNT', isSelected: true },
-            { productName: 'Bell Peppers', quantity: 3, unit: 'COUNT', isSelected: true },
-            { productName: 'Ground Turkey', quantity: 1, unit: 'LB', isSelected: true },
+            { productName: 'Sweet Potatoes', quantity: 3, unit: 'LB', isSelected: true },
+            { productName: 'Salmon Fillet', quantity: 1, unit: 'LB', isSelected: true },
             
             // Pantry enhancements
-            { productName: 'Quinoa', quantity: 1, unit: 'BAG', isSelected: true },
-            { productName: 'Coconut Milk', quantity: 2, unit: 'CAN', isSelected: true },
-            { productName: 'Chicken Broth', quantity: 2, unit: 'CONTAINER', isSelected: true },
-            { productName: 'Almond Butter', quantity: 1, unit: 'JAR', isSelected: true },
+            { productName: 'Pasta', quantity: 2, unit: 'BOX', isSelected: true },
+            { productName: 'Marinara Sauce', quantity: 1, unit: 'JAR', isSelected: true },
+            { productName: 'Parmesan Cheese', quantity: 1, unit: 'CONTAINER', isSelected: true },
+            { productName: 'Pine Nuts', quantity: 1, unit: 'BAG', isSelected: true },
             
             // Household essentials
-            { productName: 'Paper Towels', quantity: 6, unit: 'COUNT', isSelected: true },
-            { productName: 'Sparkling Water', quantity: 12, unit: 'BOTTLE', isSelected: true }
+            { productName: 'Dish Soap', quantity: 1, unit: 'BOTTLE', isSelected: true },
+            { productName: 'Laundry Detergent', quantity: 1, unit: 'BOTTLE', isSelected: true }
           ];
         }
       }
 
+      console.log(`Processing ${itemsToProcess.length} items for ${isEmptyList ? 'empty' : 'existing'} list`);
+
       const addedItems = [];
       const updatedItems = [];
       const skippedItems = [];
+
+      // Common item corrections for duplicate detection
+      const commonItemCorrections: Record<string, string[]> = {
+        'banana': ['banan', 'bananna', 'banannas', 'bannana'],
+        'apple': ['appl', 'apples', 'aple'],
+        'milk': ['millk', 'milks', 'mlik'],
+        'bread': ['bred', 'breads', 'loaf'],
+        'egg': ['eggs', 'egss'],
+        'potato': ['potatos', 'potatoe', 'potatoes'],
+        'tomato': ['tomatos', 'tomatoe', 'tomatoes'],
+        'cheese': ['chese', 'cheez', 'chees'],
+        'chicken': ['chickn', 'checken', 'chiken'],
+        'strawberries': ['strawberry', 'strawberies']
+      };
 
       // Process each item
       for (const item of itemsToProcess) {
         if (!item.isSelected) continue;
 
         const normalizedName = item.productName.toLowerCase().trim();
-
+        
         // Check for duplicates using comprehensive matching
         let existingItem = existingItems.find(existing => 
           existing.productName.toLowerCase() === normalizedName ||
@@ -1291,7 +1311,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           existing.productName.toLowerCase() === normalizedName + 's'
         );
 
-        // Check for common item variations using existing commonItemCorrections
+        // Check for common item variations
         if (!existingItem) {
           for (const [baseItem, variations] of Object.entries(commonItemCorrections)) {
             if (normalizedName.includes(baseItem) || variations.some(v => normalizedName.includes(v.toLowerCase()))) {
@@ -1305,53 +1325,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         if (existingItem) {
-          // For existing items, update quantity
-          const updatedItem = await storage.updateShoppingListItem(existingItem.id, {
-            quantity: existingItem.quantity + item.quantity,
-            unit: item.unit || existingItem.unit || 'COUNT'
-          });
-          updatedItems.push({
-            ...updatedItem,
-            merged: true,
-            originalName: item.productName,
-            message: `Combined with existing "${existingItem.productName}" item`
-          });
+          // Skip duplicate items for regeneration to avoid confusion
+          console.log(`Skipping duplicate item: ${item.productName} (matches existing: ${existingItem.productName})`);
+          skippedItems.push(item.productName);
         } else {
-          // Add as new item with AI optimization
+          // Add as new item
           try {
-            let finalUnit = item.unit || 'COUNT';
-            let finalQuantity = item.quantity || 1;
-
-            // Use AI categorization for unit optimization only if no specific unit is provided
-            try {
-              const { productCategorizer } = await import('./services/productCategorizer');
-              const normalized = productCategorizer.normalizeQuantity(
-                item.productName, 
-                item.quantity || 1, 
-                item.unit || 'COUNT'
-              );
-
-              // Only apply AI suggestions if the original unit was generic (COUNT) or not specified
-              if ((!item.unit || item.unit === 'COUNT') && normalized.suggestedUnit) {
-                finalUnit = normalized.suggestedUnit;
-                if (normalized.suggestedQuantity && normalized.suggestedQuantity > 0) {
-                  finalQuantity = normalized.suggestedQuantity;
-                }
-                console.log(`AI optimization for ${item.productName}: ${item.quantity || 1} ${item.unit || 'COUNT'} -> ${finalQuantity} ${finalUnit}`);
-              } else {
-                console.log(`Keeping original units for ${item.productName}: ${finalQuantity} ${finalUnit}`);
-              }
-            } catch (aiError) {
-              console.warn('AI categorization failed for:', item.productName, aiError);
-            }
-
             const newItem = await storage.addShoppingListItem({
               shoppingListId: targetListId,
               productName: item.productName,
-              quantity: finalQuantity,
-              unit: finalUnit
+              quantity: item.quantity || 1,
+              unit: item.unit || 'COUNT'
             });
             addedItems.push(newItem);
+            console.log(`Added new item: ${item.productName}`);
           } catch (error) {
             console.error('Failed to add item:', item.productName, error);
             skippedItems.push(item.productName);
@@ -1359,7 +1346,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      res.json({
+      const result = {
         addedItems,
         updatedItems,
         skippedItems,
@@ -1368,10 +1355,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         itemsSkipped: skippedItems.length,
         totalItems: addedItems.length + updatedItems.length,
         isEmptyList,
-        message: isEmptyList ? 'Shopping list created successfully' : 'Shopping list enhanced with new items'
-      });
+        message: isEmptyList ? 'Shopping list created successfully' : `Added ${addedItems.length} new items to your shopping list`
+      };
+
+      console.log('Shopping list generation completed:', result);
+      res.json(result);
     } catch (error) {
-      handleError(res, error);
+      console.error('Shopping list generation error:', error);
+      
+      // Provide detailed error information
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      const errorStack = error instanceof Error ? error.stack : '';
+      
+      console.error('Error details:', { message: errorMessage, stack: errorStack });
+      
+      res.status(500).json({ 
+        message: 'Failed to generate shopping list', 
+        error: errorMessage,
+        details: 'Check server logs for more information'
+      });
     }
   });
 
