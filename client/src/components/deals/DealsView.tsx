@@ -8,7 +8,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { ShoppingCart, Store, Clock, Plus, MapPin } from 'lucide-react';
-import { getItemImage } from '@/lib/imageUtils';
+import { getBestProductImage } from "../../lib/imageUtils";
+import { aiCategorizationService } from "../../lib/aiCategorization";
 
 import type { StoreDeal, Retailer } from '@/lib/types';
 
@@ -93,6 +94,65 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
     },
   });
 
+  // Enhanced product image with AI categorization and fallback
+  const [productImages, setProductImages] = useState<Record<string, string>>({});
+  const [imageLoadErrors, setImageLoadErrors] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const loadProductImages = async () => {
+      if (!storeDeals?.length) return;
+
+      console.log('Loading product images for', storeDeals.length, 'deals');
+      
+      const imagePromises = storeDeals.map(async (deal) => {
+        try {
+          // Get AI category for better image matching
+          const aiCategory = aiCategorizationService.getQuickCategory(deal.productName);
+
+          // Use enhanced image matching with category awareness
+          const image = await getBestProductImage(
+            deal.productName, 
+            deal.imageUrl, 
+            aiCategory.category,
+            false // Set to true if you want to enable AI image generation
+          );
+
+          console.log(`Image for "${deal.productName}": ${image ? 'found' : 'using fallback'}`);
+          
+          // Always return an image, falling back to a default grocery image
+          const finalImage = image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&h=200&fit=crop';
+          
+          return { dealId: deal.id, image: finalImage };
+        } catch (error) {
+          console.error(`Error loading image for ${deal.productName}:`, error);
+          // Use a generic grocery store image as ultimate fallback
+          return { dealId: deal.id, image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&h=200&fit=crop' };
+        }
+      });
+
+      const results = await Promise.all(imagePromises);
+      const imageMap = results.reduce((acc, { dealId, image }) => {
+        acc[dealId] = image;
+        return acc;
+      }, {} as Record<string, string>);
+
+      console.log('Product images loaded:', Object.keys(imageMap).length);
+      setProductImages(imageMap);
+    };
+
+    loadProductImages();
+  }, [storeDeals]);
+
+  const handleImageError = (dealId: string, productName: string) => {
+    console.log(`Image failed for ${productName}, trying fallback`);
+    setImageLoadErrors(prev => ({ ...prev, [dealId]: true }));
+    
+    // Set a reliable fallback image
+    setProductImages(prev => ({
+      ...prev,
+      [dealId]: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&h=200&fit=crop'
+    }));
+  };
 
 
   const addToShoppingListMutation = useMutation({
@@ -211,14 +271,14 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
               <CardContent className="p-4">
                 <div className="flex gap-4">
                   {/* Product Image */}
-                  <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
                   <img
-                    src={deal.imageUrl || getItemImage(deal.productName) || 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=200&h=200&fit=crop'}
+                    src={productImages[deal.id] || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&h=200&fit=crop'}
                     alt={deal.productName}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=200&h=200&fit=crop';
+                    className="w-full h-full object-cover rounded-xl"
+                    onError={() => handleImageError(deal.id, deal.productName)}
+                    onLoad={() => {
+                      console.log(`Image loaded successfully for ${deal.productName}`);
                     }}
                   />
                   </div>
