@@ -18,7 +18,11 @@ const companyLogos: Record<string, string> = {
 const commonItemImages: Record<string, string> = {
   // Produce
   "apple": "https://images.unsplash.com/photo-1570913149827-d2ac84ab3f9a?q=80&w=200",
+  "apples": "https://images.unsplash.com/photo-1570913149827-d2ac84ab3f9a?q=80&w=200",
+  "organic apples": "https://images.unsplash.com/photo-1570913149827-d2ac84ab3f9a?q=80&w=200",
   "banana": "https://images.unsplash.com/photo-1528825871115-3581a5387919?q=80&w=200",
+  "bananas": "https://images.unsplash.com/photo-1528825871115-3581a5387919?q=80&w=200",
+  "organic bananas": "https://images.unsplash.com/photo-1528825871115-3581a5387919?q=80&w=200",
   "orange": "https://images.unsplash.com/photo-1611080626919-7cf5a9dbab12?q=80&w=200",
   "strawberry": "https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?q=80&w=200",
   "tomato": "https://images.unsplash.com/photo-1607305387299-a3d9611cd469?q=80&w=200",
@@ -33,18 +37,26 @@ const commonItemImages: Record<string, string> = {
   
   // Dairy & Eggs
   "milk": "https://images.unsplash.com/photo-1563636619-e9143da7973b?q=80&w=200",
+  "milk (gallon)": "https://images.unsplash.com/photo-1563636619-e9143da7973b?q=80&w=200",
   "egg": "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?q=80&w=200",
+  "eggs": "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?q=80&w=200",
+  "eggs (dozen)": "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?q=80&w=200",
+  "dozen eggs": "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?q=80&w=200",
   "cheese": "https://images.unsplash.com/photo-1625084561224-01dae12cfab1?q=80&w=200",
   "yogurt": "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?q=80&w=200",
+  "greek yogurt": "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?q=80&w=200",
   "butter": "https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?q=80&w=200",
   "cheddar cheese": "https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?q=80&w=200",
   
   // Meat & Seafood
   "chicken": "https://images.unsplash.com/photo-1604503468506-a8da13d82791?q=80&w=200",
+  "chicken breast": "https://images.unsplash.com/photo-1604503468506-a8da13d82791?q=80&w=200",
   "beef": "https://images.unsplash.com/photo-1603048588667-c24e94e37bf1?q=80&w=200",
   "ground turkey": "https://images.unsplash.com/photo-1607623488057-2bc380e4b816?q=80&w=200",
   "fish": "https://images.unsplash.com/photo-1580554530778-ca36943938b2?q=80&w=200",
   "salmon": "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?q=80&w=200",
+  "salmon fillet": "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?q=80&w=200",
+  "salmon fillet (2lb)": "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?q=80&w=200",
   
   // Bakery
   "bread": "https://images.unsplash.com/photo-1549931319-a545dcf3bc7c?q=80&w=200",
@@ -54,7 +66,10 @@ const commonItemImages: Record<string, string> = {
   
   // Pantry & Canned Goods
   "pasta": "https://images.unsplash.com/photo-1551462147-ff29053bfc14?q=80&w=200",
+  "organic pasta": "https://images.unsplash.com/photo-1551462147-ff29053bfc14?q=80&w=200",
   "rice": "https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?q=80&w=200",
+  "bulk rice": "https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?q=80&w=200",
+  "bulk rice (20lb)": "https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?q=80&w=200",
   "quinoa": "https://images.unsplash.com/photo-1508737027454-e6454ef45afd?q=80&w=200",
   "cereal": "https://images.unsplash.com/photo-1521483451569-e33803c0330c?q=80&w=200",
   "whole grain cereal": "https://images.unsplash.com/photo-1574113270110-89b0e9ca5b46?q=80&w=200",
@@ -76,21 +91,31 @@ const commonItemImages: Record<string, string> = {
   "coffee beans": "https://images.unsplash.com/photo-1559056961-84608fae629c?q=80&w=200",
   "instant coffee": "https://images.unsplash.com/photo-1578662996442-48f60103fc96?q=80&w=200",
   "tea": "https://images.unsplash.com/photo-1576092768241-dec231879fc3?q=80&w=200",
+  "wine": "https://images.unsplash.com/photo-1510972527921-ce03766a1cf1?q=80&w=200",
+  "organic wine": "https://images.unsplash.com/photo-1510972527921-ce03766a1cf1?q=80&w=200",
   
   // Household Items
   "soap": "https://images.unsplash.com/photo-1584305574647-0cc949a2bb9f?q=80&w=200",
   "detergent": "https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?q=80&w=200",
-  "paper towels": "https://images.unsplash.com/photo-1584462278633-cef4c9d0a99f?q=80&w=200",
+  "paper towels": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=200",
+  "paper towel": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=200",
   "toilet paper": "https://images.unsplash.com/photo-1584462278633-cef4c9d0a99f?q=80&w=200",
+  "toilet paper (24 pack)": "https://images.unsplash.com/photo-1584462278633-cef4c9d0a99f?q=80&w=200",
   "paper": "https://images.unsplash.com/photo-1597484661643-2f5fef640dd1?q=80&w=200",
   
   // Frozen Foods
   "frozen vegetables": "https://images.unsplash.com/photo-1590779033100-9f60a05a013d?q=80&w=200",
+  "frozen pizza": "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?q=80&w=200",
   "ice cream": "https://images.unsplash.com/photo-1563805042-7684c019e1cb?q=80&w=200",
   
   // Personal Care
   "shampoo": "https://images.unsplash.com/photo-1631729371254-42c2892f0e6e?q=80&w=200",
-  "toothpaste": "https://images.unsplash.com/photo-1607613009820-a29f7bb81c04?q=80&w=200"
+  "toothpaste": "https://images.unsplash.com/photo-1607613009820-a29f7bb81c04?q=80&w=200",
+  
+  // Health & Wellness
+  "vitamin": "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?q=80&w=200",
+  "vitamin c": "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?q=80&w=200",
+  "vitamins": "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?q=80&w=200"
 };
 
 /**
