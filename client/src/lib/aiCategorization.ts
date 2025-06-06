@@ -523,3 +523,199 @@ function detectCountOptimization(category: string, name: string, quantity?: numb
 }
 
 export const aiCategorizationService = new AICategorationService();
+// AI-powered categorization service for better product matching
+export interface CategoryResult {
+  category: string;
+  confidence: number;
+  suggestedUnit?: string;
+}
+
+class AICategorization {
+  private categoryPatterns: Map<string, RegExp[]> = new Map([
+    ['Produce', [
+      /\b(apple|banana|orange|strawberry|grape|melon|berry|fruit)\b/i,
+      /\b(tomato|lettuce|spinach|carrot|onion|potato|pepper|vegetable)\b/i,
+      /\b(avocado|cucumber|broccoli|celery|kale|arugula)\b/i,
+      /\b(organic|fresh|vine)\b.*\b(produce|fruit|vegetable)\b/i
+    ]],
+    ['Dairy & Eggs', [
+      /\b(milk|cheese|yogurt|butter|cream|dairy)\b/i,
+      /\b(egg|dozen|cheddar|mozzarella|swiss|american)\b/i,
+      /\b(greek|whole|skim|2%|low fat)\b.*\b(milk|yogurt)\b/i
+    ]],
+    ['Meat & Seafood', [
+      /\b(chicken|beef|pork|turkey|lamb|meat)\b/i,
+      /\b(salmon|fish|shrimp|seafood|tuna|cod)\b/i,
+      /\b(ground|breast|thigh|fillet|steak)\b/i
+    ]],
+    ['Pantry & Canned Goods', [
+      /\b(pasta|rice|quinoa|grain|cereal|oats)\b/i,
+      /\b(coffee|tea|sugar|flour|salt|spice)\b/i,
+      /\b(canned|jar|bottle|sauce|oil|vinegar)\b/i,
+      /\b(nuts|almonds|trail mix|granola|beans)\b/i
+    ]],
+    ['Bakery', [
+      /\b(bread|bagel|muffin|roll|loaf|bakery)\b/i,
+      /\b(whole grain|white|wheat|sourdough)\b/i
+    ]],
+    ['Beverages', [
+      /\b(water|juice|soda|drink|beverage|sparkling)\b/i,
+      /\b(coffee|tea|wine|beer|alcohol)\b/i,
+      /\b(coconut|almond|oat)\b.*\bmilk\b/i
+    ]],
+    ['Frozen Foods', [
+      /\b(frozen|ice cream|popsicle|pizza)\b/i,
+      /\bfrozen\b.*\b(vegetable|fruit|meal|dinner)\b/i
+    ]],
+    ['Household Items', [
+      /\b(paper towel|toilet paper|tissue|cleaning|detergent)\b/i,
+      /\b(soap|shampoo|toothpaste|household)\b/i
+    ]],
+    ['Personal Care', [
+      /\b(shampoo|conditioner|toothpaste|deodorant|skincare)\b/i,
+      /\b(lotion|sunscreen|makeup|beauty|personal care)\b/i
+    ]],
+    ['Health & Wellness', [
+      /\b(vitamin|supplement|medicine|health|wellness)\b/i,
+      /\b(protein|fiber|probiotic|organic)\b/i
+    ]]
+  ]);
+
+  private unitPatterns: Map<string, string> = new Map([
+    // Weight-based
+    ['banana', 'LB'],
+    ['apple', 'LB'],
+    ['orange', 'LB'],
+    ['grape', 'LB'],
+    ['potato', 'LB'],
+    ['onion', 'LB'],
+    ['carrot', 'LB'],
+    ['meat', 'LB'],
+    ['chicken', 'LB'],
+    ['beef', 'LB'],
+    ['salmon', 'LB'],
+    ['fish', 'LB'],
+    
+    // Count-based
+    ['avocado', 'COUNT'],
+    ['pepper', 'COUNT'],
+    ['cucumber', 'COUNT'],
+    ['tomato', 'COUNT'],
+    
+    // Container-based
+    ['milk', 'GALLON'],
+    ['juice', 'BOTTLE'],
+    ['water', 'BOTTLE'],
+    ['yogurt', 'CONTAINER'],
+    ['cheese', 'PACK'],
+    ['egg', 'DOZEN'],
+    
+    // Package-based
+    ['bread', 'LOAF'],
+    ['cereal', 'BOX'],
+    ['pasta', 'BOX'],
+    ['rice', 'BAG'],
+    ['coffee', 'BAG'],
+    ['tea', 'BOX'],
+    
+    // Household
+    ['paper towel', 'ROLL'],
+    ['toilet paper', 'ROLL'],
+    ['soap', 'BOTTLE'],
+    ['shampoo', 'BOTTLE'],
+    ['detergent', 'BOTTLE']
+  ]);
+
+  /**
+   * Get a quick category for a product name using pattern matching
+   */
+  getQuickCategory(productName: string): CategoryResult {
+    const normalizedName = productName.toLowerCase().trim();
+    
+    console.log(`Quick categorization for "${productName}": category=${this.getCategoryByPatterns(normalizedName)}, originalUnit=undefined, suggestedUnit=${this.getSuggestedUnit(normalizedName)}`);
+    
+    // Check unit patterns first for better logging
+    const suggestedUnit = this.getSuggestedUnit(normalizedName);
+    
+    return {
+      category: this.getCategoryByPatterns(normalizedName),
+      confidence: 0.8,
+      suggestedUnit
+    };
+  }
+
+  private getCategoryByPatterns(productName: string): string {
+    const normalizedName = productName.toLowerCase();
+    
+    // Score each category based on pattern matches
+    const categoryScores: Map<string, number> = new Map();
+    
+    for (const [category, patterns] of this.categoryPatterns) {
+      let score = 0;
+      for (const pattern of patterns) {
+        if (pattern.test(normalizedName)) {
+          score += 1;
+          // Boost score for exact word matches
+          if (normalizedName.includes(pattern.source.replace(/\\b|\(|\)|\|/g, '').toLowerCase())) {
+            score += 0.5;
+          }
+        }
+      }
+      if (score > 0) {
+        categoryScores.set(category, score);
+      }
+    }
+    
+    // Return the category with the highest score
+    if (categoryScores.size > 0) {
+      const bestCategory = Array.from(categoryScores.entries())
+        .sort(([,a], [,b]) => b - a)[0][0];
+      return bestCategory;
+    }
+    
+    // Fallback to Pantry & Canned Goods for unmatched items
+    return 'Pantry & Canned Goods';
+  }
+
+  private getSuggestedUnit(productName: string): string | undefined {
+    const normalizedName = productName.toLowerCase();
+    
+    // Check for specific unit patterns
+    for (const [pattern, unit] of this.unitPatterns) {
+      if (normalizedName.includes(pattern)) {
+        console.log(`Unit pattern match: "${pattern}" in "${productName}" suggests ${unit}`);
+        return unit;
+      }
+    }
+    
+    // Check for common unit indicators in the name
+    if (/\b(lb|pound|lbs)\b/i.test(normalizedName)) return 'LB';
+    if (/\b(gallon|gal)\b/i.test(normalizedName)) return 'GALLON';
+    if (/\b(dozen|doz)\b/i.test(normalizedName)) return 'DOZEN';
+    if (/\b(bottle|btl)\b/i.test(normalizedName)) return 'BOTTLE';
+    if (/\b(box|pkg|package)\b/i.test(normalizedName)) return 'BOX';
+    if (/\b(bag|sack)\b/i.test(normalizedName)) return 'BAG';
+    if (/\b(roll|rolls)\b/i.test(normalizedName)) return 'ROLL';
+    if (/\b(pack|packs)\b/i.test(normalizedName)) return 'PACK';
+    if (/\b(jar|jars)\b/i.test(normalizedName)) return 'JAR';
+    if (/\b(can|cans)\b/i.test(normalizedName)) return 'CAN';
+    
+    return undefined;
+  }
+
+  /**
+   * Categorize multiple products efficiently
+   */
+  categorizeProducts(productNames: string[]): Map<string, CategoryResult> {
+    const results = new Map<string, CategoryResult>();
+    
+    for (const productName of productNames) {
+      results.set(productName, this.getQuickCategory(productName));
+    }
+    
+    return results;
+  }
+}
+
+// Export singleton instance
+export const aiCategorizationService = new AICategorization();

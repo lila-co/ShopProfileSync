@@ -101,19 +101,28 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
     const loadProductImages = async () => {
       if (!storeDeals?.length) return;
 
+      console.log('Loading product images for', storeDeals.length, 'deals');
+      
       const imagePromises = storeDeals.map(async (deal) => {
-        // Get AI category for better image matching
-        const aiCategory = aiCategorizationService.getQuickCategory(deal.productName);
+        try {
+          // Get AI category for better image matching
+          const aiCategory = aiCategorizationService.getQuickCategory(deal.productName);
 
-        // Use enhanced image matching with category awareness
-        const image = await getBestProductImage(
-          deal.productName, 
-          deal.imageUrl, 
-          aiCategory.category,
-          false // Set to true if you want to enable AI image generation
-        );
+          // Use enhanced image matching with category awareness
+          const image = await getBestProductImage(
+            deal.productName, 
+            deal.imageUrl, 
+            aiCategory.category,
+            false // Set to true if you want to enable AI image generation
+          );
 
-        return { dealId: deal.id, image };
+          console.log(`Image for "${deal.productName}": ${image ? 'found' : 'using fallback'}`);
+          
+          return { dealId: deal.id, image: image || deal.imageUrl };
+        } catch (error) {
+          console.error(`Error loading image for ${deal.productName}:`, error);
+          return { dealId: deal.id, image: deal.imageUrl };
+        }
       });
 
       const results = await Promise.all(imagePromises);
@@ -122,6 +131,7 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
         return acc;
       }, {} as Record<string, string>);
 
+      console.log('Product images loaded:', Object.keys(imageMap).length);
       setProductImages(imageMap);
     };
 
@@ -245,14 +255,18 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
               <CardContent className="p-4">
                 <div className="flex gap-4">
                   {/* Product Image */}
-                  <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
                   <img
                     src={productImages[deal.id] || deal.imageUrl || 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=200&h=200&fit=crop'}
                     alt={deal.productName}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover rounded-xl"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
+                      console.log(`Image failed for ${deal.productName}, using fallback`);
                       target.src = 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=200&h=200&fit=crop';
+                    }}
+                    onLoad={() => {
+                      console.log(`Image loaded successfully for ${deal.productName}`);
                     }}
                   />
                   </div>
