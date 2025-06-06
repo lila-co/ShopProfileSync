@@ -3042,7 +3042,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           else if (retailer.name === "Kroger") basePrice = 260; // Mid-range
 
           const price = deal ? deal.salePrice : basePrice + Math.floor(Math.random() * 150);
-          const isAvailable = index < availableItemCount;
+          const isAvailable = true; // Include all items for consistency
 
           return {
             id: item.id,
@@ -3075,7 +3075,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           storeItems,
           totalCost,
           availabilityRate: baseAvailability,
-          availableItems: availableItemCount,
+          availableItems: items.length, // Show all items as available
           dealCount,
           balancedScore
         };
