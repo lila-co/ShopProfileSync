@@ -322,10 +322,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { username, password } = req.body;
 
+      if (!username || !password) {
+        return res.status(400).json({ message: 'Username and password are required' });
+      }
+
       const user = await storage.authenticateUser(username, password);
       
       if (!user) {
-        return res.status(401).json({ message: 'Invalid credentials' });
+        return res.status(401).json({ message: 'Invalid username or password' });
       }
 
       // In production, you'd set a proper session/JWT token here
@@ -335,6 +339,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: 'Login successful' 
       });
     } catch (error) {
+      console.error('Login error:', error);
       handleError(res, error);
     }
   });
@@ -343,16 +348,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { username, password, email, firstName, lastName } = req.body;
 
+      // Check for existing user
       const existingUser = await storage.getUserByUsername(username);
       if (existingUser) {
         return res.status(409).json({ message: 'Username already exists' });
       }
 
-      const existingEmail = await storage.getUserByEmail?.(email);
-      if (existingEmail) {
-        return res.status(409).json({ message: 'Email already exists' });
+      // Check for existing email if the method exists
+      try {
+        const existingEmail = await storage.getUserByEmail?.(email);
+        if (existingEmail) {
+          return res.status(409).json({ message: 'Email already exists' });
+        }
+      } catch (emailCheckError) {
+        console.warn('Email check failed, proceeding with registration');
       }
 
+      // Create new user
       const newUser = await storage.createUser({
         username,
         password, // In production, hash this password
@@ -361,11 +373,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastName
       });
 
+      if (!newUser) {
+        throw new Error('Failed to create user');
+      }
+
       res.status(201).json({ 
         user: { ...newUser, password: undefined },
         message: 'Registration successful' 
       });
     } catch (error) {
+      console.error('Registration error:', error);
       handleError(res, error);
     }
   });

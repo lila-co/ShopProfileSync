@@ -1,5 +1,4 @@
-
-import React, { Component, ReactNode } from 'react';
+import React, { Component, ReactNode, ErrorInfo } from 'react';
 
 interface Props {
   children: ReactNode;
@@ -11,7 +10,7 @@ interface State {
   error?: Error;
 }
 
-class AsyncErrorBoundary extends Component<Props, State> {
+export default class AsyncErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = { hasError: false };
@@ -21,24 +20,22 @@ class AsyncErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('AsyncErrorBoundary caught an error:', error, errorInfo);
   }
 
   render() {
     if (this.state.hasError) {
       return this.props.fallback || (
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="flex items-center justify-center p-8">
           <div className="text-center">
-            <h2 className="text-xl font-semibold mb-2">Something went wrong</h2>
-            <p className="text-gray-600 mb-4">
-              {this.state.error?.message || 'An unexpected error occurred'}
-            </p>
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">Something went wrong</h2>
+            <p className="text-gray-600 mb-4">We're having trouble loading this section.</p>
             <button 
-              onClick={() => this.setState({ hasError: false, error: undefined })}
+              onClick={() => this.setState({ hasError: false })}
               className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
             >
-              Try again
+              Try Again
             </button>
           </div>
         </div>
@@ -48,5 +45,3 @@ class AsyncErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
-
-export default AsyncErrorBoundary;
