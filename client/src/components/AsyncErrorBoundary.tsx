@@ -10,7 +10,7 @@ interface State {
   error?: Error;
 }
 
-export class AsyncErrorBoundary extends Component<Props, State> {
+class AsyncErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = { hasError: false };
@@ -47,3 +47,5 @@ export class AsyncErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
+
+export default AsyncErrorBoundary;
