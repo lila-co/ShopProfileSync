@@ -38,19 +38,17 @@ const loginSchema = z.object({
   }),
 });
 
-const registerSchema = z.object({
-  name: z.string().min(2, {
-    message: "Name must be at least 2 characters",
-  }),
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(8, {
-    message: "Password must be at least 8 characters",
-  }),
-  confirmPassword: z.string(),
-}).refine(data => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
-});
+import { loginSchema, registerSchema as baseRegisterSchema } from '@/lib/validation';
+
+const loginFormSchema = loginSchema;
+
+const registerSchema = baseRegisterSchema.extend({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+}).transform(data => ({
+  ...data,
+  firstName: data.name.split(' ')[0] || data.name,
+  lastName: data.name.split(' ').slice(1).join(' ') || '',
+}));
 
 const AuthPage: React.FC = () => {
   const { toast } = useToast();

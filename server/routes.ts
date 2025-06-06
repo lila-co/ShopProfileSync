@@ -10,6 +10,24 @@ import { getRetailerAPI } from "./services/retailerIntegration";
 import OpenAI from "openai";
 import { productCategorizer, ProductCategory, QuantityNormalization } from './services/productCategorizer';
 import multer from 'multer';
+import { 
+  validateRequest,
+  sanitizeString,
+  sanitizeNumber,
+  sanitizeBoolean,
+  serverUserSchema,
+  serverLoginSchema,
+  serverProfileUpdateSchema,
+  serverShoppingListSchema,
+  serverShoppingListItemSchema,
+  serverRetailerAccountSchema,
+  serverPurchaseSchema,
+  serverDealSchema,
+  serverSearchSchema,
+  serverVoiceInputSchema,
+  idParamSchema,
+  paginationSchema
+} from "./services/validation";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -31,9 +49,71 @@ const upload = multer({
 const handleError = (res: Response, error: any) => {
   console.error(error);
   if (error instanceof ZodError) {
-    return res.status(400).json({ message: error.errors.map(e => e.message).join(', ') });
+    return res.status(400).json({ 
+      message: 'Validation failed',
+      errors: error.errors.map(e => ({
+        field: e.path.join('.'),
+        message: e.message,
+        code: e.code
+      }))
+    });
   }
   return res.status(500).json({ message: error.message || 'Internal server error' });
+};
+
+// Validation middleware
+const validateBody = (schema: any) => {
+  return (req: Request, res: Response, next: any) => {
+    try {
+      req.body = validateRequest(schema, req.body);
+      next();
+    } catch (error) {
+      handleError(res, error);
+    }
+  };
+};
+
+const validateParams = (schema: any) => {
+  return (req: Request, res: Response, next: any) => {
+    try {
+      req.params = validateRequest(schema, req.params);
+      next();
+    } catch (error) {
+      handleError(res, error);
+    }
+  };
+};
+
+const validateQuery = (schema: any) => {
+  return (req: Request, res: Response, next: any) => {
+    try {
+      req.query = validateRequest(schema, req.query);
+      next();
+    } catch (error) {
+      handleError(res, error);
+    }
+  };
+};
+
+// Input sanitization middleware
+const sanitizeInput = (req: Request, res: Response, next: any) => {
+  if (req.body && typeof req.body === 'object') {
+    for (const key in req.body) {
+      if (typeof req.body[key] === 'string') {
+        req.body[key] = sanitizeString(req.body[key]);
+      }
+    }
+  }
+  
+  if (req.query && typeof req.query === 'object') {
+    for (const key in req.query) {
+      if (typeof req.query[key] === 'string') {
+        req.query[key] = sanitizeString(req.query[key] as string);
+      }
+    }
+  }
+  
+  next();
 };
 
 // Helper function to get recently purchased items
@@ -238,13 +318,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api', rateLimiters.general.middleware());
 
   // Authentication routes with specific rate limiting
-  app.post('/api/auth/login', rateLimiters.auth.middleware(), async (req: Request, res: Response) => {
+  app.post('/api/auth/login', rateLimiters.auth.middleware(), sanitizeInput, validateBody(serverLoginSchema), async (req: Request, res: Response) => {
     try {
       const { username, password } = req.body;
-
-      if (!username || !password) {
-        return res.status(400).json({ message: 'Username and password are required' });
-      }
 
       const user = await storage.authenticateUser(username, password);
       
@@ -263,24 +339,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/auth/register', rateLimiters.auth.middleware(), async (req: Request, res: Response) => {
+  app.post('/api/auth/register', rateLimiters.auth.middleware(), sanitizeInput, validateBody(serverUserSchema), async (req: Request, res: Response) => {
     try {
-      const { username, password, email, name } = req.body;
-
-      if (!username || !password) {
-        return res.status(400).json({ message: 'Username and password are required' });
-      }
+      const { username, password, email, firstName, lastName } = req.body;
 
       const existingUser = await storage.getUserByUsername(username);
       if (existingUser) {
         return res.status(409).json({ message: 'Username already exists' });
       }
 
+      const existingEmail = await storage.getUserByEmail?.(email);
+      if (existingEmail) {
+        return res.status(409).json({ message: 'Email already exists' });
+      }
+
       const newUser = await storage.createUser({
         username,
         password, // In production, hash this password
         email,
-        name
+        firstName,
+        lastName
       });
 
       res.status(201).json({ 
@@ -368,11 +446,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/user/profile', async (req: Request, res: Response) => {
+  app.patch('/api/user/profile', sanitizeInput, validateBody(serverProfileUpdateSchema), async (req: Request, res: Response) => {
     try {
       // Get the current user ID from headers or use default
       const userId = req.headers['x-current-user-id'] ? 
         parseInt(req.headers['x-current-user-id'] as string) : 1;
+
+      if (!userId || userId <= 0) {
+        return res.status(400).json({ message: 'Invalid user ID' });
+      }
 
       const userData = {
         ...req.body,
@@ -1056,14 +1138,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create new shopping list
-  app.post('/api/shopping-lists', async (req: Request, res: Response) => {
+  app.post('/api/shopping-lists', sanitizeInput, validateBody(serverShoppingListSchema.omit({ userId: true })), async (req: Request, res: Response) => {
     try {
       const { name, description, isDefault } = req.body;
       const userId = req.headers['x-current-user-id'] ? 
         parseInt(req.headers['x-current-user-id'] as string) : 1;
 
-      if (!name) {
-        return res.status(400).json({ message: 'Shopping list name is required' });
+      if (!userId || userId <= 0) {
+        return res.status(400).json({ message: 'Invalid user ID' });
       }
 
       const newList = await storage.createShoppingList({
@@ -1163,14 +1245,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create manual purchase entry
-  app.post('/api/purchases', async (req: Request, res: Response) => {
+  app.post('/api/purchases', sanitizeInput, validateBody(serverPurchaseSchema.omit({ userId: true })), async (req: Request, res: Response) => {
     try {
       const { retailerId, items, totalAmount, purchaseDate } = req.body;
       const userId = req.headers['x-current-user-id'] ? 
         parseInt(req.headers['x-current-user-id'] as string) : 1;
 
-      if (!retailerId || !items || !totalAmount) {
-        return res.status(400).json({ message: 'Retailer ID, items, and total amount are required' });
+      if (!userId || userId <= 0) {
+        return res.status(400).json({ message: 'Invalid user ID' });
       }
 
       const purchase = await storage.createPurchase({
@@ -1977,7 +2059,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get deals with advanced filtering
-  app.get('/api/deals/search', rateLimiters.search.middleware(), async (req: Request, res: Response) => {
+  app.get('/api/deals/search', rateLimiters.search.middleware(), sanitizeInput, validateQuery(paginationSchema), async (req: Request, res: Response) => {
     try {
       const {
         retailerId,
@@ -1991,15 +2073,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } = req.query;
 
       const filters = {
-        retailerId: retailerId ? parseInt(retailerId as string) : undefined,
-        category: category as string,
-        minDiscount: minDiscount ? parseInt(minDiscount as string) : undefined,
-        maxPrice: maxPrice ? parseInt(maxPrice as string) : undefined,
-        sortBy: sortBy as string || 'createdAt',
-        sortOrder: sortOrder as string || 'desc',
-        limit: limit ? parseInt(limit as string) : 50,
-        offset: offset ? parseInt(offset as string) : 0
+        retailerId: retailerId ? sanitizeNumber(retailerId) : undefined,
+        category: category ? sanitizeString(category as string) : undefined,
+        minDiscount: minDiscount ? sanitizeNumber(minDiscount) : undefined,
+        maxPrice: maxPrice ? sanitizeNumber(maxPrice) : undefined,
+        sortBy: sortBy ? sanitizeString(sortBy as string) : 'createdAt',
+        sortOrder: sortOrder ? sanitizeString(sortOrder as string) : 'desc',
+        limit: limit || 50,
+        offset: offset || 0
       };
+
+      // Additional validation for sort parameters
+      const validSortFields = ['createdAt', 'salePrice', 'regularPrice', 'productName'];
+      const validSortOrders = ['asc', 'desc'];
+      
+      if (!validSortFields.includes(filters.sortBy)) {
+        filters.sortBy = 'createdAt';
+      }
+      
+      if (!validSortOrders.includes(filters.sortOrder)) {
+        filters.sortOrder = 'desc';
+      }
 
       const deals = await storage.searchDeals(filters);
       res.json(deals);
@@ -2533,13 +2627,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI-powered voice conversation endpoint
-  app.post('/api/voice/conversation', rateLimiters.ai.middleware(), async (req: Request, res: Response) => {
+  app.post('/api/voice/conversation', rateLimiters.ai.middleware(), sanitizeInput, validateBody(serverVoiceInputSchema), async (req: Request, res: Response) => {
     try {
       const { message, context = [] } = req.body;
-      
-      if (!message) {
-        return res.status(400).json({ error: 'Message is required' });
-      }
 
       // Initialize OpenAI if not already done
       if (!process.env.OPENAI_API_KEY) {
@@ -4421,14 +4511,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return capitalizedWords.join(" ");
   }
 
-  app.post('/api/shopping-list/items', async (req: Request, res: Response) => {
+  app.post('/api/shopping-list/items', sanitizeInput, validateBody(serverShoppingListItemSchema.omit({ shoppingListId: true })), async (req: Request, res: Response) => {
     try {
       const { productName, quantity, unit, shoppingListId } = req.body;
 
       // Validate quantity to ensure it's a number and not NaN
-      const validQuantity = Number(quantity);
-      if (isNaN(validQuantity)) {
-        return res.status(400).json({ message: 'Invalid quantity. Please provide a valid number.' });
+      const validQuantity = sanitizeNumber(quantity);
+      if (validQuantity <= 0) {
+        return res.status(400).json({ message: 'Quantity must be greater than 0' });
       }
 
       // If no shoppingListId provided, use the default list
