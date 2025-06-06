@@ -1,72 +1,117 @@
+
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import ShoppingListComponent from '@/components/lists/ShoppingList';
-import BottomNavigation from '@/components/layout/BottomNavigation';
-import AuthenticatedHeader from '@/components/layout/AuthenticatedHeader';
-import type { ShoppingList as ShoppingListType, User } from '@/lib/types';
+import DashboardLayout from '@/components/layout/DashboardLayout';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { useLocation } from 'wouter';
+import { 
+  ShoppingBag, 
+  Scan, 
+  Tag, 
+  Newspaper,
+  TrendingUp,
+  Clock,
+  Plus
+} from 'lucide-react';
 
 const ShoppingListPage: React.FC = () => {
-  const { data: user } = useQuery<User>({
-    queryKey: ['/api/user/profile'],
-  });
+  const [, navigate] = useLocation();
 
-  const { data: shoppingLists, isLoading } = useQuery<ShoppingListType[]>({
-    queryKey: ['/api/shopping-lists'],
-  });
-
-  const { data: monthlySavings } = useQuery<number>({
-    queryKey: ['/api/insights/monthly-savings'],
-  });
-
-  if (isLoading) {
-    return (
-      <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
-        <AuthenticatedHeader />
-        <main className="flex-1 overflow-y-auto p-4 bg-white">
-          <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-gray-200 rounded w-3/4"></div>
-            <div className="space-y-3">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="border border-gray-200 rounded-lg p-3 bg-white">
-                  <div className="h-5 bg-gray-200 rounded w-1/2 mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </main>
-        <BottomNavigation activeTab="lists" />
-      </div>
-    );
-  }
-
-  // Get the default shopping list name for the header
-  const defaultList = shoppingLists?.[0];
-  const listName = defaultList?.name || 'Shopping List';
+  const quickActions = [
+    {
+      title: 'Shopping Lists',
+      description: 'View and manage your shopping lists',
+      icon: ShoppingBag,
+      href: '/dashboard',
+      color: 'bg-blue-500'
+    },
+    {
+      title: 'Scan Receipt',
+      description: 'Add items by scanning receipts',
+      icon: Scan,
+      href: '/scan',
+      color: 'bg-green-500'
+    },
+    {
+      title: 'Deals',
+      description: 'Find the best deals and savings',
+      icon: Tag,
+      href: '/deals',
+      color: 'bg-orange-500'
+    },
+    {
+      title: 'Weekly Circulars',
+      description: 'Browse store weekly ads',
+      icon: Newspaper,
+      href: '/circulars',
+      color: 'bg-purple-500'
+    }
+  ];
 
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
-      <AuthenticatedHeader />
-      <main className="flex-1 overflow-y-auto">
+    <DashboardLayout>
+      <div className="space-y-6">
         {/* Welcome Section */}
-        <section className="p-4 bg-white border-b border-gray-100">
-          <div className="flex justify-between items-start">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Hello, {user?.firstName || 'there'}</h2>
-              <p className="text-gray-700 text-sm">Your shopping assistance is ready</p>
-            </div>
-            {monthlySavings !== undefined && monthlySavings > 0 && (
-              <div className="bg-primary/10 text-primary px-3 py-1 rounded-full font-medium text-sm">
-                ${monthlySavings} saved this month
-              </div>
-            )}
-          </div>
-        </section>
+        <div className="text-center py-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Welcome to Your Smart Shopping Hub
+          </h1>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Manage your shopping lists, find deals, and discover new ways to save time and money.
+          </p>
+        </div>
 
-        <ShoppingListComponent />
-      </main>
-      <BottomNavigation activeTab="lists" />
-    </div>
+        {/* Quick Actions Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {quickActions.map((action) => (
+            <Card 
+              key={action.title} 
+              className="hover:shadow-lg transition-all duration-200 cursor-pointer"
+              onClick={() => navigate(action.href)}
+            >
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center text-lg">
+                  <div className={`p-2 rounded-lg ${action.color} text-white mr-3`}>
+                    <action.icon className="h-5 w-5" />
+                  </div>
+                  {action.title}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 text-sm mb-4">{action.description}</p>
+                <Button variant="outline" className="w-full">
+                  Get Started
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Recent Activity Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Clock className="h-5 w-5 mr-2" />
+              Recent Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8 text-gray-500">
+              <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>Your recent shopping activity will appear here</p>
+              <Button 
+                variant="outline" 
+                className="mt-4"
+                onClick={() => navigate('/dashboard')}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Create Your First List
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </DashboardLayout>
   );
 };
 

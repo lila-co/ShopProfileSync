@@ -75,9 +75,13 @@ const ShoppingListComponent: React.FC = () => {
     staleTime: 10000, // Consider data fresh for 10 seconds
   });
 
-  const { data: suggestions, isLoading: suggestionsLoading } = useQuery({
+  const { data: suggestions } = useQuery<string[]>({
     queryKey: ['/api/shopping-lists/suggestions'],
-    enabled: !!shoppingLists,
+    queryFn: async () => {
+      const response = await fetch('/api/shopping-lists/suggestions');
+      if (!response.ok) throw new Error('Failed to fetch suggestions');
+      return response.json();
+    }
   });
 
   // Category definitions with icons and colors
@@ -609,7 +613,7 @@ const ShoppingListComponent: React.FC = () => {
     // Start the actual mutation after animation has time to show
     const mutationTimeout = setTimeout(() => {
       console.log('Starting regeneration mutation...');
-      
+
       regenerateListMutation.mutate(undefined, {
         onSettled: () => {
           console.log('Mutation settled, cleaning up animation');
@@ -1080,7 +1084,7 @@ const ShoppingListComponent: React.FC = () => {
                     Ready to add
                   </Badge>
                 )}
-                
+
                 <Button
                   type="submit"
                   disabled={!newItemName.trim() || addItemMutation.isPending}
