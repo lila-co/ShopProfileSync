@@ -1,6 +1,7 @@
 import React from 'react';
 import { Home, List, User, Store, Tag, ShoppingCart } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
+import { RoutePreloader } from '@/utils/routePreloader';
 
 interface BottomNavigationProps {
   activeTab: string;
