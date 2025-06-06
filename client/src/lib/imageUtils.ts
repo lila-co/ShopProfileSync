@@ -56,7 +56,10 @@ const commonItemImages: Record<string, string> = {
   "water": "https://images.unsplash.com/photo-1523362628745-0c100150b504?q=80&w=200",
   "juice": "https://images.unsplash.com/photo-1600271886742-f049cd451bba?q=80&w=200",
   "soda": "https://images.unsplash.com/photo-1581636625402-29b2a704ef13?q=80&w=200",
-  "coffee": "https://images.unsplash.com/photo-1497636577773-f1231844b336?q=80&w=200",
+  "coffee": "https://images.unsplash.com/photo-1559056961-84608fae629c?q=80&w=200",
+  "ground coffee": "https://images.unsplash.com/photo-1559056961-84608fae629c?q=80&w=200",
+  "coffee beans": "https://images.unsplash.com/photo-1559056961-84608fae629c?q=80&w=200",
+  "instant coffee": "https://images.unsplash.com/photo-1578662996442-48f60103fc96?q=80&w=200",
   "tea": "https://images.unsplash.com/photo-1576092768241-dec231879fc3?q=80&w=200",
   
   // Household
@@ -101,11 +104,23 @@ export function getItemImage(itemName: string): string | undefined {
   // Normalize item name for matching
   const normalizedName = itemName.toLowerCase();
   
-  // Try to find an exact match
+  // Try to find an exact match first
+  if (commonItemImages[normalizedName]) {
+    return commonItemImages[normalizedName];
+  }
+  
+  // Then try partial matches with priority for longer matches
+  const matches = [];
   for (const [key, url] of Object.entries(commonItemImages)) {
-    if (normalizedName === key || normalizedName.includes(key) || key.includes(normalizedName)) {
-      return url;
+    if (normalizedName.includes(key) || key.includes(normalizedName)) {
+      matches.push({ key, url, score: key.length });
     }
+  }
+  
+  // Return the match with the highest score (longest key match)
+  if (matches.length > 0) {
+    matches.sort((a, b) => b.score - a.score);
+    return matches[0].url;
   }
   
   // Check for categories
