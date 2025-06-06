@@ -125,3 +125,42 @@ function getCategorySpecificImage(productName: string, category?: string): strin
 
   return null;
 }
+
+// Company logo utility function
+export function getCompanyLogo(companyName: string): string | null {
+  const normalizedName = companyName.toLowerCase().trim();
+  
+  // Map of company names to their logo URLs
+  const companyLogos: Record<string, string> = {
+    'walmart': 'https://logos-world.net/wp-content/uploads/2020/09/Walmart-Logo.png',
+    'target': 'https://logos-world.net/wp-content/uploads/2020/04/Target-Logo.png',
+    'kroger': 'https://logos-world.net/wp-content/uploads/2022/01/Kroger-Logo.png',
+    'safeway': 'https://logos-world.net/wp-content/uploads/2022/01/Safeway-Logo.png',
+    'whole foods': 'https://logos-world.net/wp-content/uploads/2020/12/Whole-Foods-Logo.png',
+    'costco': 'https://logos-world.net/wp-content/uploads/2020/09/Costco-Logo.png',
+    'trader joe\'s': 'https://logos-world.net/wp-content/uploads/2022/01/Trader-Joes-Logo.png',
+    'publix': 'https://logos-world.net/wp-content/uploads/2022/01/Publix-Logo.png',
+    'h-e-b': 'https://logos-world.net/wp-content/uploads/2022/01/HEB-Logo.png',
+    'meijer': 'https://logos-world.net/wp-content/uploads/2022/01/Meijer-Logo.png',
+    'albertsons': 'https://logos-world.net/wp-content/uploads/2022/01/Albertsons-Logo.png',
+    'food lion': 'https://logos-world.net/wp-content/uploads/2022/01/Food-Lion-Logo.png',
+    'giant': 'https://logos-world.net/wp-content/uploads/2022/01/Giant-Logo.png',
+    'stop & shop': 'https://logos-world.net/wp-content/uploads/2022/01/Stop-Shop-Logo.png',
+    'wegmans': 'https://logos-world.net/wp-content/uploads/2022/01/Wegmans-Logo.png',
+    'harris teeter': 'https://logos-world.net/wp-content/uploads/2022/01/Harris-Teeter-Logo.png',
+    'shoprite': 'https://logos-world.net/wp-content/uploads/2022/01/ShopRite-Logo.png',
+    'hy-vee': 'https://logos-world.net/wp-content/uploads/2022/01/Hy-Vee-Logo.png',
+    'winco': 'https://logos-world.net/wp-content/uploads/2022/01/WinCo-Logo.png',
+    'fred meyer': 'https://logos-world.net/wp-content/uploads/2022/01/Fred-Meyer-Logo.png'
+  };
+
+  // Find matching company logo
+  for (const [key, logoUrl] of Object.entries(companyLogos)) {
+    if (normalizedName.includes(key)) {
+      return logoUrl;
+    }
+  }
+
+  // Fallback: try to generate a simple logo placeholder
+  return null;
+}
