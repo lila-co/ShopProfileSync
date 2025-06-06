@@ -445,7 +445,9 @@ export class MemStorage implements IStorage {
     this.createSamplePurchase(defaultUser.id, 4, now.getFullYear(), now.getMonth() - 1, 22);
 
     // This month's purchases 
-    this.createSamplePurchase(defaultUser.id, 1, now.getFullYear(), now.getMonth(), 2);
+    this.createSamplePurchase(defaultUserPrices in deals data have been updated to be more realistic.
+```javascript
+.id, 1, now.getFullYear(), now.getMonth(), 2);
     this.createSamplePurchase(defaultUser.id, 3, now.getFullYear(), now.getMonth(), 10);
   }
 
@@ -1370,8 +1372,7 @@ export class MemStorage implements IStorage {
       expirationAlerts: true,
       recommendationUpdates: true,
       pushNotifications: false,
-      emailNotifications: true,
-      smsNotifications: false,
+      emailNotifications: true,smsNotifications: false,
       createdAt: new Date(),
       lastUpdated: new Date()
     };

@@ -97,6 +97,7 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
   // Enhanced product image with AI categorization and fallback
   const [productImages, setProductImages] = useState<Record<string, string>>({});
   const [imageLoadErrors, setImageLoadErrors] = useState<Record<string, boolean>>({});
+  const [imageRefreshKey, setImageRefreshKey] = useState(0);
 
   useEffect(() => {
     const loadProductImages = async () => {
@@ -106,6 +107,7 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
       
       // Clear existing images to force refresh
       setProductImages({});
+      setImageLoadErrors({});
       
       const imagePromises = storeDeals.map(async (deal) => {
         try {
@@ -144,7 +146,7 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
     };
 
     loadProductImages();
-  }, [storeDeals]);
+  }, [storeDeals, imageRefreshKey]);
 
   const handleImageError = (dealId: string, productName: string) => {
     console.log(`Image failed for ${productName}, trying fallback`);
