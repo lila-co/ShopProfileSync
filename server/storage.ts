@@ -445,8 +445,7 @@ export class MemStorage implements IStorage {
     this.createSamplePurchase(defaultUser.id, 4, now.getFullYear(), now.getMonth() - 1, 22);
 
     // This month's purchases 
-    this.createSample```python
-Purchase(defaultUser.id, 1, now.getFullYear(), now.getMonth(), 2);
+    this.createSamplePurchase(defaultUser.id, 1, now.getFullYear(), now.getMonth(), 2);
     this.createSamplePurchase(defaultUser.id, 3, now.getFullYear(), now.getMonth(), 10);
   }
 
