@@ -34,7 +34,10 @@ import { userSchema, loginSchema } from '@/lib/validation';
 
 const loginFormSchema = loginSchema;
 
-const registerSchema = userSchema.extend({
+const registerSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Please enter a valid email'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
   confirmPassword: z.string()
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
@@ -101,8 +104,8 @@ const AuthPage: React.FC = () => {
           body: JSON.stringify({
             username: data.name.toLowerCase().replace(/\s+/g, ''),
             email: data.email,
-            firstName: data.firstName,
-            lastName: data.lastName,
+            firstName: data.name.split(' ')[0] || data.name,
+            lastName: data.name.split(' ').slice(1).join(' ') || '',
             password: data.password,
           }),
         });
