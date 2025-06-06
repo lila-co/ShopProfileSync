@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, List, User, Store, Tag, ShoppingCart } from 'lucide-react';
+import { List, User, Store, Tag, ShoppingCart } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { RoutePreloader } from '@/utils/routePreloader';
 
@@ -18,7 +18,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab }) => {
   const navItems = [
     { id: 'shopping-list', icon: List, label: 'List', path: '/shopping-list' },
     { id: 'deals', icon: Tag, label: 'Deals', path: '/deals' },
-    { id: 'scan', icon: ShoppingCart, label: 'Scan', path: '/scan' },
+    { id: 'plan-details', icon: ShoppingCart, label: 'Plans', path: '/plan-details' },
     { id: 'retailers', icon: Store, label: 'Stores', path: '/retailers' },
     { id: 'profile', icon: User, label: 'Profile', path: '/profile' },
   ];

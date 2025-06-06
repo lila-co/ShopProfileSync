@@ -746,7 +746,7 @@ const PlanDetails: React.FC = () => {
       </div>
       </main>
 
-      <BottomNavigation activeTab="shop" />
+      <BottomNavigation activeTab="plan-details" />
     </div>
   );
 };
