@@ -377,8 +377,8 @@ export async function getBestProductImage(
   category?: string,
   useAI: boolean = false
 ): Promise<string | undefined> {
-  // If a URL is provided and it's not a generic placeholder, use it
-  if (providedImageUrl && !isGenericPlaceholder(providedImageUrl)) {
+  // If a URL is provided and it's not a generic placeholder, validate and use it
+  if (providedImageUrl && !isGenericPlaceholder(providedImageUrl) && isValidImageUrl(providedImageUrl)) {
     return providedImageUrl;
   }
   
@@ -390,11 +390,12 @@ export async function getBestProductImage(
   
   // If AI generation is enabled and we have the necessary setup, try to generate an image
   if (useAI) {
-    return await generateAIProductImage(productName);
+    const aiImage = await generateAIProductImage(productName);
+    if (aiImage) return aiImage;
   }
   
-  // Default fallback is undefined (no image available)
-  return undefined;
+  // Return a category-based fallback image
+  return getCategoryFallbackImage(category);
 }
 
 /**
@@ -416,4 +417,44 @@ function isGenericPlaceholder(imageUrl: string): boolean {
   
   const urlLower = imageUrl.toLowerCase();
   return genericPatterns.some(pattern => urlLower.includes(pattern));
+}
+
+/**
+ * Check if an image URL is valid and accessible
+ * @param imageUrl The image URL to check
+ * @returns true if the URL appears to be a valid image URL
+ */
+function isValidImageUrl(imageUrl: string): boolean {
+  try {
+    const url = new URL(imageUrl);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Get a fallback image based on category
+ * @param category The product category
+ * @returns A reliable fallback image URL
+ */
+function getCategoryFallbackImage(category?: string): string {
+  const categoryFallbacks: Record<string, string> = {
+    'Produce': 'https://images.unsplash.com/photo-1570913149827-d2ac84ab3f9a?q=80&w=200',
+    'Dairy & Eggs': 'https://images.unsplash.com/photo-1563636619-e9143da7973b?q=80&w=200',
+    'Meat & Seafood': 'https://images.unsplash.com/photo-1604503468506-a8da13d82791?q=80&w=200',
+    'Pantry & Canned Goods': 'https://images.unsplash.com/photo-1551462147-ff29053bfc14?q=80&w=200',
+    'Bakery': 'https://images.unsplash.com/photo-1549931319-a545dcf3bc7c?q=80&w=200',
+    'Household Items': 'https://images.unsplash.com/photo-1584305574647-0cc949a2bb9f?q=80&w=200',
+    'Personal Care': 'https://images.unsplash.com/photo-1631729371254-42c2892f0e6e?q=80&w=200',
+    'Beverages': 'https://images.unsplash.com/photo-1523362628745-0c100150b504?q=80&w=200',
+    'Frozen Foods': 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?q=80&w=200'
+  };
+  
+  if (category && categoryFallbacks[category]) {
+    return categoryFallbacks[category];
+  }
+  
+  // Default grocery store image
+  return 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&h=200&fit=crop';
 }

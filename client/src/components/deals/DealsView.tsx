@@ -96,6 +96,7 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
 
   // Enhanced product image with AI categorization and fallback
   const [productImages, setProductImages] = useState<Record<string, string>>({});
+  const [imageLoadErrors, setImageLoadErrors] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const loadProductImages = async () => {
@@ -118,16 +119,20 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
 
           console.log(`Image for "${deal.productName}": ${image ? 'found' : 'using fallback'}`);
           
-          return { dealId: deal.id, image: image || deal.imageUrl };
+          // Always return an image, falling back to a default grocery image
+          const finalImage = image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&h=200&fit=crop';
+          
+          return { dealId: deal.id, image: finalImage };
         } catch (error) {
           console.error(`Error loading image for ${deal.productName}:`, error);
-          return { dealId: deal.id, image: deal.imageUrl };
+          // Use a generic grocery store image as ultimate fallback
+          return { dealId: deal.id, image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&h=200&fit=crop' };
         }
       });
 
       const results = await Promise.all(imagePromises);
       const imageMap = results.reduce((acc, { dealId, image }) => {
-        if (image) acc[dealId] = image;
+        acc[dealId] = image;
         return acc;
       }, {} as Record<string, string>);
 
@@ -137,6 +142,17 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
 
     loadProductImages();
   }, [storeDeals]);
+
+  const handleImageError = (dealId: string, productName: string) => {
+    console.log(`Image failed for ${productName}, trying fallback`);
+    setImageLoadErrors(prev => ({ ...prev, [dealId]: true }));
+    
+    // Set a reliable fallback image
+    setProductImages(prev => ({
+      ...prev,
+      [dealId]: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&h=200&fit=crop'
+    }));
+  };
 
 
   const addToShoppingListMutation = useMutation({
@@ -257,14 +273,10 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
                   {/* Product Image */}
                   <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
                   <img
-                    src={productImages[deal.id] || deal.imageUrl || 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=200&h=200&fit=crop'}
+                    src={productImages[deal.id] || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&h=200&fit=crop'}
                     alt={deal.productName}
                     className="w-full h-full object-cover rounded-xl"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      console.log(`Image failed for ${deal.productName}, using fallback`);
-                      target.src = 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=200&h=200&fit=crop';
-                    }}
+                    onError={() => handleImageError(deal.id, deal.productName)}
                     onLoad={() => {
                       console.log(`Image loaded successfully for ${deal.productName}`);
                     }}

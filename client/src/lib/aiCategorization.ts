@@ -189,7 +189,7 @@ class AICategorationService {
       }
     } catch (error) {
       console.warn('AI categorization failed for:', productName, error);
-    }
+        }
 
     return null;
   }
