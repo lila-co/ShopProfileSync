@@ -136,14 +136,30 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
         }
       });
 
-      const results = await Promise.all(imagePromises);
-      const imageMap = results.reduce((acc, { dealId, image }) => {
-        acc[dealId] = image;
-        return acc;
-      }, {} as Record<string, string>);
+      try {
+        const results = await Promise.allSettled(imagePromises);
+        const imageMap = results.reduce((acc, result, index) => {
+          const dealId = storeDeals[index].id;
+          if (result.status === 'fulfilled') {
+            acc[dealId] = result.value.image;
+          } else {
+            console.error(`Failed to load image for deal ${dealId}:`, result.reason);
+            acc[dealId] = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&h=200&fit=crop';
+          }
+          return acc;
+        }, {} as Record<string, string>);
 
-      console.log('Product images loaded:', Object.keys(imageMap).length);
-      setProductImages(imageMap);
+        console.log('Product images loaded:', Object.keys(imageMap).length);
+        setProductImages(imageMap);
+      } catch (error) {
+        console.error('Error in Promise.allSettled:', error);
+        // Fallback: set all images to default
+        const fallbackImageMap = storeDeals.reduce((acc, deal) => {
+          acc[deal.id] = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&h=200&fit=crop';
+          return acc;
+        }, {} as Record<string, string>);
+        setProductImages(fallbackImageMap);
+      }
     };
 
     loadProductImages();

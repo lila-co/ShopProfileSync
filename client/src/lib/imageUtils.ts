@@ -79,7 +79,9 @@ export async function getBestProductImage(
 export async function getRetailerProductImage(productName: string, retailerId: number): Promise<string | null> {
   try {
     // Make API call to search for the product through retailer integration
-    const response = await fetch(`/api/retailer/${retailerId}/search?query=${encodeURIComponent(productName)}`);
+    const response = await fetch(`/api/retailer/${retailerId}/search?query=${encodeURIComponent(productName)}`, {
+      credentials: 'include',
+    });
     
     if (!response.ok) {
       console.log(`Retailer API search failed for ${productName} at retailer ${retailerId}`);
@@ -91,16 +93,26 @@ export async function getRetailerProductImage(productName: string, retailerId: n
     // Look for the first product that has an image URL
     for (const product of products) {
       if (product.imageUrl && product.imageUrl.trim()) {
-        // Validate that the image URL is accessible
-        try {
-          const imageResponse = await fetch(product.imageUrl, { method: 'HEAD' });
-          if (imageResponse.ok) {
-            console.log(`Found retailer image for "${productName}": ${product.imageUrl}`);
-            return product.imageUrl;
+        // Skip validation for external URLs that might have CORS issues
+        // Just return the URL and let the browser handle it
+        const imageUrl = product.imageUrl;
+        
+        // Only validate if it's a relative URL or from a trusted domain
+        if (imageUrl.startsWith('/') || imageUrl.includes('unsplash.com') || imageUrl.includes('images.unsplash.com')) {
+          try {
+            const imageResponse = await fetch(imageUrl, { method: 'HEAD' });
+            if (imageResponse.ok) {
+              console.log(`Found retailer image for "${productName}": ${imageUrl}`);
+              return imageUrl;
+            }
+          } catch (error) {
+            console.log(`Retailer image URL validation failed: ${imageUrl}`);
+            continue;
           }
-        } catch (error) {
-          console.log(`Retailer image URL validation failed: ${product.imageUrl}`);
-          continue;
+        } else {
+          // For external URLs, just return them without validation to avoid CORS issues
+          console.log(`Found retailer image for "${productName}": ${imageUrl}`);
+          return imageUrl;
         }
       }
     }
