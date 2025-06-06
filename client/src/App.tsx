@@ -7,35 +7,47 @@ import { queryClient } from '@/lib/queryClient';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import AsyncErrorBoundary from '@/components/AsyncErrorBoundary';
-import AuthPage from './pages/auth';
-import OnboardingPage from './pages/onboarding';
-import ShoppingListPage from './pages/shopping-list';
-import DealsPage from './pages/deals';
-import RetailersPage from './pages/retailers';
-import ProfilePage from './pages/profile';
-import ScanPage from '@/pages/scan';
 
-import ShoppingRoute from './pages/shopping-route';
-import PlanDetailsPage from '@/pages/plan-details';
-import RetailerDetailsPage from './pages/retailer-details';
-import AutoOrder from '@/pages/auto-order';
-import OrderOnline from '@/pages/order-online';
-const RetailerCartDemo = lazy(() => import('./pages/retailer-cart-demo'));
-import MonitoringDashboard from '@/pages/monitoring-dashboard';
+// Import lazy-loaded components organized by feature groups
+import { 
+  CorePages, 
+  ShoppingPages, 
+  AdvancedPages, 
+  AdminPages, 
+  OnboardingPages,
+  preloadCriticalComponents 
+} from '@/utils/lazyImports';
+
+// Loading fallback component
+const PageLoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="flex flex-col items-center space-y-4">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="text-lg text-gray-600">Loading...</div>
+    </div>
+  </div>
+);
 
 function AppContent() {
   const { isLoading, isAuthenticated } = useAuth();
 
+  // Preload critical components when authenticated
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      preloadCriticalComponents();
+    }
+  }, [isAuthenticated]);
+
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Loading...</div>
-      </div>
-    );
+    return <PageLoadingFallback />;
   }
 
   if (!isAuthenticated) {
-    return <AuthPage />;
+    return (
+      <Suspense fallback={<PageLoadingFallback />}>
+        <CorePages.Auth />
+      </Suspense>
+    );
   }
 
   return (
@@ -43,7 +55,9 @@ function AppContent() {
       <Route path="/onboarding">
         <ProtectedRoute>
           <ErrorBoundary level="page">
-            <OnboardingPage />
+            <Suspense fallback={<PageLoadingFallback />}>
+              <OnboardingPages.Onboarding />
+            </Suspense>
           </ErrorBoundary>
         </ProtectedRoute>
       </Route>
@@ -51,7 +65,9 @@ function AppContent() {
       <Route path="/shopping-list">
         <ProtectedRoute>
           <ErrorBoundary level="page">
-            <ShoppingListPage />
+            <Suspense fallback={<PageLoadingFallback />}>
+              <CorePages.ShoppingList />
+            </Suspense>
           </ErrorBoundary>
         </ProtectedRoute>
       </Route>
@@ -59,7 +75,9 @@ function AppContent() {
       <Route path="/shopping-route">
         <ProtectedRoute>
           <ErrorBoundary level="page">
-            <ShoppingRoute />
+            <Suspense fallback={<PageLoadingFallback />}>
+              <ShoppingPages.ShoppingRoute />
+            </Suspense>
           </ErrorBoundary>
         </ProtectedRoute>
       </Route>
@@ -67,7 +85,9 @@ function AppContent() {
       <Route path="/deals">
         <ProtectedRoute>
           <ErrorBoundary level="page">
-            <DealsPage />
+            <Suspense fallback={<PageLoadingFallback />}>
+              <ShoppingPages.Deals />
+            </Suspense>
           </ErrorBoundary>
         </ProtectedRoute>
       </Route>
@@ -75,7 +95,9 @@ function AppContent() {
       <Route path="/plan-details">
         <ProtectedRoute>
           <ErrorBoundary level="page">
-            <PlanDetailsPage />
+            <Suspense fallback={<PageLoadingFallback />}>
+              <ShoppingPages.PlanDetails />
+            </Suspense>
           </ErrorBoundary>
         </ProtectedRoute>
       </Route>
@@ -83,7 +105,9 @@ function AppContent() {
       <Route path="/retailers">
         <ProtectedRoute>
           <ErrorBoundary level="page">
-            <RetailersPage />
+            <Suspense fallback={<PageLoadingFallback />}>
+              <ShoppingPages.Retailers />
+            </Suspense>
           </ErrorBoundary>
         </ProtectedRoute>
       </Route>
@@ -91,7 +115,9 @@ function AppContent() {
       <Route path="/retailers/:id">
         <ProtectedRoute>
           <ErrorBoundary level="page">
-            <RetailerDetailsPage />
+            <Suspense fallback={<PageLoadingFallback />}>
+              <ShoppingPages.RetailerDetails />
+            </Suspense>
           </ErrorBoundary>
         </ProtectedRoute>
       </Route>
@@ -99,7 +125,9 @@ function AppContent() {
       <Route path="/profile">
         <ProtectedRoute>
           <ErrorBoundary level="page">
-            <ProfilePage />
+            <Suspense fallback={<PageLoadingFallback />}>
+              <CorePages.Profile />
+            </Suspense>
           </ErrorBoundary>
         </ProtectedRoute>
       </Route>
@@ -107,7 +135,9 @@ function AppContent() {
       <Route path="/scan">
         <ProtectedRoute>
           <ErrorBoundary level="page">
-            <ScanPage />
+            <Suspense fallback={<PageLoadingFallback />}>
+              <ShoppingPages.Scan />
+            </Suspense>
           </ErrorBoundary>
         </ProtectedRoute>
       </Route>
@@ -115,7 +145,9 @@ function AppContent() {
       <Route path="/auto-order">
         <ProtectedRoute>
           <ErrorBoundary level="page">
-            <AutoOrder />
+            <Suspense fallback={<PageLoadingFallback />}>
+              <AdvancedPages.AutoOrder />
+            </Suspense>
           </ErrorBoundary>
         </ProtectedRoute>
       </Route>
@@ -123,7 +155,9 @@ function AppContent() {
       <Route path="/order-online">
         <ProtectedRoute>
           <ErrorBoundary level="page">
-            <OrderOnline />
+            <Suspense fallback={<PageLoadingFallback />}>
+              <AdvancedPages.OrderOnline />
+            </Suspense>
           </ErrorBoundary>
         </ProtectedRoute>
       </Route>
@@ -132,8 +166,8 @@ function AppContent() {
         <ProtectedRoute>
           <ErrorBoundary level="page">
             <AsyncErrorBoundary>
-              <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
-                <RetailerCartDemo />
+              <Suspense fallback={<PageLoadingFallback />}>
+                <AdvancedPages.RetailerCartDemo />
               </Suspense>
             </AsyncErrorBoundary>
           </ErrorBoundary>
@@ -142,7 +176,11 @@ function AppContent() {
       
       <Route path="/admin/monitoring">
         <ProtectedRoute>
-          <MonitoringDashboard />
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <AdminPages.MonitoringDashboard />
+            </Suspense>
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
 
