@@ -834,9 +834,6 @@ const ShoppingListComponent: React.FC = () => {
                             </div>
                           </div>
                           <div className="flex items-center space-x-3">
-                            <Badge variant="secondary" className={config.color}>
-                              {completedCount}/{totalCount} items
-                            </Badge>
                             {isCollapsed ? (
                               <ChevronRight className="h-5 w-5 text-gray-400" />
                             ) : (
@@ -854,15 +851,6 @@ const ShoppingListComponent: React.FC = () => {
                             <CardContent className="p-3">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-3 flex-1">
-                                  <button
-                                    onClick={() => handleToggleItem(item.id, item.completed)}
-                                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center                                      item.completed
-                                        ? 'bg-green-500 border-green-500'
-                                        : 'border-gray-300 hover:border-green-400'
-                                    }`}
-                                  >
-                                    {item.completed && <Check className="h-3 w-3 text-white" />}
-                                  </button>
                                   <div className="flex-1">
                                     <span className={`${item.completed ? 'line-through' : ''}`}>
                                       {item.productName}
@@ -909,16 +897,6 @@ const ShoppingListComponent: React.FC = () => {
               <CardContent className="p-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3 flex-1">
-                    <button
-                      onClick={() => handleToggleItem(item.id, item.completed)}
-                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                        item.completed
-                          ? 'bg-green-500 border-green-500'
-                          : 'border-gray-300 hover:border-green-400'
-                      }`}
-                    >
-                      {item.completed && <Check className="h-3 w-3 text-white" />}
-                    </button>
                     <div className="flex-1">
                       <span className={`${item.completed ? 'line-through' : ''}`}>
                         {item.productName}

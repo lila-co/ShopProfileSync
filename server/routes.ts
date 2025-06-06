@@ -442,6 +442,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Search products from specific retailer (for image fetching)
+  app.get('/api/retailer/:id/search', async (req, res) => {
+    try {
+      const retailerId = parseInt(req.params.id);
+      const query = req.query.query as string;
+
+      if (!query) {
+        return res.status(400).json({ error: 'Search query is required' });
+      }
+
+      // Get retailer API client
+      const { getRetailerAPI } = await import('./services/retailerIntegration');
+      const retailerAPI = await getRetailerAPI(retailerId);
+      
+      // Search for products
+      const products = await retailerAPI.searchProducts(query);
+      
+      res.json(products);
+    } catch (error: any) {
+      console.error('Error searching retailer products:', error);
+      res.status(500).json({ error: 'Failed to search products' });
+    }
+  });
+
   // Add custom retailer
   app.post('/api/retailers', async (req, res) => {
     try {
