@@ -73,7 +73,7 @@ export async function extractRecipeIngredients(recipeUrl: string, servings: numb
   }
 }
 
-// Function to generate recipe-specific mock data based on URL analysis
+
 function getRecipeSpecificMockData(recipeUrl: string, servings: number = 4): RecipeIngredient[] {
   const baseServings = 4;
   const multiplier = servings / baseServings;
@@ -412,7 +412,7 @@ function filterRecentlyPurchasedItems(
     return !wasRecentlyPurchased;
   });
   
-  return filteredPatterns;
+  return filteredPatterns;s;
 }
 
 export function analyzePurchasePatterns(purchases: Purchase[]): ProductPurchasePattern[] {
