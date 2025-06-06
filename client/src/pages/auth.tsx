@@ -30,7 +30,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-import { userSchema, loginSchema } from '@/lib/validation';
+import { loginSchema } from '@/lib/validation';
 
 const loginFormSchema = loginSchema;
 
@@ -73,9 +73,17 @@ const AuthPage: React.FC = () => {
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (data: z.infer<typeof loginSchema>) => {
-      await login(data.username, data.password);
+      console.log("Login mutation triggered with data:", data);
+      try {
+        await login(data.username, data.password);
+        console.log("Login successful");
+      } catch (error) {
+        console.error("Login error in mutation:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
+      console.log("Login mutation onSuccess triggered");
       toast({
         title: "Login successful",
         description: "Welcome back!",
@@ -142,6 +150,8 @@ const AuthPage: React.FC = () => {
 
   // Form submission handlers
   const onLoginSubmit = (data: z.infer<typeof loginSchema>) => {
+    console.log("Login form submitted with data:", data);
+    console.log("Login mutation pending status:", loginMutation.isPending);
     loginMutation.mutate(data);
   };
 
