@@ -226,7 +226,7 @@ const AuthPage: React.FC = () => {
                         <FormLabel>Username</FormLabel>
                         <FormControl>
                           <Input 
-                            placeholder="Enter your username" 
+                            placeholder="johndoe" 
                             type="text"
                             {...field} 
                           />

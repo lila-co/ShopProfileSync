@@ -14,7 +14,7 @@ export const userSchema = z.object({
 
 // Auth schemas
 export const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
+  username: z.string().min(1, "Username is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
