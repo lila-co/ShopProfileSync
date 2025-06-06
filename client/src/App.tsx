@@ -5,6 +5,8 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { queryClient } from '@/lib/queryClient';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import AsyncErrorBoundary from '@/components/AsyncErrorBoundary';
 import AuthPage from './pages/auth';
 import OnboardingPage from './pages/onboarding';
 import ShoppingListPage from './pages/shopping-list';
@@ -39,73 +41,101 @@ function AppContent() {
     <Switch>
       <Route path="/onboarding">
         <ProtectedRoute>
-          <OnboardingPage />
+          <ErrorBoundary level="page">
+            <OnboardingPage />
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
       
       <Route path="/shopping-list">
         <ProtectedRoute>
-          <ShoppingListPage />
+          <ErrorBoundary level="page">
+            <ShoppingListPage />
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
       
       <Route path="/shopping-route">
         <ProtectedRoute>
-          <ShoppingRoute />
+          <ErrorBoundary level="page">
+            <ShoppingRoute />
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
       
       <Route path="/deals">
         <ProtectedRoute>
-          <DealsPage />
+          <ErrorBoundary level="page">
+            <DealsPage />
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
       
       <Route path="/plan-details">
         <ProtectedRoute>
-          <PlanDetailsPage />
+          <ErrorBoundary level="page">
+            <PlanDetailsPage />
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
       
       <Route path="/retailers">
         <ProtectedRoute>
-          <RetailersPage />
+          <ErrorBoundary level="page">
+            <RetailersPage />
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
       
       <Route path="/retailers/:id">
         <ProtectedRoute>
-          <RetailerDetailsPage />
+          <ErrorBoundary level="page">
+            <RetailerDetailsPage />
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
       
       <Route path="/profile">
         <ProtectedRoute>
-          <ProfilePage />
+          <ErrorBoundary level="page">
+            <ProfilePage />
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
       
       <Route path="/scan">
         <ProtectedRoute>
-          <ScanPage />
+          <ErrorBoundary level="page">
+            <ScanPage />
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
       
       <Route path="/auto-order">
         <ProtectedRoute>
-          <AutoOrder />
+          <ErrorBoundary level="page">
+            <AutoOrder />
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
       
       <Route path="/order-online">
         <ProtectedRoute>
-          <OrderOnline />
+          <ErrorBoundary level="page">
+            <OrderOnline />
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
       
       <Route path="/retailer-cart-demo">
         <ProtectedRoute>
-          <RetailerCartDemo />
+          <ErrorBoundary level="page">
+            <AsyncErrorBoundary>
+              <Suspense fallback={<div className="flex items-center justify-center p-8">Loading...</div>}>
+                <RetailerCartDemo />
+              </Suspense>
+            </AsyncErrorBoundary>
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
       
@@ -126,16 +156,18 @@ function AppContent() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
-        <AuthProvider>
-          <div className="App">
-            <AppContent />
-            <Toaster />
-          </div>
-        </AuthProvider>
-      </Router>
-    </QueryClientProvider>
+    <ErrorBoundary level="app">
+      <QueryClientProvider client={queryClient}>
+        <Router>
+          <AuthProvider>
+            <div className="App">
+              <AppContent />
+              <Toaster />
+            </div>
+          </AuthProvider>
+        </Router>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

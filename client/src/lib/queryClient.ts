@@ -48,12 +48,29 @@ export const queryClient = new QueryClient({
       refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000, // 5 minutes
-      retry: 1,
+      retry: (failureCount, error) => {
+        // Don't retry on 4xx errors except 408, 429
+        if (error instanceof Error && error.message.includes('4')) {
+          const status = parseInt(error.message.split(':')[0]);
+          if (status >= 400 && status < 500 && status !== 408 && status !== 429) {
+            return false;
+          }
+        }
+        return failureCount < 2;
+      },
       suspense: false,
       refetchOnMount: false,
+      onError: (error) => {
+        console.error('Query error:', error);
+        // You can add global error handling here
+      },
     },
     mutations: {
       retry: false,
+      onError: (error) => {
+        console.error('Mutation error:', error);
+        // You can add global mutation error handling here
+      },
     },
   },
 });
