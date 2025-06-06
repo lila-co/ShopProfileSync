@@ -112,15 +112,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.removeItem('listGenerationShown');
       localStorage.removeItem('lastLoginTime');
       localStorage.removeItem('forceShowAnimation');
-
+      
       // Clear any other auth-related data
       localStorage.removeItem('user_preferences');
       localStorage.removeItem('shopping_cart');
-
+      
       // Reset user state
       setUser(null);
       setIsLoading(false);
-
+      
       // Force a page reload to ensure complete session cleanup
       window.location.href = '/';
     }

@@ -1,3 +1,4 @@
+
 import { Request, Response, NextFunction } from 'express';
 
 interface RateLimitConfig {
@@ -35,7 +36,7 @@ class RateLimiter {
     if (userId) {
       return `user:${userId}`;
     }
-
+    
     // Get real IP from various headers
     const forwarded = req.headers['x-forwarded-for'];
     const realIp = req.headers['x-real-ip'];
@@ -44,7 +45,7 @@ class RateLimiter {
                req.connection.remoteAddress || 
                req.ip || 
                'unknown';
-
+    
     return `ip:${ip}`;
   }
 
@@ -73,9 +74,9 @@ class RateLimiter {
     return (req: Request, res: Response, next: NextFunction) => {
       const clientKey = this.getClientKey(req);
       const now = Date.now();
-
+      
       let client = this.clients.get(clientKey);
-
+      
       if (!client) {
         client = {
           requests: [],
@@ -92,7 +93,7 @@ class RateLimiter {
       if (client.requests.length >= this.config.maxRequests) {
         const oldestRequest = Math.min(...client.requests);
         const timeUntilReset = this.config.windowMs - (now - oldestRequest);
-
+        
         res.status(429).json({
           error: 'Rate limit exceeded',
           message: this.config.message,
@@ -124,14 +125,14 @@ export const rateLimiters = {
   // General API endpoints - 100 requests per 15 minutes
   general: new RateLimiter({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    maxRequests: 500,
+    maxRequests: 100,
     message: 'Too many API requests. Please try again later.'
   }),
 
   // Authentication endpoints - 5 attempts per 15 minutes
   auth: new RateLimiter({
     windowMs: 15 * 60 * 1000,
-    maxRequests: 25,
+    maxRequests: 5,
     message: 'Too many authentication attempts. Please try again later.',
     skipSuccessfulRequests: true // Only count failed attempts
   }),
@@ -146,7 +147,7 @@ export const rateLimiters = {
   // File uploads - 10 uploads per hour
   upload: new RateLimiter({
     windowMs: 60 * 60 * 1000, // 1 hour
-    maxRequests: 50,
+    maxRequests: 10,
     message: 'Upload limit exceeded. Please try again later.'
   }),
 
@@ -188,10 +189,10 @@ export function createRateLimiter(config: RateLimitConfig) {
 export function createRoleBasedRateLimiter(baseConfig: RateLimitConfig) {
   return (req: Request, res: Response, next: NextFunction) => {
     const userId = req.headers['x-current-user-id'];
-
+    
     // Create different limits based on user role (if available)
     let config = { ...baseConfig };
-
+    
     // In a real app, you'd fetch the user role from the database
     // For demo purposes, we'll use a simple check
     if (userId) {

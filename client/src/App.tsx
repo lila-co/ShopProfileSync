@@ -1,166 +1,207 @@
-import React, { Suspense } from 'react';
-import { Router, Route, Switch } from 'wouter';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React, { Suspense, lazy } from 'react';
+import { Router, Route, Switch, Redirect } from 'wouter';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
-import ErrorBoundary from '@/components/ErrorBoundary';
-
-// Import pages with lazy loading
-import AuthPage from '@/pages/auth';
-import DashboardPage from '@/pages/dashboard';
-import ShoppingListPage from '@/pages/shopping-list';
-import ProfilePage from '@/pages/profile';
-import OnboardingPage from '@/pages/onboarding';
-import NotFoundPage from '@/pages/not-found';
+import { queryClient } from '@/lib/queryClient';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import DealsPage from '@/pages/deals';
-import CircularsPage from '@/pages/circulars';
-import ExpirationTrackerPage from '@/pages/expiration-tracker';
-import RetailersPage from '@/pages/retailers';
-import RetailerDetailsPage from '@/pages/retailer-details';
-import ScanPage from '@/pages/scan';
-import PlanDetailsPage from '@/pages/plan-details';
-import ShoppingRoutePage from '@/pages/shopping-route';
-import AutoOrderPage from '@/pages/auto-order';
-import OrderOnlinePage from '@/pages/order-online';
-import RetailerCartDemoPage from '@/pages/retailer-cart-demo';
-import AdminProfilePage from '@/pages/admin-profile';
-import AdminSettingsPage from '@/pages/admin-settings';
-import MonitoringDashboardPage from '@/pages/monitoring-dashboard';
-import InternalAnalyticsPage from '@/pages/internal-analytics';
-import AffiliateDashboardPage from '@/pages/affiliate-dashboard';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import AsyncErrorBoundary from '@/components/AsyncErrorBoundary';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      retry: 1,
-    },
-  },
-});
+// Import lazy-loaded components organized by feature groups
+import { 
+  CorePages, 
+  ShoppingPages, 
+  AdvancedPages, 
+  AdminPages, 
+  OnboardingPages,
+  preloadCriticalComponents 
+} from '@/utils/lazyImports';
 
-const AppContent: React.FC = () => {
-  const { user, isLoading } = useAuth();
+// Loading fallback component
+const PageLoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="flex flex-col items-center space-y-4">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="text-lg text-gray-600">Loading...</div>
+    </div>
+  </div>
+);
+
+function AppContent() {
+  const { isLoading, isAuthenticated } = useAuth();
+
+  // Preload critical components when authenticated
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      preloadCriticalComponents();
+    }
+  }, [isAuthenticated]);
 
   if (isLoading) {
+    return <PageLoadingFallback />;
+  }
+
+  if (!isAuthenticated) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
+      <Suspense fallback={<PageLoadingFallback />}>
+        <CorePages.Auth />
+      </Suspense>
     );
   }
 
   return (
     <Switch>
-      <Route path="/auth" component={AuthPage} />
       <Route path="/onboarding">
         <ProtectedRoute>
-          <OnboardingPage />
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <OnboardingPages.Onboarding />
+            </Suspense>
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
-      <Route path="/">
-        <ProtectedRoute>
-          <DashboardPage />
-        </ProtectedRoute>
-      </Route>
+
       <Route path="/shopping-list">
         <ProtectedRoute>
-          <ShoppingListPage />
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <CorePages.ShoppingList />
+            </Suspense>
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
-      <Route path="/profile">
-        <ProtectedRoute>
-          <ProfilePage />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/deals">
-        <ProtectedRoute>
-          <DealsPage />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/circulars">
-        <ProtectedRoute>
-          <CircularsPage />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/expiration-tracker">
-        <ProtectedRoute>
-          <ExpirationTrackerPage />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/retailers">
-        <ProtectedRoute>
-          <RetailersPage />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/retailer/:id">
-        <ProtectedRoute>
-          <RetailerDetailsPage />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/scan">
-        <ProtectedRoute>
-          <ScanPage />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/plan-details">
-        <ProtectedRoute>
-          <PlanDetailsPage />
-        </ProtectedRoute>
-      </Route>
+
       <Route path="/shopping-route">
         <ProtectedRoute>
-          <ShoppingRoutePage />
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <ShoppingPages.ShoppingRoute />
+            </Suspense>
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
+
+      <Route path="/deals">
+        <ProtectedRoute>
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <ShoppingPages.Deals />
+            </Suspense>
+          </ErrorBoundary>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/plan-details">
+        <ProtectedRoute>
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <ShoppingPages.PlanDetails />
+            </Suspense>
+          </ErrorBoundary>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/retailers">
+        <ProtectedRoute>
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <ShoppingPages.Retailers />
+            </Suspense>
+          </ErrorBoundary>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/retailers/:id">
+        <ProtectedRoute>
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <ShoppingPages.RetailerDetails />
+            </Suspense>
+          </ErrorBoundary>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/profile">
+        <ProtectedRoute>
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <CorePages.Profile />
+            </Suspense>
+          </ErrorBoundary>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/scan">
+        <ProtectedRoute>
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <ShoppingPages.Scan />
+            </Suspense>
+          </ErrorBoundary>
+        </ProtectedRoute>
+      </Route>
+
       <Route path="/auto-order">
         <ProtectedRoute>
-          <AutoOrderPage />
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <AdvancedPages.AutoOrder />
+            </Suspense>
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
+
       <Route path="/order-online">
         <ProtectedRoute>
-          <OrderOnlinePage />
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <AdvancedPages.OrderOnline />
+            </Suspense>
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
+
       <Route path="/retailer-cart-demo">
         <ProtectedRoute>
-          <RetailerCartDemoPage />
+          <ErrorBoundary level="page">
+            <AsyncErrorBoundary>
+              <Suspense fallback={<PageLoadingFallback />}>
+                <AdvancedPages.RetailerCartDemo />
+              </Suspense>
+            </AsyncErrorBoundary>
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
-      <Route path="/admin/profile">
-        <ProtectedRoute>
-          <AdminProfilePage />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/admin/settings">
-        <ProtectedRoute>
-          <AdminSettingsPage />
-        </ProtectedRoute>
-      </Route>
+      
       <Route path="/admin/monitoring">
         <ProtectedRoute>
-          <MonitoringDashboardPage />
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <AdminPages.MonitoringDashboard />
+            </Suspense>
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
-      <Route path="/admin/analytics">
+
+      <Route path="/">
         <ProtectedRoute>
-          <InternalAnalyticsPage />
+          <Redirect to="/shopping-list" />
         </ProtectedRoute>
       </Route>
-      <Route path="/affiliate/dashboard">
+
+      <Route>
         <ProtectedRoute>
-          <AffiliateDashboardPage />
+          <Redirect to="/shopping-list" />
         </ProtectedRoute>
       </Route>
-      <Route component={NotFoundPage} />
     </Switch>
   );
-};
+}
 
-const App: React.FC = () => {
+function App() {
   return (
-    <ErrorBoundary>
+    <ErrorBoundary level="app">
       <QueryClientProvider client={queryClient}>
         <Router>
           <AuthProvider>
@@ -173,6 +214,6 @@ const App: React.FC = () => {
       </QueryClientProvider>
     </ErrorBoundary>
   );
-};
+}
 
 export default App;

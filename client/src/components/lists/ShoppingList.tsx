@@ -71,17 +71,12 @@ const ShoppingListComponent: React.FC = () => {
   const { data: shoppingLists, isLoading } = useQuery<ShoppingListType[]>({
     queryKey: ['/api/shopping-lists'],
     refetchOnWindowFocus: true,
-    refetchInterval: 30000, // Refetch every 30 seconds instead of 2 seconds
-    staleTime: 10000, // Consider data fresh for 10 seconds
+    refetchInterval: 2000, // Refetch every 2 seconds to catch updates from other pages
   });
 
-  const { data: suggestions } = useQuery<string[]>({
+  const { data: suggestions, isLoading: suggestionsLoading } = useQuery({
     queryKey: ['/api/shopping-lists/suggestions'],
-    queryFn: async () => {
-      const response = await fetch('/api/shopping-lists/suggestions');
-      if (!response.ok) throw new Error('Failed to fetch suggestions');
-      return response.json();
-    }
+    enabled: !!shoppingLists,
   });
 
   // Category definitions with icons and colors
@@ -613,7 +608,7 @@ const ShoppingListComponent: React.FC = () => {
     // Start the actual mutation after animation has time to show
     const mutationTimeout = setTimeout(() => {
       console.log('Starting regeneration mutation...');
-
+      
       regenerateListMutation.mutate(undefined, {
         onSettled: () => {
           console.log('Mutation settled, cleaning up animation');
@@ -1084,7 +1079,7 @@ const ShoppingListComponent: React.FC = () => {
                     Ready to add
                   </Badge>
                 )}
-
+                
                 <Button
                   type="submit"
                   disabled={!newItemName.trim() || addItemMutation.isPending}
