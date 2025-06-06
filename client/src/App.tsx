@@ -4,6 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { queryClient } from '@/lib/queryClient';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import AuthPage from './pages/auth';
 import OnboardingPage from './pages/onboarding';
 import ShoppingListPage from './pages/shopping-list';
@@ -36,21 +37,89 @@ function AppContent() {
 
   return (
     <Switch>
-      <Route path="/shopping-list" component={ShoppingListPage} />
+      <Route path="/onboarding">
+        <ProtectedRoute>
+          <OnboardingPage />
+        </ProtectedRoute>
+      </Route>
       
-      <Route path="/shopping-route" component={ShoppingRoute} />
-      <Route path="/deals" component={DealsPage} />
-      <Route path="/plan-details" component={PlanDetailsPage} />
-      <Route path="/retailers" component={RetailersPage} />
-      <Route path="/retailers/:id" component={RetailerDetailsPage} />
-      <Route path="/profile" component={ProfilePage} />
-      <Route path="/scan" component={ScanPage} />
-      <Route path="/onboarding" component={OnboardingPage} />
-      <Route path="/auto-order" component={AutoOrder} />
-      <Route path="/order-online" component={OrderOnline} />
-      <Route path="/retailer-cart-demo" component={RetailerCartDemo} />
-      <Route path="/" component={() => <Redirect to="/shopping-list" />} />
-      <Route component={() => <Redirect to="/shopping-list" />} />
+      <Route path="/shopping-list">
+        <ProtectedRoute>
+          <ShoppingListPage />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/shopping-route">
+        <ProtectedRoute>
+          <ShoppingRoute />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/deals">
+        <ProtectedRoute>
+          <DealsPage />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/plan-details">
+        <ProtectedRoute>
+          <PlanDetailsPage />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/retailers">
+        <ProtectedRoute>
+          <RetailersPage />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/retailers/:id">
+        <ProtectedRoute>
+          <RetailerDetailsPage />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/profile">
+        <ProtectedRoute>
+          <ProfilePage />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/scan">
+        <ProtectedRoute>
+          <ScanPage />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/auto-order">
+        <ProtectedRoute>
+          <AutoOrder />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/order-online">
+        <ProtectedRoute>
+          <OrderOnline />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/retailer-cart-demo">
+        <ProtectedRoute>
+          <RetailerCartDemo />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/">
+        <ProtectedRoute>
+          <Redirect to="/shopping-list" />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route>
+        <ProtectedRoute>
+          <Redirect to="/shopping-list" />
+        </ProtectedRoute>
+      </Route>
     </Switch>
   );
 }

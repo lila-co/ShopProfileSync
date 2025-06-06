@@ -103,23 +103,55 @@ const AuthPage: React.FC = () => {
   // Register mutation
   const registerMutation = useMutation({
     mutationFn: async (data: z.infer<typeof registerSchema>) => {
-      // In a real app, you would make a POST request to your registration endpoint
-      // For now, we're simulating a successful registration
-      return await new Promise((resolve) => {
-        // Simulate API delay
-        setTimeout(() => {
-          resolve({ success: true, user: { email: data.email, name: data.name }, needsOnboarding: true });
-        }, 1000);
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: data.email, // Use email as username
+          password: data.password,
+          email: data.email,
+          name: data.name
+        }),
       });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Registration failed');
+      }
+
+      return result;
     },
-    onSuccess: (data: any) => {
+    onSuccess: async (data: any) => {
+      console.log('Registration successful, response data:', data);
       toast({
         title: "Registration successful",
         description: `Welcome to SmartCart, ${data.user.name}!`,
       });
       // Set a flag to show onboarding after authentication
       localStorage.setItem('needsOnboarding', 'true');
-      // Navigation will be handled by ProtectedRoute after registration
+      console.log('Set needsOnboarding flag to true');
+      
+      // Auto-login the user with their new credentials
+      try {
+        const email = data.user.email || registerForm.getValues('email');
+        const password = registerForm.getValues('password');
+        console.log('Attempting auto-login with email:', email);
+        await login(email, password);
+        console.log('Auto-login successful, should redirect to onboarding');
+        // User will be automatically redirected to onboarding by ProtectedRoute
+      } catch (error) {
+        console.error('Auto-login failed:', error);
+        // Fall back to manual login if auto-login fails
+        setActiveTab('login');
+        loginForm.setValue('username', data.user.email || registerForm.getValues('email'));
+        toast({
+          title: "Please sign in",
+          description: "Your account was created successfully. Please sign in to continue.",
+        });
+      }
     },
     onError: (error: any) => {
       toast({

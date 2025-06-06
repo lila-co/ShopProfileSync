@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { ShoppingCart, Store, Clock, Plus, MapPin } from 'lucide-react';
+import { getItemImage } from '@/lib/imageUtils';
 
 import type { StoreDeal, Retailer } from '@/lib/types';
 
@@ -92,7 +93,7 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
     },
   });
 
-  
+
 
   const addToShoppingListMutation = useMutation({
     mutationFn: async (deal: StoreDeal) => {
@@ -109,7 +110,7 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
       // Invalidate shopping list queries directly
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
       queryClient.refetchQueries({ queryKey: ['/api/shopping-lists'] });
-      
+
       toast({
         title: "Added to List",
         description: "Item has been added to your shopping list."
@@ -209,9 +210,17 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
             <Card key={deal.id} className="border-0 shadow-sm">
               <CardContent className="p-4">
                 <div className="flex gap-4">
-                  {/* Product Image Placeholder */}
+                  {/* Product Image */}
                   <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <ShoppingCart className="h-6 w-6 text-gray-400" />
+                  <img
+                    src={deal.imageUrl || getItemImage(deal.productName) || 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=200&h=200&fit=crop'}
+                    alt={deal.productName}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=200&h=200&fit=crop';
+                    }}
+                  />
                   </div>
 
                   {/* Product Info */}

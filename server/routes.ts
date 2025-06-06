@@ -120,6 +120,12 @@ function levenshteinDistance(str1: string, str2: string): number {
   return matrix[str2.length][str1.length];
 }
 
+// Helper function to get current user ID from request
+function getCurrentUserId(req: Request): number {
+  return req.headers['x-current-user-id'] ? 
+    parseInt(req.headers['x-current-user-id'] as string) : 1;
+}
+
 // Helper functions for processing different upload types
 async function createSampleDealsFromImage(retailerId: number, circularId: number, filename: string) {
   // In production, this would use OCR to extract text from the image
@@ -1749,153 +1755,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/shopping-list/items', async (req: Request, res: Response) => {
-    try {
-      const { productName, quantity, unit, shoppingListId } = req.body;
-
-      // Validate quantity to ensure it's a number and not NaN
-      const validQuantity = Number(quantity);
-      if (isNaN(validQuantity)) {
-        return res.status(400).json({ message: 'Invalid quantity. Please provide a valid number.' });
-      }
-
-      // If no shoppingListId provided, use the default list
-      let targetListId = shoppingListId;
-      if (!targetListId) {
-        const lists = await storage.getShoppingLists();
-        const defaultList = lists.find(list => list.isDefault) || lists[0];
-        if (!defaultList) {
-          return res.status(400).json({ message: 'No shopping list available' });
-        }
-        targetListId = defaultList.id;
-      }
-
-      // Get existing items to check for duplicates
-      const existingItems = await storage.getShoppingListItems(targetListId);
-
-      // Common item names and alternate spellings/misspellings
-      const commonItemCorrections: Record<string, string[]> = {
-        'banana': ['banan', 'bananna', 'banannas', 'bannana', 'banannas'],
-        'apple': ['appl', 'apples', 'aple'],
-        'milk': ['millk', 'milks', 'mlik'],
-        'bread': ['bred', 'breads', 'loaf'],
-        'egg': ['eggs', 'egss'],
-        'potato': ['potatos', 'potatoe', 'potatoes'],
-        'tomato': ['tomatos', 'tomatoe', 'tomatoes'],
-        'cheese': ['chese', 'cheez', 'chees'],
-        'chicken': ['chickn', 'checken', 'chiken'],
-        'cereal': ['ceereal', 'cereals', 'cerel']
-      };
-
-      // Normalize the product name to lowercase for matching
-      const normalizedName = productName ? productName.toLowerCase().trim() : '';
-
-      // Check if this is likely a duplicate with a slightly different spelling
-      let correctedName = normalizedName;
-      let isDuplicate = false;
-      let existingItem = null;
-
-      // First check for exact matches or plurals
-      existingItem = existingItems.find(item => 
-        item.productName.toLowerCase() === normalizedName ||
-        item.productName.toLowerCase() + 's' === normalizedName ||
-        item.productName.toLowerCase() === normalizedName + 's'
-      );
-
-      if (existingItem) {
-        isDuplicate = true;
-      } else {
-        // Look for corrections in common items dictionary
-        for (const [correct, variations] of Object.entries(commonItemCorrections)) {
-          if (normalizedName === correct || variations.includes(normalizedName)) {
-            correctedName = correct;
-
-            // Check if the corrected name exists in the list
-            existingItem = existingItems.find(item => 
-              item.productName.toLowerCase() === correctedName ||
-              item.productName.toLowerCase().includes(correctedName)
-            );
-
-            if (existingItem) {
-              isDuplicate = true;
-            }
-            break;
-          }
-        }
-
-        // If no match in dictionary, use fuzzy matching for other items
-        if (!isDuplicate) {
-          for (const item of existingItems) {
-            const itemName = item.productName.toLowerCase();
-
-            // Check for contained substrings (e.g., "tomato" and "roma tomato")
-            if (itemName.includes(normalizedName) || normalizedName.includes(itemName)) {
-              existingItem = item;
-              isDuplicate = true;
-              break;
-            }
-
-            // Simple Levenshtein-like check for similar spellings
-            // If names are very close to each other
-            if (itemName.length > 3 && normalizedName.length > 3) {
-              // Check if first 3 chars match and length is similar
-              if (itemName.substring(0, 3) === normalizedName.substring(0, 3) && 
-                  Math.abs(itemName.length - normalizedName.length) <= 2) {
-                existingItem = item;
-                isDuplicate = true;
-                break;
-              }
-            }
-          }
-        }
-      }
-
-      let result;
-
-      if (isDuplicate && existingItem) {
-        // Update the quantity of the existing item instead of adding a new one
-        const updatedItem = await storage.updateShoppingListItem(existingItem.id, {
-          quantity: existingItem.quantity + validQuantity,
-          // Keep the existing unit or update to the new one if specified
-          unit: unit || existingItem.unit || 'COUNT'
-        });
-
-        // Add information about the merge for the client
-        result = {
-          ...updatedItem,
-          merged: true,
-          originalName: productName,
-          message: `Combined with existing "${existingItem.productName}" item`
-        };
-      } else {
-        // If it's a corrected common item, use the corrected name
-        let nameToUse = productName;
-        if (correctedName !== normalizedName && Object.keys(commonItemCorrections).includes(correctedName)) {
-          // Capitalize first letter of corrected name
-          nameToUse = correctedName.charAt(0).toUpperCase() + correctedName.slice(1);
-        }
-
-        // Add as new item with the specified unit (or default to COUNT)
-        const newItem = await storage.addShoppingListItem({
-          shoppingListId: targetListId,
-          productName: nameToUse,
-          quantity: validQuantity,
-          unit: unit || 'COUNT'
-        });
-
-        result = {
-          ...newItem,
-          merged: false,
-          corrected: nameToUse !== productName,
-          originalName: productName
-        };
-      }
-
-      res.json(result);
-    } catch (error) {
-      handleError(res, error);
-    }
-  });
+  
 
   app.patch('/api/shopping-list/items/:id', async (req: Request, res: Response) => {
     try {
