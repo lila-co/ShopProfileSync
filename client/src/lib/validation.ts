@@ -207,20 +207,4 @@ export const notificationPreferencesSchema = z.object({
   smsNotifications: z.boolean(),
 });
 
-// Export all schemas
-export {
-  userSchema,
-  loginSchema,
-  registerSchema,
-  profileUpdateSchema,
-  shoppingListSchema,
-  shoppingListItemSchema,
-  retailerAccountSchema,
-  purchaseSchema,
-  dealSchema,
-  fileUploadSchema,
-  searchSchema,
-  voiceInputSchema,
-  privacyPreferencesSchema,
-  notificationPreferencesSchema,
-};
+// All schemas are already exported individually above
