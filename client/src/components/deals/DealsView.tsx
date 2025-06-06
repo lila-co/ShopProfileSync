@@ -104,6 +104,9 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
 
       console.log('Loading product images for', storeDeals.length, 'deals');
       
+      // Clear existing images to force refresh
+      setProductImages({});
+      
       const imagePromises = storeDeals.map(async (deal) => {
         try {
           // Get AI category for better image matching
