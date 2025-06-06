@@ -42,7 +42,15 @@ export async function getBestProductImage(
   retailerId?: number
 ): Promise<string | null> {
   try {
-    // If we have an existing image URL, try to use it first
+    // First priority: Try to get image from retailer API if retailerId is provided
+    if (retailerId) {
+      const retailerImageUrl = await getRetailerProductImage(productName, retailerId);
+      if (retailerImageUrl) {
+        return retailerImageUrl;
+      }
+    }
+
+    // If we have an existing image URL, try to use it next
     if (existingImageUrl && existingImageUrl.trim()) {
       try {
         const response = await fetch(existingImageUrl, { method: 'HEAD' });
@@ -64,6 +72,44 @@ export async function getBestProductImage(
     return await getProductImage(productName);
   } catch (error) {
     console.error('Error in getBestProductImage:', error);
+    return null;
+  }
+}
+
+// Function to get product image from retailer API
+export async function getRetailerProductImage(productName: string, retailerId: number): Promise<string | null> {
+  try {
+    // Make API call to search for the product through retailer integration
+    const response = await fetch(`/api/retailer/${retailerId}/search?query=${encodeURIComponent(productName)}`);
+    
+    if (!response.ok) {
+      console.log(`Retailer API search failed for ${productName} at retailer ${retailerId}`);
+      return null;
+    }
+
+    const products = await response.json();
+    
+    // Look for the first product that has an image URL
+    for (const product of products) {
+      if (product.imageUrl && product.imageUrl.trim()) {
+        // Validate that the image URL is accessible
+        try {
+          const imageResponse = await fetch(product.imageUrl, { method: 'HEAD' });
+          if (imageResponse.ok) {
+            console.log(`Found retailer image for "${productName}": ${product.imageUrl}`);
+            return product.imageUrl;
+          }
+        } catch (error) {
+          console.log(`Retailer image URL validation failed: ${product.imageUrl}`);
+          continue;
+        }
+      }
+    }
+
+    console.log(`No valid retailer images found for "${productName}" at retailer ${retailerId}`);
+    return null;
+  } catch (error) {
+    console.error(`Error fetching retailer image for "${productName}":`, error);
     return null;
   }
 }

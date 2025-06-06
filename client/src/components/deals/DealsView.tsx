@@ -104,11 +104,11 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
       if (!storeDeals?.length) return;
 
       console.log('Loading product images for', storeDeals.length, 'deals');
-      
+
       // Clear existing images to force refresh
       setProductImages({});
       setImageLoadErrors({});
-      
+
       const imagePromises = storeDeals.map(async (deal) => {
         try {
           // Get AI category for better image matching
@@ -124,10 +124,10 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
           );
 
           console.log(`Image for "${deal.productName}": ${image ? 'found' : 'using fallback'}`);
-          
+
           // Always return an image, falling back to a default grocery image
           const finalImage = image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&h=200&fit=crop';
-          
+
           return { dealId: deal.id, image: finalImage };
         } catch (error) {
           console.error(`Error loading image for ${deal.productName}:`, error);
@@ -152,7 +152,7 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
   const handleImageError = (dealId: string, productName: string) => {
     console.log(`Image failed for ${productName}, trying fallback`);
     setImageLoadErrors(prev => ({ ...prev, [dealId]: true }));
-    
+
     // Set a reliable fallback image
     setProductImages(prev => ({
       ...prev,
