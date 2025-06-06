@@ -21,6 +21,101 @@ class AICategorationService {
   private readonly CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
   private readonly MAX_CACHE_SIZE = 1000;
 
+  private categoryPatterns: Map<string, RegExp[]> = new Map([
+    ['Produce', [
+      /\b(apple|banana|orange|strawberry|grape|melon|berry|fruit)\b/i,
+      /\b(tomato|lettuce|spinach|carrot|onion|potato|pepper|vegetable)\b/i,
+      /\b(avocado|cucumber|broccoli|celery|kale|arugula)\b/i,
+      /\b(organic|fresh|vine)\b.*\b(produce|fruit|vegetable)\b/i
+    ]],
+    ['Dairy & Eggs', [
+      /\b(milk|cheese|yogurt|butter|cream|dairy)\b/i,
+      /\b(egg|dozen|cheddar|mozzarella|swiss|american)\b/i,
+      /\b(greek|whole|skim|2%|low fat)\b.*\b(milk|yogurt)\b/i
+    ]],
+    ['Meat & Seafood', [
+      /\b(chicken|beef|pork|turkey|lamb|meat)\b/i,
+      /\b(salmon|fish|shrimp|seafood|tuna|cod)\b/i,
+      /\b(ground|breast|thigh|fillet|steak)\b/i
+    ]],
+    ['Pantry & Canned Goods', [
+      /\b(pasta|rice|quinoa|grain|cereal|oats)\b/i,
+      /\b(coffee|tea|sugar|flour|salt|spice)\b/i,
+      /\b(canned|jar|bottle|sauce|oil|vinegar)\b/i,
+      /\b(nuts|almonds|trail mix|granola|beans)\b/i
+    ]],
+    ['Bakery', [
+      /\b(bread|bagel|muffin|roll|loaf|bakery)\b/i,
+      /\b(whole grain|white|wheat|sourdough)\b/i
+    ]],
+    ['Beverages', [
+      /\b(water|juice|soda|drink|beverage|sparkling)\b/i,
+      /\b(coffee|tea|wine|beer|alcohol)\b/i,
+      /\b(coconut|almond|oat)\b.*\bmilk\b/i
+    ]],
+    ['Frozen Foods', [
+      /\b(frozen|ice cream|popsicle|pizza)\b/i,
+      /\bfrozen\b.*\b(vegetable|fruit|meal|dinner)\b/i
+    ]],
+    ['Household Items', [
+      /\b(paper towel|toilet paper|tissue|cleaning|detergent)\b/i,
+      /\b(soap|shampoo|toothpaste|household)\b/i
+    ]],
+    ['Personal Care', [
+      /\b(shampoo|conditioner|toothpaste|deodorant|skincare)\b/i,
+      /\b(lotion|sunscreen|makeup|beauty|personal care)\b/i
+    ]],
+    ['Health & Wellness', [
+      /\b(vitamin|supplement|medicine|health|wellness)\b/i,
+      /\b(protein|fiber|probiotic|organic)\b/i
+    ]]
+  ]);
+
+  private unitPatterns: Map<string, string> = new Map([
+    // Weight-based
+    ['banana', 'LB'],
+    ['apple', 'LB'],
+    ['orange', 'LB'],
+    ['grape', 'LB'],
+    ['potato', 'LB'],
+    ['onion', 'LB'],
+    ['carrot', 'LB'],
+    ['meat', 'LB'],
+    ['chicken', 'LB'],
+    ['beef', 'LB'],
+    ['salmon', 'LB'],
+    ['fish', 'LB'],
+
+    // Count-based
+    ['avocado', 'COUNT'],
+    ['pepper', 'COUNT'],
+    ['cucumber', 'COUNT'],
+    ['tomato', 'COUNT'],
+
+    // Container-based
+    ['milk', 'GALLON'],
+    ['juice', 'BOTTLE'],
+    ['water', 'BOTTLE'],
+    ['yogurt', 'CONTAINER'],
+    ['cheese', 'PACK'],
+    ['egg', 'DOZEN'],
+
+    // Package-based
+    ['bread', 'LOAF'],
+    ['cereal', 'BOX'],
+    ['pasta', 'BOX'],
+    ['rice', 'BAG'],
+    ['coffee', 'BAG'],
+    ['tea', 'BOX'],
+
+    // Household
+    ['paper towel', 'ROLL'],
+    ['toilet paper', 'ROLL'],
+    ['soap', 'BOTTLE'],
+    ['shampoo', 'BOTTLE'],
+    ['detergent', 'BOTTLE']
+  ]);
+
   // Clear expired cache entries
   private cleanCache(): void {
     const now = Date.now();
@@ -336,49 +431,8 @@ class AICategorationService {
       }
     }
 
-    // Handle special cases and edge cases
-    if (bestScore === 0) {
-      // Check for common misspellings or variations
-      const commonMisspellings: Record<string, { category: string; confidence: number }> = {
-        'tomatoe': { category: 'Produce', confidence: 0.8 },
-        'potatoe': { category: 'Produce', confidence: 0.8 },
-        'bannana': { category: 'Produce', confidence: 0.8 },
-        'chiken': { category: 'Meat & Seafood', confidence: 0.8 },
-        'beff': { category: 'Meat & Seafood', confidence: 0.8 },
-        'bred': { category: 'Bakery', confidence: 0.8 },
-      };
-
-      for (const [misspelling, result] of Object.entries(commonMisspellings)) {
-        if (name.includes(misspelling)) {
-          return result;
-        }
-      }
-
-      // Last resort: check for brand names that indicate category
-      const brandCategories: Record<string, { category: string; confidence: number }> = {
-        'dole': { category: 'Produce', confidence: 0.7 },
-        'chiquita': { category: 'Produce', confidence: 0.7 },
-        'tyson': { category: 'Meat & Seafood', confidence: 0.7 },
-        'perdue': { category: 'Meat & Seafood', confidence: 0.7 },
-        'wonder': { category: 'Bakery', confidence: 0.7 },
-        'pepperidge': { category: 'Bakery', confidence: 0.7 },
-        'tide': { category: 'Household Items', confidence: 0.7 },
-        'dawn': { category: 'Household Items', confidence: 0.7 },
-        'pantene': { category: 'Personal Care', confidence: 0.7 },
-        'dove': { category: 'Personal Care', confidence: 0.7 },
-        'kraft': { category: 'Pantry & Canned Goods', confidence: 0.7 },
-        'hunts': { category: 'Pantry & Canned Goods', confidence: 0.7 },
-      };
-
-      for (const [brand, result] of Object.entries(brandCategories)) {
-        if (name.includes(brand)) {
-          return result;
-        }
-      }
-    }
-
     // Apply count optimization suggestions
-    const countOptimization = detectCountOptimization(bestCategory, name, quantity, unit);
+    const countOptimization = this.detectCountOptimization(bestCategory, name, quantity, unit);
 
     console.log(`Quick categorization for "${name}": category=${bestCategory}, originalUnit=${unit}, suggestedUnit=${countOptimization.suggestedUnit}`);
 
@@ -388,6 +442,49 @@ class AICategorationService {
       suggestedQuantity: countOptimization.suggestedQuantity || quantity,
       suggestedUnit: countOptimization.suggestedUnit || unit
     };
+  }
+
+  // Helper function to detect better units and quantities
+  private detectCountOptimization(category: string, name: string, quantity?: number, unit?: string): { suggestedQuantity?: number; suggestedUnit?: string } {
+    // Default to original values
+    let suggestedQuantity = quantity;
+    let suggestedUnit = unit;
+
+    // Check for specific unit patterns
+    for (const [pattern, unitSuggestion] of this.unitPatterns) {
+      if (name.includes(pattern)) {
+        suggestedUnit = unitSuggestion;
+        console.log(`Unit pattern match: "${pattern}" in "${name}" suggests ${unitSuggestion}`);
+        break;
+      }
+    }
+
+    // Check for common unit indicators in the name
+    if (!suggestedUnit || suggestedUnit === unit) {
+      if (/\b(lb|pound|lbs)\b/i.test(name)) suggestedUnit = 'LB';
+      else if (/\b(gallon|gal)\b/i.test(name)) suggestedUnit = 'GALLON';
+      else if (/\b(dozen|doz)\b/i.test(name)) suggestedUnit = 'DOZEN';
+      else if (/\b(bottle|btl)\b/i.test(name)) suggestedUnit = 'BOTTLE';
+      else if (/\b(box|pkg|package)\b/i.test(name)) suggestedUnit = 'BOX';
+      else if (/\b(bag|sack)\b/i.test(name)) suggestedUnit = 'BAG';
+      else if (/\b(roll|rolls)\b/i.test(name)) suggestedUnit = 'ROLL';
+      else if (/\b(pack|packs)\b/i.test(name)) suggestedUnit = 'PACK';
+      else if (/\b(jar|jars)\b/i.test(name)) suggestedUnit = 'JAR';
+      else if (/\b(can|cans)\b/i.test(name)) suggestedUnit = 'CAN';
+    }
+
+    // Category-specific optimizations
+    if (category === 'Household Items') {
+      if (name.includes('paper towel')) {
+        suggestedUnit = 'COUNT';
+        suggestedQuantity = Math.max(1, Math.min(quantity || 1, 6)); // 6-pack typical
+      } else if (name.includes('toilet paper')) {
+        suggestedUnit = 'COUNT';
+        suggestedQuantity = Math.max(1, Math.min(quantity || 1, 12)); // 12-pack typical
+      }
+    }
+
+    return { suggestedQuantity, suggestedUnit };
   }
 
   // Clear cache manually
@@ -404,318 +501,5 @@ class AICategorationService {
   }
 }
 
-// Helper function to detect better units and quantities
-function detectCountOptimization(category: string, name: string, quantity?: number, unit?: string): { suggestedQuantity?: number; suggestedUnit?: string } {
-  // Default to original values
-  let suggestedQuantity = quantity;
-  let suggestedUnit = unit;
-
-  // More comprehensive unit detection patterns
-  const unitPatterns = [
-    // Liquids and bottles
-    { patterns: ['olive oil', 'vegetable oil', 'canola oil', 'coconut oil', 'oil', 'vinegar', 'honey', 'syrup', 'vanilla', 'extract', 'shampoo', 'conditioner'], unit: 'BOTTLE' },
-    // Canned goods
-    { patterns: ['beans', 'black beans', 'kidney beans', 'pinto beans', 'navy beans', 'chickpeas', 'garbanzo beans', 'diced tomato', 'crushed tomato', 'tomato sauce', 'marinara', 'coconut milk', 'broth', 'stock', 'corn', 'peas', 'canned'], unit: 'CAN' },
-    // Jars
-    { patterns: ['jam', 'jelly', 'peanut butter', 'almond butter', 'salsa', 'pickles', 'pasta sauce', 'marinara sauce', 'alfredo'], unit: 'JAR' },
-    // Bags
-    { patterns: ['rice', 'brown rice', 'white rice', 'quinoa', 'flour', 'sugar', 'spinach', 'baby spinach', 'lettuce', 'salad mix', 'frozen'], unit: 'BAG' },
-    // Boxes
-    { patterns: ['cereal', 'crackers', 'pasta', 'baking soda', 'baking powder', 'salt', 'tea', 'granola bars'], unit: 'BOX' },
-    // Loaves
-    { patterns: ['bread', 'whole wheat bread', 'white bread', 'sourdough', 'loaf'], unit: 'LOAF' },
-    // Gallons for milk
-    { patterns: ['milk', 'almond milk', 'soy milk', 'oat milk'], unit: 'GALLON' },
-    // Dozens for eggs
-    { patterns: ['egg', 'eggs', 'free-range eggs', 'organic eggs'], unit: 'DOZEN' },
-    // Pounds for produce and meat
-    { patterns: ['banana', 'apple', 'potato', 'onion', 'yellow onion', 'red onion', 'tomato', 'roma tomato', 'carrot', 'chicken', 'chicken breast', 'beef', 'ground turkey', 'ground beef', 'salmon', 'strawberries'], unit: 'LB' },
-    // Containers for dairy and others
-    { patterns: ['yogurt', 'greek yogurt', 'cottage cheese', 'sour cream', 'oatmeal', 'oats', 'chicken broth', 'vegetable broth'], unit: 'CONTAINER' },
-    // Blocks for cheese
-    { patterns: ['cheddar cheese', 'swiss cheese', 'mozzarella cheese', 'cheese block', 'butter'], unit: 'BLOCK' },
-    // Count items (vegetables, individual items)
-    { patterns: ['avocado', 'bell pepper', 'red bell pepper', 'green bell pepper', 'cucumber', 'broccoli', 'cauliflower', 'lime', 'lemon', 'garlic powder', 'black pepper', 'sea salt', 'toothpaste', 'deodorant'], unit: 'COUNT' },
-    // Bottles for water and beverages
-    { patterns: ['sparkling water', 'bottled water', 'water bottle', 'soda', 'juice', 'apple juice', 'orange juice'], unit: 'BOTTLE' },
-    // Rolls for paper products
-    { patterns: ['paper towel', 'toilet paper', 'paper towels'], unit: 'ROLL' }
-  ];
-
-  // Find the best matching unit pattern
-  for (const pattern of unitPatterns) {
-    for (const keyword of pattern.patterns) {
-      if (name.includes(keyword)) {
-        suggestedUnit = pattern.unit;
-        console.log(`Unit pattern match: "${keyword}" in "${name}" suggests ${pattern.unit}`);
-        break;
-      }
-    }
-    if (suggestedUnit !== unit) break;
-  }
-
-  // Pantry items that should use specific units
-  if (category === 'Pantry & Canned Goods') {
-    if (name.includes('rice') || name.includes('quinoa') || name.includes('oatmeal') || name.includes('flour')) {
-      suggestedUnit = 'BAG';
-    } else if (name.includes('honey') || name.includes('syrup') || name.includes('oil') || name.includes('vinegar')) {
-      suggestedUnit = 'BOTTLE';
-    } else if (name.includes('sauce') || name.includes('jam') || name.includes('jelly') || (name.includes('butter') && name.includes('peanut'))) {
-      suggestedUnit = 'JAR';
-    } else if (name.includes('baking soda') || name.includes('baking powder') || name.includes('salt') || name.includes('sugar')) {
-      suggestedUnit = 'BOX';
-    } else if (name.includes('beans') || name.includes('diced tomato') || name.includes('coconut milk') || name.includes('pasta sauce')) {
-      suggestedUnit = 'CAN';
-    }
-  }
-
-  // Household items
-  if (category === 'Household Items') {
-    if (name.includes('paper towel')) {
-      suggestedUnit = 'COUNT';
-      suggestedQuantity = Math.max(1, Math.min(quantity || 1, 6)); // 6-pack typical
-    } else if (name.includes('toilet paper')) {
-      suggestedUnit = 'COUNT';
-      suggestedQuantity = Math.max(1, Math.min(quantity || 1, 12)); // 12-pack typical
-    }
-  }
-
-  // Personal care
-  if (category === 'Personal Care') {
-    if (name.includes('shampoo') || name.includes('conditioner') || name.includes('body wash')) {
-      suggestedUnit = 'BOTTLE';
-    } else if (name.includes('toothpaste') || name.includes('deodorant')) {
-      suggestedUnit = 'COUNT';
-    }
-  }
-
-  // Produce items that should be by weight
-  if (category === 'Produce') {
-    if (name.includes('banana') || name.includes('apple') || name.includes('potato') || name.includes('onion') || name.includes('carrot') || name.includes('tomato')) {
-      if (unit === 'COUNT' && (quantity || 1) > 3) {
-        suggestedUnit = 'LB';
-        suggestedQuantity = Math.max(1, Math.round((quantity || 1) * 0.3)); // Rough weight conversion
-      }
-    }
-  }
-
-  // Dairy items
-  if (category === 'Dairy & Eggs') {
-    if (name.includes('milk')) {
-      suggestedUnit = 'GALLON';
-      suggestedQuantity = 1;
-    } else if (name.includes('yogurt')) {
-      suggestedUnit = 'CONTAINER';
-    } else if (name.includes('cheese') && !name.includes('cream')) {
-      suggestedUnit = 'BLOCK';
-    }
-  }
-
-  // Bakery items
-  if (category === 'Bakery') {
-    if (name.includes('bread')) {
-      suggestedUnit = 'LOAF';
-      suggestedQuantity = 1;
-    }
-  }
-
-  return { suggestedQuantity, suggestedUnit };
-}
-
-export const aiCategorizationService = new AICategorationService();
-// AI-powered categorization service for better product matching
-export interface CategoryResult {
-  category: string;
-  confidence: number;
-  suggestedUnit?: string;
-}
-
-class AICategorization {
-  private categoryPatterns: Map<string, RegExp[]> = new Map([
-    ['Produce', [
-      /\b(apple|banana|orange|strawberry|grape|melon|berry|fruit)\b/i,
-      /\b(tomato|lettuce|spinach|carrot|onion|potato|pepper|vegetable)\b/i,
-      /\b(avocado|cucumber|broccoli|celery|kale|arugula)\b/i,
-      /\b(organic|fresh|vine)\b.*\b(produce|fruit|vegetable)\b/i
-    ]],
-    ['Dairy & Eggs', [
-      /\b(milk|cheese|yogurt|butter|cream|dairy)\b/i,
-      /\b(egg|dozen|cheddar|mozzarella|swiss|american)\b/i,
-      /\b(greek|whole|skim|2%|low fat)\b.*\b(milk|yogurt)\b/i
-    ]],
-    ['Meat & Seafood', [
-      /\b(chicken|beef|pork|turkey|lamb|meat)\b/i,
-      /\b(salmon|fish|shrimp|seafood|tuna|cod)\b/i,
-      /\b(ground|breast|thigh|fillet|steak)\b/i
-    ]],
-    ['Pantry & Canned Goods', [
-      /\b(pasta|rice|quinoa|grain|cereal|oats)\b/i,
-      /\b(coffee|tea|sugar|flour|salt|spice)\b/i,
-      /\b(canned|jar|bottle|sauce|oil|vinegar)\b/i,
-      /\b(nuts|almonds|trail mix|granola|beans)\b/i
-    ]],
-    ['Bakery', [
-      /\b(bread|bagel|muffin|roll|loaf|bakery)\b/i,
-      /\b(whole grain|white|wheat|sourdough)\b/i
-    ]],
-    ['Beverages', [
-      /\b(water|juice|soda|drink|beverage|sparkling)\b/i,
-      /\b(coffee|tea|wine|beer|alcohol)\b/i,
-      /\b(coconut|almond|oat)\b.*\bmilk\b/i
-    ]],
-    ['Frozen Foods', [
-      /\b(frozen|ice cream|popsicle|pizza)\b/i,
-      /\bfrozen\b.*\b(vegetable|fruit|meal|dinner)\b/i
-    ]],
-    ['Household Items', [
-      /\b(paper towel|toilet paper|tissue|cleaning|detergent)\b/i,
-      /\b(soap|shampoo|toothpaste|household)\b/i
-    ]],
-    ['Personal Care', [
-      /\b(shampoo|conditioner|toothpaste|deodorant|skincare)\b/i,
-      /\b(lotion|sunscreen|makeup|beauty|personal care)\b/i
-    ]],
-    ['Health & Wellness', [
-      /\b(vitamin|supplement|medicine|health|wellness)\b/i,
-      /\b(protein|fiber|probiotic|organic)\b/i
-    ]]
-  ]);
-
-  private unitPatterns: Map<string, string> = new Map([
-    // Weight-based
-    ['banana', 'LB'],
-    ['apple', 'LB'],
-    ['orange', 'LB'],
-    ['grape', 'LB'],
-    ['potato', 'LB'],
-    ['onion', 'LB'],
-    ['carrot', 'LB'],
-    ['meat', 'LB'],
-    ['chicken', 'LB'],
-    ['beef', 'LB'],
-    ['salmon', 'LB'],
-    ['fish', 'LB'],
-    
-    // Count-based
-    ['avocado', 'COUNT'],
-    ['pepper', 'COUNT'],
-    ['cucumber', 'COUNT'],
-    ['tomato', 'COUNT'],
-    
-    // Container-based
-    ['milk', 'GALLON'],
-    ['juice', 'BOTTLE'],
-    ['water', 'BOTTLE'],
-    ['yogurt', 'CONTAINER'],
-    ['cheese', 'PACK'],
-    ['egg', 'DOZEN'],
-    
-    // Package-based
-    ['bread', 'LOAF'],
-    ['cereal', 'BOX'],
-    ['pasta', 'BOX'],
-    ['rice', 'BAG'],
-    ['coffee', 'BAG'],
-    ['tea', 'BOX'],
-    
-    // Household
-    ['paper towel', 'ROLL'],
-    ['toilet paper', 'ROLL'],
-    ['soap', 'BOTTLE'],
-    ['shampoo', 'BOTTLE'],
-    ['detergent', 'BOTTLE']
-  ]);
-
-  /**
-   * Get a quick category for a product name using pattern matching
-   */
-  getQuickCategory(productName: string): CategoryResult {
-    const normalizedName = productName.toLowerCase().trim();
-    
-    console.log(`Quick categorization for "${productName}": category=${this.getCategoryByPatterns(normalizedName)}, originalUnit=undefined, suggestedUnit=${this.getSuggestedUnit(normalizedName)}`);
-    
-    // Check unit patterns first for better logging
-    const suggestedUnit = this.getSuggestedUnit(normalizedName);
-    
-    return {
-      category: this.getCategoryByPatterns(normalizedName),
-      confidence: 0.8,
-      suggestedUnit
-    };
-  }
-
-  private getCategoryByPatterns(productName: string): string {
-    const normalizedName = productName.toLowerCase();
-    
-    // Score each category based on pattern matches
-    const categoryScores: Map<string, number> = new Map();
-    
-    for (const [category, patterns] of this.categoryPatterns) {
-      let score = 0;
-      for (const pattern of patterns) {
-        if (pattern.test(normalizedName)) {
-          score += 1;
-          // Boost score for exact word matches
-          if (normalizedName.includes(pattern.source.replace(/\\b|\(|\)|\|/g, '').toLowerCase())) {
-            score += 0.5;
-          }
-        }
-      }
-      if (score > 0) {
-        categoryScores.set(category, score);
-      }
-    }
-    
-    // Return the category with the highest score
-    if (categoryScores.size > 0) {
-      const bestCategory = Array.from(categoryScores.entries())
-        .sort(([,a], [,b]) => b - a)[0][0];
-      return bestCategory;
-    }
-    
-    // Fallback to Pantry & Canned Goods for unmatched items
-    return 'Pantry & Canned Goods';
-  }
-
-  private getSuggestedUnit(productName: string): string | undefined {
-    const normalizedName = productName.toLowerCase();
-    
-    // Check for specific unit patterns
-    for (const [pattern, unit] of this.unitPatterns) {
-      if (normalizedName.includes(pattern)) {
-        console.log(`Unit pattern match: "${pattern}" in "${productName}" suggests ${unit}`);
-        return unit;
-      }
-    }
-    
-    // Check for common unit indicators in the name
-    if (/\b(lb|pound|lbs)\b/i.test(normalizedName)) return 'LB';
-    if (/\b(gallon|gal)\b/i.test(normalizedName)) return 'GALLON';
-    if (/\b(dozen|doz)\b/i.test(normalizedName)) return 'DOZEN';
-    if (/\b(bottle|btl)\b/i.test(normalizedName)) return 'BOTTLE';
-    if (/\b(box|pkg|package)\b/i.test(normalizedName)) return 'BOX';
-    if (/\b(bag|sack)\b/i.test(normalizedName)) return 'BAG';
-    if (/\b(roll|rolls)\b/i.test(normalizedName)) return 'ROLL';
-    if (/\b(pack|packs)\b/i.test(normalizedName)) return 'PACK';
-    if (/\b(jar|jars)\b/i.test(normalizedName)) return 'JAR';
-    if (/\b(can|cans)\b/i.test(normalizedName)) return 'CAN';
-    
-    return undefined;
-  }
-
-  /**
-   * Categorize multiple products efficiently
-   */
-  categorizeProducts(productNames: string[]): Map<string, CategoryResult> {
-    const results = new Map<string, CategoryResult>();
-    
-    for (const productName of productNames) {
-      results.set(productName, this.getQuickCategory(productName));
-    }
-    
-    return results;
-  }
-}
-
 // Export singleton instance
-export const aiCategorizationService = new AICategorization();
+export const aiCategorizationService = new AICategorationService();
