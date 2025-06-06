@@ -1,8 +1,4 @@
-
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import React, { Component, ReactNode } from 'react';
 
 interface Props {
   children: ReactNode;
@@ -11,73 +7,43 @@ interface Props {
 
 interface State {
   hasError: boolean;
-  error: Error | null;
+  error?: Error;
 }
 
-class AsyncErrorBoundary extends Component<Props, State> {
-  public state: State = {
-    hasError: false,
-    error: null,
-  };
-
-  public static getDerivedStateFromError(error: Error): State {
-    return {
-      hasError: true,
-      error,
-    };
+export class AsyncErrorBoundary extends Component<Props, State> {
+  constructor(props: Props) {
+    super(props);
+    this.state = { hasError: false };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('AsyncErrorBoundary caught an error:', error, errorInfo);
-    
-    // Handle specific async errors
-    if (error.message.includes('fetch') || error.message.includes('network')) {
-      console.error('Network error detected:', error);
-    }
-    
-    if (error.message.includes('ChunkLoadError') || error.message.includes('Loading chunk')) {
-      console.error('Chunk load error - possible code splitting issue:', error);
-      // Auto-retry for chunk errors
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-    }
   }
 
-  private handleRetry = () => {
-    this.setState({
-      hasError: false,
-      error: null,
-    });
-  };
-
-  public render() {
+  render() {
     if (this.state.hasError) {
-      if (this.props.fallback) {
-        return this.props.fallback;
-      }
-
-      return (
-        <Card className="m-4 border-orange-200 bg-orange-50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <AlertCircle className="h-5 w-5 text-orange-500" />
-              <span className="text-orange-700 font-medium">Loading Error</span>
-            </div>
-            <p className="text-orange-600 text-sm mb-3">
-              Failed to load this section. This might be due to a network issue.
+      return this.props.fallback || (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold mb-2">Something went wrong</h2>
+            <p className="text-gray-600 mb-4">
+              {this.state.error?.message || 'An unexpected error occurred'}
             </p>
-            <Button onClick={this.handleRetry} size="sm" variant="outline">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Try Again
-            </Button>
-          </CardContent>
-        </Card>
+            <button 
+              onClick={() => this.setState({ hasError: false, error: undefined })}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
       );
     }
 
     return this.props.children;
   }
 }
-
-export default AsyncErrorBoundary;
