@@ -119,7 +119,8 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
             deal.productName, 
             deal.imageUrl, 
             aiCategory.category,
-            false // Set to true if you want to enable AI image generation
+            false, // Set to true if you want to enable AI image generation
+            deal.retailerId // Pass retailer ID for retailer-specific images
           );
 
           console.log(`Image for "${deal.productName}": ${image ? 'found' : 'using fallback'}`);
