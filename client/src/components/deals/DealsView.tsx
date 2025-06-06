@@ -315,7 +315,7 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
                         <span className="text-sm text-gray-500 line-through">
                           ${(deal.regularPrice / 100).toFixed(2)}
                         </span>
-                      </div></div>
+                      </div>
                       <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
                         {calculateSavings(deal.regularPrice, deal.salePrice)}% off
                       </Badge>
