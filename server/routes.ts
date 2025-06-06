@@ -1268,7 +1268,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
 
         // Check for common item variations using existing commonItemCorrections
-
+        if (!existingItem) {
           for (const [baseItem, variations] of Object.entries(commonItemCorrections)) {
             if (normalizedName.includes(baseItem) || variations.some(v => normalizedName.includes(v.toLowerCase()))) {
               existingItem = existingItems.find(existing => {
