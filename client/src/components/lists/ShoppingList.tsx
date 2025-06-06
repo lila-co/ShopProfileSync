@@ -10,7 +10,7 @@ import { Plus, Trash2, ShoppingCart, Sparkles, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import type { ShoppingList as ShoppingListType, ShoppingItem } from '@/lib/types';
-import { apiRequest } from '@/lib/utils';
+import { apiRequest } from '@/lib/queryClient';
 
 const CATEGORIES = [
   'Produce', 'Meat & Seafood', 'Dairy & Eggs', 'Bakery', 
