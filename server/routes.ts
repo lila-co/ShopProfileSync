@@ -946,6 +946,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Monitoring and logging endpoints
+  app.get('/api/admin/health', (req: Request, res: Response) => {
+    try {
+      const healthStatus = performanceMonitor.getHealthStatus();
+      const systemMetrics = performanceMonitor.getSystemMetrics();
+      
+      res.json({
+        status: healthStatus.status,
+        issues: healthStatus.issues,
+        timestamp: new Date().toISOString(),
+        metrics: {
+          uptime: systemMetrics.uptime,
+          memoryUsage: systemMetrics.memoryUsage,
+          activeRequests: systemMetrics.activeRequests,
+          totalRequests: systemMetrics.totalRequests,
+          errorRate: systemMetrics.errorRate,
+          averageResponseTime: systemMetrics.averageResponseTime
+        }
+      });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  app.get('/api/admin/metrics', (req: Request, res: Response) => {
+    try {
+      const hours = parseInt(req.query.hours as string) || 24;
+      const systemMetrics = performanceMonitor.getSystemMetrics();
+      const metricsSummary = logger.getMetricsSummary(hours);
+      const errorStats = errorTracker.getErrorStats();
+
+      res.json({
+        system: systemMetrics,
+        metrics: metricsSummary,
+        errors: errorStats,
+        timeframe: `${hours} hours`
+      });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  app.get('/api/admin/logs', (req: Request, res: Response) => {
+    try {
+      const level = req.query.level as any;
+      const limit = parseInt(req.query.limit as string) || 100;
+      
+      const logs = logger.getRecentLogs(level, limit);
+      res.json(logs);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  app.get('/api/admin/errors', (req: Request, res: Response) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const errorReports = errorTracker.getErrorReports(limit);
+      const errorStats = errorTracker.getErrorStats();
+
+      res.json({
+        reports: errorReports,
+        stats: errorStats
+      });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  app.delete('/api/admin/errors/:fingerprint', (req: Request, res: Response) => {
+    try {
+      const { fingerprint } = req.params;
+      const deleted = errorTracker.clearError(fingerprint);
+      
+      if (deleted) {
+        logger.info('Error report cleared', { fingerprint, clearedBy: req.headers['x-current-user-id'] });
+        res.json({ success: true, message: 'Error report cleared' });
+      } else {
+        res.status(404).json({ error: 'Error report not found' });
+      }
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  app.delete('/api/admin/errors', (req: Request, res: Response) => {
+    try {
+      errorTracker.clearAllErrors();
+      logger.info('All error reports cleared', { clearedBy: req.headers['x-current-user-id'] });
+      res.json({ success: true, message: 'All error reports cleared' });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
   // AI-powered demographic insights for user area
   app.get('/api/insights/demographic-insights', async (req: Request, res: Response) => {
     try {

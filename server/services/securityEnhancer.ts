@@ -163,13 +163,14 @@ class SecurityEnhancer {
   // Log security events
   private async logSecurityEvent(ip: string, event: string, details: any): Promise<void> {
     try {
-      await storage.createSecurityLog({
-        userId: null, // No specific user for IP-based events
-        action: event,
-        details: JSON.stringify({ ip, ...details }),
-        ipAddress: ip,
-        timestamp: new Date(),
-        severity: event === 'brute_force_detected' ? 'HIGH' : 'MEDIUM'
+      // Use the new logger instead of storage.createSecurityLog
+      const { logger } = await import('./logger');
+      logger.warn(`Security Event: ${event}`, {
+        ip,
+        event,
+        details,
+        severity: event === 'brute_force_detected' ? 'HIGH' : 'MEDIUM',
+        timestamp: new Date().toISOString()
       });
     } catch (error) {
       console.error('Failed to log security event:', error);

@@ -21,6 +21,7 @@ import RetailerDetailsPage from './pages/retailer-details';
 import AutoOrder from '@/pages/auto-order';
 import OrderOnline from '@/pages/order-online';
 const RetailerCartDemo = lazy(() => import('./pages/retailer-cart-demo'));
+import MonitoringDashboard from '@/pages/monitoring-dashboard';
 
 function AppContent() {
   const { isLoading, isAuthenticated } = useAuth();
@@ -46,7 +47,7 @@ function AppContent() {
           </ErrorBoundary>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/shopping-list">
         <ProtectedRoute>
           <ErrorBoundary level="page">
@@ -54,7 +55,7 @@ function AppContent() {
           </ErrorBoundary>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/shopping-route">
         <ProtectedRoute>
           <ErrorBoundary level="page">
@@ -62,7 +63,7 @@ function AppContent() {
           </ErrorBoundary>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/deals">
         <ProtectedRoute>
           <ErrorBoundary level="page">
@@ -70,7 +71,7 @@ function AppContent() {
           </ErrorBoundary>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/plan-details">
         <ProtectedRoute>
           <ErrorBoundary level="page">
@@ -78,7 +79,7 @@ function AppContent() {
           </ErrorBoundary>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/retailers">
         <ProtectedRoute>
           <ErrorBoundary level="page">
@@ -86,7 +87,7 @@ function AppContent() {
           </ErrorBoundary>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/retailers/:id">
         <ProtectedRoute>
           <ErrorBoundary level="page">
@@ -94,7 +95,7 @@ function AppContent() {
           </ErrorBoundary>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/profile">
         <ProtectedRoute>
           <ErrorBoundary level="page">
@@ -102,7 +103,7 @@ function AppContent() {
           </ErrorBoundary>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/scan">
         <ProtectedRoute>
           <ErrorBoundary level="page">
@@ -110,7 +111,7 @@ function AppContent() {
           </ErrorBoundary>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/auto-order">
         <ProtectedRoute>
           <ErrorBoundary level="page">
@@ -118,7 +119,7 @@ function AppContent() {
           </ErrorBoundary>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/order-online">
         <ProtectedRoute>
           <ErrorBoundary level="page">
@@ -126,7 +127,7 @@ function AppContent() {
           </ErrorBoundary>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/retailer-cart-demo">
         <ProtectedRoute>
           <ErrorBoundary level="page">
@@ -139,12 +140,18 @@ function AppContent() {
         </ProtectedRoute>
       </Route>
       
+      <Route path="/admin/monitoring">
+        <ProtectedRoute>
+          <MonitoringDashboard />
+        </ProtectedRoute>
+      </Route>
+
       <Route path="/">
         <ProtectedRoute>
           <Redirect to="/shopping-list" />
         </ProtectedRoute>
       </Route>
-      
+
       <Route>
         <ProtectedRoute>
           <Redirect to="/shopping-list" />
