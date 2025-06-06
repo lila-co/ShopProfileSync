@@ -1267,20 +1267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           existing.productName.toLowerCase() === normalizedName + 's'
         );
 
-        // Check for common item variations
-        if (!existingItem) {
-          const commonItemCorrections: Record<string, string[]> = {
-            'milk': ['organic milk', 'whole milk', 'skim milk', '2% milk'],
-            'bread': ['whole wheat bread', 'white bread', 'sandwich bread'],
-            'eggs': ['free-range eggs', 'organic eggs', 'large eggs'],
-            'banana': ['bananas', 'organic bananas'],
-            'chicken': ['chicken breast', 'chicken breasts', 'organic chicken'],
-            'yogurt': ['greek yogurt', 'plain yogurt', 'vanilla yogurt'],
-            'spinach': ['baby spinach', 'fresh spinach', 'organic spinach'],
-            'tomato': ['roma tomatoes', 'cherry tomatoes', 'fresh tomatoes'],
-            'rice': ['brown rice', 'white rice', 'jasmine rice', 'basmati rice'],
-            'oil': ['olive oil', 'vegetable oil', 'coconut oil', 'canola oil']
-          };
+        // Check for common item variations using existing commonItemCorrections
 
           for (const [baseItem, variations] of Object.entries(commonItemCorrections)) {
             if (normalizedName.includes(baseItem) || variations.some(v => normalizedName.includes(v.toLowerCase()))) {
@@ -2892,7 +2879,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             price = deal.salePrice;
           } else {
             // Simulate different price strategies by retailer
-            const itemName = item.productName.toLowerCase();
             let basePrice = 200; // Default base price
 
             // Walmart - generally lowest on packaged goods

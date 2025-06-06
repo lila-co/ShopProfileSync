@@ -11,7 +11,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { Plus, ShoppingBag, FileText, Clock, Check, Trash2, AlertTriangle, DollarSign, MapPin, Car, BarChart2, Wand2, Pencil, Image, Star, TrendingDown, Percent, Circle, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
 import { getItemImage, getBestProductImage, getCompanyLogo } from '@/lib/imageUtils';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import VoiceAgent from '@/components/voice/VoiceAgent';
@@ -197,10 +196,10 @@ const ShoppingListComponent: React.FC = () => {
         // Check if this is a truly new session (browser restart/new tab)
         const lastSessionTimestamp = sessionStorage.getItem('shoppingListSessionStart');
         const currentBrowserSession = Date.now().toString();
-        
+
         // If no session timestamp exists, this is the first visit in this browser session
         const isNewSession = !lastSessionTimestamp;
-        
+
         // Store session data
         if (isNewSession) {
           sessionStorage.setItem('shoppingListSessionStart', currentBrowserSession);
@@ -220,9 +219,9 @@ const ShoppingListComponent: React.FC = () => {
 
         if (shouldAutoGenerate && !isGeneratingList) {
           const isEmptyList = !hasItems;
-          
+
           console.log(isEmptyList ? 'Empty shopping list detected, generating new list...' : 'New session detected with existing items, regenerating list...');
-          
+
           // Show animation for all scenarios
           setIsGeneratingList(true);
           const steps = isEmptyList ? [
@@ -238,13 +237,13 @@ const ShoppingListComponent: React.FC = () => {
             "Finding seasonal recommendations...",
             "Updating your shopping list..."
           ];
-          
+
           setGenerationSteps(steps);
           setCurrentStep(0);
 
           let autoAnimationInterval: NodeJS.Timeout | null = null;
           let autoAnimationTimeout: NodeJS.Timeout | null = null;
-          
+
           // Start animation immediately
           autoAnimationInterval = setInterval(() => {
             setCurrentStep((prev) => {
@@ -265,9 +264,9 @@ const ShoppingListComponent: React.FC = () => {
             if (autoAnimationInterval) {
               clearInterval(autoAnimationInterval);
             }
-            
+
             console.log('Starting regeneration mutation after animation...');
-            
+
             // Use the unified regenerate mutation
             regenerateListMutation.mutate(undefined, {
               onSettled: () => {
@@ -298,7 +297,7 @@ const ShoppingListComponent: React.FC = () => {
 
     // Add a small delay to ensure the component is fully mounted
     const timeoutId = setTimeout(triggerListGeneration, 100);
-    
+
     return () => clearTimeout(timeoutId);
   }, [shoppingLists, userHasClearedList, isGeneratingList]); // React to changes in shoppingLists and userHasClearedList
 
@@ -408,14 +407,14 @@ const ShoppingListComponent: React.FC = () => {
           ...list,
           items: list.items?.filter((item: any) => item.id !== itemId) || []
         }));
-        
+
         // Check if this deletion will result in an empty list
         const defaultList = updatedLists[0];
         if (defaultList && (!defaultList.items || defaultList.items.length === 0)) {
           // User is manually clearing the list
           setUserHasClearedList(true);
         }
-        
+
         return updatedLists;
       });
 
@@ -490,7 +489,7 @@ const ShoppingListComponent: React.FC = () => {
 
       const result = await response.json();
       console.log('API response data:', result);
-      
+
       return {
         ...result,
         isEmptyList,
@@ -540,12 +539,12 @@ const ShoppingListComponent: React.FC = () => {
 
     // Reset the flag since user is explicitly asking for regeneration
     setUserHasClearedList(false);
-    
+
     const defaultList = shoppingLists?.[0];
     const hasItems = defaultList?.items && defaultList.items.length > 0;
-    
+
     console.log('Manual regeneration triggered - hasItems:', hasItems);
-    
+
     // Show animation during regeneration
     setIsGeneratingList(true);
     const steps = hasItems ? [
@@ -568,7 +567,7 @@ const ShoppingListComponent: React.FC = () => {
     console.log('Starting animation with steps:', steps);
 
     let animationInterval: NodeJS.Timeout | null = null;
-    
+
     // Start the animation immediately
     animationInterval = setInterval(() => {
       setCurrentStep((prevStep) => {
@@ -595,7 +594,7 @@ const ShoppingListComponent: React.FC = () => {
           if (animationInterval) {
             clearInterval(animationInterval);
           }
-          
+
           // Hide the animation after a short delay
           setTimeout(() => {
             setIsGeneratingList(false);
@@ -857,8 +856,7 @@ const ShoppingListComponent: React.FC = () => {
                                 <div className="flex items-center space-x-3 flex-1">
                                   <button
                                     onClick={() => handleToggleItem(item.id, item.completed)}
-                                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                                      item.completed
+                                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center                                      item.completed
                                         ? 'bg-green-500 border-green-500'
                                         : 'border-gray-300 hover:border-green-400'
                                     }`}
@@ -1163,7 +1161,7 @@ const ShoppingListComponent: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      
+
 
       {/* Voice AI Agent - Moved to bottom */}
       <div className="mt-6 mb-4">
