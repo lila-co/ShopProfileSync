@@ -71,7 +71,8 @@ const ShoppingListComponent: React.FC = () => {
   const { data: shoppingLists, isLoading } = useQuery<ShoppingListType[]>({
     queryKey: ['/api/shopping-lists'],
     refetchOnWindowFocus: true,
-    refetchInterval: 2000, // Refetch every 2 seconds to catch updates from other pages
+    refetchInterval: 30000, // Refetch every 30 seconds instead of 2 seconds
+    staleTime: 10000, // Consider data fresh for 10 seconds
   });
 
   const { data: suggestions, isLoading: suggestionsLoading } = useQuery({
