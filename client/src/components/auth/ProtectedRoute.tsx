@@ -20,26 +20,21 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     }
 
     if (user && !isLoading) {
-      // Skip onboarding checks for admin routes - let admin pages handle their own access control
-      const isAdminRoute = location.startsWith('/admin') || location.startsWith('/internal');
-      
-      if (!isAdminRoute) {
-        // Check if user needs onboarding
-        const needsOnboarding = localStorage.getItem('needsOnboarding');
-        console.log('User authenticated, checking onboarding:', { needsOnboarding, location });
+      // Check if user needs onboarding
+      const needsOnboarding = localStorage.getItem('needsOnboarding');
+      console.log('User authenticated, checking onboarding:', { needsOnboarding, location });
 
-        if (needsOnboarding === 'true' && location !== '/onboarding') {
-          console.log('User needs onboarding, redirecting to /onboarding');
-          navigate('/onboarding');
-          return;
-        }
+      if (needsOnboarding === 'true' && location !== '/onboarding') {
+        console.log('User needs onboarding, redirecting to /onboarding');
+        navigate('/onboarding');
+        return;
+      }
 
-        // If user is on onboarding page but doesn't need it, redirect to dashboard
-        if (location === '/onboarding' && needsOnboarding !== 'true') {
-          console.log('User on onboarding but doesnt need it, redirecting to dashboard');
-          navigate('/dashboard');
-          return;
-        }
+      // If user is on onboarding page but doesn't need it, redirect to dashboard
+      if (location === '/onboarding' && needsOnboarding !== 'true') {
+        console.log('User on onboarding but doesnt need it, redirecting to dashboard');
+        navigate('/dashboard');
+        return;
       }
     }
   }, [user, isLoading, navigate, location]);

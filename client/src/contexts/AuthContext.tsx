@@ -79,7 +79,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (data.token && data.user) {
         localStorage.setItem('auth_token', data.token);
-        localStorage.setItem('lastLoginTime', Date.now().toString());
         setUser(data.user);
       } else {
         throw new Error('Invalid login response');
@@ -113,7 +112,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.removeItem('listGenerationShown');
       localStorage.removeItem('lastLoginTime');
       localStorage.removeItem('forceShowAnimation');
-      localStorage.removeItem('browserSessionId');
       
       // Clear any other auth-related data
       localStorage.removeItem('user_preferences');
