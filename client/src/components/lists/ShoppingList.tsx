@@ -487,9 +487,15 @@ const ShoppingListComponent: React.FC = () => {
           try {
             const errorData = await response.json();
             errorMessage = errorData.message || errorMessage;
-          } catch {
-            const errorText = await response.text();
-            errorMessage = errorText || errorMessage;
+          } catch (parseError) {
+            console.warn('Failed to parse error response:', parseError);
+            try {
+              const errorText = await response.text();
+              errorMessage = errorText || errorMessage;
+            } catch (textError) {
+              console.warn('Failed to get error text:', textError);
+              errorMessage = `HTTP ${response.status}`;
+            }
           }
           console.error('API error response:', errorMessage);
           throw new Error(`Failed to generate shopping list: ${errorMessage}`);
@@ -503,9 +509,12 @@ const ShoppingListComponent: React.FC = () => {
           isEmptyList,
           message: isEmptyList ? 'New shopping list created' : 'List enhanced with additional items'
         };
-      } catch (networkError) {
-        console.error('Network or parsing error:', networkError);
-        throw new Error('Failed to connect to server. Please try again.');
+      } catch (error) {
+        console.error('Network or API error:', error);
+        if (error.message && error.message.includes('Failed to generate shopping list')) {
+          throw error; // Re-throw API errors as-is
+        }
+        throw new Error('Failed to connect to server. Please check your connection and try again.');
       }
     },
     onSuccess: (data) => {
