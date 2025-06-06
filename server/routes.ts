@@ -3,6 +3,8 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { ZodError } from "zod";
 import { parseReceiptImage } from "./services/receiptParser";
+import { rateLimiters, createRoleBasedRateLimiter } from "./services/rateLimiter";
+import { securityEnhancer } from "./services/securityEnhancer";
 import { generateRecommendations, analyzePurchasePatterns, extractRecipeIngredients, generatePersonalizedSuggestions, analyzeBulkVsUnitPricing } from "./services/recommendationEngine";
 import { getRetailerAPI } from "./services/retailerIntegration";
 import OpenAI from "openai";
@@ -227,8 +229,16 @@ async function createSampleDealsFromURL(retailerId: number, circularId: number, 
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Authentication routes
-  app.post('/api/auth/login', async (req: Request, res: Response) => {
+  // Apply security enhancements
+  app.use('/api', securityEnhancer.bruteForceProtection());
+  app.use('/api', securityEnhancer.suspiciousActivityDetection());
+  app.use('/api', securityEnhancer.validateApiKey());
+  
+  // Apply general rate limiting to all API routes
+  app.use('/api', rateLimiters.general.middleware());
+
+  // Authentication routes with specific rate limiting
+  app.post('/api/auth/login', rateLimiters.auth.middleware(), async (req: Request, res: Response) => {
     try {
       const { username, password } = req.body;
 
@@ -253,7 +263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/auth/register', async (req: Request, res: Response) => {
+  app.post('/api/auth/register', rateLimiters.auth.middleware(), async (req: Request, res: Response) => {
     try {
       const { username, password, email, name } = req.body;
 
@@ -324,7 +334,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/auth/forgot-password', async (req: Request, res: Response) => {
+  app.post('/api/auth/forgot-password', rateLimiters.auth.middleware(), async (req: Request, res: Response) => {
     try {
       const { email } = req.body;
 
@@ -396,7 +406,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all users (admin only)
-  app.get('/api/admin/users', async (req: Request, res: Response) => {
+  app.get('/api/admin/users', rateLimiters.admin.middleware(), async (req: Request, res: Response) => {
     try {
       const currentUserId = req.headers['x-current-user-id'] ? 
         parseInt(req.headers['x-current-user-id'] as string) : 1;
@@ -443,7 +453,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Search products from specific retailer (for image fetching)
-  app.get('/api/retailer/:id/search', async (req, res) => {
+  app.get('/api/retailer/:id/search', rateLimiters.search.middleware(), async (req, res) => {
     try {
       const retailerId = parseInt(req.params.id);
       const query = req.query.query as string;
@@ -801,7 +811,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Receipt routes
-  app.post('/api/receipts/extract', async (req: Request, res: Response) => {
+  app.post('/api/receipts/extract', rateLimiters.upload.middleware(), async (req: Request, res: Response) => {
     try {
       const { image } = req.body;
       if (!image) {
@@ -1208,7 +1218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Unified shopping list generation for all scenarios
-  app.post('/api/shopping-lists/generate', async (req: Request, res: Response) => {
+  app.post('/api/shopping-lists/generate', rateLimiters.shoppingList.middleware(), async (req: Request, res: Response) => {
     try {
       const { items: selectedItems, shoppingListId } = req.body;
       const userId = 1; // For demo purposes, use default user
@@ -1378,7 +1388,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Generate shopping list preview with personalized recommendations
-  app.post('/api/shopping-lists/preview', async (req: Request, res: Response) => {
+  app.post('/api/shopping-lists/preview', rateLimiters.shoppingList.middleware(), async (req: Request, res: Response) => {
     try {
       const userId = req.body.userId || 1; // Default to user 1 for demo
 
@@ -1967,7 +1977,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get deals with advanced filtering
-  app.get('/api/deals/search', async (req: Request, res: Response) => {
+  app.get('/api/deals/search', rateLimiters.search.middleware(), async (req: Request, res: Response) => {
     try {
       const {
         retailerId,
@@ -2012,7 +2022,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Upload circular endpoint
-  app.post('/api/circulars/upload', upload.single('file'), async (req, res) => {
+  app.post('/api/circulars/upload', rateLimiters.upload.middleware(), upload.single('file'), async (req, res) => {
     try {
       const { type, retailerName, title, url } = req.body;
       const file = req.file;
@@ -2083,7 +2093,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Internal Analytics API endpoints
-  app.get('/api/internal/analytics/retailers', async (req: Request, res: Response) => {
+  app.get('/api/internal/analytics/retailers', rateLimiters.admin.middleware(), async (req: Request, res: Response) => {
     try {
       // Sample retailer analytics data
       const retailerAnalytics = [
@@ -2523,7 +2533,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI-powered voice conversation endpoint
-  app.post('/api/voice/conversation', async (req: Request, res: Response) => {
+  app.post('/api/voice/conversation', rateLimiters.ai.middleware(), async (req: Request, res: Response) => {
     try {
       const { message, context = [] } = req.body;
       
@@ -3409,7 +3419,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Sync data manually (for admin use)
-  app.post('/api/admin/sync-data', async (req: Request, res: Response) => {
+  app.post('/api/admin/sync-data', rateLimiters.admin.middleware(), async (req: Request, res: Response) => {
     try {
       const { retailerIds } = req.body;
 
@@ -3423,7 +3433,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Submit online order with affiliate attribution
-  app.post('/api/orders/submit', async (req: Request, res: Response) => {
+  app.post('/api/orders/submit', rateLimiters.orders.middleware(), async (req: Request, res: Response) => {
     try {
       const { 
         retailerId, 
@@ -3676,7 +3686,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
   // Auto-order endpoint for optimized plans
-  app.post('/api/auto-order', async (req: Request, res: Response) => {
+  app.post('/api/auto-order', rateLimiters.orders.middleware(), async (req: Request, res: Response) => {
     try {
       const { shoppingListId, selectedPlan, mode } = req.body;
 
@@ -4379,7 +4389,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Security audit logs (admin only)
-  app.get('/api/admin/security-logs', async (req: Request, res: Response) => {
+  app.get('/api/admin/security-logs', rateLimiters.admin.middleware(), async (req: Request, res: Response) => {
     try {
       const currentUserId = req.headers['x-current-user-id'] ? 
         parseInt(req.headers['x-current-user-id'] as string) : 1;
