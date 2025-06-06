@@ -30,17 +30,16 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-import { loginSchema, registerSchema as baseRegisterSchema } from '@/lib/validation';
+import { userSchema, loginSchema } from '@/lib/validation';
 
 const loginFormSchema = loginSchema;
 
-const registerSchema = baseRegisterSchema.extend({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-}).transform(data => ({
-  ...data,
-  firstName: data.name.split(' ')[0] || data.name,
-  lastName: data.name.split(' ').slice(1).join(' ') || '',
-}));
+const registerSchema = userSchema.extend({
+  confirmPassword: z.string()
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
 
 const AuthPage: React.FC = () => {
   const { toast } = useToast();

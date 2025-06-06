@@ -26,9 +26,6 @@ export const serverUserSchema = z.object({
   password: z.string()
     .min(8, 'Password must be at least 8 characters')
     .max(128, 'Password must be no more than 128 characters')
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).*$/, 'Password must contain at least one uppercase letter, one lowercase letter, and one number')
-});
-    .max(128, 'Password must be no more than 128 characters')
     .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must contain at least one lowercase letter, one uppercase letter, and one number')
     .refine(val => !val.includes(' '), 'Password cannot contain spaces')
     .refine(val => !/(.)\1{2,}/.test(val), 'Password cannot contain more than 2 consecutive identical characters'),
