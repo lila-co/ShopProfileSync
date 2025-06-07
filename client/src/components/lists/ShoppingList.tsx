@@ -193,16 +193,21 @@ const ShoppingListComponent: React.FC = () => {
         const defaultList = shoppingLists[0];
         const hasItems = defaultList?.items && defaultList.items.length > 0;
 
-        // Check if this is a truly new session (browser restart/new tab)
+        // Check if this is a truly new session (browser restart/new tab/logout-login)
         const lastSessionTimestamp = sessionStorage.getItem('shoppingListSessionStart');
+        const lastBrowserSessionId = localStorage.getItem('browserSessionId');
         const currentBrowserSession = Date.now().toString();
 
-        // If no session timestamp exists, this is the first visit in this browser session
-        const isNewSession = !lastSessionTimestamp;
+        // Check if this is a new session by looking at both sessionStorage and a potential logout
+        const sessionStorageCleared = !lastSessionTimestamp;
+        const browserSessionChanged = !lastBrowserSessionId || (lastBrowserSessionId !== sessionStorage.getItem('currentBrowserSession'));
+        
+        const isNewSession = sessionStorageCleared || browserSessionChanged;
 
         // Store session data
         if (isNewSession) {
           sessionStorage.setItem('shoppingListSessionStart', currentBrowserSession);
+          sessionStorage.setItem('currentBrowserSession', currentBrowserSession);
           localStorage.setItem('browserSessionId', currentBrowserSession);
         }
 
