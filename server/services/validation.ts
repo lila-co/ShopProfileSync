@@ -10,25 +10,18 @@ export const serverUserSchema = z.object({
       'Username cannot be a reserved word'),
   email: z.string()
     .email('Please enter a valid email address')
-    .max(254, 'Email must be no more than 254 characters')
-    .refine(val => !val.includes('..'), 'Email cannot contain consecutive dots')
-    .refine(val => !val.startsWith('.') && !val.endsWith('.'), 'Email cannot start or end with a dot'),
+    .max(254, 'Email must be no more than 254 characters'),
   firstName: z.string()
     .min(1, 'First name is required')
     .max(50, 'First name must be no more than 50 characters')
-    .regex(/^[a-zA-Z\s'-]+$/, 'First name can only contain letters, spaces, hyphens, and apostrophes')
     .refine(val => val.trim().length > 0, 'First name cannot be only whitespace'),
   lastName: z.string()
-    .min(1, 'Last name is required')
     .max(50, 'Last name must be no more than 50 characters')
-    .regex(/^[a-zA-Z\s'-]+$/, 'Last name can only contain letters, spaces, hyphens, and apostrophes')
-    .refine(val => val.trim().length > 0, 'Last name cannot be only whitespace'),
+    .optional()
+    .or(z.literal('')),
   password: z.string()
-    .min(8, 'Password must be at least 8 characters')
-    .max(128, 'Password must be no more than 128 characters')
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must contain at least one lowercase letter, one uppercase letter, and one number')
-    .refine(val => !val.includes(' '), 'Password cannot contain spaces')
-    .refine(val => !/(.)\1{2,}/.test(val), 'Password cannot contain more than 2 consecutive identical characters'),
+    .min(6, 'Password must be at least 6 characters')
+    .max(128, 'Password must be no more than 128 characters'),
 });
 
 export const serverLoginSchema = z.object({
