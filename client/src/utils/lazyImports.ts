@@ -1,4 +1,3 @@
-
 import { lazy } from 'react';
 
 // Core pages - loaded immediately after auth
@@ -27,6 +26,8 @@ export const AdvancedPages = {
 
 // Admin features - separate chunk
 export const AdminPages = {
+  AdminProfile: lazy(() => import('@/pages/admin-profile')),
+  AdminSettings: lazy(() => import('@/pages/admin-settings')),
   MonitoringDashboard: lazy(() => import('@/pages/monitoring-dashboard')),
 };
 
