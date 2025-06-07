@@ -41,16 +41,43 @@ const Dashboard: React.FC = () => {
   // Fetch AI-enhanced recommendations
   const { data: recommendations = [], isLoading: loadingRecommendations } = useQuery<AIRecommendation[]>({
     queryKey: ['/api/recommendations'],
+    refetchOnMount: true,
+    staleTime: 30000, // 30 seconds
   });
 
   // Fetch smart deals with AI analysis
   const { data: smartDeals = [], isLoading: loadingDeals } = useQuery<SmartDeal[]>({
     queryKey: ['/api/deals/smart-analysis'],
+    refetchOnMount: true,
+    staleTime: 30000,
   });
 
   // Fetch contextual shopping insights
   const { data: contextualInsights } = useQuery({
     queryKey: ['/api/insights/contextual'],
+    refetchOnMount: true,
+    staleTime: 30000,
+  });
+
+  // Fetch demographic insights
+  const { data: demographicInsights = [] } = useQuery({
+    queryKey: ['/api/insights/demographic-insights'],
+    refetchOnMount: true,
+    staleTime: 60000, // 1 minute
+  });
+
+  // Fetch similar shopper profiles
+  const { data: similarProfiles = [] } = useQuery({
+    queryKey: ['/api/insights/similar-profiles'],
+    refetchOnMount: true,
+    staleTime: 300000, // 5 minutes
+  });
+
+  // Fetch area insights
+  const { data: areaInsights } = useQuery({
+    queryKey: ['/api/insights/area-insights'],
+    refetchOnMount: true,
+    staleTime: 300000, // 5 minutes
   });
 
   // Get the most urgent/important recommendations to display
@@ -91,7 +118,7 @@ const Dashboard: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-600">{urgentRecommendations.length}</div>
                   <div className="text-sm text-gray-600">Items Running Low</div>
@@ -106,6 +133,95 @@ const Dashboard: React.FC = () => {
                   <div className="text-2xl font-bold text-purple-600">{smartDeals.length}</div>
                   <div className="text-sm text-gray-600">Smart Deals Found</div>
                 </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-orange-600">
+                    {areaInsights?.averageAreaSpend || 127}
+                  </div>
+                  <div className="text-sm text-gray-600">Area Avg Spend</div>
+                </div>
+              </div>
+              
+              {/* Contextual Tips */}
+              {contextualInsights && (
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                  <h4 className="font-medium text-blue-900 mb-2">Smart Shopping Tips</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                    <div className="flex items-center text-blue-800">
+                      <Clock className="w-3 h-3 mr-1" />
+                      Best time: {contextualInsights.optimalShoppingTime}
+                    </div>
+                    <div className="flex items-center text-blue-800">
+                      <TrendingUp className="w-3 h-3 mr-1" />
+                      {contextualInsights.budgetAlert}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Demographic Insights */}
+        {demographicInsights.length > 0 && (
+          <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center">
+                <Brain className="w-5 h-5 mr-2 text-purple-600" />
+                Shopping Trends in Your Area
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {demographicInsights.slice(0, 2).map((insight, index) => (
+                  <div key={index} className="p-3 bg-white rounded-lg border border-purple-100">
+                    <h4 className="font-medium text-gray-800 mb-1">{insight.trend}</h4>
+                    <p className="text-sm text-gray-600 mb-2">{insight.description}</p>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-purple-600 font-medium">{insight.confidence}% confident</span>
+                      <span className="text-gray-500">{insight.sampleSize} shoppers</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Similar Shopper Profiles */}
+        {similarProfiles.length > 0 && (
+          <Card className="border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center">
+                <Target className="w-5 h-5 mr-2 text-green-600" />
+                Shoppers Like You
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {similarProfiles.slice(0, 2).map((profile, index) => (
+                  <div key={index} className="p-3 bg-white rounded-lg border border-green-100">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-medium text-gray-800">{profile.profileType}</h4>
+                      <Badge variant="secondary" className="bg-green-100 text-green-800">
+                        {Math.round(profile.similarity * 100)}% match
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="text-gray-600">Avg Spend: </span>
+                        <span className="font-medium">${profile.averageSpend}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Frequency: </span>
+                        <span className="font-medium">{profile.shoppingFrequency}</span>
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <span className="text-xs text-gray-500">Top categories: </span>
+                      <span className="text-xs text-gray-700">{profile.topCategories.slice(0, 2).join(', ')}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -159,10 +275,14 @@ const Dashboard: React.FC = () => {
           {loadingRecommendations ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {Array(3).fill(0).map((_, i) => (
-                <Card key={i} className="animate-pulse">
+                <Card key={i} className="animate-pulse border-gray-200">
                   <CardContent className="p-4">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
+                    <div className="flex items-center mb-3">
+                      <div className="h-3 w-3 bg-gray-200 rounded-full mr-2"></div>
+                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                    </div>
                     <div className="h-3 bg-gray-200 rounded w-1/2 mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-2/3 mb-3"></div>
                     <div className="h-8 bg-gray-200 rounded mt-4"></div>
                   </CardContent>
                 </Card>
@@ -191,32 +311,46 @@ const Dashboard: React.FC = () => {
         {/* Smart Deals Section */}
         {smartDeals.length > 0 && (
           <div>
-            <h2 className="text-xl font-semibold mb-4 flex items-center">
-              <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
-              AI-Detected Smart Deals
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold flex items-center">
+                <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
+                AI-Detected Smart Deals
+              </h2>
+              <div className="text-sm text-gray-600">
+                {smartDeals.length} deals found
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {smartDeals.slice(0, 4).map((deal, index) => (
-                <Card key={index} className="border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
+                <Card key={index} className="border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
                     <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-medium text-gray-800">{deal.productName}</h4>
+                      <div>
+                        <h4 className="font-medium text-gray-800">{deal.productName}</h4>
+                        <p className="text-xs text-gray-500">{deal.retailer}</p>
+                      </div>
                       <Badge className="bg-green-100 text-green-800">
                         Save ${(deal.savings / 100).toFixed(2)}
                       </Badge>
                     </div>
-                    <div className="text-sm text-gray-600 mb-2">
+                    <div className="text-sm text-gray-600 mb-3">
                       <span className="line-through">${(deal.originalPrice / 100).toFixed(2)}</span>
-                      <span className="ml-2 font-bold text-green-600">
+                      <span className="ml-2 text-lg font-bold text-green-600">
                         ${(deal.salePrice / 100).toFixed(2)}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mb-2">
                       <span className="text-xs text-blue-600 flex items-center">
                         <Brain className="w-3 h-3 mr-1" />
                         {deal.aiReason}
                       </span>
                       <span className="text-xs text-gray-500">{deal.confidence}% confident</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500">Valid until {deal.validUntil}</span>
+                      <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white">
+                        Add to List
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
