@@ -8,7 +8,7 @@ export class BackgroundSyncService {
   /**
    * Start background synchronization
    */
-  start(intervalMinutes: number = 30): void {
+  start(intervalMinutes: number = 180): void {
     if (this.isRunning) {
       console.log("Background sync already running");
       return;
