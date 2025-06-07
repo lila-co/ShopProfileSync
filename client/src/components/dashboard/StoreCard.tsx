@@ -6,6 +6,11 @@ interface StoreCardProps {
 }
 
 const StoreCard: React.FC<StoreCardProps> = ({ storeDeal }) => {
+  // Early return if storeDeal is not provided
+  if (!storeDeal) {
+    return null;
+  }
+
   const handleClick = () => {
     // Navigate to deals page with retailer filter
     window.location.href = `/deals?retailer=${storeDeal.retailerId}`;
