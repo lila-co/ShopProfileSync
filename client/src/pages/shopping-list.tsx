@@ -1,5 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 import ShoppingListComponent from '@/components/lists/ShoppingList';
 import BottomNavigation from '@/components/layout/BottomNavigation';
 import AuthenticatedHeader from '@/components/layout/AuthenticatedHeader';
@@ -8,10 +9,18 @@ import type { ShoppingList as ShoppingListType, User } from '@/lib/types';
 const ShoppingListPage: React.FC = () => {
   const { data: user } = useQuery<User>({
     queryKey: ['/api/user/profile'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/user/profile');
+      return response.json();
+    },
   });
 
   const { data: shoppingLists, isLoading } = useQuery<ShoppingListType[]>({
     queryKey: ['/api/shopping-lists'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/shopping-lists');
+      return response.json();
+    },
     staleTime: 60 * 60 * 1000, // 1 hour
     refetchOnWindowFocus: false,
     refetchOnMount: false,
@@ -19,6 +28,10 @@ const ShoppingListPage: React.FC = () => {
 
   const { data: monthlySavings } = useQuery<number>({
     queryKey: ['/api/insights/monthly-savings'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/insights/monthly-savings');
+      return response.json();
+    },
   });
 
   if (isLoading) {
