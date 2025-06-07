@@ -81,6 +81,28 @@ const AdminProfilePage: React.FC = () => {
           <Card className="hover:shadow-md transition-all duration-200 cursor-pointer">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center">
+                <Activity className="w-5 h-5 mr-2 text-blue-600" />
+                System Monitoring
+              </CardTitle>
+              <CardDescription>Real-time system health and performance monitoring</CardDescription>
+            </CardHeader>
+            <CardContent className="text-sm text-gray-600">
+              Monitor system health, track errors, view performance metrics, and access detailed logs.
+            </CardContent>
+            <CardFooter className="pt-0">
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => navigate('/admin/monitoring')}
+              >
+                View Monitoring
+              </Button>
+            </CardFooter>
+          </Card>
+
+          <Card className="hover:shadow-md transition-all duration-200 cursor-pointer">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center">
                 <ShieldAlert className="w-5 h-5 mr-2 text-red-600" />
                 System Administration
               </CardTitle>

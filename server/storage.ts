@@ -43,7 +43,7 @@ export interface IStorage {
   getPurchases(): Promise<Purchase[]>;
   getPurchase(id: number): Promise<Purchase | undefined>;
   createPurchase(purchase: InsertPurchase): Promise<Purchase>;
-  createPurchaseFromReceipt(receiptData: any): Promise<Purchase>;
+  createPurchaseFromReceipt(receiptData: any, userId?: number): Promise<Purchase>;
 
   // Purchase Item methods
   getPurchaseItems(purchaseId: number): Promise<PurchaseItem[]>;
@@ -657,9 +657,8 @@ export class MemStorage implements IStorage {
     return newPurchase;
   }
 
-  async createPurchaseFromReceipt(receiptData: any): Promise<Purchase> {
+  async createPurchaseFromReceipt(receiptData: any, userId: number = 1): Promise<Purchase> {
     // For demo purposes, create a purchase with the extracted receipt data
-    const userId = 1; // Default user
     const retailerId = receiptData.retailerId || 1; // Default to Walmart if not specified
     const purchaseDate = receiptData.date ? new Date(receiptData.date) : new Date();
 
@@ -949,7 +948,11 @@ export class MemStorage implements IStorage {
       dealSource: deal.dealSource || "manual",
       circularId: deal.circularId || null,
       imageUrl: deal.imageUrl || null,
-      featured: deal.featured || false
+      featured: deal.featured || false,
+      dealType: deal.dealType || "fixed_price",
+      spendThreshold: deal.spendThreshold || null,
+      discountPercentage: deal.discountPercentage || null,
+      maxDiscountAmount: deal.maxDiscountAmount || null
     };
     this.storeDeals.set(id, newDeal);
     return newDeal;
@@ -1392,6 +1395,16 @@ export class MemStorage implements IStorage {
       topCategory: 'Groceries',
       monthlyAverage: 416.92
     };
+  }
+
+  async addPurchaseItem(item: any): Promise<any> {
+    const purchaseItem = {
+      id: this.purchaseItemIdCounter++,
+      ...item,
+    };
+
+    this.purchaseItems.set(purchaseItem.id, purchaseItem);
+    return purchaseItem;
   }
 }
 

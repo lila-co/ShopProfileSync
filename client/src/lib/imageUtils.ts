@@ -1,4 +1,3 @@
-
 // Refactored image retrieval logic to prioritize retailer-specific product images over generic stock photos.
 
 export async function getProductImage(productName: string, retailerName?: string): Promise<string | null> {
@@ -80,7 +79,9 @@ export async function getBestProductImage(
 export async function getRetailerProductImage(productName: string, retailerId: number): Promise<string | null> {
   try {
     // Make API call to search for the product through retailer integration
-    const response = await fetch(`/api/retailer/${retailerId}/search?query=${encodeURIComponent(productName)}`);
+    const response = await fetch(`/api/retailer/${retailerId}/search?query=${encodeURIComponent(productName)}`, {
+      credentials: 'include',
+    });
     
     if (!response.ok) {
       console.log(`Retailer API search failed for ${productName} at retailer ${retailerId}`);
@@ -92,16 +93,26 @@ export async function getRetailerProductImage(productName: string, retailerId: n
     // Look for the first product that has an image URL
     for (const product of products) {
       if (product.imageUrl && product.imageUrl.trim()) {
-        // Validate that the image URL is accessible
-        try {
-          const imageResponse = await fetch(product.imageUrl, { method: 'HEAD' });
-          if (imageResponse.ok) {
-            console.log(`Found retailer image for "${productName}": ${product.imageUrl}`);
-            return product.imageUrl;
+        // Skip validation for external URLs that might have CORS issues
+        // Just return the URL and let the browser handle it
+        const imageUrl = product.imageUrl;
+        
+        // Only validate if it's a relative URL or from a trusted domain
+        if (imageUrl.startsWith('/') || imageUrl.includes('unsplash.com') || imageUrl.includes('images.unsplash.com')) {
+          try {
+            const imageResponse = await fetch(imageUrl, { method: 'HEAD' });
+            if (imageResponse.ok) {
+              console.log(`Found retailer image for "${productName}": ${imageUrl}`);
+              return imageUrl;
+            }
+          } catch (error) {
+            console.log(`Retailer image URL validation failed: ${imageUrl}`);
+            continue;
           }
-        } catch (error) {
-          console.log(`Retailer image URL validation failed: ${product.imageUrl}`);
-          continue;
+        } else {
+          // For external URLs, just return them without validation to avoid CORS issues
+          console.log(`Found retailer image for "${productName}": ${imageUrl}`);
+          return imageUrl;
         }
       }
     }
@@ -172,41 +183,49 @@ function getCategorySpecificImage(productName: string, category?: string): strin
   return null;
 }
 
-// Company logo utility function
-export function getCompanyLogo(companyName: string): string | null {
-  const normalizedName = companyName.toLowerCase().trim();
-  
-  // Map of company names to their logo URLs
-  const companyLogos: Record<string, string> = {
-    'walmart': 'https://logos-world.net/wp-content/uploads/2020/09/Walmart-Logo.png',
-    'target': 'https://logos-world.net/wp-content/uploads/2020/04/Target-Logo.png',
-    'kroger': 'https://logos-world.net/wp-content/uploads/2022/01/Kroger-Logo.png',
-    'safeway': 'https://logos-world.net/wp-content/uploads/2022/01/Safeway-Logo.png',
-    'whole foods': 'https://logos-world.net/wp-content/uploads/2020/12/Whole-Foods-Logo.png',
-    'costco': 'https://logos-world.net/wp-content/uploads/2020/09/Costco-Logo.png',
-    'trader joe\'s': 'https://logos-world.net/wp-content/uploads/2022/01/Trader-Joes-Logo.png',
-    'publix': 'https://logos-world.net/wp-content/uploads/2022/01/Publix-Logo.png',
-    'h-e-b': 'https://logos-world.net/wp-content/uploads/2022/01/HEB-Logo.png',
-    'meijer': 'https://logos-world.net/wp-content/uploads/2022/01/Meijer-Logo.png',
-    'albertsons': 'https://logos-world.net/wp-content/uploads/2022/01/Albertsons-Logo.png',
-    'food lion': 'https://logos-world.net/wp-content/uploads/2022/01/Food-Lion-Logo.png',
-    'giant': 'https://logos-world.net/wp-content/uploads/2022/01/Giant-Logo.png',
-    'stop & shop': 'https://logos-world.net/wp-content/uploads/2022/01/Stop-Shop-Logo.png',
-    'wegmans': 'https://logos-world.net/wp-content/uploads/2022/01/Wegmans-Logo.png',
-    'harris teeter': 'https://logos-world.net/wp-content/uploads/2022/01/Harris-Teeter-Logo.png',
-    'shoprite': 'https://logos-world.net/wp-content/uploads/2022/01/ShopRite-Logo.png',
-    'hy-vee': 'https://logos-world.net/wp-content/uploads/2022/01/Hy-Vee-Logo.png',
-    'winco': 'https://logos-world.net/wp-content/uploads/2022/01/WinCo-Logo.png',
-    'fred meyer': 'https://logos-world.net/wp-content/uploads/2022/01/Fred-Meyer-Logo.png'
+export function getCompanyLogo(companyName: string): string | undefined {
+  const logoMap: Record<string, string> = {
+    'Walmart': 'https://logos-world.net/wp-content/uploads/2020/09/Walmart-Logo.png',
+    'Target': 'https://logos-world.net/wp-content/uploads/2020/04/Target-Logo.png',
+    'Whole Foods': 'https://logos-world.net/wp-content/uploads/2020/12/Whole-Foods-Market-Logo.png',
+    'Kroger': 'https://logos-world.net/wp-content/uploads/2021/01/Kroger-Logo.png',
+    'Safeway': 'https://logos-world.net/wp-content/uploads/2020/12/Safeway-Logo.png',
+    "Trader Joe's": 'https://logos-world.net/wp-content/uploads/2020/12/Trader-Joes-Logo.png',
+    'Costco': 'https://logos-world.net/wp-content/uploads/2020/09/Costco-Logo.png',
+    'Amazon': 'https://logos-world.net/wp-content/uploads/2020/04/Amazon-Logo.png'
   };
 
-  // Find matching company logo
-  for (const [key, logoUrl] of Object.entries(companyLogos)) {
-    if (normalizedName.includes(key)) {
-      return logoUrl;
-    }
+  // Try exact match first
+  if (logoMap[companyName]) {
+    return logoMap[companyName];
   }
 
-  // Fallback: try to generate a simple logo placeholder
-  return null;
+  // Try case-insensitive match
+  const normalizedName = companyName.toLowerCase();
+  const matchedKey = Object.keys(logoMap).find(key => 
+    key.toLowerCase() === normalizedName
+  );
+
+  if (matchedKey) {
+    return logoMap[matchedKey];
+  }
+
+  // Fallback: return undefined so components can show fallback avatars
+  return undefined;
+}
+
+// Helper function to get retailer color based on brand
+export function getRetailerColor(retailerName: string): string {
+  const colorMap: Record<string, string> = {
+    'Walmart': '#004c91',
+    'Target': '#cc0000', 
+    'Whole Foods': '#00674b',
+    'Kroger': '#004990',
+    'Safeway': '#ed1c24',
+    "Trader Joe's": '#d2691e',
+    'Costco': '#005daa',
+    'Amazon': '#ff9900'
+  };
+
+  return colorMap[retailerName] || '#4A7CFA';
 }

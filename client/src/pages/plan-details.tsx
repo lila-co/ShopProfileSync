@@ -168,12 +168,20 @@ const PlanDetails: React.FC = () => {
   // Fetch deals for price comparison
   const { data: deals } = useQuery({
     queryKey: ['/api/deals'],
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 20 * 60 * 1000, // 20 minutes - deals don't change frequently
+    refetchOnWindowFocus: false, // Don't refetch when window gains focus
   });
 
   // Filter deals by retailer for current plan
   const getDealsForRetailer = (retailerId: number) => {
     return deals?.filter((deal: any) => deal.retailerId === retailerId) || [];
+  };
+
+  // Calculate availability of items
+  const availability = {
+    totalItems: shoppingItems?.length || 0,
+    availableItems: shoppingItems?.length || 0,
+    missingItems: [] as any[] // You would populate this based on actual data
   };
 
   if (isLoading) {
@@ -539,18 +547,24 @@ const PlanDetails: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-4 gap-3 mb-6">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">{formatPrice(planData.totalCost)}</div>
-                  <div className="text-sm text-gray-500">Total Cost</div>
+                  <div className="text-xl font-bold text-green-600">{formatPrice(planData.totalCost)}</div>
+                  <div className="text-xs text-gray-500">Total Cost</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">{planData.estimatedTime}</div>
-                  <div className="text-sm text-gray-500">Est. Time</div>
+                  <div className="text-xl font-bold text-blue-600">{planData.estimatedTime}</div>
+                  <div className="text-xs text-gray-500">Est. Time</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">{planData.stores.length}</div>
-                  <div className="text-sm text-gray-500">Store(s)</div>
+                  <div className="text-xl font-bold text-purple-600">{planData.stores.length}</div>
+                  <div className="text-xs text-gray-500">Store(s)</div>
+                </div>
+                <div className="text-center">
+                  <div className={`text-xl font-bold ${availability.missingItems.length > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                    {availability.availableItems}/{availability.totalItems}
+                  </div>
+                  <div className="text-xs text-gray-500">Available</div>
                 </div>
               </div>
             </CardContent>
@@ -569,18 +583,24 @@ const PlanDetails: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-4 gap-3 mb-6">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">{formatPrice(planData.totalCost)}</div>
-                  <div className="text-sm text-gray-500">Total Cost</div>
+                  <div className="text-xl font-bold text-green-600">{formatPrice(planData.totalCost)}</div>
+                  <div className="text-xs text-gray-500">Total Cost</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">{planData.estimatedTime}</div>
-                  <div className="text-sm text-gray-500">Est. Time</div>
+                  <div className="text-xl font-bold text-blue-600">{planData.estimatedTime}</div>
+                  <div className="text-xs text-gray-500">Est. Time</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">{planData.stores.length}</div>
-                  <div className="text-sm text-gray-500">Store(s)</div>
+                  <div className="text-xl font-bold text-purple-600">{planData.stores.length}</div>
+                  <div className="text-xs text-gray-500">Store(s)</div>
+                </div>
+                <div className="text-center">
+                  <div className={`text-xl font-bold ${availability.missingItems.length > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                    {availability.availableItems}/{availability.totalItems}
+                  </div>
+                  <div className="text-xs text-gray-500">Available</div>
                 </div>
               </div>
             </CardContent>
@@ -599,18 +619,24 @@ const PlanDetails: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-4 gap-3 mb-6">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">{formatPrice(planData.totalCost)}</div>
-                  <div className="text-sm text-gray-500">Total Cost</div>
+                  <div className="text-xl font-bold text-green-600">{formatPrice(planData.totalCost)}</div>
+                  <div className="text-xs text-gray-500">Total Cost</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">{planData.estimatedTime}</div>
-                  <div className="text-sm text-gray-500">Est. Time</div>
+                  <div className="text-xl font-bold text-blue-600">{planData.estimatedTime}</div>
+                  <div className="text-xs text-gray-500">Est. Time</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">{planData.stores.length}</div>
-                  <div className="text-sm text-gray-500">Store(s)</div>
+                  <div className="text-xl font-bold text-purple-600">{planData.stores.length}</div>
+                  <div className="text-xs text-gray-500">Store(s)</div>
+                </div>
+                <div className="text-center">
+                  <div className={`text-xl font-bold ${availability.missingItems.length > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                    {availability.availableItems}/{availability.totalItems}
+                  </div>
+                  <div className="text-xs text-gray-500">Available</div>
                 </div>
               </div>
             </CardContent>
@@ -721,7 +747,7 @@ const PlanDetails: React.FC = () => {
       </div>
       </main>
 
-      <BottomNavigation activeTab="shop" />
+      <BottomNavigation activeTab="plan-details" />
     </div>
   );
 };

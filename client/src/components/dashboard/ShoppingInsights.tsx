@@ -6,6 +6,8 @@ import { Separator } from '@/components/ui/separator';
 import { TrendingUp, DollarSign, ShoppingCart, MapPin, Users, Target, Calendar, Package, Plus, BarChart3, Clock } from 'lucide-react';
 import ActionCard from '@/components/dashboard/ActionCard';
 import ReceiptScanner from '@/components/receipt/ReceiptScanner';
+import SafeComponent from '@/components/SafeComponent';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 const ShoppingInsights: React.FC = () => {
   const [data, setData] = useState(null);

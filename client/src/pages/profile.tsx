@@ -25,17 +25,9 @@ import { User, Settings, Bell, CreditCard, MapPin, Shield, Store, TrendingUp, Sh
 import { User as UserType } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
-const profileSchema = z.object({
-  username: z.string().min(2, 'Username must be at least 2 characters'),
-  email: z.string().email('Invalid email address'),
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
-  phone: z.string().optional(),
-  zipCode: z.string().optional(),
-  dietaryPreferences: z.array(z.string()).optional(),
-  budgetRange: z.string().optional(),
-  shoppingFrequency: z.string().optional(),
-});
+import { profileUpdateSchema } from '@/lib/validation';
+
+const profileSchema = profileUpdateSchema;
 
 const ProfilePage: React.FC = () => {
   const [, navigate] = useLocation();

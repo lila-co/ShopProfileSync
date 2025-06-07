@@ -1,4 +1,3 @@
-
 # SmartCart - Visual Sitemap
 
 ## 📱 Main Application Pages
@@ -12,11 +11,6 @@
 - **File**: `pages/shopping-list.tsx`
 - **Status**: ⚠️ Has errors (regenerateListMutation not found)
 - **Features**: Add/edit items, list management, retailer suggestions
-
-### 🔍 **Scan Receipts** (`/scan`)
-- **File**: `pages/scan.tsx`
-- **Status**: ✅ Active
-- **Features**: Receipt scanner, OCR processing, purchase tracking
 
 ### 💰 **Deals** (`/deals`)
 - **File**: `pages/deals.tsx`
@@ -50,6 +44,11 @@
 - **Status**: ✅ Active
 - **Features**: Product browsing, shopping interface
 
+### 🔍 **Scan Receipts** (`/scan`)
+- **File**: `pages/scan.tsx`
+- **Status**: ✅ Active
+- **Features**: Receipt scanner, OCR processing, purchase tracking
+
 ### 🗺️ **Shopping Route** (`/shopping-route`)
 - **File**: `pages/shopping-route.tsx`
 - **Status**: ✅ Active
@@ -77,7 +76,9 @@
 - **Status**: ✅ Active
 - **Features**: Individual retailer information, deals, products
 
-### 📋 **Plan Details** (`/plan/:id`)
+## 📋 Plan Details (`/plan/:id`)
+
+### 📋 **Plan Details** (`/plan-details`)
 - **File**: `pages/plan-details.tsx`
 - **Status**: ✅ Active
 - **Features**: Shopping plan details, itinerary
@@ -128,10 +129,10 @@ Header Navigation:
 └── Profile (/profile)
 
 Bottom Navigation (Mobile):
-├── Home (/)
-├── Scan (/scan)
 ├── Lists (/shopping-list)
 ├── Deals (/deals)
+├── Plans (/plan-details)
+├── Stores (/retailers)
 └── Profile (/profile)
 ```
 

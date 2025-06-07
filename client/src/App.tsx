@@ -5,116 +5,191 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { queryClient } from '@/lib/queryClient';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import AuthPage from './pages/auth';
-import OnboardingPage from './pages/onboarding';
-import ShoppingListPage from './pages/shopping-list';
-import DealsPage from './pages/deals';
-import RetailersPage from './pages/retailers';
-import ProfilePage from './pages/profile';
-import ScanPage from '@/pages/scan';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import AsyncErrorBoundary from '@/components/AsyncErrorBoundary';
 
-import ShoppingRoute from './pages/shopping-route';
-import PlanDetailsPage from '@/pages/plan-details';
-import RetailerDetailsPage from './pages/retailer-details';
-import AutoOrder from '@/pages/auto-order';
-import OrderOnline from '@/pages/order-online';
-const RetailerCartDemo = lazy(() => import('./pages/retailer-cart-demo'));
+// Import lazy-loaded components organized by feature groups
+import { 
+  CorePages, 
+  ShoppingPages, 
+  AdvancedPages, 
+  AdminPages, 
+  OnboardingPages,
+  preloadCriticalComponents 
+} from '@/utils/lazyImports';
+
+// Loading fallback component
+const PageLoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="flex flex-col items-center space-y-4">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="text-lg text-gray-600">Loading...</div>
+    </div>
+  </div>
+);
 
 function AppContent() {
   const { isLoading, isAuthenticated } = useAuth();
 
+  // Preload critical components when authenticated
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      preloadCriticalComponents();
+    }
+  }, [isAuthenticated]);
+
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Loading...</div>
-      </div>
-    );
+    return <PageLoadingFallback />;
   }
 
   if (!isAuthenticated) {
-    return <AuthPage />;
+    return (
+      <Suspense fallback={<PageLoadingFallback />}>
+        <CorePages.Auth />
+      </Suspense>
+    );
   }
 
   return (
     <Switch>
       <Route path="/onboarding">
         <ProtectedRoute>
-          <OnboardingPage />
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <OnboardingPages.Onboarding />
+            </Suspense>
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/shopping-list">
         <ProtectedRoute>
-          <ShoppingListPage />
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <CorePages.ShoppingList />
+            </Suspense>
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/shopping-route">
         <ProtectedRoute>
-          <ShoppingRoute />
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <ShoppingPages.ShoppingRoute />
+            </Suspense>
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/deals">
         <ProtectedRoute>
-          <DealsPage />
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <ShoppingPages.Deals />
+            </Suspense>
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/plan-details">
         <ProtectedRoute>
-          <PlanDetailsPage />
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <ShoppingPages.PlanDetails />
+            </Suspense>
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/retailers">
         <ProtectedRoute>
-          <RetailersPage />
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <ShoppingPages.Retailers />
+            </Suspense>
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/retailers/:id">
         <ProtectedRoute>
-          <RetailerDetailsPage />
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <ShoppingPages.RetailerDetails />
+            </Suspense>
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/profile">
         <ProtectedRoute>
-          <ProfilePage />
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <CorePages.Profile />
+            </Suspense>
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/scan">
         <ProtectedRoute>
-          <ScanPage />
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <ShoppingPages.Scan />
+            </Suspense>
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/auto-order">
         <ProtectedRoute>
-          <AutoOrder />
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <AdvancedPages.AutoOrder />
+            </Suspense>
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/order-online">
         <ProtectedRoute>
-          <OrderOnline />
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <AdvancedPages.OrderOnline />
+            </Suspense>
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/retailer-cart-demo">
         <ProtectedRoute>
-          <RetailerCartDemo />
+          <ErrorBoundary level="page">
+            <AsyncErrorBoundary>
+              <Suspense fallback={<PageLoadingFallback />}>
+                <AdvancedPages.RetailerCartDemo />
+              </Suspense>
+            </AsyncErrorBoundary>
+          </ErrorBoundary>
         </ProtectedRoute>
       </Route>
       
+      <Route path="/admin/monitoring">
+        <ProtectedRoute>
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <AdminPages.MonitoringDashboard />
+            </Suspense>
+          </ErrorBoundary>
+        </ProtectedRoute>
+      </Route>
+
       <Route path="/">
         <ProtectedRoute>
           <Redirect to="/shopping-list" />
         </ProtectedRoute>
       </Route>
-      
+
       <Route>
         <ProtectedRoute>
           <Redirect to="/shopping-list" />
@@ -126,16 +201,18 @@ function AppContent() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
-        <AuthProvider>
-          <div className="App">
-            <AppContent />
-            <Toaster />
-          </div>
-        </AuthProvider>
-      </Router>
-    </QueryClientProvider>
+    <ErrorBoundary level="app">
+      <QueryClientProvider client={queryClient}>
+        <Router>
+          <AuthProvider>
+            <div className="App">
+              <AppContent />
+              <Toaster />
+            </div>
+          </AuthProvider>
+        </Router>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

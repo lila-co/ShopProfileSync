@@ -12,6 +12,8 @@ import { cacheManager } from './cacheManager';
 
 export class DataOptimizer {
   private config: CacheConfig;
+  private priceCache: Map<string, { price: number; timestamp: number }>;
+  private dealCache: Map<string, { deals: StoreDeal[]; timestamp: number }>;
 
   constructor(config: CacheConfig = {
     dealsTTL: 60, // 1 hour for deals
@@ -19,6 +21,8 @@ export class DataOptimizer {
     maxCacheSize: 10000
   }) {
     this.config = config;
+    this.priceCache = new Map();
+    this.dealCache = new Map();
   }
 
   /**
@@ -52,7 +56,7 @@ export class DataOptimizer {
       console.error(`Error fetching price for ${productName} from retailer ${retailerId}:`, error);
 
       // Return cached data if API fails
-      return cached?.price || null;
+      return cachedPrice || null;
     }
   }
 

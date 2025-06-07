@@ -30,25 +30,17 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-// Authentication form schemas
-const loginSchema = z.object({
-  username: z.string().min(1, { message: "Please enter a username" }),
-  password: z.string().min(8, {
-    message: "Password must be at least 8 characters",
-  }),
-});
+import { loginSchema } from '@/lib/validation';
+
+const loginFormSchema = loginSchema;
 
 const registerSchema = z.object({
-  name: z.string().min(2, {
-    message: "Name must be at least 2 characters",
-  }),
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(8, {
-    message: "Password must be at least 8 characters",
-  }),
-  confirmPassword: z.string(),
-}).refine(data => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Please enter a valid email'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  confirmPassword: z.string()
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
   path: ["confirmPassword"],
 });
 
@@ -81,9 +73,17 @@ const AuthPage: React.FC = () => {
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (data: z.infer<typeof loginSchema>) => {
-      await login(data.username, data.password);
+      console.log("Login mutation triggered with data:", data);
+      try {
+        await login(data.username, data.password);
+        console.log("Login successful");
+      } catch (error) {
+        console.error("Login error in mutation:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
+      console.log("Login mutation onSuccess triggered");
       toast({
         title: "Login successful",
         description: "Welcome back!",
@@ -103,57 +103,64 @@ const AuthPage: React.FC = () => {
   // Register mutation
   const registerMutation = useMutation({
     mutationFn: async (data: z.infer<typeof registerSchema>) => {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: data.email, // Use email as username
-          password: data.password,
-          email: data.email,
-          name: data.name
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || 'Registration failed');
-      }
-
-      return result;
-    },
-    onSuccess: async (data: any) => {
-      console.log('Registration successful, response data:', data);
-      toast({
-        title: "Registration successful",
-        description: `Welcome to SmartCart, ${data.user.name}!`,
-      });
-      // Set a flag to show onboarding after authentication
-      localStorage.setItem('needsOnboarding', 'true');
-      console.log('Set needsOnboarding flag to true');
-      
-      // Auto-login the user with their new credentials
       try {
-        const email = data.user.email || registerForm.getValues('email');
-        const password = registerForm.getValues('password');
-        console.log('Attempting auto-login with email:', email);
-        await login(email, password);
-        console.log('Auto-login successful, should redirect to onboarding');
-        // User will be automatically redirected to onboarding by ProtectedRoute
-      } catch (error) {
-        console.error('Auto-login failed:', error);
-        // Fall back to manual login if auto-login fails
-        setActiveTab('login');
-        loginForm.setValue('username', data.user.email || registerForm.getValues('email'));
-        toast({
-          title: "Please sign in",
-          description: "Your account was created successfully. Please sign in to continue.",
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            username: data.name.toLowerCase().replace(/\s+/g, ''),
+            email: data.email,
+            firstName: data.name.split(' ')[0] || data.name,
+            lastName: data.name.split(' ').slice(1).join(' ') || '',
+            password: data.password,
+          }),
         });
+
+        const responseData = await response.json();
+
+        if (!response.ok) {
+          throw new Error(responseData.message || 'Registration failed');
+        }
+
+        return { ...responseData, formData: data };
+      } catch (error) {
+        console.error('Registration error:', error);
+        throw error;
       }
+    },
+    onSuccess: async (data) => {
+      try {
+        // Auto-login the user after successful registration
+        const username = data.formData.name.toLowerCase().replace(/\s+/g, '');
+        const password = data.formData.password;
+        
+        // Call the login function to authenticate the user
+        await login(username, password);
+        
+        // Set the onboarding flag
+        localStorage.setItem('needsOnboarding', 'true');
+        
+        toast({
+          title: "Welcome to SmartCart!",
+          description: "Let's get your account set up",
+        });
+        
+        // Navigation will be handled by ProtectedRoute after login
+      } catch (loginError) {
+        console.error('Auto-login failed:', loginError);
+        // Fallback to manual login if auto-login fails
+        toast({
+          title: "Registration successful",
+          description: "Please log in with your new account",
+        });
+        setActiveTab("login");
+      }
+      registerForm.reset();
     },
     onError: (error: any) => {
+      console.error("Registration mutation error:", error);
       toast({
         title: "Registration failed",
         description: error.message || "Please check your information and try again",
@@ -164,6 +171,8 @@ const AuthPage: React.FC = () => {
 
   // Form submission handlers
   const onLoginSubmit = (data: z.infer<typeof loginSchema>) => {
+    console.log("Login form submitted with data:", data);
+    console.log("Login mutation pending status:", loginMutation.isPending);
     loginMutation.mutate(data);
   };
 
@@ -238,7 +247,7 @@ const AuthPage: React.FC = () => {
                         <FormLabel>Username</FormLabel>
                         <FormControl>
                           <Input 
-                            placeholder="Enter your username" 
+                            placeholder="johndoe" 
                             type="text"
                             {...field} 
                           />

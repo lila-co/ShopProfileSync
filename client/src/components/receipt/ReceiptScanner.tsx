@@ -230,15 +230,17 @@ const ReceiptScanner: React.FC = () => {
           </Card>
         )}
         
-        <div className="text-center mt-4">
-          <h3 className="font-medium text-gray-700 mb-2">Recently Scanned</h3>
-          <div className="flex justify-center space-x-3">
-            {/* This would be populated with recent receipts from the backend */}
-            <div className="w-16 h-24 bg-gray-200 rounded-lg"></div>
-            <div className="w-16 h-24 bg-gray-200 rounded-lg"></div>
-            <div className="w-16 h-24 bg-gray-200 rounded-lg"></div>
+        <SafeComponent name="RecentlyScanned">
+          <div className="text-center mt-4">
+            <h3 className="font-medium text-gray-700 mb-2">Recently Scanned</h3>
+            <div className="flex justify-center space-x-3">
+              {/* This would be populated with recent receipts from the backend */}
+              <div className="w-16 h-24 bg-gray-200 rounded-lg"></div>
+              <div className="w-16 h-24 bg-gray-200 rounded-lg"></div>
+              <div className="w-16 h-24 bg-gray-200 rounded-lg"></div>
+            </div>
           </div>
-        </div>
+        </SafeComponent>
       </div>
     </div>
   );

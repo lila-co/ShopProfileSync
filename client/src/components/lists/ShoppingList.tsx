@@ -474,27 +474,48 @@ const ShoppingListComponent: React.FC = () => {
       console.log(`Regenerating list - Current items: ${currentItems.length}, Empty: ${isEmptyList}`);
       console.log('Making API call to /api/shopping-lists/generate');
 
-      // Use the unified API endpoint for all scenarios
-      const response = await apiRequest('POST', '/api/shopping-lists/generate', {
-        shoppingListId: defaultList.id
-      });
+      try {
+        // Use the unified API endpoint for all scenarios
+        const response = await apiRequest('POST', '/api/shopping-lists/generate', {
+          shoppingListId: defaultList.id
+        });
 
-      console.log('API response status:', response.status);
+        console.log('API response status:', response.status);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API error response:', errorText);
-        throw new Error(`Failed to generate shopping list: ${response.status} ${errorText}`);
+        if (!response.ok) {
+          let errorMessage = `HTTP ${response.status}`;
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorMessage;
+          } catch (parseError) {
+            console.warn('Failed to parse error response:', parseError);
+            try {
+              const errorText = await response.text();
+              errorMessage = errorText || errorMessage;
+            } catch (textError) {
+              console.warn('Failed to get error text:', textError);
+              errorMessage = `HTTP ${response.status}`;
+            }
+          }
+          console.error('API error response:', errorMessage);
+          throw new Error(`Failed to generate shopping list: ${errorMessage}`);
+        }
+
+        const result = await response.json();
+        console.log('API response data:', result);
+
+        return {
+          ...result,
+          isEmptyList,
+          message: isEmptyList ? 'New shopping list created' : 'List enhanced with additional items'
+        };
+      } catch (error) {
+        console.error('Network or API error:', error);
+        if (error.message && error.message.includes('Failed to generate shopping list')) {
+          throw error; // Re-throw API errors as-is
+        }
+        throw new Error('Failed to connect to server. Please check your connection and try again.');
       }
-
-      const result = await response.json();
-      console.log('API response data:', result);
-
-      return {
-        ...result,
-        isEmptyList,
-        message: isEmptyList ? 'New shopping list created' : 'List enhanced with additional items'
-      };
     },
     onSuccess: (data) => {
       console.log('Regeneration successful, invalidating queries');
@@ -508,7 +529,7 @@ const ShoppingListComponent: React.FC = () => {
       } else {
         title = "List Regenerated";
         description = `Added ${data.itemsAdded || data.totalItems || 'new'} items to your shopping list`;
-        if (data.itemsSkipped > 0) {
+        if (data.itemsSkipped && data.itemsSkipped > 0) {
           description += ` (${data.itemsSkipped} similar items already existed)`;
         }
       }
@@ -524,7 +545,7 @@ const ShoppingListComponent: React.FC = () => {
       console.error('Regeneration failed:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to enhance list",
+        description: error.message || "Failed to enhance list. Please try again.",
         variant: "destructive"
       });
     }
@@ -585,14 +606,16 @@ const ShoppingListComponent: React.FC = () => {
     }, 1000);
 
     // Start the actual mutation after animation has time to show
-    setTimeout(() => {
+    const mutationTimeout = setTimeout(() => {
       console.log('Starting regeneration mutation...');
+      
       regenerateListMutation.mutate(undefined, {
         onSettled: () => {
           console.log('Mutation settled, cleaning up animation');
           // Clean up animation when mutation is done
           if (animationInterval) {
             clearInterval(animationInterval);
+            animationInterval = null;
           }
 
           // Hide the animation after a short delay
@@ -606,6 +629,7 @@ const ShoppingListComponent: React.FC = () => {
           // Ensure animation stops on error
           if (animationInterval) {
             clearInterval(animationInterval);
+            animationInterval = null;
           }
           setIsGeneratingList(false);
           setCurrentStep(-1);
@@ -615,6 +639,14 @@ const ShoppingListComponent: React.FC = () => {
         }
       });
     }, 500);
+
+    // Cleanup function in case component unmounts
+    return () => {
+      if (animationInterval) {
+        clearInterval(animationInterval);
+      }
+      clearTimeout(mutationTimeout);
+    };
   };
 
   const handleAddItem = (e: React.FormEvent) => {

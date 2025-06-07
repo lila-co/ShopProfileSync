@@ -136,14 +136,30 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
         }
       });
 
-      const results = await Promise.all(imagePromises);
-      const imageMap = results.reduce((acc, { dealId, image }) => {
-        acc[dealId] = image;
-        return acc;
-      }, {} as Record<string, string>);
+      try {
+        const results = await Promise.allSettled(imagePromises);
+        const imageMap = results.reduce((acc, result, index) => {
+          const dealId = storeDeals[index].id;
+          if (result.status === 'fulfilled') {
+            acc[dealId] = result.value.image;
+          } else {
+            console.error(`Failed to load image for deal ${dealId}:`, result.reason);
+            acc[dealId] = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&h=200&fit=crop';
+          }
+          return acc;
+        }, {} as Record<string, string>);
 
-      console.log('Product images loaded:', Object.keys(imageMap).length);
-      setProductImages(imageMap);
+        console.log('Product images loaded:', Object.keys(imageMap).length);
+        setProductImages(imageMap);
+      } catch (error) {
+        console.error('Error in Promise.allSettled:', error);
+        // Fallback: set all images to default
+        const fallbackImageMap = storeDeals.reduce((acc, deal) => {
+          acc[deal.id] = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&h=200&fit=crop';
+          return acc;
+        }, {} as Record<string, string>);
+        setProductImages(fallbackImageMap);
+      }
     };
 
     loadProductImages();
@@ -310,15 +326,31 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
                     {/* Price and Savings */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-lg font-bold text-gray-900">
-                          ${(deal.salePrice / 100).toFixed(2)}
-                        </span>
-                        <span className="text-sm text-gray-500 line-through">
-                          ${(deal.regularPrice / 100).toFixed(2)}
-                        </span>
+                        {deal.dealType === 'spend_threshold_percentage' ? (
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-gray-700">
+                              Spend ${(deal.spendThreshold! / 100).toFixed(0)}+
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              Get {deal.discountPercentage}% off
+                            </span>
+                          </div>
+                        ) : (
+                          <>
+                            <span className="text-lg font-bold text-gray-900">
+                              ${(deal.salePrice / 100).toFixed(2)}
+                            </span>
+                            <span className="text-sm text-gray-500 line-through">
+                              ${(deal.regularPrice / 100).toFixed(2)}
+                            </span>
+                          </>
+                        )}
                       </div>
                       <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
-                        {calculateSavings(deal.regularPrice, deal.salePrice)}% off
+                        {deal.dealType === 'spend_threshold_percentage' 
+                          ? `${deal.discountPercentage}% off`
+                          : `${calculateSavings(deal.regularPrice, deal.salePrice)}% off`
+                        }
                       </Badge>
                     </div>
 

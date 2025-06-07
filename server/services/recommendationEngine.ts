@@ -425,13 +425,39 @@ export function analyzePurchasePatterns(purchases: Purchase[]): ProductPurchaseP
   );
   
   for (const purchase of sortedPurchases) {
-    const items = purchase.items || [];
+    // Handle both direct items and receipt data
+    let items = purchase.items || [];
+    
+    // If items are not available but receipt data exists, extract from receipt
+    if (items.length === 0 && purchase.receiptData && purchase.receiptData.items) {
+      items = purchase.receiptData.items.map((receiptItem: any) => ({
+        productName: receiptItem.name || receiptItem.productName,
+        quantity: receiptItem.quantity || 1,
+        unitPrice: receiptItem.unitPrice || (receiptItem.price / (receiptItem.quantity || 1)),
+        totalPrice: receiptItem.price || receiptItem.totalPrice
+      }));
+    }
+    
     const purchaseDate = new Date(purchase.purchaseDate);
     
     for (const item of items) {
-      if (!productMap.has(item.productName)) {
-        productMap.set(item.productName, {
-          productName: item.productName,
+      // Normalize product name for better matching
+      const normalizedProductName = item.productName.trim().toLowerCase();
+      let matchingKey = item.productName;
+      
+      // Find existing product with similar name
+      for (const existingKey of productMap.keys()) {
+        if (existingKey.toLowerCase() === normalizedProductName ||
+            existingKey.toLowerCase().includes(normalizedProductName) ||
+            normalizedProductName.includes(existingKey.toLowerCase())) {
+          matchingKey = existingKey;
+          break;
+        }
+      }
+      
+      if (!productMap.has(matchingKey)) {
+        productMap.set(matchingKey, {
+          productName: matchingKey,
           purchases: [],
           totalQuantity: 0,
           averageDaysBetweenPurchases: 0,
@@ -440,16 +466,16 @@ export function analyzePurchasePatterns(purchases: Purchase[]): ProductPurchaseP
         });
       }
       
-      const pattern = productMap.get(item.productName)!;
+      const pattern = productMap.get(matchingKey)!;
       
       pattern.purchases.push({
         date: purchaseDate,
-        quantity: item.quantity,
+        quantity: item.quantity || 1,
         retailerId: purchase.retailerId,
-        price: item.unitPrice
+        price: item.unitPrice || item.totalPrice || 300 // Default price if not available
       });
       
-      pattern.totalQuantity += item.quantity;
+      pattern.totalQuantity += (item.quantity || 1);
       pattern.lastPurchaseDate = purchaseDate;
     }
   }
