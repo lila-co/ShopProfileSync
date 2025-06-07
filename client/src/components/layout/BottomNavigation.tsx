@@ -1,6 +1,7 @@
 import React from 'react';
-import { List, User, Store, Tag, ShoppingCart } from 'lucide-react';
+import { List, User, Store, Tag, ShoppingCart, Shield } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface BottomNavigationProps {
   activeTab: string;
@@ -8,16 +9,29 @@ interface BottomNavigationProps {
 
 const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab }) => {
   const [, navigate] = useLocation();
+  const { user } = useAuth();
 
+  // Check if user has admin access
+  const isAdmin = user && (
+    user.role === 'owner' || 
+    user.role === 'admin' || 
+    user.role === 'employee' || 
+    user.username === 'admin' || 
+    user.isAdmin === true
+  );
 
-
-  const navItems = [
+  const baseNavItems = [
     { id: 'shopping-list', icon: List, label: 'List', path: '/shopping-list' },
     { id: 'deals', icon: Tag, label: 'Deals', path: '/deals' },
     { id: 'plan-details', icon: ShoppingCart, label: 'Shop Now', path: '/plan-details' },
     { id: 'retailers', icon: Store, label: 'Stores', path: '/retailers' },
     { id: 'profile', icon: User, label: 'Profile', path: '/profile' },
   ];
+
+  // Add admin tab if user has admin privileges
+  const navItems = isAdmin 
+    ? [...baseNavItems, { id: 'admin', icon: Shield, label: 'Admin', path: '/admin-profile' }]
+    : baseNavItems;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg">
