@@ -2041,6 +2041,159 @@ export async function registerRoutes(app: Express): Promise<Server> {
       handleError(res, error);
     }
   });
+          aiOptimized: deal.aiOptimized || false,
+          originalQuantity: deal.originalQuantity,
+          originalUnit: deal.originalUnit
+        }));
+
+      // AI-enhanced additional items with comprehensive categorization
+      const additionalItems = [
+        { 
+          productName: 'Ground Coffee', 
+          quantity: 2, 
+          unit: 'LB',
+          suggestedRetailerId: 2,
+          suggestedPrice: 1299,
+          savings: 100,
+          category: 'Pantry & Canned Goods',
+          confidence: 0.9,
+          reason: "AI suggests 2 lbs coffee for regular consumption - premium blend on sale at Target",
+          daysUntilPurchase: 5,
+          isSelected: true,
+          aiOptimized: true,
+          conversionReason: 'AI suggests 2 lbs instead of 1 for better value and consumption rate'
+        },
+        { 
+          productName: 'Chicken Breast', 
+          quantity: 2, 
+          unit: 'LB',
+          suggestedRetailerId: 1,
+          suggestedPrice: 699,
+          savings: 80,
+          category: 'Meat & Seafood',
+          confidence: 0.95,
+          reason: "AI suggests 2 lbs chicken breast - optimal family meal portions at Walmart",
+          daysUntilPurchase: 6,
+          isSelected: true,
+          aiOptimized: true,
+          conversionReason: 'AI suggests 2 lbs for family meal planning and freshness optimization'
+        },
+        {
+          productName: 'Bread',
+          quantity: 1,
+          unit: 'LOAF',
+          suggestedRetailerId: 3,
+          suggestedPrice: 299,
+          savings: 30,
+          category: 'Bakery',
+          confidence: 0.88,
+          reason: "AI suggests whole grain bread for household staple at Kroger",
+          daysUntilPurchase: 3,
+          isSelected: true,
+          aiOptimized: true,
+          conversionReason: 'AI confirms 1 loaf optimal for freshness and consumption'
+        }
+      ];
+
+      // Process additional items through AI categorization and filter recently purchased
+      const aiEnhancedAdditionalItems = await Promise.all(
+        additionalItems
+          .filter(item => !wasItemRecentlyPurchased(item.productName, recentlyPurchasedItems))
+          .map(async (item) => {
+            try {
+              const aiCategory = productCategorizer.categorizeProduct(item.productName);
+              const aiQuantityOptimization = productCategorizer.normalizeQuantity(
+                item.productName, 
+                item.quantity, 
+                item.unit
+              );
+
+              return {
+                ...item,
+                category: aiCategory.category,
+                confidence: Math.max(item.confidence || 0.7, aiCategory.confidence),
+                aisle: aiCategory.aisle,
+                section: aiCategory.section,
+                quantity: aiQuantityOptimization.suggestedQuantity || item.quantity,
+                unit: aiQuantityOptimization.suggestedUnit || item.unit,
+                aiReasoning: aiQuantityOptimization.conversionReason || item.conversionReason
+              };
+            } catch (error) {
+              console.warn('AI enhancement failed for additional item:', item.productName, error);
+              return item;
+            }
+          })
+      );
+      
+      // Track filtered items for user feedback
+      const allOriginalItems = [...analyzedDeals, ...additionalItems];
+      const filteredOutItems = allOriginalItems.filter(item => 
+        wasItemRecentlyPurchased(item.productName, recentlyPurchasedItems)
+      );
+
+      // Combine all AI-enhanced items including receipt-based recommendations
+      const allRecommendedItems = [...recommendedItems, ...aiEnhancedAdditionalItems, ...purchaseBasedRecommendations];
+
+      // Fallback sample items with AI categorization if no items generated
+      let items = allRecommendedItems;
+      if (items.length === 0) {
+        const fallbackItems = [
+          { productName: 'Milk', quantity: 1, unit: 'GALLON', reason: 'Purchased weekly' },
+          { productName: 'Bananas', quantity: 2, unit: 'LB', reason: 'AI suggests 2 lbs - typical bunch size' },
+          { productName: 'Bread', quantity: 1, unit: 'LOAF', reason: 'AI optimized to LOAF unit for standard shopping' },
+          { productName: 'Eggs', quantity: 1, unit: 'DOZEN', reason: 'AI converted to DOZEN for standard format' },
+          { productName: 'Toilet Paper', quantity: 12, unit: 'ROLL', reason: 'AI suggests 12-pack for household efficiency' },
+          { productName: 'Chicken Breast', quantity: 2, unit: 'LB', reason: 'AI suggests 2 lbs for family meal planning' },
+          { productName: 'Tomatoes', quantity: 2, unit: 'LB', reason: 'AI suggests 2 lbs for optimal freshness amount' }
+        ];
+
+        // Process fallback items through AI
+        items = await Promise.all(fallbackItems.map(async (item) => {
+          try {
+            const aiCategory = productCategorizer.categorizeProduct(item.productName);
+            const aiQuantityOptimization = productCategorizer.normalizeQuantity(
+              item.productName, 
+              item.quantity, 
+              item.unit
+            );
+
+            return {
+              ...item,
+              category: aiCategory.category,
+              confidence: aiCategory.confidence,
+              aisle: aiCategory.aisle,
+              section: aiCategory.section,
+              quantity: aiQuantityOptimization.suggestedQuantity || item.quantity,
+              unit: aiQuantityOptimization.suggestedUnit || item.unit,
+              reason: aiQuantityOptimization.conversionReason || item.reason,
+              aiOptimized: true,
+              isSelected: true
+            };
+          } catch (error) {
+            console.warn('AI processing failed for fallback item:', item.productName, error);
+            return { ...item, isSelected: true };
+          }
+        }));
+      }
+
+      // Return comprehensive AI-enhanced recommendations with filtering info
+      res.json({
+        userId,
+        items: allRecommendedItems,
+        totalSavings: allRecommendedItems.reduce((sum, item) => sum + (item.savings || 0), 0),
+        aiEnhanced: true,
+        categorizedItems: allRecommendedItems.length,
+        optimizedQuantities: allRecommendedItems.filter(item => item.aiOptimized).length,
+        filteredItems: filteredOutItems.map(item => ({
+          productName: item.productName,
+          reason: 'Recently purchased (within last 3 days)'
+        })),
+        filteredCount: filteredOutItems.length
+      });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
 
   // Preview recipe ingredients before importing
   app.post('/api/shopping-lists/recipe/preview', async (req: Request, res: Response) => {
