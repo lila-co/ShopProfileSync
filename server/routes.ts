@@ -1871,6 +1871,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+      // Convert to recommendation format with AI enhancements and filter recently purchased
+      const recommendedItems = analyzedDeals
+        .filter(deal => !wasItemRecentlyPurchased(deal.productName, recentlyPurchasedItems))
+        .map(deal => ({
+          productName: deal.productName,
+          quantity: deal.quantity,
+          unit: deal.unit || 'COUNT',
+          suggestedRetailerId: 1, // Mock Retailer ID
+          suggestedPrice: deal.salePrice,
+          savings: deal.savings,
+          category: deal.category,
+          confidence: deal.confidence || 0.8,
+          aisle: deal.aisle,
+          section: deal.section,
           reason: deal.aiReasoning || `Best deal based on ${userPrefersBulk ? 'bulk preference' : 'unit price'} at ${deal.retailerName}`,
           daysUntilPurchase: 2, // Mock value
           isSelected: true,
