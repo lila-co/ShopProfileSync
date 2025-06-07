@@ -59,9 +59,21 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommendation 
     <div className={`bg-white rounded-xl shadow-sm p-4 border ${isUrgent ? 'border-green-100' : 'border-gray-100'}`}>
       {/* AI Insight Badge */}
       {recommendation.aiInsight && (
+        <div className="mb-3">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border border-blue-200">
+            <svg className="w-3 h-3 mr-1" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2L13.09 8.26L19 9L13.09 9.74L12 16L10.91 9.74L5 9L10.91 8.26L12 2Z"/>
+            </svg>
+            AI: {recommendation.aiInsight}
+          </span>
+        </div>
+      )}
+
+      {/* Confidence Score */}
+      {recommendation.confidence && recommendation.confidence > 0.8 && (
         <div className="mb-2">
-          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-            🤖 AI Insight: {recommendation.aiInsight}
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+            {Math.round(recommendation.confidence * 100)}% confident match
           </span>
         </div>
       )}
