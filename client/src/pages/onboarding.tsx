@@ -9,8 +9,8 @@ const OnboardingPage: React.FC = () => {
   const handleOnboardingComplete = () => {
     // Clear the onboarding flag
     localStorage.removeItem('needsOnboarding');
-    // Navigate to dashboard
-    navigate('/dashboard');
+    // Navigate to shopping list
+    navigate('/shopping-list');
   };
 
   return <OnboardingFlow onComplete={handleOnboardingComplete} />;
