@@ -309,6 +309,9 @@ async function createSampleDealsFromURL(retailerId: number, circularId: number, 
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Create HTTP server
+  const server = createServer(app);
+  
   // Admin bypass route (temporary for troubleshooting)
   app.get('/api/admin/bypass-check', async (req: Request, res: Response) => {
     res.json({ 
@@ -1813,3 +1816,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+
+  return server;
+}
