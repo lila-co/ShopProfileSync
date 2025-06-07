@@ -982,14 +982,19 @@ const ShoppingListComponent: React.FC = () => {
       <form onSubmit={handleAddItem} className="mb-4">
         <Card className="bg-white rounded-lg shadow-md border border-gray-200">
           <CardContent className="p-4">
-            {/* Item Name Input */}
-            <Input
-              type="text"
-              placeholder="Add item name"
-              value={newItemName}
-              onChange={(e) => setNewItemName(e.target.value)}
-              className="h-12 text-base border-2 border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 bg-white rounded-lg transition-all duration-200"
-            />
+            {/* Item Name Input with Plus Icon */}
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
+                <Plus className="h-5 w-5 text-gray-400" />
+              </div>
+              <Input
+                type="text"
+                placeholder="Add item name"
+                value={newItemName}
+                onChange={(e) => setNewItemName(e.target.value)}
+                className="h-12 text-base border-2 border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 bg-white rounded-lg transition-all duration-200 pl-10"
+              />
+            </div>
 
             {/* Quantity and Unit Row */}
             <div className="flex space-x-3 mt-3">
