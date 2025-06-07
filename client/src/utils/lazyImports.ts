@@ -3,6 +3,7 @@ import { lazy } from 'react';
 // Core pages - loaded immediately after auth
 export const CorePages = {
   Auth: lazy(() => import('@/pages/auth')),
+  Dashboard: lazy(() => import('@/pages/dashboard')),
   ShoppingList: lazy(() => import('@/pages/shopping-list')),
   Profile: lazy(() => import('@/pages/profile')),
 };

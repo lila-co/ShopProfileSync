@@ -112,6 +112,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.removeItem('listGenerationShown');
       localStorage.removeItem('lastLoginTime');
       localStorage.removeItem('forceShowAnimation');
+      localStorage.removeItem('browserSessionId');
+      
+      // Clear session storage to ensure new session detection works
+      sessionStorage.removeItem('shoppingListSessionStart');
+      sessionStorage.removeItem('currentBrowserSession');
       
       // Clear any other auth-related data
       localStorage.removeItem('user_preferences');

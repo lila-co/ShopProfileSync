@@ -62,6 +62,16 @@ function AppContent() {
         </ProtectedRoute>
       </Route>
 
+      <Route path="/dashboard">
+        <ProtectedRoute>
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <CorePages.Dashboard />
+            </Suspense>
+          </ErrorBoundary>
+        </ProtectedRoute>
+      </Route>
+
       <Route path="/shopping-list">
         <ProtectedRoute>
           <ErrorBoundary level="page">

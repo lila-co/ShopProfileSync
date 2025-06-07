@@ -68,14 +68,23 @@ const ShoppingListComponent: React.FC = () => {
     }
   });
 
-  const { data: shoppingLists, isLoading } = useQuery<ShoppingListType[]>({
+  const { data: shoppingLists, isLoading, refetch: refetchLists } = useQuery<ShoppingListType[]>({
     queryKey: ['/api/shopping-lists'],
-    refetchOnWindowFocus: true,
-    refetchInterval: 2000, // Refetch every 2 seconds to catch updates from other pages
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/shopping-lists');
+      return response.json();
+    },
+    staleTime: 60 * 60 * 1000, // 1 hour
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   const { data: suggestions, isLoading: suggestionsLoading } = useQuery({
     queryKey: ['/api/shopping-lists/suggestions'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/shopping-lists/suggestions');
+      return response.json();
+    },
     enabled: !!shoppingLists,
   });
 
@@ -193,16 +202,21 @@ const ShoppingListComponent: React.FC = () => {
         const defaultList = shoppingLists[0];
         const hasItems = defaultList?.items && defaultList.items.length > 0;
 
-        // Check if this is a truly new session (browser restart/new tab)
+        // Check if this is a truly new session (browser restart/new tab/logout-login)
         const lastSessionTimestamp = sessionStorage.getItem('shoppingListSessionStart');
+        const lastBrowserSessionId = localStorage.getItem('browserSessionId');
         const currentBrowserSession = Date.now().toString();
 
-        // If no session timestamp exists, this is the first visit in this browser session
-        const isNewSession = !lastSessionTimestamp;
+        // Check if this is a new session by looking at both sessionStorage and a potential logout
+        const sessionStorageCleared = !lastSessionTimestamp;
+        const browserSessionChanged = !lastBrowserSessionId || (lastBrowserSessionId !== sessionStorage.getItem('currentBrowserSession'));
+
+        const isNewSession = sessionStorageCleared || browserSessionChanged;
 
         // Store session data
         if (isNewSession) {
           sessionStorage.setItem('shoppingListSessionStart', currentBrowserSession);
+          sessionStorage.setItem('currentBrowserSession', currentBrowserSession);
           localStorage.setItem('browserSessionId', currentBrowserSession);
         }
 
@@ -244,45 +258,47 @@ const ShoppingListComponent: React.FC = () => {
           let autoAnimationInterval: NodeJS.Timeout | null = null;
           let autoAnimationTimeout: NodeJS.Timeout | null = null;
 
-          // Start animation immediately
-          autoAnimationInterval = setInterval(() => {
-            setCurrentStep((prev) => {
-              const nextStep = prev + 1;
-              if (nextStep >= steps.length) {
-                if (autoAnimationInterval) {
-                  clearInterval(autoAnimationInterval);
-                  autoAnimationInterval = null;
+          // Start animation immediately with a small delay to ensure state is set
+          setTimeout(() => {
+            autoAnimationInterval = setInterval(() => {
+              setCurrentStep((prev) => {
+                const nextStep = prev + 1;
+                if (nextStep >= steps.length) {
+                  if (autoAnimationInterval) {
+                    clearInterval(autoAnimationInterval);
+                    autoAnimationInterval = null;
+                  }
+                  return steps.length - 1; // Stay on last step
                 }
-                return steps.length - 1; // Stay on last step
+                return nextStep;
+              });
+            }, 1500); // Slower animation for better visibility
+
+            // Trigger regeneration after animation completes
+            autoAnimationTimeout = setTimeout(() => {
+              if (autoAnimationInterval) {
+                clearInterval(autoAnimationInterval);
               }
-              return nextStep;
-            });
-          }, 1200);
 
-          // Trigger regeneration after animation
-          autoAnimationTimeout = setTimeout(() => {
-            if (autoAnimationInterval) {
-              clearInterval(autoAnimationInterval);
-            }
+              console.log('Starting regeneration mutation after animation...');
 
-            console.log('Starting regeneration mutation after animation...');
-
-            // Use the unified regenerate mutation
-            regenerateListMutation.mutate(undefined, {
-              onSettled: () => {
-                console.log('Regeneration completed, hiding animation...');
-                setTimeout(() => {
+              // Use the unified regenerate mutation
+              regenerateListMutation.mutate(undefined, {
+                onSettled: () => {
+                  console.log('Regeneration completed, hiding animation...');
+                  setTimeout(() => {
+                    setIsGeneratingList(false);
+                    setCurrentStep(-1);
+                  }, 1000);
+                },
+                onError: (error) => {
+                  console.error('Auto-regeneration failed:', error);
                   setIsGeneratingList(false);
                   setCurrentStep(-1);
-                }, 800);
-              },
-              onError: (error) => {
-                console.error('Auto-regeneration failed:', error);
-                setIsGeneratingList(false);
-                setCurrentStep(-1);
-              }
-            });
-          }, steps.length * 1200 + 1000);
+                }
+              });
+            }, steps.length * 1500 + 2000); // Longer delay to ensure animation is visible
+          }, 100); // Small delay to ensure animation state is properly set
         } else if (hasItems && !isNewSession) {
           console.log('Existing session with items, no auto-regeneration needed');
           // Reset the flag when list has items again
@@ -295,8 +311,8 @@ const ShoppingListComponent: React.FC = () => {
       }
     };
 
-    // Add a small delay to ensure the component is fully mounted
-    const timeoutId = setTimeout(triggerListGeneration, 100);
+    // Add a delay to ensure the component is fully mounted and animation can be seen
+    const timeoutId = setTimeout(triggerListGeneration, 500);
 
     return () => clearTimeout(timeoutId);
   }, [shoppingLists, userHasClearedList, isGeneratingList]); // React to changes in shoppingLists and userHasClearedList
@@ -608,7 +624,7 @@ const ShoppingListComponent: React.FC = () => {
     // Start the actual mutation after animation has time to show
     const mutationTimeout = setTimeout(() => {
       console.log('Starting regeneration mutation...');
-      
+
       regenerateListMutation.mutate(undefined, {
         onSettled: () => {
           console.log('Mutation settled, cleaning up animation');
@@ -974,14 +990,19 @@ const ShoppingListComponent: React.FC = () => {
       <form onSubmit={handleAddItem} className="mb-4">
         <Card className="bg-white rounded-lg shadow-md border border-gray-200">
           <CardContent className="p-4">
-            {/* Item Name Input */}
-            <Input
-              type="text"
-              placeholder="Add item name"
-              value={newItemName}
-              onChange={(e) => setNewItemName(e.target.value)}
-              className="h-12 text-base border-2 border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 bg-white rounded-lg transition-all duration-200"
-            />
+            {/* Item Name Input with Plus Icon */}
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
+                <Plus className="h-5 w-5 text-gray-400" />
+              </div>
+              <Input
+                type="text"
+                placeholder="Add item name"
+                value={newItemName}
+                onChange={(e) => setNewItemName(e.target.value)}
+                className="h-12 text-base border-2 border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 bg-white rounded-lg transition-all duration-200 pl-10"
+              />
+            </div>
 
             {/* Quantity and Unit Row */}
             <div className="flex space-x-3 mt-3">
@@ -1079,7 +1100,7 @@ const ShoppingListComponent: React.FC = () => {
                     Ready to add
                   </Badge>
                 )}
-                
+
                 <Button
                   type="submit"
                   disabled={!newItemName.trim() || addItemMutation.isPending}

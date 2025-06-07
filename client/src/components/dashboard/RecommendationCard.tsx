@@ -56,7 +56,49 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommendation 
   const isUrgent = recommendation.daysUntilPurchase !== undefined && recommendation.daysUntilPurchase <= 3;
 
   return (
-    <div className={`bg-white rounded-xl shadow-sm p-4 border ${isUrgent ? 'border-green-100' : 'border-gray-100'}`}>
+    <div className={`bg-white rounded-xl shadow-sm p-4 border transition-all duration-200 hover:shadow-md ${isUrgent ? 'border-orange-200 bg-gradient-to-br from-orange-50 to-red-50' : 'border-gray-100 hover:border-blue-200'}`}>
+      {/* AI Insight Badge */}
+      {recommendation.aiInsight && (
+        <div className="mb-3">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border border-blue-200">
+            <svg className="w-3 h-3 mr-1" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2L13.09 8.26L19 9L13.09 9.74L12 16L10.91 9.74L5 9L10.91 8.26L12 2Z"/>
+            </svg>
+            AI: {recommendation.aiInsight}
+          </span>
+        </div>
+      )}
+
+      {/* Urgency Badge */}
+      {isUrgent && (
+        <div className="mb-2">
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200">
+            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            Running Low
+          </span>
+        </div>
+      )}
+
+      {/* Confidence Score */}
+      {recommendation.confidence && recommendation.confidence > 0.7 && (
+        <div className="mb-2">
+          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+            recommendation.confidence > 0.9 
+              ? 'bg-green-100 text-green-700' 
+              : recommendation.confidence > 0.8 
+                ? 'bg-blue-100 text-blue-700'
+                : 'bg-yellow-100 text-yellow-700'
+          }`}>
+            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            {Math.round(recommendation.confidence * 100)}% AI confidence
+          </span>
+        </div>
+      )}
+      
       <div className="flex justify-between items-start">
         <div>
           <h4 className="font-medium text-gray-800">{recommendation.productName}</h4>
