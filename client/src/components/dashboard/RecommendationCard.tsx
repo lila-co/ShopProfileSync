@@ -57,6 +57,15 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommendation 
 
   return (
     <div className={`bg-white rounded-xl shadow-sm p-4 border ${isUrgent ? 'border-green-100' : 'border-gray-100'}`}>
+      {/* AI Insight Badge */}
+      {recommendation.aiInsight && (
+        <div className="mb-2">
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+            🤖 AI Insight: {recommendation.aiInsight}
+          </span>
+        </div>
+      )}
+      
       <div className="flex justify-between items-start">
         <div>
           <h4 className="font-medium text-gray-800">{recommendation.productName}</h4>
