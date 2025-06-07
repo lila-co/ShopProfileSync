@@ -2041,9 +2041,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       handleError(res, error);
     }
   });
-          aiOptimized: deal.aiOptimized || false,
-          originalQuantity: deal.originalQuantity,
-          originalUnit: deal.originalUnit
         }));
 
       // AI-enhanced additional items with comprehensive categorization
