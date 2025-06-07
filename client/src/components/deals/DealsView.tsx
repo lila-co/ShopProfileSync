@@ -326,15 +326,31 @@ const DealsView: React.FC<DealsViewProps> = ({ searchQuery = '', activeFilter = 
                     {/* Price and Savings */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-lg font-bold text-gray-900">
-                          ${(deal.salePrice / 100).toFixed(2)}
-                        </span>
-                        <span className="text-sm text-gray-500 line-through">
-                          ${(deal.regularPrice / 100).toFixed(2)}
-                        </span>
+                        {deal.dealType === 'spend_threshold_percentage' ? (
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-gray-700">
+                              Spend ${(deal.spendThreshold! / 100).toFixed(0)}+
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              Get {deal.discountPercentage}% off
+                            </span>
+                          </div>
+                        ) : (
+                          <>
+                            <span className="text-lg font-bold text-gray-900">
+                              ${(deal.salePrice / 100).toFixed(2)}
+                            </span>
+                            <span className="text-sm text-gray-500 line-through">
+                              ${(deal.regularPrice / 100).toFixed(2)}
+                            </span>
+                          </>
+                        )}
                       </div>
                       <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
-                        {calculateSavings(deal.regularPrice, deal.salePrice)}% off
+                        {deal.dealType === 'spend_threshold_percentage' 
+                          ? `${deal.discountPercentage}% off`
+                          : `${calculateSavings(deal.regularPrice, deal.salePrice)}% off`
+                        }
                       </Badge>
                     </div>
 

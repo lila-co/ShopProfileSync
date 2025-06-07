@@ -108,6 +108,10 @@ export interface StoreDeal {
   circularId?: number;
   imageUrl?: string;
   featured?: boolean;
+  dealType?: 'fixed_price' | 'spend_threshold_percentage' | 'spend_threshold_fixed' | 'buy_x_get_y';
+  spendThreshold?: number | null;
+  discountPercentage?: number | null;
+  maxDiscountAmount?: number | null;
 }
 
 export interface WeeklyCircular {

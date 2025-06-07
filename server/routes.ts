@@ -1797,6 +1797,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
           confidence: deal.confidence || 0.8,
           aisle: deal.aisle,
           section: deal.section,
+
+
+  // Create sample percentage discount deals
+  app.post('/api/admin/seed-percentage-deals', rateLimiters.admin.middleware(), async (req: Request, res: Response) => {
+    try {
+      const currentUserId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+      
+      const currentUser = await storage.getUser(currentUserId);
+      if (!currentUser || (currentUser.role !== 'owner' && currentUser.role !== 'admin')) {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+
+      const percentageDeals = [
+        {
+          productName: 'Electronics Category',
+          regularPrice: 0, // Not applicable for spend threshold deals
+          salePrice: 0,
+          category: 'Electronics',
+          startDate: new Date(),
+          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+          retailerId: 2, // Target
+          dealType: 'spend_threshold_percentage',
+          spendThreshold: 10000, // $100
+          discountPercentage: 15, // 15% off
+          maxDiscountAmount: 2000, // Max $20 discount
+          terms: 'Spend $100 or more on electronics to get 15% off your electronics purchase (maximum discount $20)'
+        },
+        {
+          productName: 'Health & Beauty Category',
+          regularPrice: 0,
+          salePrice: 0,
+          category: 'Health & Beauty',
+          startDate: new Date(),
+          endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days
+          retailerId: 1, // Walmart
+          dealType: 'spend_threshold_percentage',
+          spendThreshold: 3000, // $30
+          discountPercentage: 10, // 10% off
+          maxDiscountAmount: 1000, // Max $10 discount
+          terms: 'Spend $30 or more on health & beauty products to get 10% off (maximum discount $10)'
+        },
+        {
+          productName: 'Home & Garden Category',
+          regularPrice: 0,
+          salePrice: 0,
+          category: 'Home & Garden',
+          startDate: new Date(),
+          endDate: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000), // 21 days
+          retailerId: 3, // Kroger
+          dealType: 'spend_threshold_percentage',
+          spendThreshold: 12500, // $125
+          discountPercentage: 12, // 12% off
+          maxDiscountAmount: 2500, // Max $25 discount
+          terms: 'Spend $125 or more on home & garden items to get 12% off (maximum discount $25)'
+        }
+      ];
+
+      const createdDeals = [];
+      for (const dealData of percentageDeals) {
+        const deal = await storage.createDeal(dealData);
+        createdDeals.push(deal);
+      }
+
+      res.json({
+        message: 'Percentage discount deals created successfully',
+        deals: createdDeals,
+        count: createdDeals.length
+      });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
           reason: deal.aiReasoning || `Best deal based on ${userPrefersBulk ? 'bulk preference' : 'unit price'} at ${deal.retailerName}`,
           daysUntilPurchase: 2, // Mock value
           isSelected: true,
@@ -3474,10 +3548,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Generate minimum purchase incentives (for demo purposes)
         // Categories with spending thresholds for special offers
         const categories = [
-          { name: "Produce", threshold: 2000, reward: 500 },
-          { name: "Dairy", threshold: 1500, reward: 300 },
-          { name: "Household", threshold: 5000, reward: 1000 },
-          { name: "Cleaning", threshold: 3000, reward: 700 }
+          { name: "Produce", threshold: 2000, reward: 500, type: "fixed" },
+          { name: "Dairy", threshold: 1500, reward: 300, type: "fixed" },
+          { name: "Household", threshold: 5000, reward: 1000, type: "fixed" },
+          { name: "Cleaning", threshold: 3000, reward: 700, type: "fixed" }
+        ];
+
+        // Add percentage-based threshold deals
+        const percentageDeals = [
+          { name: "Electronics", threshold: 10000, discountPercent: 15, maxDiscount: 2000, type: "percentage" }, // Spend $100, get 15% off (max $20)
+          { name: "Health & Beauty", threshold: 3000, discountPercent: 10, maxDiscount: 1000, type: "percentage" }, // Spend $30, get 10% off (max $10)
+          { name: "Sporting Goods", threshold: 7500, discountPercent: 20, maxDiscount: 3000, type: "percentage" }, // Spend $75, get 20% off (max $30)
+          { name: "Home & Garden", threshold: 12500, discountPercent: 12, maxDiscount: 2500, type: "percentage" } // Spend $125, get 12% off (max $25)
         ];
 
         // Randomly assign categories to items
@@ -3492,7 +3574,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         // Find categories that are close to minimum spending thresholds
-        const incentives = categories.map(category => {
+        const fixedIncentives = categories.map(category => {
           const spent = categorySpending[category.name] || 0;
           const remaining = category.threshold - spent;
 
@@ -3503,11 +3585,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
               threshold: category.threshold,
               remaining,
               reward: category.reward,
+              type: "fixed",
               message: `Add $${(remaining/100).toFixed(2)} more in ${category.name} to get $${(category.reward/100).toFixed(2)} off`
             };
           }
           return null;
         }).filter(incentive => incentive !== null);
+
+        // Calculate percentage-based incentives
+        const percentageIncentives = percentageDeals.map(deal => {
+          const spent = categorySpending[deal.name] || 0;
+          const remaining = deal.threshold - spent;
+
+          if (remaining > 0 && remaining < deal.threshold * 0.25) { // Within 25% of threshold
+            const potentialDiscount = Math.min((spent + remaining) * (deal.discountPercent / 100), deal.maxDiscount);
+            return {
+              category: deal.name,
+              spent,
+              threshold: deal.threshold,
+              remaining,
+              discountPercent: deal.discountPercent,
+              maxDiscount: deal.maxDiscount,
+              potentialDiscount,
+              type: "percentage",
+              message: `Add $${(remaining/100).toFixed(2)} more in ${deal.name} to get ${deal.discountPercent}% off (up to $${(deal.maxDiscount/100).toFixed(2)})`
+            };
+          }
+          return null;
+        }).filter(incentive => incentive !== null);
+
+        const incentives = [...fixedIncentives, ...percentageIncentives];
 
         return {
           retailerId: retailer.id,

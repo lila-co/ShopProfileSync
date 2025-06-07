@@ -948,7 +948,11 @@ export class MemStorage implements IStorage {
       dealSource: deal.dealSource || "manual",
       circularId: deal.circularId || null,
       imageUrl: deal.imageUrl || null,
-      featured: deal.featured || false
+      featured: deal.featured || false,
+      dealType: deal.dealType || "fixed_price",
+      spendThreshold: deal.spendThreshold || null,
+      discountPercentage: deal.discountPercentage || null,
+      maxDiscountAmount: deal.maxDiscountAmount || null
     };
     this.storeDeals.set(id, newDeal);
     return newDeal;
