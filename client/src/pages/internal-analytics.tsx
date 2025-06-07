@@ -521,41 +521,13 @@ const InternalAnalyticsPage: React.FC = () => {
 
         {/* Detailed Analytics Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <TabsList className="grid w-full max-w-md grid-cols-5">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="revenue">Revenue</TabsTrigger>
-              <TabsTrigger value="customers">Customers</TabsTrigger>
-              <TabsTrigger value="products">Products</TabsTrigger>
-              <TabsTrigger value="regions">Regions</TabsTrigger>
-            </TabsList>
-
-            {/* Quick Filters */}
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600">Quick filters:</span>
-              <Button 
-                variant={categoryFilter === 'organic' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setCategoryFilter(categoryFilter === 'organic' ? 'all' : 'organic')}
-              >
-                Organic
-              </Button>
-              <Button 
-                variant={regionFilter === 'westcoast' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setRegionFilter(regionFilter === 'westcoast' ? 'all' : 'westcoast')}
-              >
-                West Coast
-              </Button>
-              <Button 
-                variant={customerSegmentFilter === 'premium' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setCustomerSegmentFilter(customerSegmentFilter === 'premium' ? 'all' : 'premium')}
-              >
-                Premium
-              </Button>
-            </div>
-          </div>
+          <TabsList className="grid w-full max-w-md grid-cols-5">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="revenue">Revenue</TabsTrigger>
+            <TabsTrigger value="customers">Customers</TabsTrigger>
+            <TabsTrigger value="products">Products</TabsTrigger>
+            <TabsTrigger value="regions">Regions</TabsTrigger>
+          </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
