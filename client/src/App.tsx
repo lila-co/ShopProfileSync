@@ -183,7 +183,7 @@ function AppContent() {
           </ErrorBoundary>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/admin-settings">
         <ProtectedRoute>
           <ErrorBoundary level="page">
