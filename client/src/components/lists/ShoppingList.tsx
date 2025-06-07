@@ -244,45 +244,47 @@ const ShoppingListComponent: React.FC = () => {
           let autoAnimationInterval: NodeJS.Timeout | null = null;
           let autoAnimationTimeout: NodeJS.Timeout | null = null;
 
-          // Start animation immediately
-          autoAnimationInterval = setInterval(() => {
-            setCurrentStep((prev) => {
-              const nextStep = prev + 1;
-              if (nextStep >= steps.length) {
-                if (autoAnimationInterval) {
-                  clearInterval(autoAnimationInterval);
-                  autoAnimationInterval = null;
+          // Start animation immediately with a small delay to ensure state is set
+          setTimeout(() => {
+            autoAnimationInterval = setInterval(() => {
+              setCurrentStep((prev) => {
+                const nextStep = prev + 1;
+                if (nextStep >= steps.length) {
+                  if (autoAnimationInterval) {
+                    clearInterval(autoAnimationInterval);
+                    autoAnimationInterval = null;
+                  }
+                  return steps.length - 1; // Stay on last step
                 }
-                return steps.length - 1; // Stay on last step
+                return nextStep;
+              });
+            }, 1500); // Slower animation for better visibility
+
+            // Trigger regeneration after animation completes
+            autoAnimationTimeout = setTimeout(() => {
+              if (autoAnimationInterval) {
+                clearInterval(autoAnimationInterval);
               }
-              return nextStep;
-            });
-          }, 1200);
 
-          // Trigger regeneration after animation
-          autoAnimationTimeout = setTimeout(() => {
-            if (autoAnimationInterval) {
-              clearInterval(autoAnimationInterval);
-            }
+              console.log('Starting regeneration mutation after animation...');
 
-            console.log('Starting regeneration mutation after animation...');
-
-            // Use the unified regenerate mutation
-            regenerateListMutation.mutate(undefined, {
-              onSettled: () => {
-                console.log('Regeneration completed, hiding animation...');
-                setTimeout(() => {
+              // Use the unified regenerate mutation
+              regenerateListMutation.mutate(undefined, {
+                onSettled: () => {
+                  console.log('Regeneration completed, hiding animation...');
+                  setTimeout(() => {
+                    setIsGeneratingList(false);
+                    setCurrentStep(-1);
+                  }, 1000);
+                },
+                onError: (error) => {
+                  console.error('Auto-regeneration failed:', error);
                   setIsGeneratingList(false);
                   setCurrentStep(-1);
-                }, 800);
-              },
-              onError: (error) => {
-                console.error('Auto-regeneration failed:', error);
-                setIsGeneratingList(false);
-                setCurrentStep(-1);
-              }
-            });
-          }, steps.length * 1200 + 1000);
+                }
+              });
+            }, steps.length * 1500 + 2000); // Longer delay to ensure animation is visible
+          }, 100); // Small delay to ensure animation state is properly set
         } else if (hasItems && !isNewSession) {
           console.log('Existing session with items, no auto-regeneration needed');
           // Reset the flag when list has items again
@@ -295,8 +297,8 @@ const ShoppingListComponent: React.FC = () => {
       }
     };
 
-    // Add a small delay to ensure the component is fully mounted
-    const timeoutId = setTimeout(triggerListGeneration, 100);
+    // Add a delay to ensure the component is fully mounted and animation can be seen
+    const timeoutId = setTimeout(triggerListGeneration, 500);
 
     return () => clearTimeout(timeoutId);
   }, [shoppingLists, userHasClearedList, isGeneratingList]); // React to changes in shoppingLists and userHasClearedList
