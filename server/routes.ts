@@ -935,7 +935,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/receipts', async (req: Request, res: Response) => {
     try {
       const { receiptImage, receiptData } = req.body;
-      const purchase = await storage.createPurchaseFromReceipt(receiptData);
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+
+      // Create purchase record from receipt
+      const purchase = await storage.createPurchaseFromReceipt(receiptData, userId);
+      
+      // Analyze the new purchase to update recommendations
+      try {
+        const user = await storage.getUser(userId);
+        const allPurchases = await storage.getPurchases(userId);
+        
+        // Generate updated recommendations based on new purchase data
+        const recommendations = await generateRecommendations(user, allPurchases);
+        
+        // Save new recommendations
+        for (const rec of recommendations) {
+          try {
+            await storage.createRecommendation(rec);
+          } catch (saveError) {
+            console.warn('Error saving recommendation after receipt scan:', saveError);
+          }
+        }
+        
+        console.log(`Receipt processed for user ${userId}, generated ${recommendations.length} new recommendations`);
+      } catch (analysisError) {
+        console.warn('Error analyzing receipt for recommendations:', analysisError);
+        // Don't fail the receipt processing if recommendation analysis fails
+      }
+
       res.json(purchase);
     } catch (error) {
       handleError(res, error);
@@ -1209,8 +1237,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If no recommendations exist, generate some
       if (!recommendations || recommendations.length === 0) {
         try {
-          const user = await storage.getDefaultUser();
-          const purchases = await storage.getPurchases();
+          const userId = req.headers['x-current-user-id'] ? 
+            parseInt(req.headers['x-current-user-id'] as string) : 1;
+          const user = await storage.getUser(userId) || await storage.getDefaultUser();
+          const purchases = await storage.getPurchases(userId);
+          
+          console.log(`Generating recommendations for user ${userId} with ${purchases.length} purchases`);
           recommendations = await generateRecommendations(user, purchases);
 
           // Save the generated recommendations
@@ -1222,6 +1254,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Continue with other recommendations
             }
           }
+          
+          console.log(`Generated and saved ${recommendations.length} recommendations from purchase history`);
         } catch (generateError) {
           console.error('Error generating recommendations:', generateError);
           // Return empty array if generation fails
@@ -1604,6 +1638,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const recentPurchases = await storage.getPurchases(userId, 50); // Get last 50 purchases
       const recentlyPurchasedItems = getRecentlyPurchasedItems(recentPurchases, 3); // Last 3 days
 
+      // Analyze purchase patterns from receipts for better recommendations
+      let purchaseBasedRecommendations = [];
+      try {
+        const purchasePatterns = analyzePurchasePatterns(recentPurchases);
+        const analysisRecommendations = await generateRecommendations(user, recentPurchases);
+        
+        // Convert recommendations to preview format
+        purchaseBasedRecommendations = analysisRecommendations
+          .filter(rec => !wasItemRecentlyPurchased(rec.productName, recentlyPurchasedItems))
+          .map(rec => ({
+            productName: rec.productName,
+            quantity: Math.max(1, Math.floor(Math.random() * 3) + 1), // Suggest reasonable quantities
+            unit: 'COUNT',
+            suggestedRetailerId: rec.suggestedRetailerId || 1,
+            suggestedPrice: rec.suggestedPrice || 300,
+            savings: rec.savings || 0,
+            category: 'Based on Purchase History',
+            confidence: 0.95,
+            reason: rec.reason || 'Based on your recent purchases',
+            daysUntilPurchase: rec.daysUntilPurchase || 5,
+            isSelected: true,
+            fromReceipts: true
+          }));
+        
+        console.log(`Generated ${purchaseBasedRecommendations.length} recommendations from receipt analysis`);
+      } catch (error) {
+        console.warn('Error analyzing purchase patterns from receipts:', error);
+      }
+
       // AI-enhanced deal data with comprehensive categorization and optimization
       const availableDeals = [
         // Streamlined deal suggestions
@@ -1827,8 +1890,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         wasItemRecentlyPurchased(item.productName, recentlyPurchasedItems)
       );
 
-      // Combine all AI-enhanced items
-      const allRecommendedItems = [...recommendedItems, ...aiEnhancedAdditionalItems];
+      // Combine all AI-enhanced items including receipt-based recommendations
+      const allRecommendedItems = [...recommendedItems, ...aiEnhancedAdditionalItems, ...purchaseBasedRecommendations];
 
       // Fallback sample items with AI categorization if no items generated
       let items = allRecommendedItems;
