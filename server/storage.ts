@@ -194,7 +194,7 @@ export class MemStorage implements IStorage {
     const defaultUser: User = {
       id: this.userIdCounter++,
       username: "johndoe",
-      password: "hashed_password",
+      password: "password123",
       firstName: "John",
       lastName: "Doe",
       email: "john.doe@example.com",
@@ -214,7 +214,7 @@ export class MemStorage implements IStorage {
     const testUser: User = {
       id: this.userIdCounter++,
       username: "testuser",
-      password: "hashed_password",
+      password: "password123",
       firstName: "Test",
       lastName: "User",
       email: "test.user@example.com",

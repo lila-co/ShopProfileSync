@@ -329,23 +329,34 @@ const ProfilePage: React.FC = () => {
 
                         <div>
                           <Label>Dietary Preferences</Label>
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {['Vegetarian', 'Vegan', 'Gluten-Free', 'Keto', 'Organic', 'Low-Sodium'].map((diet) => (
-                              <Badge
-                                key={diet}
-                                variant={form.watch('dietaryPreferences')?.includes(diet) ? 'default' : 'outline'}
-                                className="cursor-pointer"
-                                onClick={() => {
-                                  const current = form.watch('dietaryPreferences') || [];
-                                  const updated = current.includes(diet)
-                                    ? current.filter(d => d !== diet)
-                                    : [...current, diet];
-                                  form.setValue('dietaryPreferences', updated);
-                                }}
-                              >
-                                {diet}
-                              </Badge>
-                            ))}
+                          <p className="text-xs text-gray-500 mt-1 mb-3">Click to select/deselect preferences</p>
+                          <div className="flex flex-wrap gap-2">
+                            {['Vegetarian', 'Vegan', 'Gluten-Free', 'Keto', 'Organic', 'Low-Sodium'].map((diet) => {
+                              const isSelected = form.watch('dietaryPreferences')?.includes(diet);
+                              return (
+                                <button
+                                  key={diet}
+                                  type="button"
+                                  className={`px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 border-2 ${
+                                    isSelected
+                                      ? 'bg-blue-600 text-white border-blue-600 shadow-md transform scale-105'
+                                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                                  }`}
+                                  onClick={() => {
+                                    const current = form.watch('dietaryPreferences') || [];
+                                    const updated = current.includes(diet)
+                                      ? current.filter(d => d !== diet)
+                                      : [...current, diet];
+                                    form.setValue('dietaryPreferences', updated);
+                                  }}
+                                >
+                                  {isSelected && (
+                                    <span className="mr-1">✓</span>
+                                  )}
+                                  {diet}
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
                       </CardContent>
