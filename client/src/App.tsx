@@ -132,6 +132,16 @@ function AppContent() {
         </ProtectedRoute>
       </Route>
 
+      <Route path="/admin-profile">
+        <ProtectedRoute>
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <AdminPages.AdminProfile />
+            </Suspense>
+          </ErrorBoundary>
+        </ProtectedRoute>
+      </Route>
+
       <Route path="/scan">
         <ProtectedRoute>
           <ErrorBoundary level="page">
