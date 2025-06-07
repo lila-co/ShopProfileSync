@@ -362,28 +362,28 @@ const Dashboard: React.FC = () => {
         {/* Quick Actions */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <ActionCard
+            icon={<Target className="w-6 h-6 text-blue-600" />}
             title="Smart Shopping List"
-            description="AI-generated list"
-            iconColor="text-blue-600"
-            href="/shopping-list"
+            subtitle="AI-generated list"
+            onClick={() => window.location.href = '/shopping-list'}
           />
           <ActionCard
+            icon={<TrendingUp className="w-6 h-6 text-green-600" />}
             title="Weekly Deals"
-            description="AI-curated deals"
-            iconColor="text-green-600"
-            href="/deals"
+            subtitle="AI-curated deals"
+            onClick={() => window.location.href = '/deals'}
           />
           <ActionCard
+            icon={<MapPin className="w-6 h-6 text-purple-600" />}
             title="Shopping Route"
-            description="Optimized path"
-            iconColor="text-purple-600"
-            href="/shopping-route"
+            subtitle="Optimized path"
+            onClick={() => window.location.href = '/shopping-route'}
           />
           <ActionCard
+            icon={<Clock className="w-6 h-6 text-orange-600" />}
             title="Price Tracker"
-            description="Monitor savings"
-            iconColor="text-orange-600"
-            href="/expiration-tracker"
+            subtitle="Monitor savings"
+            onClick={() => window.location.href = '/expiration-tracker'}
           />
         </div>
 
