@@ -124,18 +124,39 @@ const AuthPage: React.FC = () => {
           throw new Error(responseData.message || 'Registration failed');
         }
 
-        return responseData;
+        return { ...responseData, formData: data };
       } catch (error) {
         console.error('Registration error:', error);
         throw error;
       }
     },
-    onSuccess: () => {
-      toast({
-        title: "Registration successful",
-        description: "Please log in with your new account",
-      });
-      setActiveTab("login");
+    onSuccess: async (data) => {
+      try {
+        // Auto-login the user after successful registration
+        const username = data.formData.name.toLowerCase().replace(/\s+/g, '');
+        const password = data.formData.password;
+        
+        // Call the login function to authenticate the user
+        await login(username, password);
+        
+        // Set the onboarding flag
+        localStorage.setItem('needsOnboarding', 'true');
+        
+        toast({
+          title: "Welcome to SmartCart!",
+          description: "Let's get your account set up",
+        });
+        
+        // Navigation will be handled by ProtectedRoute after login
+      } catch (loginError) {
+        console.error('Auto-login failed:', loginError);
+        // Fallback to manual login if auto-login fails
+        toast({
+          title: "Registration successful",
+          description: "Please log in with your new account",
+        });
+        setActiveTab("login");
+      }
       registerForm.reset();
     },
     onError: (error: any) => {
