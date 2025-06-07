@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Activity, 
   AlertTriangle, 
+  ArrowLeft,
   CheckCircle, 
   Clock, 
   Cpu, 
@@ -84,6 +86,7 @@ function formatUptime(seconds: number): string {
 
 export default function MonitoringDashboard() {
   const [selectedTab, setSelectedTab] = useState('overview');
+  const [, navigate] = useLocation();
 
   const { data: healthData, refetch: refetchHealth } = useQuery<HealthStatus>({
     queryKey: ['/api/admin/health'],
@@ -147,9 +150,20 @@ export default function MonitoringDashboard() {
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">System Monitoring</h1>
-          <p className="text-gray-600">Real-time system health and performance metrics</p>
+        <div className="flex items-center space-x-4">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => navigate('/admin-profile')}
+            className="flex items-center"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">System Monitoring</h1>
+            <p className="text-gray-600">Real-time system health and performance metrics</p>
+          </div>
         </div>
         <Button onClick={refreshAll} variant="outline">
           <RefreshCw className="w-4 h-4 mr-2" />
