@@ -121,10 +121,10 @@ class RateLimiter {
 
 // Pre-configured rate limiters for different endpoint types
 export const rateLimiters = {
-  // General API endpoints - 100 requests per 15 minutes
+  // General API endpoints - increased to accommodate optimized polling
   general: new RateLimiter({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    maxRequests: 500,
+    maxRequests: 300, // Reduced since we're polling less frequently
     message: 'Too many API requests. Please try again later.'
   }),
 
@@ -157,10 +157,10 @@ export const rateLimiters = {
     message: 'Too many search requests. Please wait before searching again.'
   }),
 
-  // Admin endpoints - 20 requests per 10 minutes
+  // Admin endpoints - adjusted for optimized monitoring
   admin: new RateLimiter({
-    windowMs: 10 * 60 * 1000,
-    maxRequests: 20,
+    windowMs: 15 * 60 * 1000, // Increased window
+    maxRequests: 15, // Reduced since monitoring polls less frequently
     message: 'Admin rate limit exceeded.'
   }),
 

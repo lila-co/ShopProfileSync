@@ -87,22 +87,26 @@ export default function MonitoringDashboard() {
 
   const { data: healthData, refetch: refetchHealth } = useQuery<HealthStatus>({
     queryKey: ['/api/admin/health'],
-    refetchInterval: 300000, // Refresh every 5 minutes
+    refetchInterval: 900000, // Refresh every 15 minutes
+    staleTime: 600000, // Consider data fresh for 10 minutes
   });
 
   const { data: metricsData, refetch: refetchMetrics } = useQuery<MetricsData>({
     queryKey: ['/api/admin/metrics'],
-    refetchInterval: 600000, // Refresh every 10 minutes
+    refetchInterval: 1800000, // Refresh every 30 minutes
+    staleTime: 900000, // Consider data fresh for 15 minutes
   });
 
   const { data: logsData, refetch: refetchLogs } = useQuery<LogEntry[]>({
     queryKey: ['/api/admin/logs', { limit: 100 }],
-    refetchInterval: 600000, // Refresh every 10 minutes
+    refetchInterval: false, // Only refresh manually
+    staleTime: 300000, // Consider data fresh for 5 minutes
   });
 
   const { data: errorsData, refetch: refetchErrors } = useQuery<{ reports: ErrorReport[]; stats: any }>({
     queryKey: ['/api/admin/errors'],
-    refetchInterval: 600000, // Refresh every 10 minutes
+    refetchInterval: 1800000, // Refresh every 30 minutes
+    staleTime: 900000, // Consider data fresh for 15 minutes
   });
 
   const getStatusColor = (status: string) => {

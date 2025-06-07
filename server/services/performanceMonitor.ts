@@ -35,10 +35,10 @@ class PerformanceMonitor {
   }
 
   private startSystemMetricsCollection(): void {
-    // Collect system metrics every 5 minutes
+    // Collect system metrics every 15 minutes
     this.systemMetricsInterval = setInterval(() => {
       this.collectSystemMetrics();
-    }, 300000);
+    }, 900000);
   }
 
   private collectSystemMetrics(): void {

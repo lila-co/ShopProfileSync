@@ -168,7 +168,8 @@ const PlanDetails: React.FC = () => {
   // Fetch deals for price comparison
   const { data: deals } = useQuery({
     queryKey: ['/api/deals'],
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 20 * 60 * 1000, // 20 minutes - deals don't change frequently
+    refetchOnWindowFocus: false, // Don't refetch when window gains focus
   });
 
   // Filter deals by retailer for current plan

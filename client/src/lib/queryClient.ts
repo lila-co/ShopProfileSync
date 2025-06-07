@@ -47,7 +47,7 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 15 * 60 * 1000, // 15 minutes - increased for better caching
       retry: (failureCount, error) => {
         // Don't retry on 4xx errors except 408, 429
         if (error instanceof Error && error.message.includes('4')) {
@@ -56,8 +56,9 @@ export const queryClient = new QueryClient({
             return false;
           }
         }
-        return failureCount < 2;
+        return failureCount < 1; // Reduced from 2 to 1 retry
       },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
       suspense: false,
       refetchOnMount: false,
       onError: (error) => {

@@ -112,7 +112,10 @@ const AutoOrder: React.FC = () => {
 
   // Start the optimization process
   useEffect(() => {
+    let startTimer: NodeJS.Timeout;
+
     if (listId && shoppingList && currentStep === 0) {
+      startTimer = setTimeout(() => {
       console.log('Starting optimization process...');
 
       // Step 1: Start analyzing
@@ -127,42 +130,35 @@ const AutoOrder: React.FC = () => {
         singleStoreMutation.mutate();
         bestValueMutation.mutate();
         balancedMutation.mutate();
-      }, 2000);
+      }, 3000);
 
       // Step 3: Move to optimization after 4 seconds
       const step3Timer = setTimeout(() => {
         console.log('Moving to step 3 - Optimizing plan');
         setCurrentStep(3);
-      }, 4000);
+      }, 3000);
 
-      // Step 4: Complete and show results after 6 seconds
-      const step4Timer = setTimeout(() => {
-        console.log('Moving to step 4 - Preparing orders');
-        setCurrentStep(4);
+      // Step 4: Move to final results after another 3 seconds (increased delay)
+        const step4Timer = setTimeout(() => {
+          console.log('Moving to step 4 - Completing optimization');
+          setCurrentStep(4);
+        }, 3000);
 
-        // Set sample order results
-        const resultsTimer = setTimeout(() => {
-          console.log('Setting order results');
-          setOrderResults({
-            retailerId: 1,
-            retailerName: 'Walmart',
-            items: shoppingList.items || [],
-            totalCost: Math.floor(Math.random() * 5000) + 2000, // Random cost between $20-70
-            estimatedTime: 35
-          });
-        }, 1500);
+        return () => {
+          clearTimeout(step4Timer);
+        };
+      }, 3000);
 
-        return () => clearTimeout(resultsTimer);
-      }, 6000);
-
-      // Cleanup function to clear all timers
       return () => {
         clearTimeout(step2Timer);
-        clearTimeout(step3Timer);
-        clearTimeout(step4Timer);
+      };
+      }, 500); // 500ms debounce
+
+      return () => {
+        clearTimeout(startTimer);
       };
     }
-  }, [listId, shoppingList]);
+  }, [listId, shoppingList, currentStep]);
 
   const handlePlaceOrder = async () => {
     if (!orderResults) return;
