@@ -97,74 +97,6 @@ const AdminSettingsPage: React.FC = () => {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center">
-                <Database className="h-5 w-5 mr-2 text-blue-600" />
-                Database Management
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => handleAdminAction('Database Status')}
-                >
-                  View Database Status
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => handleAdminAction('Database Backup')}
-                >
-                  Backup Database
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => handleAdminAction('Clear Cache')}
-                >
-                  Clear Cache
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center">
-                <Users className="h-5 w-5 mr-2 text-green-600" />
-                User Management
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => handleAdminAction('View All Users')}
-                >
-                  View All Users
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => handleAdminAction('User Analytics')}
-                >
-                  User Analytics
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => handleAdminAction('Export User Data')}
-                >
-                  Export User Data
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center">
                 <Shield className="h-5 w-5 mr-2 text-red-600" />
                 Security & Compliance
               </CardTitle>
@@ -191,40 +123,6 @@ const AdminSettingsPage: React.FC = () => {
                   onClick={() => handleAdminAction('Data Privacy Settings')}
                 >
                   Data Privacy Settings
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center">
-                <Settings className="h-5 w-5 mr-2 text-purple-600" />
-                System Configuration
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => handleAdminAction('Feature Flags')}
-                >
-                  Feature Flags
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => handleAdminAction('API Integrations')}
-                >
-                  API Integrations
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => handleAdminAction('System Health')}
-                >
-                  System Health
                 </Button>
               </div>
             </CardContent>
