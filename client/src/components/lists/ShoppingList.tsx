@@ -989,22 +989,24 @@ const ShoppingListComponent: React.FC = () => {
 
       <form onSubmit={handleAddItem} className="mb-4">
         <Card className="bg-white rounded-lg shadow-md border border-gray-200">
-          <CardContent className="p-4">
+          <CardContent className="p-4 space-y-4">
             {/* Item Name Input */}
-            <Input
-              type="text"
-              placeholder="Add item name"
-              value={newItemName}
-              onChange={(e) => setNewItemName(e.target.value)}
-              className="h-12 text-base border-2 border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 bg-white rounded-lg transition-all duration-200"
-            />
+            <div>
+              <Input
+                type="text"
+                placeholder="Add item name"
+                value={newItemName}
+                onChange={(e) => setNewItemName(e.target.value)}
+                className="h-12 text-base border-2 border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 bg-white rounded-lg transition-all duration-200"
+              />
+            </div>
 
             {/* Quantity and Unit Row */}
-            <div className="flex space-x-3 mt-3">
+            <div className="flex space-x-3">
               <div className="flex-1">
                 <Input
                   type="number"
-                  placeholder="Quantity"
+                  placeholder="1"
                   value={newItemQuantity}
                   onChange={(e) => setNewItemQuantity(e.target.value)}
                   min="1"
@@ -1014,8 +1016,9 @@ const ShoppingListComponent: React.FC = () => {
 
               <div className="flex-1">
                 <select
+                  value={newItemUnit}
                   onChange={(e) => setNewItemUnit(e.target.value as ShoppingListItem['unit'])}
-                  className="h-11 text-base border-2 border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 bg-white rounded-lg transition-all duration-200 cursor-pointer"
+                  className="w-full h-11 text-base border-2 border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 bg-white rounded-lg transition-all duration-200 cursor-pointer px-3"
                 >
                   <option value="COUNT">Count</option>
                   <option value="LB">Pound</option>
@@ -1065,13 +1068,13 @@ const ShoppingListComponent: React.FC = () => {
             </div>
 
             {/* Action buttons row */}
-            <div className="flex items-center justify-between pt-2">
+            <div className="flex flex-col space-y-3">
               <div className="flex space-x-2">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setRecipeDialogOpen(true)}
-                  className="h-10 px-4 border-2 border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 text-gray-700 rounded-lg transition-all duration-200 flex items-center space-x-2"
+                  className="flex-1 h-11 border-2 border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 text-gray-700 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2"
                 >
                   <FileText className="h-4 w-4" />
                   <span className="text-sm font-medium">Import Recipe</span>
@@ -1082,29 +1085,21 @@ const ShoppingListComponent: React.FC = () => {
                   variant="outline"
                   onClick={handleRegenerateList}
                   disabled={regenerateListMutation.isPending}
-                  className="h-10 px-4 border-2 border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 text-gray-700 rounded-lg transition-all duration-200 flex items-center space-x-2"
+                  className="flex-1 h-11 border-2 border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 text-gray-700 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2"
                 >
                   <Wand2 className="h-4 w-4" />
                   <span className="text-sm font-medium">Regenerate List</span>
                 </Button>
               </div>
 
-              <div className="flex items-center space-x-2">
-                {newItemName.trim() && (
-                  <Badge variant="secondary" className="bg-blue-50 text-blue-700 border border-blue-200">
-                    Ready to add
-                  </Badge>
-                )}
-
-                <Button
-                  type="submit"
-                  disabled={!newItemName.trim() || addItemMutation.isPending}
-                  className="h-10 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span className="text-sm font-medium">Add Item</span>
-                </Button>
-              </div>
+              <Button
+                type="submit"
+                disabled={!newItemName.trim() || addItemMutation.isPending}
+                className="w-full h-12 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Plus className="h-5 w-5" />
+                <span className="text-base font-medium">Add Item</span>
+              </Button>
             </div>
           </CardContent>
         </Card>
