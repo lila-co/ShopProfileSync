@@ -42,6 +42,7 @@ const InternalAnalyticsPage: React.FC = () => {
   const [customerSegmentFilter, setCustomerSegmentFilter] = useState('all');
   const [revenueRangeFilter, setRevenueRangeFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   // Mock comprehensive business data
   const businessMetrics = {
@@ -160,7 +161,7 @@ const InternalAnalyticsPage: React.FC = () => {
   const hasActiveFilters = categoryFilter !== 'all' || regionFilter !== 'all' || 
                           customerSegmentFilter !== 'all' || revenueRangeFilter !== 'all';
 
-  const isMobile = window.innerWidth < 768;
+  
 
   if (isMobile) {
     return (
@@ -173,13 +174,24 @@ const InternalAnalyticsPage: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center">
-                  <DollarSign className="w-4 h-4 mr-2 text-green-600" />
-                  Revenue Overview
-                </CardTitle>
-              </CardHeader>
+          {/* View Toggle Button */}
+          <div className="text-center">
+            <Button
+              variant="outline"
+              onClick={() => setIsMobile(false)}
+              className="mb-4"
+            >
+              Switch to Desktop View
+            </Button>
+          </div>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center">
+                <DollarSign className="w-4 h-4 mr-2 text-green-600" />
+                Revenue Overview
+              </CardTitle>
+            </CardHeader>
               <CardContent>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-600">${businessMetrics.revenue.current.toLocaleString()}</div>
