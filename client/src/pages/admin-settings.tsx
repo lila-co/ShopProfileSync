@@ -58,43 +58,8 @@ const AdminSettingsPage: React.FC = () => {
           </TabsList>
 
           <TabsContent value="overview" className="mt-6">
-
-        <div className="space-y-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center">
-                <TrendingUp className="h-5 w-5 mr-2 text-green-600" />
-                Affiliate & Revenue Analytics
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => navigate('/affiliate-dashboard')}
-                >
-                  Affiliate Dashboard
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => handleAdminAction('Revenue Reports')}
-                >
-                  Revenue Reports
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => handleAdminAction('Commission Tracking')}
-                >
-                  Commission Tracking
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
+            <div className="space-y-4">
+              <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center">
                 <Shield className="h-5 w-5 mr-2 text-red-600" />

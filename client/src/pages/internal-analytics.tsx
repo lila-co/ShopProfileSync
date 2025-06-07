@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/layout/Header';
@@ -138,13 +137,13 @@ const InternalAnalyticsPage: React.FC = () => {
         const categoryMatch = item.category?.toLowerCase().includes(categoryFilter);
         if (!categoryMatch) return false;
       }
-      
+
       if (regionFilter !== 'all') {
         // Mock region filtering logic
         const regionMatch = item.region?.toLowerCase().includes(regionFilter);
         if (!regionMatch) return false;
       }
-      
+
       return true;
     });
   };
@@ -172,7 +171,7 @@ const InternalAnalyticsPage: React.FC = () => {
             <h1 className="text-xl font-bold text-gray-800 mb-2">Business Analytics</h1>
             <p className="text-sm text-gray-600">Switch to desktop for full analytics experience</p>
           </div>
-          
+
           <div className="space-y-4">
             <Card>
               <CardHeader className="pb-3">
@@ -241,7 +240,7 @@ const InternalAnalyticsPage: React.FC = () => {
                 <SelectItem value="thisYear">This Year</SelectItem>
               </SelectContent>
             </Select>
-            
+
             <Button 
               variant={showFilters ? "default" : "outline"} 
               size="sm"
@@ -256,7 +255,7 @@ const InternalAnalyticsPage: React.FC = () => {
                 </Badge>
               )}
             </Button>
-            
+
             <Button variant="outline" size="sm">
               <Download className="w-4 h-4 mr-2" />
               Export
@@ -285,7 +284,7 @@ const InternalAnalyticsPage: React.FC = () => {
               </Button>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Category Filter */}
             <div>
@@ -429,7 +428,7 @@ const InternalAnalyticsPage: React.FC = () => {
             </div>
           </div>
         )}
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardContent className="p-6">
@@ -518,7 +517,7 @@ const InternalAnalyticsPage: React.FC = () => {
               <TabsTrigger value="products">Products</TabsTrigger>
               <TabsTrigger value="regions">Regions</TabsTrigger>
             </TabsList>
-            
+
             {/* Quick Filters */}
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-600">Quick filters:</span>
@@ -742,7 +741,7 @@ const InternalAnalyticsPage: React.FC = () => {
                   <div className="h-48 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg">
                     <div className="text-center">
                       <Users className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                      <p className="text-gray-500">Customer Acquisition Chart</p>
+                      <p className="text-gray-500">Customer Acquisition Chart</p                      <p className="text-sm text-gray-400">
                     </div>
                   </div>
                 </CardContent>
