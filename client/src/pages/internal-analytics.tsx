@@ -38,6 +38,11 @@ const InternalAnalyticsPage: React.FC = () => {
 
   const [dateRange, setDateRange] = useState('last30days');
   const [selectedMetric, setSelectedMetric] = useState('revenue');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [regionFilter, setRegionFilter] = useState('all');
+  const [customerSegmentFilter, setCustomerSegmentFilter] = useState('all');
+  const [revenueRangeFilter, setRevenueRangeFilter] = useState('all');
+  const [showFilters, setShowFilters] = useState(false);
 
   // Mock comprehensive business data
   const businessMetrics = {
@@ -89,6 +94,72 @@ const InternalAnalyticsPage: React.FC = () => {
     { region: 'Midwest', revenue: 76543, users: 2234, growth: 12.7 },
     { region: 'Southwest', revenue: 54321, users: 1551, growth: 28.1 }
   ];
+
+  // Filter options
+  const categoryOptions = [
+    { value: 'all', label: 'All Categories' },
+    { value: 'organic', label: 'Organic Produce' },
+    { value: 'dairy', label: 'Dairy & Eggs' },
+    { value: 'bakery', label: 'Bakery' },
+    { value: 'meat', label: 'Meat & Seafood' },
+    { value: 'pantry', label: 'Pantry Staples' }
+  ];
+
+  const regionOptions = [
+    { value: 'all', label: 'All Regions' },
+    { value: 'northeast', label: 'Northeast' },
+    { value: 'southeast', label: 'Southeast' },
+    { value: 'westcoast', label: 'West Coast' },
+    { value: 'midwest', label: 'Midwest' },
+    { value: 'southwest', label: 'Southwest' }
+  ];
+
+  const customerSegmentOptions = [
+    { value: 'all', label: 'All Segments' },
+    { value: 'budget', label: 'Budget-Conscious Families' },
+    { value: 'premium', label: 'Premium Shoppers' },
+    { value: 'health', label: 'Health-Focused' },
+    { value: 'convenience', label: 'Convenience Seekers' }
+  ];
+
+  const revenueRangeOptions = [
+    { value: 'all', label: 'All Revenue Ranges' },
+    { value: '0-25k', label: '$0 - $25K' },
+    { value: '25k-50k', label: '$25K - $50K' },
+    { value: '50k-100k', label: '$50K - $100K' },
+    { value: '100k+', label: '$100K+' }
+  ];
+
+  // Apply filters to data (mock filtering logic)
+  const applyFilters = (data: any[]) => {
+    return data.filter(item => {
+      if (categoryFilter !== 'all') {
+        // Mock category filtering logic
+        const categoryMatch = item.category?.toLowerCase().includes(categoryFilter);
+        if (!categoryMatch) return false;
+      }
+      
+      if (regionFilter !== 'all') {
+        // Mock region filtering logic
+        const regionMatch = item.region?.toLowerCase().includes(regionFilter);
+        if (!regionMatch) return false;
+      }
+      
+      return true;
+    });
+  };
+
+  // Clear all filters
+  const clearAllFilters = () => {
+    setCategoryFilter('all');
+    setRegionFilter('all');
+    setCustomerSegmentFilter('all');
+    setRevenueRangeFilter('all');
+  };
+
+  // Check if any filters are active
+  const hasActiveFilters = categoryFilter !== 'all' || regionFilter !== 'all' || 
+                          customerSegmentFilter !== 'all' || revenueRangeFilter !== 'all';
 
   const isMobile = window.innerWidth < 768;
 
@@ -170,6 +241,22 @@ const InternalAnalyticsPage: React.FC = () => {
                 <SelectItem value="thisYear">This Year</SelectItem>
               </SelectContent>
             </Select>
+            
+            <Button 
+              variant={showFilters ? "default" : "outline"} 
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter className="w-4 h-4 mr-2" />
+              Filters
+              {hasActiveFilters && (
+                <Badge variant="secondary" className="ml-2 px-1.5 py-0.5 text-xs">
+                  {[categoryFilter, regionFilter, customerSegmentFilter, revenueRangeFilter]
+                    .filter(f => f !== 'all').length}
+                </Badge>
+              )}
+            </Button>
+            
             <Button variant="outline" size="sm">
               <Download className="w-4 h-4 mr-2" />
               Export
@@ -182,8 +269,167 @@ const InternalAnalyticsPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Advanced Filters Panel */}
+      {showFilters && (
+        <div className="bg-gray-50 border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Advanced Filters</h3>
+            <div className="flex items-center space-x-2">
+              {hasActiveFilters && (
+                <Button variant="ghost" size="sm" onClick={clearAllFilters}>
+                  Clear All
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" onClick={() => setShowFilters(false)}>
+                Close
+              </Button>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Category Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {categoryOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Region Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Region</label>
+              <Select value={regionFilter} onValueChange={setRegionFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {regionOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Customer Segment Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Customer Segment</label>
+              <Select value={customerSegmentFilter} onValueChange={setCustomerSegmentFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {customerSegmentOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Revenue Range Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Revenue Range</label>
+              <Select value={revenueRangeFilter} onValueChange={setRevenueRangeFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {revenueRangeOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Active Filters Display */}
+          {hasActiveFilters && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <p className="text-sm text-gray-600 mb-2">Active Filters:</p>
+              <div className="flex flex-wrap gap-2">
+                {categoryFilter !== 'all' && (
+                  <Badge variant="secondary" className="flex items-center">
+                    Category: {categoryOptions.find(o => o.value === categoryFilter)?.label}
+                    <button 
+                      onClick={() => setCategoryFilter('all')}
+                      className="ml-2 text-gray-500 hover:text-gray-700"
+                    >
+                      ×
+                    </button>
+                  </Badge>
+                )}
+                {regionFilter !== 'all' && (
+                  <Badge variant="secondary" className="flex items-center">
+                    Region: {regionOptions.find(o => o.value === regionFilter)?.label}
+                    <button 
+                      onClick={() => setRegionFilter('all')}
+                      className="ml-2 text-gray-500 hover:text-gray-700"
+                    >
+                      ×
+                    </button>
+                  </Badge>
+                )}
+                {customerSegmentFilter !== 'all' && (
+                  <Badge variant="secondary" className="flex items-center">
+                    Segment: {customerSegmentOptions.find(o => o.value === customerSegmentFilter)?.label}
+                    <button 
+                      onClick={() => setCustomerSegmentFilter('all')}
+                      className="ml-2 text-gray-500 hover:text-gray-700"
+                    >
+                      ×
+                    </button>
+                  </Badge>
+                )}
+                {revenueRangeFilter !== 'all' && (
+                  <Badge variant="secondary" className="flex items-center">
+                    Revenue: {revenueRangeOptions.find(o => o.value === revenueRangeFilter)?.label}
+                    <button 
+                      onClick={() => setRevenueRangeFilter('all')}
+                      className="ml-2 text-gray-500 hover:text-gray-700"
+                    >
+                      ×
+                    </button>
+                  </Badge>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="p-6">
         {/* Key Performance Indicators */}
+        {hasActiveFilters && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <Filter className="w-4 h-4 text-blue-600 mr-2" />
+                <span className="text-sm font-medium text-blue-800">
+                  Filtered Results - {[categoryFilter, regionFilter, customerSegmentFilter, revenueRangeFilter]
+                    .filter(f => f !== 'all').length} filter(s) active
+                </span>
+              </div>
+              <Button variant="ghost" size="sm" onClick={clearAllFilters} className="text-blue-600 hover:text-blue-800">
+                Clear All
+              </Button>
+            </div>
+          </div>
+        )}
+        
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardContent className="p-6">
@@ -264,13 +510,41 @@ const InternalAnalyticsPage: React.FC = () => {
 
         {/* Detailed Analytics Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="revenue">Revenue</TabsTrigger>
-            <TabsTrigger value="customers">Customers</TabsTrigger>
-            <TabsTrigger value="products">Products</TabsTrigger>
-            <TabsTrigger value="regions">Regions</TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between">
+            <TabsList className="grid w-full max-w-md grid-cols-5">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="revenue">Revenue</TabsTrigger>
+              <TabsTrigger value="customers">Customers</TabsTrigger>
+              <TabsTrigger value="products">Products</TabsTrigger>
+              <TabsTrigger value="regions">Regions</TabsTrigger>
+            </TabsList>
+            
+            {/* Quick Filters */}
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600">Quick filters:</span>
+              <Button 
+                variant={categoryFilter === 'organic' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCategoryFilter(categoryFilter === 'organic' ? 'all' : 'organic')}
+              >
+                Organic
+              </Button>
+              <Button 
+                variant={regionFilter === 'westcoast' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setRegionFilter(regionFilter === 'westcoast' ? 'all' : 'westcoast')}
+              >
+                West Coast
+              </Button>
+              <Button 
+                variant={customerSegmentFilter === 'premium' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCustomerSegmentFilter(customerSegmentFilter === 'premium' ? 'all' : 'premium')}
+              >
+                Premium
+              </Button>
+            </div>
+          </div>
 
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -327,7 +601,14 @@ const InternalAnalyticsPage: React.FC = () => {
             {/* Top Performing Categories */}
             <Card>
               <CardHeader>
-                <CardTitle>Top Performing Categories</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Top Performing Categories</span>
+                  {hasActiveFilters && (
+                    <Badge variant="outline" className="text-xs">
+                      Filtered
+                    </Badge>
+                  )}
+                </CardTitle>
                 <CardDescription>Category performance and growth metrics</CardDescription>
               </CardHeader>
               <CardContent>
@@ -343,7 +624,7 @@ const InternalAnalyticsPage: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {topPerformers.map((category, index) => (
+                      {applyFilters(topPerformers).map((category, index) => (
                         <tr key={index} className="border-b hover:bg-gray-50">
                           <td className="py-3 px-4 font-medium">{category.category}</td>
                           <td className="text-right py-3 px-4">${category.revenue.toLocaleString()}</td>
@@ -365,6 +646,15 @@ const InternalAnalyticsPage: React.FC = () => {
                       ))}
                     </tbody>
                   </table>
+                  {applyFilters(topPerformers).length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <Filter className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                      <p>No data matches the current filters</p>
+                      <Button variant="link" onClick={clearAllFilters} className="mt-2">
+                        Clear filters to view all data
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
