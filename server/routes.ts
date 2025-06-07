@@ -309,6 +309,15 @@ async function createSampleDealsFromURL(retailerId: number, circularId: number, 
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Admin bypass route (temporary for troubleshooting)
+  app.get('/api/admin/bypass-check', async (req: Request, res: Response) => {
+    res.json({ 
+      status: 'Admin access available',
+      timestamp: new Date().toISOString(),
+      message: 'Rate limits temporarily relaxed for admin access'
+    });
+  });
+
   // Apply security enhancements
   app.use('/api', securityEnhancer.bruteForceProtection());
   app.use('/api', securityEnhancer.suspiciousActivityDetection());

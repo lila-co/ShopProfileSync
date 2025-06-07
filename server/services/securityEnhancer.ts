@@ -1,4 +1,3 @@
-
 import { Request, Response, NextFunction } from 'express';
 import { storage } from '../storage';
 
@@ -34,7 +33,7 @@ class SecurityEnhancer {
 
   private cleanup(): void {
     const now = Date.now();
-    
+
     // Clean up expired IP blocks
     for (const [ip, unblockTime] of this.blockedIPs.entries()) {
       if (now > unblockTime) {
@@ -181,7 +180,7 @@ class SecurityEnhancer {
   validateApiKey() {
     return (req: Request, res: Response, next: NextFunction) => {
       const apiKey = req.headers['x-api-key'] as string;
-      
+
       if (req.path.startsWith('/api/internal/') || req.path.startsWith('/api/admin/')) {
         if (!apiKey) {
           return res.status(401).json({
