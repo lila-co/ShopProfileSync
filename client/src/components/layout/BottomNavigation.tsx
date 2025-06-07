@@ -9,7 +9,7 @@ interface BottomNavigationProps {
 const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab }) => {
   const [, navigate] = useLocation();
 
-  
+
 
   const navItems = [
     { id: 'shopping-list', icon: List, label: 'List', path: '/shopping-list' },
