@@ -12,6 +12,9 @@ const ShoppingListPage: React.FC = () => {
 
   const { data: shoppingLists, isLoading } = useQuery<ShoppingListType[]>({
     queryKey: ['/api/shopping-lists'],
+    staleTime: 60 * 60 * 1000, // 1 hour
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   const { data: monthlySavings } = useQuery<number>({

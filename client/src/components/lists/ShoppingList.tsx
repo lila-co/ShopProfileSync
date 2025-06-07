@@ -68,10 +68,11 @@ const ShoppingListComponent: React.FC = () => {
     }
   });
 
-  const { data: shoppingLists, isLoading } = useQuery<ShoppingListType[]>({
+  const { data: shoppingLists, isLoading, refetch: refetchLists } = useQuery<ShoppingListType[]>({
     queryKey: ['/api/shopping-lists'],
-    refetchOnWindowFocus: true,
-    refetchInterval: 2000, // Refetch every 2 seconds to catch updates from other pages
+    staleTime: 60 * 60 * 1000, // 1 hour
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   const { data: suggestions, isLoading: suggestionsLoading } = useQuery({
@@ -201,7 +202,7 @@ const ShoppingListComponent: React.FC = () => {
         // Check if this is a new session by looking at both sessionStorage and a potential logout
         const sessionStorageCleared = !lastSessionTimestamp;
         const browserSessionChanged = !lastBrowserSessionId || (lastBrowserSessionId !== sessionStorage.getItem('currentBrowserSession'));
-        
+
         const isNewSession = sessionStorageCleared || browserSessionChanged;
 
         // Store session data
@@ -615,7 +616,7 @@ const ShoppingListComponent: React.FC = () => {
     // Start the actual mutation after animation has time to show
     const mutationTimeout = setTimeout(() => {
       console.log('Starting regeneration mutation...');
-      
+
       regenerateListMutation.mutate(undefined, {
         onSettled: () => {
           console.log('Mutation settled, cleaning up animation');
@@ -1086,7 +1087,7 @@ const ShoppingListComponent: React.FC = () => {
                     Ready to add
                   </Badge>
                 )}
-                
+
                 <Button
                   type="submit"
                   disabled={!newItemName.trim() || addItemMutation.isPending}

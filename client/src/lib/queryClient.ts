@@ -44,34 +44,19 @@ export const getQueryFn: <T>(options: {
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryFn: getQueryFn({ on401: "throw" }),
-      refetchInterval: false,
-      refetchOnWindowFocus: false,
-      staleTime: 15 * 60 * 1000, // 15 minutes - increased for better caching
-      retry: (failureCount, error) => {
+      staleTime: 30 * 60 * 1000, // 30 minutes - much longer to reduce requests
+      gcTime: 60 * 60 * 1000, // 60 minutes (was cacheTime)
+      refetchOnWindowFocus: false, // Disable refetch on window focus
+      refetchOnMount: false, // Disable refetch on component mount if data exists
+      refetchInterval: false, // Disable automatic polling
+      retry: (failureCount, error: any) => {
         // Don't retry on 4xx errors except 408, 429
-        if (error instanceof Error && error.message.includes('4')) {
-          const status = parseInt(error.message.split(':')[0]);
-          if (status >= 400 && status < 500 && status !== 408 && status !== 429) {
-            return false;
-          }
+        if (error?.status >= 400 && error?.status < 500) {
+          return error?.status === 408 || error?.status === 429;
         }
-        return failureCount < 1; // Reduced from 2 to 1 retry
+        return failureCount < 2; // Reduce retry attempts
       },
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
-      suspense: false,
-      refetchOnMount: false,
-      onError: (error) => {
-        console.error('Query error:', error);
-        // You can add global error handling here
-      },
-    },
-    mutations: {
-      retry: false,
-      onError: (error) => {
-        console.error('Mutation error:', error);
-        // You can add global mutation error handling here
-      },
+      retryDelay: (attemptIndex) => Math.min(2000 * 2 ** attemptIndex, 30000), // Longer delays
     },
   },
 });
