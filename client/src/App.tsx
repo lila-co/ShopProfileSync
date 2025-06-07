@@ -204,6 +204,16 @@ function AppContent() {
         </ProtectedRoute>
       </Route>
 
+      <Route path="/internal/analytics">
+        <ProtectedRoute>
+          <ErrorBoundary level="page">
+            <Suspense fallback={<PageLoadingFallback />}>
+              <AdminPages.InternalAnalytics />
+            </Suspense>
+          </ErrorBoundary>
+        </ProtectedRoute>
+      </Route>
+
       <Route path="/">
         <ProtectedRoute>
           <Redirect to="/shopping-list" />

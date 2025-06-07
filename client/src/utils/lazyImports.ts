@@ -29,6 +29,7 @@ export const AdminPages = {
   AdminProfile: lazy(() => import('@/pages/admin-profile')),
   AdminSettings: lazy(() => import('@/pages/admin-settings')),
   MonitoringDashboard: lazy(() => import('@/pages/monitoring-dashboard')),
+  InternalAnalytics: lazy(() => import('@/pages/internal-analytics')),
 };
 
 // Onboarding - separate chunk
