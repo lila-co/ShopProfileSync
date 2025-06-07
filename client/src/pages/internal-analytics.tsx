@@ -741,7 +741,8 @@ const InternalAnalyticsPage: React.FC = () => {
                   <div className="h-48 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg">
                     <div className="text-center">
                       <Users className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                      <p className="text-gray-500">Customer Acquisition Chart</p                      <p className="text-sm text-gray-400">
+                      <p className="text-gray-500">Customer Acquisition Chart</p>
+                      <p className="text-sm text-gray-400">Visualization of new customer trends</p>
                     </div>
                   </div>
                 </CardContent>
