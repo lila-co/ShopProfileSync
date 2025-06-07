@@ -521,12 +521,13 @@ const InternalAnalyticsPage: React.FC = () => {
 
         {/* Detailed Analytics Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-5">
+          <TabsList className="grid w-full max-w-lg grid-cols-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="revenue">Revenue</TabsTrigger>
             <TabsTrigger value="customers">Customers</TabsTrigger>
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="regions">Regions</TabsTrigger>
+            <TabsTrigger value="affiliate">Affiliate</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -834,6 +835,242 @@ const InternalAnalyticsPage: React.FC = () => {
                         </div>
                       </div>
                     ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="affiliate" className="space-y-6">
+            {/* Affiliate Revenue Summary */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Total Commission</p>
+                      <p className="text-3xl font-bold text-gray-900">$24,780</p>
+                      <div className="flex items-center mt-2">
+                        <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
+                        <span className="text-sm text-green-600 font-medium">+15.2%</span>
+                        <span className="text-sm text-gray-500 ml-2">vs last month</span>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-green-100 rounded-full">
+                      <DollarSign className="w-6 h-6 text-green-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Affiliate Orders</p>
+                      <p className="text-3xl font-bold text-gray-900">1,247</p>
+                      <div className="flex items-center mt-2">
+                        <TrendingUp className="w-4 h-4 text-blue-500 mr-1" />
+                        <span className="text-sm text-blue-600 font-medium">+8.7%</span>
+                        <span className="text-sm text-gray-500 ml-2">conversion rate</span>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-blue-100 rounded-full">
+                      <ShoppingCart className="w-6 h-6 text-blue-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Active Partners</p>
+                      <p className="text-3xl font-bold text-gray-900">47</p>
+                      <div className="flex items-center mt-2">
+                        <Users className="w-4 h-4 text-purple-500 mr-1" />
+                        <span className="text-sm text-purple-600 font-medium">3 new</span>
+                        <span className="text-sm text-gray-500 ml-2">this month</span>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-purple-100 rounded-full">
+                      <Users className="w-6 h-6 text-purple-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Avg Commission</p>
+                      <p className="text-3xl font-bold text-gray-900">6.2%</p>
+                      <div className="flex items-center mt-2">
+                        <Target className="w-4 h-4 text-orange-500 mr-1" />
+                        <span className="text-sm text-orange-600 font-medium">$19.87</span>
+                        <span className="text-sm text-gray-500 ml-2">per order</span>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-orange-100 rounded-full">
+                      <Target className="w-6 h-6 text-orange-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Affiliate Performance Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Affiliate Revenue Trends</CardTitle>
+                  <CardDescription>Monthly commission and order volume</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg">
+                    <div className="text-center">
+                      <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                      <p className="text-gray-500">Affiliate Revenue Chart</p>
+                      <p className="text-sm text-gray-400">Commission trends over time</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Top Performing Partners</CardTitle>
+                  <CardDescription>Highest earning affiliate partners</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {[
+                      { partner: 'Walmart', commission: 8420, orders: 312, rate: '7.2%' },
+                      { partner: 'Target', commission: 6890, orders: 267, rate: '6.8%' },
+                      { partner: 'Kroger', commission: 4320, orders: 198, rate: '5.9%' },
+                      { partner: 'Whole Foods', commission: 3210, orders: 145, rate: '8.1%' },
+                      { partner: 'Costco', commission: 1940, orders: 89, rate: '6.5%' }
+                    ].map((partner, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-medium">{partner.partner}</p>
+                          <p className="text-sm text-gray-500">{partner.orders} orders • {partner.rate} avg commission</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold">${partner.commission.toLocaleString()}</p>
+                          <p className="text-sm text-gray-500">commission</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Detailed Affiliate Analytics */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Affiliate Performance Breakdown</CardTitle>
+                <CardDescription>Detailed analytics by retailer partner</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-4">Retailer</th>
+                        <th className="text-right py-3 px-4">Revenue</th>
+                        <th className="text-right py-3 px-4">Commission</th>
+                        <th className="text-right py-3 px-4">Orders</th>
+                        <th className="text-right py-3 px-4">Conversion Rate</th>
+                        <th className="text-right py-3 px-4">Avg Order Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { retailer: 'Walmart', revenue: 116890, commission: 8420, orders: 312, conversion: 8.7, aov: 374.65 },
+                        { retailer: 'Target', revenue: 98760, commission: 6890, orders: 267, conversion: 7.2, aov: 369.85 },
+                        { retailer: 'Kroger', revenue: 73210, commission: 4320, orders: 198, conversion: 6.8, aov: 369.75 },
+                        { retailer: 'Whole Foods Market', revenue: 39650, commission: 3210, orders: 145, conversion: 9.1, aov: 273.45 },
+                        { retailer: 'Costco', revenue: 29870, commission: 1940, orders: 89, conversion: 5.4, aov: 335.73 }
+                      ].map((row, index) => (
+                        <tr key={index} className="border-b hover:bg-gray-50">
+                          <td className="py-3 px-4 font-medium">{row.retailer}</td>
+                          <td className="text-right py-3 px-4">${row.revenue.toLocaleString()}</td>
+                          <td className="text-right py-3 px-4">${row.commission.toLocaleString()}</td>
+                          <td className="text-right py-3 px-4">{row.orders}</td>
+                          <td className="text-right py-3 px-4">{row.conversion}%</td>
+                          <td className="text-right py-3 px-4">${row.aov.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Affiliate Program Settings Summary */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Affiliate Program Configuration</CardTitle>
+                <CardDescription>Current settings and commission rates</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-4">
+                    <h4 className="font-medium">Commission Rates</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>Default Rate:</span>
+                        <span className="font-medium">6.0%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Premium Partners:</span>
+                        <span className="font-medium">8.0%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>New Partners:</span>
+                        <span className="font-medium">5.0%</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="font-medium">Program Stats</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>Active Links:</span>
+                        <span className="font-medium">2,847</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Tracking Codes:</span>
+                        <span className="font-medium">47</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>API Calls (30d):</span>
+                        <span className="font-medium">156,789</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="font-medium">Performance</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>Click-through Rate:</span>
+                        <span className="font-medium">12.4%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Attribution Window:</span>
+                        <span className="font-medium">30 days</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Success Rate:</span>
+                        <span className="font-medium">94.2%</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
