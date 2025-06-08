@@ -1003,23 +1003,65 @@ const ShoppingRoute: React.FC = () => {
           duration: 3000
         });
       } else {
-        // All stores completed
-        toast({
-          title: "Shopping Complete!",
-          description: "All stores completed. Great job!",
-          duration: 5000
-        });
-        setTimeout(() => navigate('/'), 2000);
+        // All stores completed - end shopping
+        endShopping();
       }
     } else {
-      // Single store completion
+      // Single store completion - end shopping
+      endShopping();
+    }
+  };
+
+  const endShopping = async () => {
+    // Get all uncompleted items across all stores
+    let allUncompletedItems: any[] = [];
+    
+    if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
+      // Multi-store: collect uncompleted items from all stores
+      optimizedRoute.stores.forEach(store => {
+        const storeUncompleted = store.items.filter((item: any) => 
+          !completedItems.has(item.id) && !item.isCompleted
+        );
+        allUncompletedItems.push(...storeUncompleted);
+      });
+    } else {
+      // Single store: get uncompleted items from current route
+      allUncompletedItems = optimizedRoute?.aisleGroups?.flatMap(aisle => 
+        aisle.items.filter(item => !completedItems.has(item.id) && !item.isCompleted)
+      ) || [];
+    }
+
+    // Mark uncompleted items as not completed and add note
+    if (allUncompletedItems.length > 0) {
+      for (const item of allUncompletedItems) {
+        try {
+          await updateItemMutation.mutateAsync({
+            itemId: item.id,
+            updates: {
+              isCompleted: false,
+              notes: `Not purchased during shopping trip on ${new Date().toLocaleDateString()}`
+            }
+          });
+        } catch (error) {
+          console.warn(`Failed to update item ${item.id}:`, error);
+        }
+      }
+
       toast({
         title: "Shopping Complete!",
-        description: "Great job! All aisles completed.",
+        description: `${allUncompletedItems.length} uncompleted items returned to your shopping list.`,
         duration: 5000
       });
-      setTimeout(() => navigate('/'), 2000);
+    } else {
+      toast({
+        title: "Shopping Complete!",
+        description: "All items completed. Great job!",
+        duration: 5000
+      });
     }
+
+    // Navigate back to shopping list after a delay
+    setTimeout(() => navigate('/shopping-list'), 2000);
   };
 
   const handleMarkAllFound = () => {
@@ -1591,7 +1633,10 @@ const ShoppingRoute: React.FC = () => {
                       onClick={() => handleEndStore()}
                     >
                       <Check className="h-4 w-4 mr-2" />
-                      End Store
+                      {optimizedRoute?.isMultiStore && currentStoreIndex < optimizedRoute.stores.length - 1 
+                        ? "End Store" 
+                        : "End Shopping"
+                      }
                     </Button>
                   ) : (
                     <Button 
@@ -1780,6 +1825,21 @@ const ShoppingRoute: React.FC = () => {
               >
                 <MapPin className="h-5 w-5" />
                 Try Next Store
+              </Button>
+            )}
+            
+            {/* Show "End Shopping" option for last store */}
+            {(!optimizedRoute?.isMultiStore || 
+              (optimizedRoute?.isMultiStore && currentStoreIndex >= optimizedRoute.stores.length - 1)) && (
+              <Button 
+                onClick={() => {
+                  setEndStoreDialogOpen(false);
+                  endShopping();
+                }}
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
+              >
+                <ShoppingCart className="h-5 w-5" />
+                End Shopping
               </Button>
             )}
             
