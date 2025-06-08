@@ -20,6 +20,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 import { 
   Check, 
@@ -35,7 +41,8 @@ import {
   Package,
   Tag,
   Star,
-  AlertCircle
+  AlertCircle,
+  MoreVertical
 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
@@ -1239,7 +1246,27 @@ const ShoppingRoute: React.FC = () => {
                     >
                       <div className="flex items-center flex-1">
                         <button
-                          onClick={() => handleToggleItem(item.id, isCompleted, item)}
+                          onClick={() => {
+                            if (isCompleted) {
+                              // Handle unchecking item
+                              const newCompletedItems = new Set(completedItems);
+                              newCompletedItems.delete(item.id);
+                              setCompletedItems(newCompletedItems);
+                              toggleItemMutation.mutate({ itemId: item.id, completed: false });
+                            } else {
+                              // Handle checking item - mark as complete directly
+                              const newCompletedItems = new Set(completedItems);
+                              newCompletedItems.add(item.id);
+                              setCompletedItems(newCompletedItems);
+                              toggleItemMutation.mutate({ itemId: item.id, completed: true });
+                              
+                              toast({
+                                title: "Item found!",
+                                description: "Great job, keep shopping!",
+                                duration: 2000
+                              });
+                            }
+                          }}
                           className="mr-3 focus:outline-none"
                         >
                           {isCompleted ? (
@@ -1265,6 +1292,43 @@ const ShoppingRoute: React.FC = () => {
                           </div>
                         </div>
                       </div>
+
+                      {/* Out-of-stock options menu */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 ml-2"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setOutOfStockItem(item);
+                              setOutOfStockDialogOpen(true);
+                            }}
+                            className="flex items-center"
+                          >
+                            <AlertCircle className="h-4 w-4 mr-2" />
+                            Out of Stock Options
+                          </DropdownMenuItem>
+                          {optimizedRoute?.isMultiStore && currentStoreIndex < optimizedRoute.stores.length - 1 && (
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setOutOfStockItem(item);
+                                handleMigrateToNextStore();
+                              }}
+                              className="flex items-center"
+                            >
+                              <MapPin className="h-4 w-4 mr-2" />
+                              Move to Next Store
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   );
                 })}
