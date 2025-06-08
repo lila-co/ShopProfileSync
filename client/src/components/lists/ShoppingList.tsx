@@ -1191,7 +1191,11 @@ const ShoppingListComponent: React.FC = () => {
             <Button variant="outline" onClick={() => setEditingItem(null)}>
               Cancel
             </Button>
-            <Button onClick={handleUpdateItem} disabled={updateItemMutation.isPending}>
+            <Button 
+              onClick={handleUpdateItem} 
+              disabled={updateItemMutation.isPending}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
               Update Item
             </Button>
           </DialogFooter>
