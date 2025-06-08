@@ -893,7 +893,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log(`Successfully deleted retailer account with ID: ${accountId}`);
-      res.status(204).<code>send();
+      res.status(204).send();
     } catch (error) {
       console.error('Error deleting retailer account:', error);
       handleError(res, error);
