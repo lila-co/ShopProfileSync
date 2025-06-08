@@ -22,11 +22,40 @@ export class ProductCategorizerService {
   private productDatabase: Map<string, ProductCategory> = new Map();
   private categoryPatterns: Map<string, RegExp[]> = new Map();
   private retailNamingConventions: Map<string, string[]> = new Map();
+  private userCorrections: Map<string, { category: string; count: number; confidence: number }> = new Map();
 
   constructor() {
     this.initializeDatabase();
     this.initializePatterns();
     this.initializeRetailNaming();
+  }
+
+  // Learn from user feedback
+  learnFromUserCorrection(productName: string, correctedCategory: string, userId?: number): void {
+    const normalizedName = productName.toLowerCase().trim();
+    const existing = this.userCorrections.get(normalizedName);
+
+    if (existing) {
+      if (existing.category === correctedCategory) {
+        existing.count += 1;
+        existing.confidence = Math.min(existing.confidence + 0.1, 1.0);
+      } else {
+        // Category conflict - start fresh with new category if confidence is low
+        if (existing.confidence < 0.5) {
+          existing.category = correctedCategory;
+          existing.count = 1;
+          existing.confidence = 0.6;
+        }
+      }
+    } else {
+      this.userCorrections.set(normalizedName, {
+        category: correctedCategory,
+        count: 1,
+        confidence: 0.7
+      });
+    }
+
+    console.log(`📚 Learning: "${productName}" -> "${correctedCategory}" (confidence: ${this.userCorrections.get(normalizedName)?.confidence})`);
   }
 
   private initializeDatabase() {
@@ -221,7 +250,7 @@ export class ProductCategorizerService {
     ]);
 
     this.categoryPatterns.set('personal_care', [
-      /\b(shampoo|body\s*soap|hand\s*soap|bar\s*soap|toothpaste|deodorant|lotion|sunscreen)\w*\b/i,
+      /\b(shampoo|body\s*soap|hand\s*soap|bar\s*soap|toothpaste|deodorant|deoderant|lotion|sunscreen|mouthwash|mouth\s*wash)\w*\b/i,
       /\b(hygiene|beauty|skincare|haircare)\b/i
     ]);
 
@@ -328,11 +357,24 @@ export class ProductCategorizerService {
     return maxLength === 0 ? 1 : (maxLength - matrix[str2.length][str1.length]) / maxLength;
   }
 
-  // Categorize product using fuzzy logic
+  // Categorize product using fuzzy logic with learning
   public categorizeProduct(productName: string): ProductCategory {
     const normalizedName = productName.toLowerCase().trim();
 
-    // Direct database lookup first
+    // Check user corrections first (highest priority)
+    const userCorrection = this.userCorrections.get(normalizedName);
+    if (userCorrection && userCorrection.confidence > 0.7 && userCorrection.count >= 2) {
+      const correctedCategory = this.getCategoryDefaults(this.mapCategoryToKey(userCorrection.category));
+      return {
+        ...correctedCategory,
+        category: userCorrection.category,
+        confidence: userCorrection.confidence,
+        typicalRetailNames: this.generateRetailNames(productName),
+        brandVariations: this.generateBrandVariations(productName)
+      };
+    }
+
+    // Direct database lookup
     let bestMatch = this.productDatabase.get(normalizedName);
     let bestSimilarity = 0;
 
@@ -1081,6 +1123,20 @@ export class ProductCategorizerService {
   }
 
   // Get category icon
+  private mapCategoryToKey(category: string): string {
+    const mapping: Record<string, string> = {
+      'Produce': 'produce',
+      'Dairy & Eggs': 'dairy',
+      'Meat & Seafood': 'meat',
+      'Pantry & Canned Goods': 'pantry',
+      'Frozen Foods': 'frozen',
+      'Bakery': 'bakery',
+      'Personal Care': 'personal_care',
+      'Household Items': 'household'
+    };
+    return mapping[category] || 'pantry';
+  }
+
   public getCategoryIcon(category: string): string {
     const icons: Record<string, string> = {
       'Produce': '🍎',
@@ -1094,6 +1150,21 @@ export class ProductCategorizerService {
     };
 
     return icons[category] || '🛒';
+  }
+
+  // Get learning statistics
+  public getLearningStats(): { totalCorrections: number; categoriesLearned: number; avgConfidence: number } {
+    const corrections = Array.from(this.userCorrections.values());
+    const totalCorrections = corrections.reduce((sum, c) => sum + c.count, 0);
+    const avgConfidence = corrections.length > 0 
+      ? corrections.reduce((sum, c) => sum + c.confidence, 0) / corrections.length 
+      : 0;
+
+    return {
+      totalCorrections,
+      categoriesLearned: this.userCorrections.size,
+      avgConfidence: Math.round(avgConfidence * 100) / 100
+    };
   }
 }
 

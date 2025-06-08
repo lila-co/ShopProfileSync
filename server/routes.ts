@@ -104,7 +104,7 @@ const sanitizeInput = (req: Request, res: Response, next: any) => {
       }
     }
   }
-  
+
   if (req.query && typeof req.query === 'object') {
     for (const key in req.query) {
       if (typeof req.query[key] === 'string') {
@@ -112,7 +112,7 @@ const sanitizeInput = (req: Request, res: Response, next: any) => {
       }
     }
   }
-  
+
   next();
 };
 
@@ -121,7 +121,7 @@ function getRecentlyPurchasedItems(purchases: any[], dayThreshold: number = 3): 
   const now = new Date();
   const recentPurchaseThreshold = new Date(now.getTime() - (dayThreshold * 24 * 60 * 60 * 1000));
   const recentlyPurchasedItems = new Set<string>();
-  
+
   purchases.forEach(purchase => {
     const purchaseDate = new Date(purchase.purchaseDate);
     if (purchaseDate >= recentPurchaseThreshold) {
@@ -131,19 +131,19 @@ function getRecentlyPurchasedItems(purchases: any[], dayThreshold: number = 3): 
       });
     }
   });
-  
+
   return recentlyPurchasedItems;
 }
 
 // Helper function to check if item was recently purchased
 function wasItemRecentlyPurchased(itemName: string, recentItems: Set<string>): boolean {
   const normalizedName = itemName.toLowerCase().trim();
-  
+
   // Check exact match
   if (recentItems.has(normalizedName)) {
     return true;
   }
-  
+
   // Check partial matches for similar items
   for (const recentItem of recentItems) {
     if (normalizedName.includes(recentItem) || recentItem.includes(normalizedName)) {
@@ -156,7 +156,7 @@ function wasItemRecentlyPurchased(itemName: string, recentItems: Set<string>): b
       }
     }
   }
-  
+
   return false;
 }
 
@@ -164,11 +164,11 @@ function wasItemRecentlyPurchased(itemName: string, recentItems: Set<string>): b
 function calculateStringSimilarity(str1: string, str2: string): number {
   const longer = str1.length > str2.length ? str1 : str2;
   const shorter = str1.length > str2.length ? str2 : str1;
-  
+
   if (longer.length === 0) {
     return 1.0;
   }
-  
+
   const editDistance = levenshteinDistance(longer, shorter);
   return (longer.length - editDistance) / longer.length;
 }
@@ -176,15 +176,15 @@ function calculateStringSimilarity(str1: string, str2: string): number {
 // Helper function to calculate Levenshtein distance
 function levenshteinDistance(str1: string, str2: string): number {
   const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
-  
+
   for (let i = 0; i <= str1.length; i++) {
     matrix[0][i] = i;
   }
-  
+
   for (let j = 0; j <= str2.length; j++) {
     matrix[j][0] = j;
   }
-  
+
   for (let j = 1; j <= str2.length; j++) {
     for (let i = 1; i <= str1.length; i++) {
       if (str1[i - 1] === str2[j - 1]) {
@@ -198,7 +198,7 @@ function levenshteinDistance(str1: string, str2: string): number {
       }
     }
   }
-  
+
   return matrix[str2.length][str1.length];
 }
 
@@ -308,10 +308,12 @@ async function createSampleDealsFromURL(retailerId: number, circularId: number, 
   return sampleDeals;
 }
 
+import { locationBasedCircularManager } from './services/locationBasedCircularManager';
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create HTTP server
   const server = createServer(app);
-  
+
   // Admin bypass route (temporary for troubleshooting)
   app.get('/api/admin/bypass-check', async (req: Request, res: Response) => {
     res.json({ 
@@ -325,7 +327,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api', securityEnhancer.bruteForceProtection());
   app.use('/api', securityEnhancer.suspiciousActivityDetection());
   app.use('/api', securityEnhancer.validateApiKey());
-  
+
   // Apply general rate limiting to all API routes
   app.use('/api', rateLimiters.general.middleware());
 
@@ -339,7 +341,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = await storage.authenticateUser(username, password);
-      
+
       if (!user) {
         return res.status(401).json({ message: 'Invalid username or password' });
       }
@@ -404,33 +406,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get the current user ID from headers if available
       const userId = req.headers['x-current-user-id'] ? 
         parseInt(req.headers['x-current-user-id'] as string) : null;
-      
+
       // Get the authorization token
       const authHeader = req.headers.authorization;
       const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-      
+
       // In production, you would invalidate the session/token in your session store
       // For this demo, we'll clear any user-specific cached data
       if (userId) {
         console.log(`User ${userId} logged out, clearing session data`);
-        
+
         // Clear any server-side cached user data
         // In a real app, you would:
         // - Remove the token from your session store (Redis, database, etc.)
         // - Mark the token as invalid in your blacklist
         // - Clear any user-specific cached data
-        
+
         if (token) {
           console.log(`Invalidating token for user ${userId}: ${token.substring(0, 10)}...`);
           // Here you would add the token to a blacklist or remove it from your session store
         }
       }
-      
+
       // Set headers to ensure no caching
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
-      
+
       res.json({ 
         message: 'Logout successful',
         timestamp: new Date().toISOString()
@@ -463,12 +465,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if there's a session user ID, otherwise use default
       const userId = req.headers['x-current-user-id'] ? 
         parseInt(req.headers['x-current-user-id'] as string) : 1;
-      
+
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
-      
+
       res.json(user);
     } catch (error) {
       handleError(res, error);
@@ -521,7 +523,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const currentUserId = req.headers['x-current-user-id'] ? 
         parseInt(req.headers['x-current-user-id'] as string) : 1;
-      
+
       const currentUser = await storage.getUser(currentUserId);
       if (!currentUser || (currentUser.role !== 'owner' && currentUser.role !== 'admin')) {
         return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
@@ -576,10 +578,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get retailer API client
       const { getRetailerAPI } = await import('./services/retailerIntegration');
       const retailerAPI = await getRetailerAPI(retailerId);
-      
+
       // Search for products
       const products = await retailerAPI.searchProducts(query);
-      
+
       res.json(products);
     } catch (error: any) {
       console.error('Error searching retailer products:', error);
@@ -819,7 +821,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/user/retailer-accounts', async (req: Request, res: Response) => {
     try {
       const { connectionType, retailerId, ...accountData } = req.body;
-      
+
       // For circular-only connections, create a simplified account
       if (connectionType === 'circular') {
         const circularAccount = {
@@ -833,9 +835,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lastSync: new Date().toISOString(),
           customCircularUrl: req.body.circularUrl || null
         };
-        
+
         const newAccount = await storage.createRetailerAccount(circularAccount);
-        
+
         // Trigger circular fetching for this retailer
         try {
           const { circularFetcher } = await import('./services/circularFetcher');
@@ -843,7 +845,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch (error) {
           console.warn('Failed to fetch initial circular:', error);
         }
-        
+
         res.json(newAccount);
       } else {
         // Regular account connection
@@ -862,7 +864,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updates = req.body;
 
       const updatedAccount = await storage.updateRetailerAccount(accountId, updates);
-      
+
       if (!updatedAccount) {
         return res.status(404).json({ message: 'Retailer account not found' });
       }
@@ -877,19 +879,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/user/retailer-accounts/:id', async (req: Request, res: Response) => {
     try {
       const accountId = parseInt(req.params.id);
-      
+
       if (isNaN(accountId)) {
         return res.status(400).json({ message: 'Invalid account ID' });
       }
-      
+
       console.log(`Deleting retailer account with ID: ${accountId}`);
-      
+
       const success = await storage.deleteRetailerAccount(accountId);
       if (!success) {
         console.log(`Retailer account with ID ${accountId} not found`);
         return res.status(404).json({ message: 'Retailer account not found' });
       }
-      
+
       console.log(`Successfully deleted retailer account with ID: ${accountId}`);
       res.status(204).send();
     } catch (error) {
@@ -902,7 +904,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/user/retailer-accounts/:id/test', async (req: Request, res: Response) => {
     try {
       const accountId = parseInt(req.params.id);
-      
+
       const account = await storage.getRetailerAccount(accountId);
       if (!account) {
         return res.status(404).json({ message: 'Retailer account not found' });
@@ -943,15 +945,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create purchase record from receipt
       const purchase = await storage.createPurchaseFromReceipt(receiptData, userId);
-      
+
       // Analyze the new purchase to update recommendations
       try {
         const user = await storage.getUser(userId);
         const allPurchases = await storage.getPurchases(userId);
-        
+
         // Generate updated recommendations based on new purchase data
         const recommendations = await generateRecommendations(user, allPurchases);
-        
+
         // Save new recommendations
         for (const rec of recommendations) {
           try {
@@ -960,7 +962,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.warn('Error saving recommendation after receipt scan:', saveError);
           }
         }
-        
+
         console.log(`Receipt processed for user ${userId}, generated ${recommendations.length} new recommendations`);
       } catch (analysisError) {
         console.warn('Error analyzing receipt for recommendations:', analysisError);
@@ -1008,7 +1010,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const healthStatus = performanceMonitor.getHealthStatus();
       const systemMetrics = performanceMonitor.getSystemMetrics();
-      
+
       res.json({
         status: healthStatus.status,
         issues: healthStatus.issues,
@@ -1049,7 +1051,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const level = req.query.level as any;
       const limit = parseInt(req.query.limit as string) || 100;
-      
+
       const logs = logger.getRecentLogs(level, limit);
       res.json(logs);
     } catch (error) {
@@ -1076,7 +1078,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { fingerprint } = req.params;
       const deleted = errorTracker.clearError(fingerprint);
-      
+
       if (deleted) {
         logger.info('Error report cleared', { fingerprint, clearedBy: req.headers['x-current-user-id'] });
         res.json({ success: true, message: 'Error report cleared' });
@@ -1236,10 +1238,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.headers['x-current-user-id'] ? 
         parseInt(req.headers['x-current-user-id'] as string) : 1;
-      
+
       const user = await storage.getUser(userId) || await storage.getDefaultUser();
       const purchases = await storage.getPurchases(userId);
-      
+
       // Generate AI-enhanced smart deals
       const smartDeals = [
         {
@@ -1344,7 +1346,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             parseInt(req.headers['x-current-user-id'] as string) : 1;
           const user = await storage.getUser(userId) || await storage.getDefaultUser();
           const purchases = await storage.getPurchases(userId);
-          
+
           console.log(`Generating recommendations for user ${userId} with ${purchases.length} purchases`);
           recommendations = await generateRecommendations(user, purchases);
 
@@ -1357,7 +1359,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Continue with other recommendations
             }
           }
-          
+
           console.log(`Generated and saved ${recommendations.length} recommendations from purchase history`);
         } catch (generateError) {
           console.error('Error generating recommendations:', generateError);
@@ -1408,7 +1410,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const updatedItem = await storage.updateShoppingListItem(itemId, updates);
-      
+
       if (!updatedItem) {
         return res.status(404).json({ message: 'Shopping list item not found' });
       }
@@ -1507,7 +1509,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/shopping-lists/:id', async (req: Request, res: Response) => {
     try {
       const listId = parseInt(req.params.id);
-      
+
       await storage.deleteShoppingList(listId);
       res.status(204).send();
     } catch (error) {
@@ -1554,14 +1556,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.headers['x-current-user-id'] ? 
         parseInt(req.headers['x-current-user-id'] as string) : 1;
-      
+
       // Get user preferences and recent purchases for suggestions
       const user = await storage.getUser(userId);
       const purchases = await storage.getPurchases(userId, 10); // Get last 10 purchases
-      
+
       // Generate suggestions based on purchase patterns
       const suggestions = await generatePersonalizedSuggestions(user, purchases);
-      
+
       res.json(suggestions || []);
     } catch (error) {
       console.error('Error generating suggestions:', error);
@@ -1616,7 +1618,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updates = req.body;
 
       const updatedPurchase = await storage.updatePurchase(purchaseId, updates);
-      
+
       if (!updatedPurchase) {
         return res.status(404).json({ message: 'Purchase not found' });
       }
@@ -1631,7 +1633,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/purchases/:id', async (req: Request, res: Response) => {
     try {
       const purchaseId = parseInt(req.params.id);
-      
+
       await storage.deletePurchase(purchaseId);
       res.status(204).send();
     } catch (error) {
@@ -1652,7 +1654,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Extract ingredients from recipe URL
       const ingredients = await extractRecipeIngredients(recipeUrl, servings || 4);
-      
+
       if (!ingredients || ingredients.length === 0) {
         return res.status(400).json({ message: 'No ingredients found in recipe' });
       }
@@ -1746,13 +1748,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             { productName: 'Eggs', quantity: 1, unit: 'DOZEN', isSelected: true },
             { productName: 'Greek Yogurt', quantity: 4, unit: 'CONTAINER', isSelected: true },
             { productName: 'Chicken Breast', quantity: 2, unit: 'LB', isSelected: true },
-            
+
             // Fresh produce
             { productName: 'Bananas', quantity: 2, unit: 'LB', isSelected: true },
             { productName: 'Baby Spinach', quantity: 1, unit: 'BAG', isSelected: true },
             { productName: 'Roma Tomatoes', quantity: 2, unit: 'LB', isSelected: true },
             { productName: 'Avocados', quantity: 3, unit: 'COUNT', isSelected: true },
-            
+
             // Pantry staples
             { productName: 'Whole Wheat Bread', quantity: 1, unit: 'LOAF', isSelected: true },
             { productName: 'Brown Rice', quantity: 1, unit: 'BAG', isSelected: true },
@@ -1767,13 +1769,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             { productName: 'Cucumber', quantity: 2, unit: 'COUNT', isSelected: true },
             { productName: 'Sweet Potatoes', quantity: 3, unit: 'LB', isSelected: true },
             { productName: 'Salmon Fillet', quantity: 1, unit: 'LB', isSelected: true },
-            
+
             // Pantry enhancements
             { productName: 'Pasta', quantity: 2, unit: 'BOX', isSelected: true },
             { productName: 'Marinara Sauce', quantity: 1, unit: 'JAR', isSelected: true },
             { productName: 'Parmesan Cheese', quantity: 1, unit: 'CONTAINER', isSelected: true },
             { productName: 'Pine Nuts', quantity: 1, unit: 'BAG', isSelected: true },
-            
+
             // Household essentials
             { productName: 'Dish Soap', quantity: 1, unit: 'BOTTLE', isSelected: true },
             { productName: 'Laundry Detergent', quantity: 1, unit: 'BOTTLE', isSelected: true }
@@ -1806,7 +1808,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!item.isSelected) continue;
 
         const normalizedName = item.productName.toLowerCase().trim();
-        
+
         // Check for duplicates using comprehensive matching
         let existingItem = existingItems.find(existing => 
           existing.productName.toLowerCase() === normalizedName ||
@@ -1865,13 +1867,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result);
     } catch (error) {
       console.error('Shopping list generation error:', error);
-      
+
       // Provide detailed error information
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       const errorStack = error instanceof Error ? error.stack : '';
-      
+
       console.error('Error details:', { message: errorMessage, stack: errorStack });
-      
+
       res.status(500).json({ 
         message: 'Failed to generate shopping list', 
         error: errorMessage,
@@ -1889,7 +1891,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUser(userId);
       const userPrefersBulk = user?.buyInBulk || false;
       const userPrioritizesCost = user?.prioritizeCostSavings || false;
-      
+
       // Get recent purchases to filter out recently bought items
       const recentPurchases = await storage.getPurchases(userId, 50); // Get last 50 purchases
       const recentlyPurchasedItems = getRecentlyPurchasedItems(recentPurchases, 3); // Last 3 days
@@ -1899,7 +1901,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const purchasePatterns = analyzePurchasePatterns(recentPurchases);
         const analysisRecommendations = await generateRecommendations(user, recentPurchases);
-        
+
         // Convert recommendations to preview format
         purchaseBasedRecommendations = analysisRecommendations
           .filter(rec => !wasItemRecentlyPurchased(rec.productName, recentlyPurchasedItems))
@@ -1917,7 +1919,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             isSelected: true,
             fromReceipts: true
           }));
-        
+
         console.log(`Generated ${purchaseBasedRecommendations.length} recommendations from receipt analysis`);
       } catch (error) {
         console.warn('Error analyzing purchase patterns from receipts:', error);
@@ -2069,6 +2071,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get retailer by ID
+  app.get('/api/retailers/:id', async (req: Request, res: Response) => {
+    try {
+      const retailerId = parseInt(req.params.id);
+      const retailer = await storage.getRetailer(retailerId);
+
+      if (!retailer) {
+        return res.status(404).json({ error: 'Retailer not found' });
+      }
+
+      res.json(retailer);
+    } catch (error: any) {
+      console.error('Error fetching retailer:', error);
+      res.status(500).json({ error: 'Failed to fetch retailer' });
+    }
+  });
+
+  // Find nearest store for a retailer
+  app.post('/api/stores/find-nearest', async (req: Request, res: Response) => {
+    try {
+      const { retailerId, userLat, userLng } = req.body;
+
+      if (!retailerId || !userLat || !userLng) {
+        return res.status(400).json({ message: 'Missing required parameters' });
+      }
+
+      const nearestStore = locationBasedCircularManager.findNearestStoreLocation(
+        retailerId,
+        userLat,
+        userLng
+      );
+
+      if (nearestStore) {
+        // Calculate distance
+        const distance = locationBasedCircularManager['calculateDistance'](
+          userLat,
+          userLng,
+          nearestStore.lat,
+          nearestStore.lng
+        );
+
+        res.json({
+          storeLocation: nearestStore,
+          distance: distance,
+          retailerId: retailerId
+        });
+      } else {
+        res.status(404).json({ message: 'No stores found for this retailer' });
+      }
+    } catch (error) {
+      console.error('Error finding nearest store:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Categorization learning analytics endpoint
+  app.get('/api/admin/categorization-analytics', async (req: Request, res: Response) => {
+    try {
+      const stats = productCategorizer.getLearningStats();
+
+      res.json({
+        learningStats: stats,
+        systemHealth: {
+          categoriesWithLearning: stats.categoriesLearned,
+          avgCategoryConfidence: stats.avgConfidence,
+          totalFeedbackReceived: stats.totalCorrections,
+          learningRate: stats.totalCorrections > 0 ? 'Active' : 'Inactive'
+        },
+        recommendations: [
+          stats.avgConfidence < 0.7 ? 'Consider gathering more user feedback to improve accuracy' : null,
+          stats.categoriesLearned < 5 ? 'System is still learning - encourage user corrections' : null,
+          stats.totalCorrections > 100 ? 'Good learning progress - system is becoming more accurate' : null
+        ].filter(Boolean)
+      });
+    } catch (error) {
+      console.error('Error getting categorization analytics:', error);
+      res.status(500).json({ error: 'Failed to get analytics' });
+    }
+  });
 
   return server;
 }

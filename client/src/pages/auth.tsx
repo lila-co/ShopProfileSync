@@ -299,9 +299,39 @@ const AuthPage: React.FC = () => {
               </Form>
 
               <div className="mt-4 text-center text-sm">
-                <a href="#" className="text-primary hover:underline">
+                <button 
+                  type="button"
+                  onClick={() => {
+                    const email = window.prompt("Enter your email address to reset your password:");
+                    if (email && email.trim()) {
+                      fetch('/api/auth/forgot-password', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ email: email.trim() }),
+                      })
+                      .then(response => response.json())
+                      .then(data => {
+                        toast({
+                          title: "Password Reset",
+                          description: data.message || "Password reset instructions sent to your email",
+                        });
+                      })
+                      .catch(error => {
+                        console.error('Forgot password error:', error);
+                        toast({
+                          title: "Error",
+                          description: "Failed to send reset email. Please try again.",
+                          variant: "destructive",
+                        });
+                      });
+                    }
+                  }}
+                  className="text-primary hover:underline bg-transparent border-none p-0 cursor-pointer"
+                >
                   Forgot your password?
-                </a>
+                </button>
               </div>
 
               <div className="relative my-6">

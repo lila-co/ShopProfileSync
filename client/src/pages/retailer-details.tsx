@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/layout/Header';
@@ -6,6 +6,7 @@ import BottomNavigation from '@/components/layout/BottomNavigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Store, MapPin, Clock, Phone, Globe } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface Retailer {
   id: number;
@@ -19,6 +20,9 @@ const RetailerDetailsPage: React.FC = () => {
   const { id } = useParams();
   const [, navigate] = useLocation();
   const retailerId = parseInt(id || '0');
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [nearestStore, setNearestStore] = useState<any>(null);
+  const { toast } = useToast();
 
   const { data: retailer, isLoading, error } = useQuery<Retailer>({
     queryKey: [`/api/retailers/${retailerId}`],
@@ -92,7 +96,7 @@ const RetailerDetailsPage: React.FC = () => {
         {/* Store Actions */}
         <div className="space-y-3 mb-6">
           <Button 
-            className="w-full" 
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200" 
             variant="default"
             onClick={() => navigate(`/deals?retailer=${retailer.id}`)}
           >

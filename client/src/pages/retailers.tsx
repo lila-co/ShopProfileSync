@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { Store, ExternalLink, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
+import { getQueryFn } from '@/lib/queryClient';
 import AuthenticatedHeader from '@/components/layout/AuthenticatedHeader';
 import { getCompanyLogo } from '@/lib/imageUtils';
 
@@ -27,6 +27,7 @@ const RetailersPage: React.FC = () => {
 
   const { data: retailers, isLoading } = useQuery<Retailer[]>({
     queryKey: ['/api/retailers'],
+    queryFn: getQueryFn({ on401: 'throw' }),
     suspense: false,
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000,
@@ -34,6 +35,7 @@ const RetailersPage: React.FC = () => {
 
   const { data: connectedAccounts } = useQuery<RetailerAccount[]>({
     queryKey: ['/api/user/retailer-accounts'],
+    queryFn: getQueryFn({ on401: 'throw' }),
     suspense: false,
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000,
