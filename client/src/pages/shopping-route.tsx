@@ -10,6 +10,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 import { 
   Check, 
@@ -24,7 +34,8 @@ import {
   Navigation,
   Package,
   Tag,
-  Star
+  Star,
+  AlertCircle
 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
@@ -159,6 +170,8 @@ const ShoppingRoute: React.FC = () => {
   const [completedItems, setCompletedItems] = useState<Set<number>>(new Set());
   const [loyaltyCard, setLoyaltyCard] = useState<any>(null);
   const [startTime, setStartTime] = useState<Date | null>(null);
+  const [outOfStockDialogOpen, setOutOfStockDialogOpen] = useState(false);
+  const [outOfStockItem, setOutOfStockItem] = useState<any>(null);
 
   // Get current retailer name for loyalty card fetching
   const getCurrentRetailerName = () => {
@@ -221,6 +234,17 @@ const ShoppingRoute: React.FC = () => {
       const response = await apiRequest('PATCH', `/api/shopping-list/items/${itemId}`, {
         isCompleted: completed
       });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists', listId] });
+    }
+  });
+
+  // Update item mutation for out-of-stock handling
+  const updateItemMutation = useMutation({
+    mutationFn: async ({ itemId, updates }: { itemId: number, updates: any }) => {
+      const response = await apiRequest('PATCH', `/api/shopping-list/items/${itemId}`, updates);
       return response.json();
     },
     onSuccess: () => {
@@ -673,25 +697,93 @@ const ShoppingRoute: React.FC = () => {
     };
   };
 
-  const handleToggleItem = (itemId: number, currentStatus: boolean) => {
-    const newCompletedItems = new Set(completedItems);
-
-    if (currentStatus) {
-      newCompletedItems.delete(itemId);
-    } else {
-      newCompletedItems.add(itemId);
+  const handleToggleItem = (itemId: number, currentStatus: boolean, item?: any) => {
+    if (!currentStatus && item) {
+      // Item is being checked off - show out-of-stock option
+      setOutOfStockItem(item);
+      setOutOfStockDialogOpen(true);
+      return;
     }
 
+    // Handle unchecking item
+    const newCompletedItems = new Set(completedItems);
+    newCompletedItems.delete(itemId);
     setCompletedItems(newCompletedItems);
-    toggleItemMutation.mutate({ itemId, completed: !currentStatus });
+    toggleItemMutation.mutate({ itemId, completed: false });
+  };
 
-    if (!currentStatus) {
+  const handleItemFound = () => {
+    if (outOfStockItem) {
+      const newCompletedItems = new Set(completedItems);
+      newCompletedItems.add(outOfStockItem.id);
+      setCompletedItems(newCompletedItems);
+      toggleItemMutation.mutate({ itemId: outOfStockItem.id, completed: true });
+
       toast({
         title: "Item checked off!",
         description: "Great job, keep shopping!",
         duration: 2000
       });
     }
+    setOutOfStockDialogOpen(false);
+    setOutOfStockItem(null);
+  };
+
+  const handleLeaveForFutureTrip = () => {
+    if (outOfStockItem) {
+      updateItemMutation.mutate({
+        itemId: outOfStockItem.id,
+        updates: {
+          notes: 'Left for future trip due to out-of-stock',
+          isCompleted: false
+        }
+      });
+      
+      toast({
+        title: "Item Saved",
+        description: `${outOfStockItem.productName} will remain on your list for your next trip`,
+      });
+    }
+    setOutOfStockDialogOpen(false);
+    setOutOfStockItem(null);
+  };
+
+  const handleMigrateToNextStore = () => {
+    if (outOfStockItem) {
+      // For multi-store plans, try to find the item in the next store
+      if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
+        const nextStoreIndex = (currentStoreIndex + 1) % optimizedRoute.stores.length;
+        const nextStore = optimizedRoute.stores[nextStoreIndex];
+        
+        // Add item to next store's items if not already there
+        const itemExistsInNextStore = nextStore.items.some((item: any) => 
+          item.productName.toLowerCase() === outOfStockItem.productName.toLowerCase()
+        );
+
+        if (!itemExistsInNextStore) {
+          nextStore.items.push({
+            ...outOfStockItem,
+            storeName: nextStore.retailerName,
+            suggestedRetailerId: nextStore.retailer?.id || nextStore.suggestedRetailerId,
+            id: outOfStockItem.id + 1000 // Temporary ID to avoid conflicts
+          });
+        }
+
+        toast({
+          title: "Item Moved",
+          description: `${outOfStockItem.productName} moved to ${nextStore.retailerName}`,
+        });
+      } else {
+        toast({
+          title: "Single Store Plan",
+          description: "This is a single-store plan. Item saved for future trip.",
+        });
+        handleLeaveForFutureTrip();
+        return;
+      }
+    }
+    setOutOfStockDialogOpen(false);
+    setOutOfStockItem(null);
   };
 
   const getProgressPercentage = () => {
@@ -1147,7 +1239,7 @@ const ShoppingRoute: React.FC = () => {
                     >
                       <div className="flex items-center flex-1">
                         <button
-                          onClick={() => handleToggleItem(item.id, isCompleted)}
+                          onClick={() => handleToggleItem(item.id, isCompleted, item)}
                           className="mr-3 focus:outline-none"
                         >
                           {isCompleted ? (
@@ -1320,6 +1412,49 @@ const ShoppingRoute: React.FC = () => {
       </main>
 
       <BottomNavigation activeTab="lists" />
+
+      {/* Out of Stock Item Dialog */}
+      <AlertDialog open={outOfStockDialogOpen} onOpenChange={setOutOfStockDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center space-x-2">
+              <AlertCircle className="h-5 w-5 text-orange-500" />
+              <span>Item Status</span>
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Did you find <span className="font-medium">{outOfStockItem?.productName}</span> at this location?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+            <AlertDialogAction 
+              onClick={handleItemFound}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <Check className="h-4 w-4 mr-2" />
+              Found It!
+            </AlertDialogAction>
+            <AlertDialogAction 
+              onClick={handleLeaveForFutureTrip}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Clock className="h-4 w-4 mr-2" />
+              Save for Next Trip
+            </AlertDialogAction>
+            {optimizedRoute?.isMultiStore && (
+              <AlertDialogAction 
+                onClick={handleMigrateToNextStore}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                <MapPin className="h-4 w-4 mr-2" />
+                Try Next Store
+              </AlertDialogAction>
+            )}
+            <AlertDialogCancel onClick={() => setOutOfStockDialogOpen(false)}>
+              Cancel
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
