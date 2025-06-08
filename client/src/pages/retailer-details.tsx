@@ -19,6 +19,9 @@ const RetailerDetailsPage: React.FC = () => {
   const { id } = useParams();
   const [, navigate] = useLocation();
   const retailerId = parseInt(id || '0');
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [nearestStore, setNearestStore] = useState<any>(null);
+  const { toast } = useToast();
 
   const { data: retailer, isLoading, error } = useQuery<Retailer>({
     queryKey: [`/api/retailers/${retailerId}`],

@@ -91,7 +91,7 @@ export class LocationBasedCircularManager {
   /**
    * Calculate distance between two coordinates (Haversine formula)
    */
-  private calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
     const R = 3959; // Earth's radius in miles
     const dLat = this.toRadians(lat2 - lat1);
     const dLng = this.toRadians(lng2 - lng1);
