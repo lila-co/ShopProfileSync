@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/layout/Header';
@@ -6,6 +6,7 @@ import BottomNavigation from '@/components/layout/BottomNavigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Store, MapPin, Clock, Phone, Globe } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface Retailer {
   id: number;
