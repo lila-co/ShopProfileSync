@@ -777,16 +777,25 @@ const ShoppingRoute: React.FC = () => {
         }
 
         toast({
-          title: "Item Moved",
-          description: `${outOfStockItem.productName} moved to ${nextStore.retailerName}`,
+          title: "Item Moved to Next Store",
+          description: `${outOfStockItem.productName} will be available when you shop at ${nextStore.retailerName}`,
+          duration: 4000
         });
       } else {
-        toast({
-          title: "Single Store Plan",
-          description: "This is a single-store plan. Item saved for future trip.",
+        // For single-store plans, create a reminder or alternative suggestion
+        updateItemMutation.mutate({
+          itemId: outOfStockItem.id,
+          updates: {
+            notes: `Try alternative store - out of stock at ${optimizedRoute?.retailerName || 'current store'}`,
+            isCompleted: false
+          }
         });
-        handleLeaveForFutureTrip();
-        return;
+        
+        toast({
+          title: "Item Marked for Alternative Store",
+          description: `${outOfStockItem.productName} saved with note to try alternative store`,
+          duration: 4000
+        });
       }
     }
     setOutOfStockDialogOpen(false);
@@ -1456,46 +1465,47 @@ const ShoppingRoute: React.FC = () => {
 
       {/* Out of Stock Item Dialog */}
       <AlertDialog open={outOfStockDialogOpen} onOpenChange={setOutOfStockDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center space-x-3 text-lg font-semibold text-gray-900">
-              <AlertCircle className="h-6 w-6 text-orange-500" />
-              <span>Item Status</span>
+            <AlertDialogTitle className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+              <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                <AlertCircle className="h-5 w-5 text-orange-600" />
+              </div>
+              Item Status
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-base text-gray-700 mt-3 leading-relaxed">
-              Did you find <span className="font-semibold text-gray-900 bg-gray-100 px-2 py-1 rounded">{outOfStockItem?.productName}</span> at this location?
+            <AlertDialogDescription className="text-gray-600 mt-2">
+              Did you find <strong>{outOfStockItem?.productName}</strong> at this location?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex flex-col space-y-3 sm:flex-row sm:space-y-0 sm:space-x-2">
-            <AlertDialogAction 
+          <AlertDialogFooter className="flex flex-col gap-3 mt-6">
+            <Button 
               onClick={handleItemFound}
-              className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg shadow-sm transition-colors"
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
             >
-              <Check className="h-5 w-5 mr-3" />
-              <span className="text-base">Found It!</span>
-            </AlertDialogAction>
-            <AlertDialogAction 
+              <Check className="h-5 w-5" />
+              Found It!
+            </Button>
+            <Button 
               onClick={handleLeaveForFutureTrip}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg shadow-sm transition-colors"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
             >
-              <Clock className="h-5 w-5 mr-3" />
-              <span className="text-base">Save for Next Trip</span>
-            </AlertDialogAction>
-            {optimizedRoute?.isMultiStore && (
-              <AlertDialogAction 
-                onClick={handleMigrateToNextStore}
-                className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-4 rounded-lg shadow-sm transition-colors"
-              >
-                <MapPin className="h-5 w-5 mr-3" />
-                <span className="text-base">Try Next Store</span>
-              </AlertDialogAction>
-            )}
-            <AlertDialogCancel 
+              <Clock className="h-5 w-5" />
+              Save for Next Trip
+            </Button>
+            <Button 
+              onClick={handleMigrateToNextStore}
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
+            >
+              <MapPin className="h-5 w-5" />
+              Try Next Store
+            </Button>
+            <Button 
+              variant="outline" 
               onClick={() => setOutOfStockDialogOpen(false)}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-3 px-4 rounded-lg border border-gray-300 transition-colors"
+              className="w-full border-gray-300 text-gray-700 font-medium py-3 rounded-lg"
             >
               Cancel
-            </AlertDialogCancel>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
