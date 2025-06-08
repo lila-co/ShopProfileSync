@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,7 +27,8 @@ import {
   Star,
   AlertTriangle,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  ArrowLeft
 } from 'lucide-react';
 import { User } from '@/lib/types';
 
@@ -34,6 +36,7 @@ const InternalAnalyticsPage: React.FC = () => {
   const { data: user } = useQuery<User>({
     queryKey: ['/api/user/profile'],
   });
+  const [, navigate] = useLocation();
 
   const [dateRange, setDateRange] = useState('last30days');
   const [selectedMetric, setSelectedMetric] = useState('revenue');
@@ -168,9 +171,20 @@ const InternalAnalyticsPage: React.FC = () => {
       <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
         <Header user={user} title="Internal Analytics" />
         <main className="flex-1 overflow-y-auto p-4 pb-20">
-          <div className="mb-6 text-center">
-            <h1 className="text-xl font-bold text-gray-800 mb-2">Business Analytics</h1>
-            <p className="text-sm text-gray-600">Switch to desktop for full analytics experience</p>
+          <div className="mb-6">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/admin-profile')}
+              className="mb-4"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Admin
+            </Button>
+            <div className="text-center">
+              <h1 className="text-xl font-bold text-gray-800 mb-2">Business Analytics</h1>
+              <p className="text-sm text-gray-600">Switch to desktop for full analytics experience</p>
+            </div>
           </div>
 
           <div className="space-y-4">
@@ -233,9 +247,20 @@ const InternalAnalyticsPage: React.FC = () => {
       {/* Desktop Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Business Intelligence Dashboard</h1>
-            <p className="text-gray-600">Comprehensive analytics and market insights</p>
+          <div className="flex items-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/admin-profile')}
+              className="mr-4"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Business Intelligence Dashboard</h1>
+              <p className="text-gray-600">Comprehensive analytics and market insights</p>
+            </div>
           </div>
           <div className="flex items-center space-x-4">
             <Select value={dateRange} onValueChange={setDateRange}>
