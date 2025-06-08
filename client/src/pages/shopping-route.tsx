@@ -768,6 +768,7 @@ const ShoppingRoute: React.FC = () => {
         );
 
         if (!itemExistsInNextStore) {
+          // Add item to next store's items array
           nextStore.items.push({
             ...outOfStockItem,
             storeName: nextStore.retailerName,
@@ -775,6 +776,38 @@ const ShoppingRoute: React.FC = () => {
             id: outOfStockItem.id + 1000 // Temporary ID to avoid conflicts
           });
         }
+
+        // Update the item in the database to reflect the new store assignment
+        updateItemMutation.mutate({
+          itemId: outOfStockItem.id,
+          updates: {
+            suggestedRetailerId: nextStore.retailer?.id || nextStore.suggestedRetailerId,
+            notes: `Moved from ${optimizedRoute.stores[currentStoreIndex]?.retailerName} - out of stock. Try at ${nextStore.retailerName}`,
+            isCompleted: false
+          }
+        });
+
+        // Remove item from current store's route display
+        const currentStore = optimizedRoute.stores[currentStoreIndex];
+        if (currentStore) {
+          const itemIndex = currentStore.items.findIndex((item: any) => item.id === outOfStockItem.id);
+          if (itemIndex > -1) {
+            currentStore.items.splice(itemIndex, 1);
+          }
+        }
+
+        // Also remove from current aisle in the optimized route display
+        if (optimizedRoute.aisleGroups) {
+          optimizedRoute.aisleGroups.forEach((aisle: any) => {
+            const itemIndex = aisle.items.findIndex((item: any) => item.id === outOfStockItem.id);
+            if (itemIndex > -1) {
+              aisle.items.splice(itemIndex, 1);
+            }
+          });
+        }
+
+        // Force a re-render by updating the route state
+        setOptimizedRoute({...optimizedRoute});
 
         toast({
           title: "Item Moved to Next Store",
