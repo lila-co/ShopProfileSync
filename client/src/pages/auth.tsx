@@ -290,7 +290,7 @@ const AuthPage: React.FC = () => {
                   />
                   <Button
                     type="submit"
-                    className="w-full"
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
                     disabled={loginMutation.isPending}
                   >
                     {loginMutation.isPending ? "Signing in..." : "Sign In"}
@@ -328,7 +328,7 @@ const AuthPage: React.FC = () => {
                       });
                     }
                   }}
-                  className="text-primary hover:underline bg-transparent border-none p-0 cursor-pointer"
+                  className="text-primary hover:text-primary/80 hover:underline bg-transparent border-none p-2 cursor-pointer font-medium transition-colors duration-200 rounded-md hover:bg-primary/5"
                 >
                   Forgot your password?
                 </button>
@@ -472,7 +472,7 @@ const AuthPage: React.FC = () => {
                   />
                   <Button
                     type="submit"
-                    className="w-full"
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
                     disabled={registerMutation.isPending}
                   >
                     {registerMutation.isPending ? "Creating account..." : "Create Account"}
