@@ -116,10 +116,12 @@ const ShoppingListComponent: React.FC = () => {
       // Process items in parallel for better performance
       const categorizedPromises = items.map(async (item) => {
         let category = 'Pantry & Canned Goods'; // Default category
+        let confidence = 0.3;
 
         // First check if item already has a manually set category from backend
         if (item.category && item.category.trim()) {
           category = item.category;
+          confidence = 0.9;
         } else {
           try {
             // Use AI categorization service
@@ -129,48 +131,43 @@ const ShoppingListComponent: React.FC = () => {
               item.unit
             );
 
-            if (result && result.category) {
+            if (result && result.confidence > 0.5) {
               category = result.category;
+              confidence = result.confidence;
+              console.log(`✅ AI categorized "${item.productName}" as "${category}" with confidence ${result.confidence}`);
             } else {
               // Fallback to quick categorization
-              const quickResult = aiCategorizationService.getQuickCategory(
-                item.productName, 
-                item.quantity, 
-                item.unit
-              );
+              const quickResult = aiCategorizationService.getQuickCategory(item.productName);
               category = quickResult.category;
+              confidence = quickResult.confidence;
+              console.log(`⚡ Quick categorized "${item.productName}" as "${category}" with confidence ${quickResult.confidence}`);
             }
           } catch (error) {
-            console.warn('Failed to categorize item:', item.productName, error);
+            console.warn(`❌ Failed to categorize ${item.productName}:`, error);
             // Use quick categorization as fallback
-            const quickResult = aiCategorizationService.getQuickCategory(
-              item.productName, 
-              item.quantity, 
-              item.unit
-            );
+            const quickResult = aiCategorizationService.getQuickCategory(item.productName);
             category = quickResult.category;
+            confidence = quickResult.confidence;
           }
         }
 
-        return { item, category };
+        return { ...item, category, aiConfidence: confidence };
       });
 
-      const results = await Promise.all(categorizedPromises);
+      const categorizedItemsList = await Promise.all(categorizedPromises);
 
-      // Group items by category
-      results.forEach(({ item, category }) => {
-        if (!categorized[category]) {
-          categorized[category] = [];
+      // Group by category
+      const grouped = categorizedItemsList.reduce((acc: Record<string, ShoppingListItem[]>, item) => {
+        const categoryKey = item.category || 'Pantry & Canned Goods';
+        if (!acc[categoryKey]) {
+          acc[categoryKey] = [];
         }
-        categorized[category].push(item);
-      });
+        acc[categoryKey].push(item);
+        return acc;
+      }, {});
 
-      // Sort items within each category alphabetically
-      Object.keys(categorized).forEach(category => {
-        categorized[category].sort((a, b) => a.productName.localeCompare(b.productName));
-      });
-
-      setCategorizedItems(categorized);
+      console.log('🏷️ Final categorization results:', grouped);
+      setCategorizedItems(grouped);
     } catch (error) {
       console.error('Error categorizing items:', error);
       // Fallback: group all items under default category
@@ -472,18 +469,18 @@ const ShoppingListComponent: React.FC = () => {
     onSuccess: async (data, variables) => {
       // Invalidate queries to get fresh data
       await queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-      
+
       // Re-categorize items immediately after update
       const updatedLists = queryClient.getQueryData(['/api/shopping-lists']) as ShoppingListType[];
       const defaultList = updatedLists?.[0];
       const items = defaultList?.items || [];
-      
+
       if (items.length > 0) {
         await categorizeItems(items);
       }
-      
+
       setEditingItem(null);
-      
+
       // If category was changed, show specific feedback
       if (variables.updates.category) {
         toast({
@@ -717,7 +714,7 @@ const ShoppingListComponent: React.FC = () => {
     setEditingName(item.productName);
     setEditingQuantity(item.quantity.toString());
     setEditingUnit(item.unit || 'COUNT');
-    
+
     // Determine current category from categorized items
     let currentCategory = 'Generic';
     for (const [category, categoryItems] of Object.entries(categorizedItems)) {
@@ -862,7 +859,7 @@ const ShoppingListComponent: React.FC = () => {
             <div key={index} className="p-4 border border-gray-200 rounded-lg">
               <div className="flex justify-between items-center">
                 <div className="w-full">
-                  <div className="h-5 bg-gray-200 rounded animate-pulse w-1/2 mb-2"></div>
+                  <div className="h-5 bg-gray-200 roundedanimate-pulse w-1/2 mb-2"></div>
                   <div className="h-4 bg-gray-200 rounded animate-pulse w-1/3"></div>
                 </div>
               </div>

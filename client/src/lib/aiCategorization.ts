@@ -447,14 +447,18 @@ class AICategorationService {
       }
     ];
 
-    // Check for specific high-priority matches first
+    // Check for specific high-priority matches first - these should override any other patterns
     const specificMatches = [
-      { pattern: /\b(avocados?|red\s*bell\s*peppers?|green\s*bell\s*peppers?|yellow\s*bell\s*peppers?)\b/i, category: 'Produce', confidence: 0.95 },
-      { pattern: /\b(quinoa|chia\s*seeds?|flax\s*seeds?|hemp\s*seeds?)\b/i, category: 'Pantry & Canned Goods', confidence: 0.95 }
+      { pattern: /\b(avocados?)\b/i, category: 'Produce', confidence: 0.98 },
+      { pattern: /\b(red\s*bell\s*peppers?|green\s*bell\s*peppers?|yellow\s*bell\s*peppers?|bell\s*peppers?)\b/i, category: 'Produce', confidence: 0.98 },
+      { pattern: /\b(quinoa)\b/i, category: 'Pantry & Canned Goods', confidence: 0.98 },
+      { pattern: /\b(pine\s*nuts?)\b/i, category: 'Pantry & Canned Goods', confidence: 0.98 },
+      { pattern: /\b(chia\s*seeds?|flax\s*seeds?|hemp\s*seeds?)\b/i, category: 'Pantry & Canned Goods', confidence: 0.95 }
     ];
 
     for (const { pattern, category, confidence } of specificMatches) {
       if (pattern.test(name)) {
+        console.log(`🎯 Specific pattern match: "${name}" -> "${category}" (confidence: ${confidence})`);
         return { 
           category, 
           confidence,
