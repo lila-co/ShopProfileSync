@@ -179,6 +179,8 @@ const ShoppingRoute: React.FC = () => {
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [outOfStockDialogOpen, setOutOfStockDialogOpen] = useState(false);
   const [outOfStockItem, setOutOfStockItem] = useState<any>(null);
+  const [endStoreDialogOpen, setEndStoreDialogOpen] = useState(false);
+  const [uncompletedItems, setUncompletedItems] = useState<any[]>([]);
 
   // Get current retailer name for loyalty card fetching
   const getCurrentRetailerName = () => {
@@ -933,6 +935,198 @@ const ShoppingRoute: React.FC = () => {
     };
   };
 
+  const handleEndStore = () => {
+    // Get all items from current store
+    let allStoreItems: any[] = [];
+    
+    if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
+      const currentStore = optimizedRoute.stores[currentStoreIndex];
+      allStoreItems = currentStore?.items || [];
+    } else {
+      // Single store - get all items from all aisles
+      allStoreItems = optimizedRoute?.aisleGroups?.flatMap(aisle => aisle.items) || [];
+    }
+
+    // Find uncompleted items
+    const uncompleted = allStoreItems.filter(item => 
+      !completedItems.has(item.id) && !item.isCompleted
+    );
+
+    if (uncompleted.length === 0) {
+      // No uncompleted items, proceed with completion
+      completeCurrentStore();
+    } else {
+      // Show dialog for uncompleted items
+      setUncompletedItems(uncompleted);
+      setEndStoreDialogOpen(true);
+    }
+  };
+
+  const completeCurrentStore = async () => {
+    const currentRetailerName = optimizedRoute?.isMultiStore 
+      ? optimizedRoute.stores[currentStoreIndex]?.retailerName 
+      : optimizedRoute?.retailerName;
+
+    // Record the completed shopping trip for this store
+    try {
+      const response = await apiRequest('POST', '/api/shopping-trip/complete', {
+        listId: listId,
+        completedItems: Array.from(completedItems),
+        startTime: startTime,
+        endTime: new Date(),
+        retailerName: currentRetailerName
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Store Completed!",
+          description: "Your shopping patterns have been updated for better recommendations.",
+          duration: 3000
+        });
+      }
+    } catch (error) {
+      console.warn('Failed to record shopping trip:', error);
+    }
+
+    // Handle multi-store vs single store completion
+    if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
+      if (currentStoreIndex < optimizedRoute.stores.length - 1) {
+        // Move to next store
+        setCurrentStoreIndex(currentStoreIndex + 1);
+        setCurrentAisleIndex(0);
+        setCompletedItems(new Set()); // Reset completed items for new store
+        
+        const nextStore = optimizedRoute.stores[currentStoreIndex + 1];
+        toast({
+          title: "Moving to Next Store",
+          description: `Now shopping at ${nextStore.retailerName}`,
+          duration: 3000
+        });
+      } else {
+        // All stores completed
+        toast({
+          title: "Shopping Complete!",
+          description: "All stores completed. Great job!",
+          duration: 5000
+        });
+        setTimeout(() => navigate('/'), 2000);
+      }
+    } else {
+      // Single store completion
+      toast({
+        title: "Shopping Complete!",
+        description: "Great job! All aisles completed.",
+        duration: 5000
+      });
+      setTimeout(() => navigate('/'), 2000);
+    }
+  };
+
+  const handleMarkAllFound = () => {
+    const newCompletedItems = new Set(completedItems);
+    uncompletedItems.forEach(item => {
+      newCompletedItems.add(item.id);
+      toggleItemMutation.mutate({ itemId: item.id, completed: true });
+    });
+    setCompletedItems(newCompletedItems);
+    setEndStoreDialogOpen(false);
+    
+    toast({
+      title: "Items Marked as Found",
+      description: `Marked ${uncompletedItems.length} items as found`,
+      duration: 3000
+    });
+    
+    completeCurrentStore();
+  };
+
+  const handleTryNextStore = () => {
+    if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
+      const nextStoreIndex = (currentStoreIndex + 1) % optimizedRoute.stores.length;
+      const nextStore = optimizedRoute.stores[nextStoreIndex];
+      
+      // Move uncompleted items to next store
+      uncompletedItems.forEach(item => {
+        // Add item to next store's items if not already there
+        const itemExistsInNextStore = nextStore.items.some((storeItem: any) => 
+          storeItem.productName.toLowerCase() === item.productName.toLowerCase()
+        );
+
+        if (!itemExistsInNextStore) {
+          nextStore.items.push({
+            ...item,
+            storeName: nextStore.retailerName,
+            suggestedRetailerId: nextStore.retailer?.id || nextStore.suggestedRetailerId,
+            id: item.id + 10000 // Temporary ID to avoid conflicts
+          });
+        }
+
+        // Update the item in the database
+        updateItemMutation.mutate({
+          itemId: item.id,
+          updates: {
+            suggestedRetailerId: nextStore.retailer?.id || nextStore.suggestedRetailerId,
+            notes: `Moved from ${optimizedRoute.stores[currentStoreIndex]?.retailerName} - try at ${nextStore.retailerName}`,
+            isCompleted: false
+          }
+        });
+      });
+
+      setEndStoreDialogOpen(false);
+      
+      toast({
+        title: "Items Moved to Next Store",
+        description: `${uncompletedItems.length} items will be available at ${nextStore.retailerName}`,
+        duration: 4000
+      });
+      
+      completeCurrentStore();
+    } else {
+      // Single store - create reminder for alternative store
+      uncompletedItems.forEach(item => {
+        updateItemMutation.mutate({
+          itemId: item.id,
+          updates: {
+            notes: `Try alternative store - not found at ${optimizedRoute?.retailerName || 'current store'}`,
+            isCompleted: false
+          }
+        });
+      });
+      
+      setEndStoreDialogOpen(false);
+      
+      toast({
+        title: "Items Saved for Alternative Store",
+        description: `${uncompletedItems.length} items marked to try at alternative stores`,
+        duration: 4000
+      });
+      
+      completeCurrentStore();
+    }
+  };
+
+  const handleSaveForNextTrip = () => {
+    uncompletedItems.forEach(item => {
+      updateItemMutation.mutate({
+        itemId: item.id,
+        updates: {
+          notes: 'Saved for future trip - not needed this time',
+          isCompleted: false
+        }
+      });
+    });
+
+    setEndStoreDialogOpen(false);
+    
+    toast({
+      title: "Items Saved for Next Trip",
+      description: `${uncompletedItems.length} items will remain on your list for next time`,
+      duration: 4000
+    });
+    
+    completeCurrentStore();
+  };
+
 
 
   if (isLoading) {
@@ -1394,39 +1588,10 @@ const ShoppingRoute: React.FC = () => {
                   {isLastAisle ? (
                     <Button 
                       className="w-full bg-green-600 hover:bg-green-700"
-                      onClick={async () => {
-                        toast({
-                          title: "Shopping Complete!",
-                          description: "Great job! All aisles completed.",
-                          duration: 5000
-                        });
-
-                        // Record the completed shopping trip
-                        try {
-                          const response = await apiRequest('POST', '/api/shopping-trip/complete', {
-                            listId: listId,
-                            completedItems: Array.from(completedItems),
-                            startTime: startTime,
-                            endTime: new Date(),
-                            retailerName: optimizedRoute.retailerName
-                          });
-
-                          if (response.ok) {
-                            toast({
-                              title: "Trip Recorded!",
-                              description: "Your shopping patterns have been updated for better recommendations.",
-                              duration: 3000
-                            });
-                          }
-                        } catch (error) {
-                          console.warn('Failed to record shopping trip:', error);
-                        }
-
-                        setTimeout(() => navigate('/'), 2000);
-                      }}
+                      onClick={() => handleEndStore()}
                     >
                       <Check className="h-4 w-4 mr-2" />
-                      Complete
+                      End Store
                     </Button>
                   ) : (
                     <Button 
@@ -1562,6 +1727,73 @@ const ShoppingRoute: React.FC = () => {
             <Button 
               variant="outline" 
               onClick={() => setOutOfStockDialogOpen(false)}
+              className="w-full border-gray-300 text-gray-700 font-medium py-3 rounded-lg"
+            >
+              Cancel
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* End Store Dialog for Uncompleted Items */}
+      <AlertDialog open={endStoreDialogOpen} onOpenChange={setEndStoreDialogOpen}>
+        <AlertDialogContent className="sm:max-w-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <ShoppingCart className="h-5 w-5 text-blue-600" />
+              </div>
+              Uncompleted Items
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-600 mt-2">
+              You have {uncompletedItems.length} uncompleted item{uncompletedItems.length !== 1 ? 's' : ''} in your shopping list. What would you like to do with them?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          
+          {/* Show list of uncompleted items */}
+          {uncompletedItems.length > 0 && (
+            <div className="max-h-40 overflow-y-auto border rounded-lg p-3 bg-gray-50">
+              <div className="text-sm font-medium text-gray-700 mb-2">Uncompleted items:</div>
+              <div className="space-y-1">
+                {uncompletedItems.map((item, index) => (
+                  <div key={item.id} className="text-sm text-gray-600">
+                    • {item.productName} ({item.quantity} {item.unit})
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <AlertDialogFooter className="flex flex-col gap-3 mt-6">
+            <Button 
+              onClick={handleMarkAllFound}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
+            >
+              <Check className="h-5 w-5" />
+              Mark as Found
+            </Button>
+            
+            {optimizedRoute?.isMultiStore && optimizedRoute.stores && currentStoreIndex < optimizedRoute.stores.length - 1 && (
+              <Button 
+                onClick={handleTryNextStore}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
+              >
+                <MapPin className="h-5 w-5" />
+                Try Next Store
+              </Button>
+            )}
+            
+            <Button 
+              onClick={handleSaveForNextTrip}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
+            >
+              <Clock className="h-5 w-5" />
+              Save for Next Trip
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              onClick={() => setEndStoreDialogOpen(false)}
               className="w-full border-gray-300 text-gray-700 font-medium py-3 rounded-lg"
             >
               Cancel
