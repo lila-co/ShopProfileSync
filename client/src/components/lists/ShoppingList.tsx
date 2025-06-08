@@ -98,6 +98,7 @@ const ShoppingListComponent: React.FC = () => {
     'Bakery': { icon: '🍞', color: 'bg-orange-100 text-orange-800 border-orange-200', aisle: 'Aisle 8' },
     'Personal Care': { icon: '🧼', color: 'bg-purple-100 text-purple-800 border-purple-200', aisle: 'Aisle 9' },
     'Household Items': { icon: '🏠', color: 'bg-gray-100 text-gray-800 border-gray-200', aisle: 'Aisle 10' },
+    'Generic': { icon: '🛒', color: 'bg-slate-100 text-slate-800 border-slate-200', aisle: 'Generic' },
   };
 
   // Auto-categorize items using AI categorization service
@@ -855,7 +856,7 @@ const ShoppingListComponent: React.FC = () => {
           {Object.entries(categorizedItems)
             .sort(([a], [b]) => {
               // Sort categories by typical shopping order
-              const order = ['Produce', 'Dairy & Eggs', 'Meat & Seafood', 'Pantry & Canned Goods', 'Frozen Foods', 'Bakery', 'Personal Care', 'Household Items'];
+              const order = ['Produce', 'Dairy & Eggs', 'Meat & Seafood', 'Pantry & Canned Goods', 'Frozen Foods', 'Bakery', 'Personal Care', 'Household Items', 'Generic'];
               return order.indexOf(a) - order.indexOf(b);
             })
             .map(([category, categoryItems]) => {

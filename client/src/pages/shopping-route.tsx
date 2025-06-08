@@ -67,7 +67,7 @@ const DealsForRetailer: React.FC<{ retailerName: string; routeItems: any[] }> = 
     return routeItems.some((item: any) => {
       const itemName = item.productName.toLowerCase();
       const dealName = deal.productName.toLowerCase();
-      
+
       // Check for exact matches or partial matches
       return itemName === dealName || 
              itemName.includes(dealName) || 
@@ -144,7 +144,7 @@ const ShoppingRoute: React.FC = () => {
   const listId = searchParams.get('listId') || '1'; // Default to list 1 if not provided
   const mode = searchParams.get('mode') || 'instore';
   const planDataParam = searchParams.get('planData');
-  
+
   console.log('Shopping route loaded with location:', location);
   console.log('Shopping route loaded with params:', {
     listId,
@@ -235,9 +235,9 @@ const ShoppingRoute: React.FC = () => {
     console.log('shoppingList:', shoppingList);
     console.log('Current location:', location);
     console.log('listId:', listId);
-    
+
     let planDataToUse = null;
-    
+
     // Try sessionStorage first (more reliable)
     const storedPlanData = sessionStorage.getItem('shoppingPlanData');
     if (storedPlanData) {
@@ -248,7 +248,7 @@ const ShoppingRoute: React.FC = () => {
         console.error('Error parsing stored plan data:', error);
       }
     }
-    
+
     // If no sessionStorage data, try URL parameter
     if (!planDataToUse && planDataParam) {
       try {
@@ -258,7 +258,7 @@ const ShoppingRoute: React.FC = () => {
         console.error('Error parsing URL plan data:', error);
       }
     }
-    
+
     if (planDataToUse) {
       setSelectedPlanData(planDataToUse);
 
@@ -267,7 +267,7 @@ const ShoppingRoute: React.FC = () => {
       console.log('Generated route from plan:', route);
       setOptimizedRoute(route);
       setStartTime(new Date());
-      
+
       toast({
         title: "Shopping Route Ready!",
         description: `Your shopping route has been created from your selected plan`,
@@ -275,7 +275,7 @@ const ShoppingRoute: React.FC = () => {
       });
     } else if (shoppingList?.items && shoppingList.items.length > 0) {
       console.log('Using shopping list items as fallback, listId:', listId);
-      
+
       // Create a simple plan data structure from shopping list items
       const fallbackPlanData = {
         stores: [{
@@ -289,13 +289,13 @@ const ShoppingRoute: React.FC = () => {
         planType: 'Shopping List',
         listId: listId
       };
-      
+
       const route = generateOptimizedShoppingRouteFromPlan(fallbackPlanData);
       console.log('Generated route from shopping list fallback:', route);
       setOptimizedRoute(route);
       setSelectedPlanData(fallbackPlanData);
       setStartTime(new Date());
-      
+
       toast({
         title: "Shopping Route Created",
         description: "Using your shopping list items",
@@ -317,7 +317,7 @@ const ShoppingRoute: React.FC = () => {
   // Generate optimized shopping route from selected plan data
   const generateOptimizedShoppingRouteFromPlan = (planData: any) => {
     console.log('generateOptimizedShoppingRouteFromPlan called with:', planData);
-    
+
     let items: any[] = [];
     let retailerName = 'Store';
     let isMultiStore = false;
@@ -326,7 +326,7 @@ const ShoppingRoute: React.FC = () => {
     // Extract items from different plan structures
     if (planData.stores && planData.stores.length > 0) {
       console.log('Processing plan with stores:', planData.stores);
-      
+
       if (planData.stores.length === 1) {
         // Single store plan
         const store = planData.stores[0];
@@ -380,7 +380,7 @@ const ShoppingRoute: React.FC = () => {
 
     console.log('Processed items for route generation:', processedItems);
     const route = generateOptimizedShoppingRoute(processedItems, retailerName, planData);
-    
+
     // Add multi-store specific data
     if (isMultiStore) {
       route.isMultiStore = true;
@@ -403,7 +403,8 @@ const ShoppingRoute: React.FC = () => {
       'Frozen Foods': { aisle: 'Aisle 7', category: 'Frozen Foods', order: 5, color: 'bg-cyan-100 text-cyan-800' },
       'Bakery': { aisle: 'Aisle 8', category: 'Bakery', order: 6, color: 'bg-orange-100 text-orange-800' },
       'Personal Care': { aisle: 'Aisle 9', category: 'Personal Care', order: 7, color: 'bg-purple-100 text-purple-800' },
-      'Household Items': { aisle: 'Aisle 10', category: 'Household Items', order: 8, color: 'bg-gray-100 text-gray-800' }
+      'Household Items': { aisle: 'Aisle 10', category: 'Household Items', order: 8, color: 'bg-gray-100 text-gray-800' },
+      'Generic': { aisle: 'Generic', category: 'Generic Items', order: 9, color: 'bg-slate-100 text-slate-800' }
     };
 
     // Use AI categorization service for better accuracy
@@ -534,7 +535,7 @@ const ShoppingRoute: React.FC = () => {
 
     const finalRetailerName = retailerName || 'Store';
     console.log('Generated route with retailer name:', finalRetailerName);
-    
+
     return {
       aisleGroups: sortedAisleGroups,
       totalAisles,
@@ -571,31 +572,31 @@ const ShoppingRoute: React.FC = () => {
 
   const getProgressPercentage = () => {
     if (!optimizedRoute) return 0;
-    
+
     // For multi-store plans, calculate progress across all stores
     if (optimizedRoute.isMultiStore && optimizedRoute.stores) {
       const totalItems = optimizedRoute.stores.reduce((sum: number, store: any) => sum + store.items.length, 0);
       return totalItems > 0 ? (completedItems.size / totalItems) * 100 : 0;
     }
-    
+
     return (completedItems.size / optimizedRoute.totalItems) * 100;
   };
 
   const getCurrentAisle = () => {
     if (!optimizedRoute?.aisleGroups) return null;
-    
+
     // For multi-store plans, generate aisles from current store's items
     if (optimizedRoute.isMultiStore && optimizedRoute.stores) {
       const currentStore = optimizedRoute.stores[currentStoreIndex];
       if (!currentStore) return null;
-      
+
       // Generate aisles for current store
       const storeRoute = generateOptimizedShoppingRoute(currentStore.items, currentStore.retailerName);
       if (!storeRoute.aisleGroups || !storeRoute.aisleGroups[currentAisleIndex]) return null;
-      
+
       return storeRoute.aisleGroups[currentAisleIndex];
     }
-    
+
     return optimizedRoute.aisleGroups[currentAisleIndex];
   };
 
@@ -937,7 +938,7 @@ const ShoppingRoute: React.FC = () => {
                   );
                 })}
               </div>
-              
+
               {/* Store Navigation Buttons */}
               <div className="mt-4 pt-3 border-t">
                 <div className="grid grid-cols-2 gap-3">
