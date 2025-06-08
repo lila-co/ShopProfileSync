@@ -430,77 +430,92 @@ const ShoppingRoute: React.FC = () => {
 
     // Process items with AI categorization
     items.forEach((item: any) => {
-      // Use AI service for immediate fallback categorization
-      const fallbackResult = aiCategorizationService.getQuickCategory(item.productName);
-      const fallbackAisleInfo = aisleMapping[fallbackResult.category as keyof typeof aisleMapping] || 
-                               aisleMapping['Pantry & Canned Goods'];
+      // Use existing category if available, otherwise use AI categorization
+      let itemCategory = item.category;
+      let categoryConfidence = 0.9; // High confidence for existing categories
 
-      if (!aisleGroups[fallbackAisleInfo.aisle]) {
-        aisleGroups[fallbackAisleInfo.aisle] = {
-          aisleName: fallbackAisleInfo.aisle,
-          category: fallbackAisleInfo.category,
-          order: fallbackAisleInfo.order,
-          color: fallbackAisleInfo.color,
+      if (!itemCategory) {
+        const fallbackResult = aiCategorizationService.getQuickCategory(item.productName);
+        itemCategory = fallbackResult.category;
+        categoryConfidence = fallbackResult.confidence || 0.7;
+      }
+
+      const aisleInfo = aisleMapping[itemCategory as keyof typeof aisleMapping] || 
+                       aisleMapping['Generic'];
+
+      const aisleName = aisleInfo.aisle;
+
+      if (!aisleGroups[aisleName]) {
+        aisleGroups[aisleName] = {
+          aisleName,
+          category: aisleInfo.category,
+          order: aisleInfo.order,
+          color: aisleInfo.color,
           items: []
         };
       }
 
-      // Enhanced shelf location logic with more comprehensive patterns
-      let shelfLocation = '';
-      const name = item.productName.toLowerCase();
-
-      // Dairy specific locations
-      if (name.includes('milk') || name.includes('yogurt') || name.includes('cheese')) {
-        shelfLocation = 'Dairy Cooler';
-      }
-      // Meat specific locations  
-      else if (name.includes('chicken') || name.includes('beef') || name.includes('fish') || name.includes('meat')) {
-        shelfLocation = 'Refrigerated Case';
-      }
-      // Produce specific locations
-      else if (name.includes('banana')) shelfLocation = 'Front Display';
-      else if (name.includes('apple') || name.includes('orange')) shelfLocation = 'Fruit Section';
-      else if (name.includes('lettuce') || name.includes('spinach')) shelfLocation = 'Leafy Greens';
-      else if (name.includes('tomato') || name.includes('pepper')) shelfLocation = 'Vegetable Section';
-      // Bakery specific locations
-      else if (name.includes('bread') || name.includes('bagel')) shelfLocation = 'Bakery Display';
-      // Frozen specific locations
-      else if (name.includes('frozen') || name.includes('ice cream')) shelfLocation = 'Freezer Section';
-      // Household specific locations
-      else if (name.includes('paper towel') || name.includes('toilet paper')) shelfLocation = 'Paper Goods';
-      else if (name.includes('cleaner') || name.includes('detergent')) shelfLocation = 'Cleaning Supplies';
-      // Personal care specific locations
-      else if (name.includes('shampoo') || name.includes('soap')) shelfLocation = 'Health & Beauty';
-
-      // Add item with enhanced categorization info
-      aisleGroups[fallbackAisleInfo.aisle].items.push({
+      // Add location and confidence for better UX
+      const itemWithLocation = {
         ...item,
-        shelfLocation,
-        category: fallbackResult.category,
-        confidence: 0.7 // Default confidence for fallback
-      });
+        shelfLocation: this.getShelfLocation(item.productName, itemCategory),
+        confidence: categoryConfidence,
+        category: itemCategory
+      };
 
-      // Queue AI categorization for background improvement
-      const aiPromise = categorizeItemWithAI(item.productName).then(aiResult => {
-        if (aiResult && aiResult.confidence > 0.7) {
-          // Find the item and update its categorization if AI is more confident
-          const currentAisle = aisleGroups[fallbackAisleInfo.aisle];
-          const itemIndex = currentAisle.items.findIndex((i: any) => i.id === item.id);
+      aisleGroups[aisleName].items.push(itemWithLocation);
 
-          if (itemIndex !== -1) {
-            currentAisle.items[itemIndex] = {
-              ...currentAisle.items[itemIndex],
-              category: aiResult.category,
-              confidence: aiResult.confidence,
-              aiSuggestion: aiResult.conversionReason
-            };
+      // Create AI categorization promise for more accurate results (only if we don't have a category)
+      if (!item.category) {
+        const aiPromise = categorizeItemWithAI(item.productName).then(result => {
+          const betterAisleInfo = aisleMapping[result.category as keyof typeof aisleMapping] || 
+                                 aisleMapping['Generic'];
+
+          // Update the item if we get better categorization
+          if (result.confidence > categoryConfidence) {
+            const betterAisleName = betterAisleInfo.aisle;
+
+            // Remove from current aisle if needed
+            if (betterAisleName !== aisleName) {
+              const currentAisleItems = aisleGroups[aisleName]?.items || [];
+              const itemIndex = currentAisleItems.findIndex(i => i.id === item.id);
+              if (itemIndex > -1) {
+                currentAisleItems.splice(itemIndex, 1);
+              }
+
+              // Add to better aisle
+              if (!aisleGroups[betterAisleName]) {
+                aisleGroups[betterAisleName] = {
+                  aisleName: betterAisleName,
+                  category: betterAisleInfo.category,
+                  order: betterAisleInfo.order,
+                  color: betterAisleInfo.color,
+                  items: []
+                };
+              }
+
+              aisleGroups[betterAisleName].items.push({
+                ...itemWithLocation,
+                shelfLocation: this.getShelfLocation(item.productName, result.category),
+                confidence: result.confidence,
+                category: result.category
+              });
+            } else {
+              // Update in place
+              const itemToUpdate = aisleGroups[aisleName].items.find(i => i.id === item.id);
+              if (itemToUpdate) {
+                itemToUpdate.shelfLocation = this.getShelfLocation(item.productName, result.category);
+                itemToUpdate.confidence = result.confidence;
+                itemToUpdate.category = result.category;
+              }
+            }
           }
-        }
-      }).catch(error => {
-        console.warn('AI categorization failed for item:', item.productName, error);
-      });
+        }).catch(error => {
+          console.warn(`Failed to get AI categorization for ${item.productName}:`, error);
+        });
 
-      itemPromises.push(aiPromise);
+        itemPromises.push(aiPromise);
+      }
     });
 
     // Allow AI categorization to complete in background without blocking UI
