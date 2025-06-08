@@ -221,7 +221,7 @@ export class ProductCategorizerService {
     ]);
 
     this.categoryPatterns.set('personal_care', [
-      /\b(shampoo|body\s*soap|hand\s*soap|bar\s*soap|toothpaste|deodorant|deoderant|lotion|sunscreen)\w*\b/i,
+      /\b(shampoo|body\s*soap|hand\s*soap|bar\s*soap|toothpaste|deodorant|deoderant|lotion|sunscreen|mouthwash|mouth\s*wash)\w*\b/i,
       /\b(hygiene|beauty|skincare|haircare)\b/i
     ]);
 
