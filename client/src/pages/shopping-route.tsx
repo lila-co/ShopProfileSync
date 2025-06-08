@@ -428,7 +428,7 @@ const ShoppingRoute: React.FC = () => {
   // Define shelf location logic based on product and category
   const getShelfLocation = (productName: string, category: string) => {
     const name = productName.toLowerCase();
-    
+
     // Produce section - specific areas
     if (category === 'Produce') {
       if (name.includes('banana') || name.includes('apple') || name.includes('orange')) {
@@ -445,7 +445,7 @@ const ShoppingRoute: React.FC = () => {
       }
       return 'Main produce area';
     }
-    
+
     // Dairy & Eggs - specific refrigerated sections
     if (category === 'Dairy & Eggs') {
       if (name.includes('milk')) return 'Back wall - dairy cooler';
@@ -455,7 +455,7 @@ const ShoppingRoute: React.FC = () => {
       if (name.includes('butter')) return 'Dairy cooler - bottom shelf';
       return 'Main dairy section';
     }
-    
+
     // Meat & Seafood
     if (category === 'Meat & Seafood') {
       if (name.includes('chicken') || name.includes('turkey')) {
@@ -469,7 +469,7 @@ const ShoppingRoute: React.FC = () => {
       }
       return 'Meat department';
     }
-    
+
     // Frozen Foods
     if (category === 'Frozen Foods') {
       if (name.includes('ice cream')) return 'Frozen desserts aisle';
@@ -477,7 +477,7 @@ const ShoppingRoute: React.FC = () => {
       if (name.includes('vegetable')) return 'Frozen vegetables';
       return 'Frozen foods section';
     }
-    
+
     // Bakery
     if (category === 'Bakery') {
       if (name.includes('bread') || name.includes('loaf')) {
@@ -485,7 +485,7 @@ const ShoppingRoute: React.FC = () => {
       }
       return 'Fresh bakery counter';
     }
-    
+
     // Pantry & Canned Goods - more specific locations
     if (category === 'Pantry & Canned Goods') {
       if (name.includes('cereal')) return 'Cereal aisle - eye level';
@@ -501,7 +501,7 @@ const ShoppingRoute: React.FC = () => {
       }
       return 'Center store aisles';
     }
-    
+
     // Personal Care
     if (category === 'Personal Care') {
       if (name.includes('shampoo') || name.includes('soap')) {
@@ -510,7 +510,7 @@ const ShoppingRoute: React.FC = () => {
       if (name.includes('toothpaste')) return 'Oral care section';
       return 'Health & beauty department';
     }
-    
+
     // Household Items
     if (category === 'Household Items') {
       if (name.includes('detergent') || name.includes('cleaner')) {
@@ -521,7 +521,7 @@ const ShoppingRoute: React.FC = () => {
       }
       return 'Household goods section';
     }
-    
+
     // Beverages
     if (name.includes('water') || name.includes('soda') || name.includes('juice')) {
       if (name.includes('sparkling') || name.includes('carbonated')) {
@@ -529,7 +529,7 @@ const ShoppingRoute: React.FC = () => {
       }
       return 'Beverage aisle - main section';
     }
-    
+
     // Generic fallback
     return 'Check store directory';
   };
@@ -771,7 +771,7 @@ const ShoppingRoute: React.FC = () => {
 
       // Force a re-render by updating the route state
       setOptimizedRoute({...optimizedRoute});
-      
+
       toast({
         title: "Item Saved for Next Trip",
         description: `${outOfStockItem.productName} has been removed from this trip and will remain on your list for next time`,
@@ -788,7 +788,7 @@ const ShoppingRoute: React.FC = () => {
       if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
         const nextStoreIndex = (currentStoreIndex + 1) % optimizedRoute.stores.length;
         const nextStore = optimizedRoute.stores[nextStoreIndex];
-        
+
         // Add item to next store's items if not already there
         const itemExistsInNextStore = nextStore.items.some((item: any) => 
           item.productName.toLowerCase() === outOfStockItem.productName.toLowerCase()
@@ -850,7 +850,7 @@ const ShoppingRoute: React.FC = () => {
             isCompleted: false
           }
         });
-        
+
         toast({
           title: "Item Marked for Alternative Store",
           description: `${outOfStockItem.productName} saved with note to try alternative store`,
@@ -938,7 +938,7 @@ const ShoppingRoute: React.FC = () => {
   const handleEndStore = () => {
     // Get all items from current store
     let allStoreItems: any[] = [];
-    
+
     if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
       const currentStore = optimizedRoute.stores[currentStoreIndex];
       allStoreItems = currentStore?.items || [];
@@ -995,7 +995,7 @@ const ShoppingRoute: React.FC = () => {
         setCurrentStoreIndex(currentStoreIndex + 1);
         setCurrentAisleIndex(0);
         setCompletedItems(new Set()); // Reset completed items for new store
-        
+
         const nextStore = optimizedRoute.stores[currentStoreIndex + 1];
         toast({
           title: "Moving to Next Store",
@@ -1015,7 +1015,7 @@ const ShoppingRoute: React.FC = () => {
   const endShopping = async () => {
     // Get all uncompleted items across all stores
     let allUncompletedItems: any[] = [];
-    
+
     if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
       // Multi-store: collect uncompleted items from all stores
       optimizedRoute.stores.forEach(store => {
@@ -1062,7 +1062,7 @@ const ShoppingRoute: React.FC = () => {
 
     // Clear any temporary shopping data
     sessionStorage.removeItem('shoppingPlanData');
-    
+
     // Navigate back to shopping list after a delay
     setTimeout(() => navigate('/shopping-list'), 2000);
   };
@@ -1075,13 +1075,13 @@ const ShoppingRoute: React.FC = () => {
     });
     setCompletedItems(newCompletedItems);
     setEndStoreDialogOpen(false);
-    
+
     toast({
       title: "Items Marked as Found",
       description: `Marked ${uncompletedItems.length} items as found`,
       duration: 3000
     });
-    
+
     completeCurrentStore();
   };
 
@@ -1089,7 +1089,7 @@ const ShoppingRoute: React.FC = () => {
     if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
       const nextStoreIndex = (currentStoreIndex + 1) % optimizedRoute.stores.length;
       const nextStore = optimizedRoute.stores[nextStoreIndex];
-      
+
       // Move uncompleted items to next store
       uncompletedItems.forEach(item => {
         // Add item to next store's items if not already there
@@ -1118,13 +1118,13 @@ const ShoppingRoute: React.FC = () => {
       });
 
       setEndStoreDialogOpen(false);
-      
+
       toast({
         title: "Items Moved to Next Store",
         description: `${uncompletedItems.length} items will be available at ${nextStore.retailerName}`,
         duration: 4000
       });
-      
+
       completeCurrentStore();
     } else {
       // Single store - create reminder for alternative store
@@ -1137,15 +1137,15 @@ const ShoppingRoute: React.FC = () => {
           }
         });
       });
-      
+
       setEndStoreDialogOpen(false);
-      
+
       toast({
         title: "Items Saved for Alternative Store",
         description: `${uncompletedItems.length} items marked to try at alternative stores`,
         duration: 4000
       });
-      
+
       completeCurrentStore();
     }
   };
@@ -1162,16 +1162,59 @@ const ShoppingRoute: React.FC = () => {
     });
 
     setEndStoreDialogOpen(false);
-    
+
     toast({
       title: "Items Saved for Next Trip",
       description: `${uncompletedItems.length} items will remain on your list for next time`,
       duration: 4000
     });
-    
+
     completeCurrentStore();
   };
 
+  const handleFinishStore = () => {
+    // Get uncompleted items from current store, excluding temporary/moved items
+    const currentStore = optimizedRoute?.stores?.[currentStoreIndex];
+    const currentStoreItems = currentStore?.items || [];
+    const uncompleted = currentStoreItems.filter(item => 
+      !completedItems.has(item.id) && 
+      !item.isCompleted &&
+      typeof item.id === 'number' && 
+      item.id < 10000 // Exclude temporary IDs from moved items
+    );
+
+    if (uncompleted.length > 0) {
+      setUncompletedItems(uncompleted);
+      setEndStoreDialogOpen(true);
+    } else {
+      handleStoreComplete();
+    }
+  };
+
+  const handleStoreComplete = () => {
+    // Handle multi-store vs single store completion
+    if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
+      if (currentStoreIndex < optimizedRoute.stores.length - 1) {
+        // Move to next store
+        setCurrentStoreIndex(currentStoreIndex + 1);
+        setCurrentAisleIndex(0);
+        // Don't reset completed items completely - keep items completed in previous stores
+
+        const nextStore = optimizedRoute.stores[currentStoreIndex + 1];
+        toast({
+          title: "Moving to Next Store",
+          description: `Now shopping at ${nextStore.retailerName}`,
+          duration: 3000
+        });
+      } else {
+        // All stores completed - end shopping
+        endShopping();
+      }
+    } else {
+      // Single store completion - end shopping
+      endShopping();
+    }
+  };
 
 
   if (isLoading) {
@@ -1565,7 +1608,7 @@ const ShoppingRoute: React.FC = () => {
                               newCompletedItems.add(item.id);
                               setCompletedItems(newCompletedItems);
                               toggleItemMutation.mutate({ itemId: item.id, completed: true });
-                              
+
                               toast({
                                 title: "Item found!",
                                 description: "Great job, keep shopping!",
@@ -1804,7 +1847,7 @@ const ShoppingRoute: React.FC = () => {
               }
             </AlertDialogDescription>
           </AlertDialogHeader>
-          
+
           {/* Show list of uncompleted items */}
           {uncompletedItems.length > 0 && (
             <div className="max-h-40 overflow-y-auto border rounded-lg p-3 bg-gray-50">
@@ -1827,7 +1870,7 @@ const ShoppingRoute: React.FC = () => {
               <Check className="h-5 w-5" />
               Mark as Found
             </Button>
-            
+
             {optimizedRoute?.isMultiStore && optimizedRoute.stores && currentStoreIndex < optimizedRoute.stores.length - 1 && (
               <Button 
                 onClick={handleTryNextStore}
@@ -1837,7 +1880,7 @@ const ShoppingRoute: React.FC = () => {
                 Try Next Store
               </Button>
             )}
-            
+
             {/* Show "End Shopping" option for last store */}
             {(!optimizedRoute?.isMultiStore || 
               (optimizedRoute?.isMultiStore && currentStoreIndex >= optimizedRoute.stores.length - 1)) && (
@@ -1852,7 +1895,7 @@ const ShoppingRoute: React.FC = () => {
                 End Shopping Trip
               </Button>
             )}
-            
+
             <Button 
               onClick={handleSaveForNextTrip}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
@@ -1860,7 +1903,7 @@ const ShoppingRoute: React.FC = () => {
               <Clock className="h-5 w-5" />
               Save for Next Trip
             </Button>
-            
+
             <Button 
               variant="outline" 
               onClick={() => setEndStoreDialogOpen(false)}
