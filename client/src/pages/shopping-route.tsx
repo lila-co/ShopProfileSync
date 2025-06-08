@@ -1492,13 +1492,15 @@ const ShoppingRoute: React.FC = () => {
               <Clock className="h-5 w-5" />
               Save for Next Trip
             </Button>
-            <Button 
-              onClick={handleMigrateToNextStore}
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
-            >
-              <MapPin className="h-5 w-5" />
-              Try Next Store
-            </Button>
+            {optimizedRoute?.isMultiStore && (
+              <Button 
+                onClick={handleMigrateToNextStore}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
+              >
+                <MapPin className="h-5 w-5" />
+                Try Next Store
+              </Button>
+            )}
             <Button 
               variant="outline" 
               onClick={() => setOutOfStockDialogOpen(false)}
