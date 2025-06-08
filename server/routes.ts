@@ -1639,6 +1639,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Recipe import endpoint
+  app.post('/api/shopping-lists/recipe', rateLimiters.shoppingList.middleware(), async (req: Request, res: Response) => {
+    try {
+      const { recipeUrl, shoppingListId, servings } = req.body;
+
+      if (!recipeUrl || !shoppingListId) {
+        return res.status(400).json({ message: 'Recipe URL and shopping list ID are required' });
+      }
+
+      console.log('Recipe import request:', { recipeUrl, shoppingListId, servings });
+
+      // Extract ingredients from recipe URL
+      const ingredients = await extractRecipeIngredients(recipeUrl, servings || 4);
+      
+      if (!ingredients || ingredients.length === 0) {
+        return res.status(400).json({ message: 'No ingredients found in recipe' });
+      }
+
+      const addedItems = [];
+      const skippedItems = [];
+
+      // Get existing items to check for duplicates
+      const existingItems = await storage.getShoppingListItems(shoppingListId);
+
+      // Process each ingredient
+      for (const ingredient of ingredients) {
+        try {
+          // Check for duplicates
+          const existingItem = existingItems.find(item => 
+            item.productName.toLowerCase().includes(ingredient.name.toLowerCase()) ||
+            ingredient.name.toLowerCase().includes(item.productName.toLowerCase())
+          );
+
+          if (existingItem) {
+            skippedItems.push(ingredient.name);
+            continue;
+          }
+
+          // Convert ingredient to shopping list item
+          const newItem = await storage.addShoppingListItem({
+            shoppingListId,
+            productName: ingredient.name,
+            quantity: ingredient.quantity || 1,
+            unit: ingredient.unit || 'COUNT'
+          });
+
+          addedItems.push(newItem);
+        } catch (error) {
+          console.error('Failed to add ingredient:', ingredient.name, error);
+          skippedItems.push(ingredient.name);
+        }
+      }
+
+      res.json({
+        success: true,
+        itemsAdded: addedItems.length,
+        itemsSkipped: skippedItems.length,
+        addedItems,
+        skippedItems,
+        message: `Added ${addedItems.length} ingredients from recipe`
+      });
+
+    } catch (error) {
+      console.error('Recipe import error:', error);
+      res.status(500).json({ 
+        message: 'Failed to import recipe', 
+        error: error.message || 'Unknown error occurred'
+      });
+    }
+  });
+
   // Unified shopping list generation for all scenarios
   app.post('/api/shopping-lists/generate', rateLimiters.shoppingList.middleware(), async (req: Request, res: Response) => {
     try {
