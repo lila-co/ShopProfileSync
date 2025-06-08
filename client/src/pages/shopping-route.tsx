@@ -1031,7 +1031,7 @@ const ShoppingRoute: React.FC = () => {
       ) || [];
     }
 
-    // Mark uncompleted items as not completed and add note
+    // Mark uncompleted items as not completed and add note with shopping trip context
     if (allUncompletedItems.length > 0) {
       for (const item of allUncompletedItems) {
         try {
@@ -1039,7 +1039,7 @@ const ShoppingRoute: React.FC = () => {
             itemId: item.id,
             updates: {
               isCompleted: false,
-              notes: `Not purchased during shopping trip on ${new Date().toLocaleDateString()}`
+              notes: `Returned to list - not purchased during shopping trip on ${new Date().toLocaleDateString()}`
             }
           });
         } catch (error) {
@@ -1048,18 +1048,21 @@ const ShoppingRoute: React.FC = () => {
       }
 
       toast({
-        title: "Shopping Complete!",
-        description: `${allUncompletedItems.length} uncompleted items returned to your shopping list.`,
+        title: "Shopping Trip Complete!",
+        description: `${allUncompletedItems.length} uncompleted items returned to your shopping list for next time.`,
         duration: 5000
       });
     } else {
       toast({
-        title: "Shopping Complete!",
+        title: "Shopping Trip Complete!",
         description: "All items completed. Great job!",
         duration: 5000
       });
     }
 
+    // Clear any temporary shopping data
+    sessionStorage.removeItem('shoppingPlanData');
+    
     // Navigate back to shopping list after a delay
     setTimeout(() => navigate('/shopping-list'), 2000);
   };
@@ -1788,10 +1791,17 @@ const ShoppingRoute: React.FC = () => {
               <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                 <ShoppingCart className="h-5 w-5 text-blue-600" />
               </div>
-              Uncompleted Items
+              {optimizedRoute?.isMultiStore && currentStoreIndex < optimizedRoute.stores.length - 1 
+                ? "End Store - Uncompleted Items" 
+                : "End Shopping - Uncompleted Items"
+              }
             </AlertDialogTitle>
             <AlertDialogDescription className="text-gray-600 mt-2">
-              You have {uncompletedItems.length} uncompleted item{uncompletedItems.length !== 1 ? 's' : ''} in your shopping list. What would you like to do with them?
+              You have {uncompletedItems.length} uncompleted item{uncompletedItems.length !== 1 ? 's' : ''} 
+              {optimizedRoute?.isMultiStore && currentStoreIndex < optimizedRoute.stores.length - 1 
+                ? " at this store. What would you like to do with them?" 
+                : " in your shopping trip. What would you like to do with them?"
+              }
             </AlertDialogDescription>
           </AlertDialogHeader>
           
@@ -1839,7 +1849,7 @@ const ShoppingRoute: React.FC = () => {
                 className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
               >
                 <ShoppingCart className="h-5 w-5" />
-                End Shopping
+                End Shopping Trip
               </Button>
             )}
             
