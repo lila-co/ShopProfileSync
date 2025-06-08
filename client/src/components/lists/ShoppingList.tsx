@@ -10,7 +10,7 @@ import { aiCategorizationService } from '@/lib/aiCategorization';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
-import { Plus, ShoppingBag, FileText, Clock, Check, Trash2, AlertTriangle, DollarSign, MapPin, Car, BarChart2, Wand2, Pencil, Image, Star, TrendingDown, Percent, Circle, CheckCircle2, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react';
+import { Plus, ShoppingBag, FileText, Clock, Check, Trash2, AlertTriangle, DollarSign, MapPin, Car, BarChart2, Wand2, Pencil, Image, Star, TrendingDown, Percent, Circle, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
 import { getItemImage, getBestProductImage, getCompanyLogo } from '@/lib/imageUtils';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -38,8 +38,6 @@ const ShoppingListComponent: React.FC = () => {
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
   const [isCategorizingItems, setIsCategorizingItems] = useState(false);
   const [userHasClearedList, setUserHasClearedList] = useState(false);
-  const [outOfStockItem, setOutOfStockItem] = useState<ShoppingListItem | null>(null);
-  const [outOfStockDialogOpen, setOutOfStockDialogOpen] = useState(false);
   // Session handling removed - using AuthContext instead
 
   const importRecipeMutation = useMutation({
@@ -790,49 +788,7 @@ const ShoppingListComponent: React.FC = () => {
     }
   };
 
-  const handleOutOfStockItem = (item: ShoppingListItem) => {
-    setOutOfStockItem(item);
-    setOutOfStockDialogOpen(true);
-  };
-
-  const handleMigrateToNextStore = () => {
-    if (outOfStockItem) {
-      // Update item with a flag indicating it should be moved to next store
-      updateItemMutation.mutate({
-        itemId: outOfStockItem.id,
-        updates: {
-          notes: 'Migrated to next store due to out-of-stock'
-        }
-      });
-      
-      toast({
-        title: "Item Migrated",
-        description: `${outOfStockItem.productName} will be purchased at the next store`,
-      });
-    }
-    setOutOfStockDialogOpen(false);
-    setOutOfStockItem(null);
-  };
-
-  const handleLeaveForFutureTrip = () => {
-    if (outOfStockItem) {
-      // Update item with a flag indicating it's for a future trip
-      updateItemMutation.mutate({
-        itemId: outOfStockItem.id,
-        updates: {
-          notes: 'Left for future trip due to out-of-stock',
-          isCompleted: false
-        }
-      });
-      
-      toast({
-        title: "Item Saved",
-        description: `${outOfStockItem.productName} will remain on your list for your next trip`,
-      });
-    }
-    setOutOfStockDialogOpen(false);
-    setOutOfStockItem(null);
-  };
+  
 
   // Show AI generation animation
   if (isGeneratingList) {
@@ -994,14 +950,6 @@ const ShoppingListComponent: React.FC = () => {
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => handleOutOfStockItem(item)}
-                                    title="Mark as out of stock"
-                                  >
-                                    <AlertCircle className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
                                     onClick={() => handleEditItem(item)}
                                   >
                                     <Pencil className="h-4 w-4" />
@@ -1045,14 +993,6 @@ const ShoppingListComponent: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleOutOfStockItem(item)}
-                      title="Mark as out of stock"
-                    >
-                      <AlertCircle className="h-4 w-4" />
-                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1364,40 +1304,7 @@ const ShoppingListComponent: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Out of Stock Item Dialog */}
-      <AlertDialog open={outOfStockDialogOpen} onOpenChange={setOutOfStockDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center space-x-2">
-              <AlertCircle className="h-5 w-5 text-orange-500" />
-              <span>Item Out of Stock</span>
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              <span className="font-medium">{outOfStockItem?.productName}</span> is not available at this store. 
-              What would you like to do?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
-            <AlertDialogCancel onClick={() => setOutOfStockDialogOpen(false)}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleLeaveForFutureTrip}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <Clock className="h-4 w-4 mr-2" />
-              Save for Next Trip
-            </AlertDialogAction>
-            <AlertDialogAction 
-              onClick={handleMigrateToNextStore}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              <MapPin className="h-4 w-4 mr-2" />
-              Try Next Store
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      
 
       {/* Voice AI Agent - Moved to bottom */}
       <div className="mt-6 mb-4">
