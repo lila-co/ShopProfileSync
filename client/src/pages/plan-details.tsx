@@ -710,7 +710,9 @@ const PlanDetails: React.FC = () => {
 
       {/* Store Details */}
       <div className="space-y-4">
-        {planData.stores.map((store, index) => (
+        {planData.stores
+          .sort((a, b) => a.retailer.name.localeCompare(b.retailer.name))
+          .map((store, index) => (
           <Card key={store.retailer.id}>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
