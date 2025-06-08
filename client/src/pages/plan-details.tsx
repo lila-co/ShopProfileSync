@@ -728,7 +728,9 @@ const PlanDetails: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {store.items.map((item) => (
+                {store.items
+                  .sort((a, b) => a.productName.localeCompare(b.productName))
+                  .map((item) => (
                   <div key={item.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
                     <div className="flex-1">
                       <div className="font-medium">{item.productName}</div>
