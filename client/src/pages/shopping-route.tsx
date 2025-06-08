@@ -745,10 +745,35 @@ const ShoppingRoute: React.FC = () => {
           isCompleted: false
         }
       });
+
+      // Remove item from current shopping route display
+      if (optimizedRoute?.aisleGroups) {
+        optimizedRoute.aisleGroups.forEach((aisle: any) => {
+          const itemIndex = aisle.items.findIndex((item: any) => item.id === outOfStockItem.id);
+          if (itemIndex > -1) {
+            aisle.items.splice(itemIndex, 1);
+          }
+        });
+      }
+
+      // For multi-store plans, also remove from current store's items
+      if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
+        const currentStore = optimizedRoute.stores[currentStoreIndex];
+        if (currentStore) {
+          const itemIndex = currentStore.items.findIndex((item: any) => item.id === outOfStockItem.id);
+          if (itemIndex > -1) {
+            currentStore.items.splice(itemIndex, 1);
+          }
+        }
+      }
+
+      // Force a re-render by updating the route state
+      setOptimizedRoute({...optimizedRoute});
       
       toast({
-        title: "Item Saved",
-        description: `${outOfStockItem.productName} will remain on your list for your next trip`,
+        title: "Item Saved for Next Trip",
+        description: `${outOfStockItem.productName} has been removed from this trip and will remain on your list for next time`,
+        duration: 4000
       });
     }
     setOutOfStockDialogOpen(false);
