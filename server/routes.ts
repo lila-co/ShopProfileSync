@@ -1558,7 +1558,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Record the purchase in the system
       const userId = 1; // Demo user
-      const retailer = await storage.getRetailerByName(retailerName);
+      const retailers = await storage.getRetailers();
+      const retailer = retailers.find(r => r.name === retailerName);
       
       if (retailer) {
         const purchase = await storage.createPurchase({

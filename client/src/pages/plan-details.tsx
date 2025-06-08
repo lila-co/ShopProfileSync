@@ -177,12 +177,38 @@ const PlanDetails: React.FC = () => {
     return deals?.filter((deal: any) => deal.retailerId === retailerId) || [];
   };
 
-  // Calculate availability of items
-  const availability = {
-    totalItems: shoppingItems?.length || 0,
-    availableItems: shoppingItems?.length || 0,
-    missingItems: [] as any[] // You would populate this based on actual data
-  };
+  // Calculate availability of items based on plan type and stores
+  const availability = React.useMemo(() => {
+    if (!shoppingItems || shoppingItems.length === 0) {
+      return {
+        totalItems: 0,
+        availableItems: 0,
+        missingItems: []
+      };
+    }
+
+    const totalItems = shoppingItems.length;
+    let availableItems = 0;
+    const missingItems: any[] = [];
+
+    // Get retailer IDs from current plan
+    const planRetailerIds = new Set(planData.stores.map(store => store.retailer.id));
+
+    // Check each item's availability in plan stores
+    shoppingItems.forEach(item => {
+      if (item.suggestedRetailer && planRetailerIds.has(item.suggestedRetailer.id)) {
+        availableItems++;
+      } else {
+        missingItems.push(item);
+      }
+    });
+
+    return {
+      totalItems,
+      availableItems,
+      missingItems
+    };
+  }, [shoppingItems, planData.stores]);
 
   if (isLoading) {
     return (
