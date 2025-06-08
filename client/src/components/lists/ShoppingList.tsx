@@ -117,18 +117,32 @@ const ShoppingListComponent: React.FC = () => {
       const categorizedPromises = items.map(async (item) => {
         let category = 'Pantry & Canned Goods'; // Default category
 
-        try {
-          // Use AI categorization service
-          const result = await aiCategorizationService.categorizeProduct(
-            item.productName, 
-            item.quantity, 
-            item.unit
-          );
+        // First check if item already has a manually set category from backend
+        if (item.category && item.category.trim()) {
+          category = item.category;
+        } else {
+          try {
+            // Use AI categorization service
+            const result = await aiCategorizationService.categorizeProduct(
+              item.productName, 
+              item.quantity, 
+              item.unit
+            );
 
-          if (result && result.category) {
-            category = result.category;
-          } else {
-            // Fallback to quick categorization
+            if (result && result.category) {
+              category = result.category;
+            } else {
+              // Fallback to quick categorization
+              const quickResult = aiCategorizationService.getQuickCategory(
+                item.productName, 
+                item.quantity, 
+                item.unit
+              );
+              category = quickResult.category;
+            }
+          } catch (error) {
+            console.warn('Failed to categorize item:', item.productName, error);
+            // Use quick categorization as fallback
             const quickResult = aiCategorizationService.getQuickCategory(
               item.productName, 
               item.quantity, 
@@ -136,15 +150,6 @@ const ShoppingListComponent: React.FC = () => {
             );
             category = quickResult.category;
           }
-        } catch (error) {
-          console.warn('Failed to categorize item:', item.productName, error);
-          // Use quick categorization as fallback
-          const quickResult = aiCategorizationService.getQuickCategory(
-            item.productName, 
-            item.quantity, 
-            item.unit
-          );
-          category = quickResult.category;
         }
 
         return { item, category };
@@ -464,8 +469,19 @@ const ShoppingListComponent: React.FC = () => {
       const response = await apiRequest('PATCH', `/api/shopping-list/items/${itemId}`, updates);
       return response.json();
     },
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+    onSuccess: async (data, variables) => {
+      // Invalidate queries to get fresh data
+      await queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      
+      // Re-categorize items immediately after update
+      const updatedLists = queryClient.getQueryData(['/api/shopping-lists']) as ShoppingListType[];
+      const defaultList = updatedLists?.[0];
+      const items = defaultList?.items || [];
+      
+      if (items.length > 0) {
+        await categorizeItems(items);
+      }
+      
       setEditingItem(null);
       
       // If category was changed, show specific feedback
