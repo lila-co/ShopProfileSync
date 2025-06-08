@@ -1215,14 +1215,32 @@ const ShoppingRoute: React.FC = () => {
   const endShopping = async () => {
     // Get all uncompleted items across all stores
     let allUncompletedItems: any[] = [];
+    let allMovedItems: any[] = [];
 
     if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
       // Multi-store: collect uncompleted items from all stores
-      optimizedRoute.stores.forEach(store => {
+      optimizedRoute.stores.forEach((store, index) => {
         const storeUncompleted = store.items.filter((item: any) => 
           !completedItems.has(item.id) && !item.isCompleted
         );
-        allUncompletedItems.push(...storeUncompleted);
+        
+        // Track which items were moved between stores
+        const itemsMovedFromThisStore = store.items.filter((item: any) => 
+          item.movedFrom && item.movedFrom !== store.retailerName
+        );
+        
+        allUncompletedItems.push(...storeUncompleted.map(item => ({
+          ...item,
+          storeName: store.retailerName,
+          storeIndex: index
+        })));
+        
+        allMovedItems.push(...itemsMovedFromThisStore.map(item => ({
+          ...item,
+          fromStore: item.movedFrom,
+          toStore: store.retailerName,
+          reason: 'unavailable_at_original_store'
+        })));
       });
     } else {
       // Single store: get uncompleted items from current route
@@ -1258,6 +1276,35 @@ const ShoppingRoute: React.FC = () => {
         description: "All items completed. Great job!",
         duration: 5000
       });
+    }
+
+    // Send comprehensive analytics to server
+    try {
+      const tripAnalytics = {
+        listId: listId,
+        completedItems: Array.from(completedItems),
+        uncompletedItems: allUncompletedItems.map(item => ({
+          ...item,
+          reason: item.notes?.includes('out of stock') ? 'out_of_stock' : 'not_found'
+        })),
+        movedItems: allMovedItems,
+        startTime: startTime,
+        endTime: new Date(),
+        retailerName: optimizedRoute?.isMultiStore ? 'Multi-Store' : optimizedRoute?.retailerName,
+        planType: optimizedRoute?.planType,
+        totalStores: optimizedRoute?.isMultiStore ? optimizedRoute.stores.length : 1
+      };
+
+      await fetch('/api/shopping-trip/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(tripAnalytics)
+      });
+
+      console.log('Shopping trip analytics sent successfully:', tripAnalytics);
+    } catch (error) {
+      console.warn('Failed to send shopping trip analytics:', error);
     }
 
     // Clear any temporary shopping data

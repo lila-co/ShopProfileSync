@@ -1197,6 +1197,263 @@ export async function registerRoutes(app: Express): Promise<Server> {
         trendingCategory: "Organic Products",
         trendDescription: "More families in your area are choosing organic alternatives",
         growthPercentage: 25,
+
+
+  // Retailer analytics endpoint for sharing insights
+  app.get('/api/analytics/retailer-insights/:retailerId', async (req: Request, res: Response) => {
+    try {
+      const { retailerId } = req.params;
+      const { startDate, endDate, format = 'summary' } = req.query;
+
+      const currentUserId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+
+      const currentUser = await storage.getUser(currentUserId);
+      if (!currentUser || (currentUser.role !== 'owner' && currentUser.role !== 'admin')) {
+        return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+      }
+
+      // Get retailer information
+      const retailer = await storage.getRetailer(parseInt(retailerId));
+      if (!retailer) {
+        return res.status(404).json({ message: 'Retailer not found' });
+      }
+
+      // Parse date range (default to last 30 days)
+      const endDateTime = endDate ? new Date(endDate as string) : new Date();
+      const startDateTime = startDate ? new Date(startDate as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+      // Get logs and metrics for this retailer
+      const logs = logger.getRecentLogs('info', 1000);
+      const metrics = logger.getMetricsSummary(24 * 30); // Last 30 days
+
+      // Filter logs for this retailer and date range
+      const retailerLogs = logs.filter(log => {
+        const logDate = new Date(log.timestamp);
+        const isInDateRange = logDate >= startDateTime && logDate <= endDateTime;
+        const isRetailerRelated = log.message.includes('Shopping trip completed') && 
+          log.metadata?.retailerName === retailer.name;
+        return isInDateRange && isRetailerRelated;
+      });
+
+      // Analyze the data
+      const analytics = {
+        retailer: {
+          id: retailer.id,
+          name: retailer.name
+        },
+        period: {
+          startDate: startDateTime.toISOString(),
+          endDate: endDateTime.toISOString(),
+          days: Math.ceil((endDateTime.getTime() - startDateTime.getTime()) / (24 * 60 * 60 * 1000))
+        },
+        summary: {
+          totalTrips: retailerLogs.length,
+          totalItemsRequested: 0,
+          totalItemsFound: 0,
+          totalItemsNotFound: 0,
+          totalItemsMovedToOtherStores: 0,
+          averageCompletionRate: 0,
+          averageTripDuration: 0
+        },
+        topUnfoundItems: {} as Record<string, { count: number, category: string }>,
+        topUnfoundCategories: {} as Record<string, number>,
+        itemsMostlyMovedToCompetitors: {} as Record<string, { count: number, destinationStores: string[] }>,
+        hourlyPatterns: Array(24).fill(0),
+        weeklyPatterns: Array(7).fill(0)
+      };
+
+      // Process each trip log
+      retailerLogs.forEach(log => {
+        if (log.metadata?.tripAnalytics) {
+          const trip = log.metadata.tripAnalytics;
+          const tripTime = new Date(log.timestamp);
+
+          analytics.summary.totalItemsRequested += trip.totalItems || 0;
+          analytics.summary.totalItemsFound += trip.completedItems || 0;
+          analytics.summary.totalItemsNotFound += trip.uncompletedItems || 0;
+          analytics.summary.totalItemsMovedToOtherStores += trip.movedItems || 0;
+          analytics.summary.averageCompletionRate += trip.completionRate || 0;
+          analytics.summary.averageTripDuration += trip.tripDurationMinutes || 0;
+
+          // Track hourly and weekly patterns
+          analytics.hourlyPatterns[tripTime.getHours()]++;
+          analytics.weeklyPatterns[tripTime.getDay()]++;
+
+          // Process unfound items
+          if (log.metadata.uncompletedItemDetails) {
+            log.metadata.uncompletedItemDetails.forEach((item: any) => {
+              if (!analytics.topUnfoundItems[item.productName]) {
+                analytics.topUnfoundItems[item.productName] = { count: 0, category: item.category };
+              }
+              analytics.topUnfoundItems[item.productName].count++;
+
+              if (!analytics.topUnfoundCategories[item.category]) {
+                analytics.topUnfoundCategories[item.category] = 0;
+              }
+              analytics.topUnfoundCategories[item.category]++;
+            });
+          }
+
+          // Process moved items
+          if (log.metadata.movedItemDetails) {
+            log.metadata.movedItemDetails.forEach((item: any) => {
+              if (!analytics.itemsMostlyMovedToCompetitors[item.productName]) {
+                analytics.itemsMostlyMovedToCompetitors[item.productName] = { 
+                  count: 0, 
+                  destinationStores: [] 
+                };
+              }
+              analytics.itemsMostlyMovedToCompetitors[item.productName].count++;
+              if (!analytics.itemsMostlyMovedToCompetitors[item.productName].destinationStores.includes(item.toStore)) {
+                analytics.itemsMostlyMovedToCompetitors[item.productName].destinationStores.push(item.toStore);
+              }
+            });
+          }
+        }
+      });
+
+      // Calculate averages
+      if (analytics.summary.totalTrips > 0) {
+        analytics.summary.averageCompletionRate = analytics.summary.averageCompletionRate / analytics.summary.totalTrips;
+        analytics.summary.averageTripDuration = analytics.summary.averageTripDuration / analytics.summary.totalTrips;
+      }
+
+      // Sort and limit top items
+      const sortedUnfoundItems = Object.entries(analytics.topUnfoundItems)
+        .sort(([, a], [, b]) => b.count - a.count)
+        .slice(0, 20);
+
+      const sortedUnfoundCategories = Object.entries(analytics.topUnfoundCategories)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 10);
+
+      const sortedMovedItems = Object.entries(analytics.itemsMostlyMovedToCompetitors)
+        .sort(([, a], [, b]) => b.count - a.count)
+        .slice(0, 15);
+
+      // Generate actionable insights
+      const insights = {
+        inventoryOpportunities: sortedUnfoundItems.slice(0, 10).map(([item, data]) => ({
+          item,
+          category: data.category,
+          requestCount: data.count,
+          missedRevenue: data.count * 10, // Estimated average item value
+          priority: data.count > 5 ? 'High' : data.count > 2 ? 'Medium' : 'Low'
+        })),
+        categoryGaps: sortedUnfoundCategories.slice(0, 5).map(([category, count]) => ({
+          category,
+          missedItems: count,
+          priority: count > 10 ? 'High' : count > 5 ? 'Medium' : 'Low'
+        })),
+        competitorLeakage: sortedMovedItems.slice(0, 8).map(([item, data]) => ({
+          item,
+          timesLost: data.count,
+          competitorsGaining: data.destinationStores,
+          urgency: data.count > 3 ? 'High' : 'Medium'
+        })),
+        peakShoppingHours: analytics.hourlyPatterns
+          .map((count, hour) => ({ hour, count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 5),
+        recommendations: [
+          analytics.summary.averageCompletionRate < 80 ? 
+            'Consider expanding inventory - completion rate below 80%' : null,
+          sortedUnfoundItems.length > 10 ? 
+            'High number of unfound items suggests inventory gaps' : null,
+          sortedMovedItems.length > 5 ? 
+            'Customers frequently shopping elsewhere for specific items' : null
+        ].filter(Boolean)
+      };
+
+      if (format === 'detailed') {
+        res.json({
+          analytics,
+          insights,
+          rawData: {
+            topUnfoundItems: Object.fromEntries(sortedUnfoundItems),
+            topUnfoundCategories: Object.fromEntries(sortedUnfoundCategories),
+            topMovedItems: Object.fromEntries(sortedMovedItems)
+          }
+        });
+      } else {
+        res.json({
+          analytics: {
+            ...analytics,
+            topUnfoundItems: Object.fromEntries(sortedUnfoundItems.slice(0, 10)),
+            topUnfoundCategories: Object.fromEntries(sortedUnfoundCategories.slice(0, 5)),
+            itemsMostlyMovedToCompetitors: Object.fromEntries(sortedMovedItems.slice(0, 8))
+          },
+          insights
+        });
+      }
+
+    } catch (error) {
+      console.error('Error generating retailer insights:', error);
+      handleError(res, error);
+    }
+  });
+
+  // Export retailer analytics data
+  app.get('/api/analytics/retailer-export/:retailerId', async (req: Request, res: Response) => {
+    try {
+      const { retailerId } = req.params;
+      const { startDate, endDate, format = 'csv' } = req.query;
+
+      const currentUserId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+
+      const currentUser = await storage.getUser(currentUserId);
+      if (!currentUser || (currentUser.role !== 'owner' && currentUser.role !== 'admin')) {
+        return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+      }
+
+      // Get the analytics data (reuse the logic from above)
+      const analyticsResponse = await fetch(`http://localhost:5000/api/analytics/retailer-insights/${retailerId}?startDate=${startDate}&endDate=${endDate}&format=detailed`, {
+        headers: { 'x-current-user-id': currentUserId.toString() }
+      });
+
+      if (!analyticsResponse.ok) {
+        return res.status(500).json({ message: 'Failed to generate analytics' });
+      }
+
+      const analyticsData = await analyticsResponse.json();
+      const retailer = await storage.getRetailer(parseInt(retailerId));
+
+      if (format === 'csv') {
+        // Generate CSV format
+        let csvContent = `Retailer Analytics Export - ${retailer?.name}\n`;
+        csvContent += `Period: ${analyticsData.analytics.period.startDate} to ${analyticsData.analytics.period.endDate}\n\n`;
+        
+        csvContent += `Summary Metrics\n`;
+        csvContent += `Total Trips,${analyticsData.analytics.summary.totalTrips}\n`;
+        csvContent += `Items Requested,${analyticsData.analytics.summary.totalItemsRequested}\n`;
+        csvContent += `Items Found,${analyticsData.analytics.summary.totalItemsFound}\n`;
+        csvContent += `Items Not Found,${analyticsData.analytics.summary.totalItemsNotFound}\n`;
+        csvContent += `Completion Rate,${analyticsData.analytics.summary.averageCompletionRate.toFixed(2)}%\n\n`;
+
+        csvContent += `Top Unfound Items\n`;
+        csvContent += `Item Name,Category,Request Count,Priority\n`;
+        analyticsData.insights.inventoryOpportunities.forEach((item: any) => {
+          csvContent += `"${item.item}","${item.category}",${item.requestCount},"${item.priority}"\n`;
+        });
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="retailer-analytics-${retailer?.name}-${Date.now()}.csv"`);
+        res.send(csvContent);
+      } else {
+        // JSON format
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename="retailer-analytics-${retailer?.name}-${Date.now()}.json"`);
+        res.json(analyticsData);
+      }
+
+    } catch (error) {
+      console.error('Error exporting retailer analytics:', error);
+      handleError(res, error);
+    }
+  });
+
         popularStore: "Whole Foods Market",
         bestDealDay: "Wednesday",
         averageAreaSpend: 127,
@@ -1672,10 +1929,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Record completed shopping trip
+  // Record completed shopping trip with detailed analytics
   app.post('/api/shopping-trip/complete', async (req: Request, res: Response) => {
     try {
-      const { listId, completedItems, startTime, endTime, retailerName } = req.body;
+      const { listId, completedItems, startTime, endTime, retailerName, uncompletedItems = [], movedItems = [] } = req.body;
       
       // Record the purchase in the system
       const userId = 1; // Demo user
@@ -1703,6 +1960,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
               totalPrice: (item.suggestedPrice || 500) * item.quantity
             });
           }
+        }
+
+        // Log comprehensive analytics for retailer insights
+        const tripDuration = new Date(endTime).getTime() - new Date(startTime).getTime();
+        const totalItems = completedItems.length + uncompletedItems.length + movedItems.length;
+        
+        logger.info('Shopping trip completed with detailed analytics', {
+          retailerName,
+          retailerId: retailer.id,
+          tripAnalytics: {
+            totalItems,
+            completedItems: completedItems.length,
+            uncompletedItems: uncompletedItems.length,
+            movedItems: movedItems.length,
+            completionRate: (completedItems.length / totalItems) * 100,
+            tripDurationMinutes: Math.round(tripDuration / (1000 * 60)),
+            sessionId: `trip_${Date.now()}_${userId}`,
+            timestamp: endTime
+          },
+          uncompletedItemDetails: uncompletedItems.map((item: any) => ({
+            productName: item.productName,
+            category: item.category,
+            quantity: item.quantity,
+            unit: item.unit,
+            suggestedPrice: item.suggestedPrice,
+            reason: item.reason || 'not_found' // 'not_found', 'out_of_stock', 'price_too_high', etc.
+          })),
+          movedItemDetails: movedItems.map((item: any) => ({
+            productName: item.productName,
+            category: item.category,
+            quantity: item.quantity,
+            unit: item.unit,
+            fromStore: retailerName,
+            toStore: item.destinationStore,
+            reason: item.reason || 'unavailable'
+          }))
+        });
+
+        // Record metrics for performance tracking
+        logger.recordMetric({
+          name: 'shopping_trip_completion_rate',
+          value: (completedItems.length / totalItems) * 100,
+          unit: 'percentage',
+          metadata: {
+            retailerName,
+            retailerId: retailer.id,
+            totalItems,
+            completedItems: completedItems.length
+          }
+        });
+
+        logger.recordMetric({
+          name: 'items_not_found_per_trip',
+          value: uncompletedItems.length,
+          unit: 'count',
+          metadata: {
+            retailerName,
+            retailerId: retailer.id,
+            categories: uncompletedItems.map((item: any) => item.category)
+          }
+        });
+
+        if (movedItems.length > 0) {
+          logger.recordMetric({
+            name: 'items_moved_to_other_stores',
+            value: movedItems.length,
+            unit: 'count',
+            metadata: {
+              fromStore: retailerName,
+              retailerId: retailer.id,
+              destinationStores: movedItems.map((item: any) => item.destinationStore)
+            }
+          });
         }
 
         // Trigger automatic list regeneration for next time
