@@ -33,6 +33,15 @@ import BottomNavigation from '@/components/layout/BottomNavigation';
 const DealsForRetailer: React.FC<{ retailerName: string; routeItems: any[] }> = ({ retailerName, routeItems }) => {
   const { data: retailers } = useQuery({
     queryKey: ['/api/retailers'],
+    queryFn: async () => {
+      const response = await fetch('/api/retailers', {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch retailers');
+      }
+      return response.json();
+    }
   });
 
   const { data: deals } = useQuery({
