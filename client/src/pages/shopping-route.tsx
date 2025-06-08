@@ -392,10 +392,113 @@ const ShoppingRoute: React.FC = () => {
     return route;
   };
 
-  // Define a placeholder for getShelfLocation
+  // Define shelf location logic based on product and category
   const getShelfLocation = (productName: string, category: string) => {
-      // Implement your logic to determine shelf location based on productName and category
-      return `Shelf location for ${productName} in ${category}`;
+    const name = productName.toLowerCase();
+    
+    // Produce section - specific areas
+    if (category === 'Produce') {
+      if (name.includes('banana') || name.includes('apple') || name.includes('orange')) {
+        return 'Front entrance display';
+      }
+      if (name.includes('lettuce') || name.includes('spinach') || name.includes('salad')) {
+        return 'Refrigerated greens wall';
+      }
+      if (name.includes('pepper') || name.includes('onion') || name.includes('tomato')) {
+        return 'Center produce bins';
+      }
+      if (name.includes('avocado') || name.includes('lime') || name.includes('lemon')) {
+        return 'Citrus & specialty section';
+      }
+      return 'Main produce area';
+    }
+    
+    // Dairy & Eggs - specific refrigerated sections
+    if (category === 'Dairy & Eggs') {
+      if (name.includes('milk')) return 'Back wall - dairy cooler';
+      if (name.includes('egg')) return 'Dairy cooler - middle shelf';
+      if (name.includes('cheese')) return 'Specialty cheese section';
+      if (name.includes('yogurt')) return 'Dairy cooler - top shelf';
+      if (name.includes('butter')) return 'Dairy cooler - bottom shelf';
+      return 'Main dairy section';
+    }
+    
+    // Meat & Seafood
+    if (category === 'Meat & Seafood') {
+      if (name.includes('chicken') || name.includes('turkey')) {
+        return 'Poultry case - left side';
+      }
+      if (name.includes('beef') || name.includes('ground')) {
+        return 'Beef case - center';
+      }
+      if (name.includes('fish') || name.includes('salmon') || name.includes('seafood')) {
+        return 'Seafood counter';
+      }
+      return 'Meat department';
+    }
+    
+    // Frozen Foods
+    if (category === 'Frozen Foods') {
+      if (name.includes('ice cream')) return 'Frozen desserts aisle';
+      if (name.includes('pizza')) return 'Frozen meals - left side';
+      if (name.includes('vegetable')) return 'Frozen vegetables';
+      return 'Frozen foods section';
+    }
+    
+    // Bakery
+    if (category === 'Bakery') {
+      if (name.includes('bread') || name.includes('loaf')) {
+        return 'Bread aisle - packaged goods';
+      }
+      return 'Fresh bakery counter';
+    }
+    
+    // Pantry & Canned Goods - more specific locations
+    if (category === 'Pantry & Canned Goods') {
+      if (name.includes('cereal')) return 'Cereal aisle - eye level';
+      if (name.includes('pasta')) return 'Pasta & sauce aisle';
+      if (name.includes('rice') || name.includes('quinoa')) {
+        return 'Grains & rice section';
+      }
+      if (name.includes('oil') || name.includes('vinegar')) {
+        return 'Cooking oils & condiments';
+      }
+      if (name.includes('can') || name.includes('soup')) {
+        return 'Canned goods - center aisles';
+      }
+      return 'Center store aisles';
+    }
+    
+    // Personal Care
+    if (category === 'Personal Care') {
+      if (name.includes('shampoo') || name.includes('soap')) {
+        return 'Health & beauty - left wall';
+      }
+      if (name.includes('toothpaste')) return 'Oral care section';
+      return 'Health & beauty department';
+    }
+    
+    // Household Items
+    if (category === 'Household Items') {
+      if (name.includes('detergent') || name.includes('cleaner')) {
+        return 'Cleaning supplies aisle';
+      }
+      if (name.includes('paper') || name.includes('towel')) {
+        return 'Paper goods aisle';
+      }
+      return 'Household goods section';
+    }
+    
+    // Beverages
+    if (name.includes('water') || name.includes('soda') || name.includes('juice')) {
+      if (name.includes('sparkling') || name.includes('carbonated')) {
+        return 'Beverage aisle - carbonated drinks';
+      }
+      return 'Beverage aisle - main section';
+    }
+    
+    // Generic fallback
+    return 'Check store directory';
   };
 
   // Generate optimized shopping route with AI-powered categorization
