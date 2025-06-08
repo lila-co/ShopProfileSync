@@ -1374,6 +1374,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Shopping list item routes
+  app.post('/api/shopping-list/items', sanitizeInput, validateBody(serverShoppingListItemSchema), async (req: Request, res: Response) => {
+    try {
+      const { shoppingListId, productName, quantity, unit, notes } = req.body;
+
+      if (!shoppingListId || !productName) {
+        return res.status(400).json({ message: 'Shopping list ID and product name are required' });
+      }
+
+      const newItem = await storage.addShoppingListItem({
+        shoppingListId,
+        productName: productName.trim(),
+        quantity: quantity || 1,
+        unit: unit || 'COUNT',
+        notes: notes || null
+      });
+
+      res.status(201).json(newItem);
+    } catch (error) {
+      console.error('Error adding shopping list item:', error);
+      handleError(res, error);
+    }
+  });
+
+  app.patch('/api/shopping-list/items/:id', async (req: Request, res: Response) => {
+    try {
+      const itemId = parseInt(req.params.id);
+      const updates = req.body;
+
+      if (isNaN(itemId)) {
+        return res.status(400).json({ message: 'Invalid item ID' });
+      }
+
+      const updatedItem = await storage.updateShoppingListItem(itemId, updates);
+      
+      if (!updatedItem) {
+        return res.status(404).json({ message: 'Shopping list item not found' });
+      }
+
+      res.json(updatedItem);
+    } catch (error) {
+      console.error('Error updating shopping list item:', error);
+      handleError(res, error);
+    }
+  });
+
+  app.delete('/api/shopping-list/items/:id', async (req: Request, res: Response) => {
+    try {
+      const itemId = parseInt(req.params.id);
+
+      if (isNaN(itemId)) {
+        return res.status(400).json({ message: 'Invalid item ID' });
+      }
+
+      await storage.deleteShoppingListItem(itemId);
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting shopping list item:', error);
+      handleError(res, error);
+    }
+  });
+
   // Shopping list routes
   app.get('/api/shopping-lists/:id', async (req: Request, res: Response) => {
     try {
@@ -1484,6 +1546,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(recentPurchases);
     } catch (error) {
       handleError(res, error);
+    }
+  });
+
+  // Shopping list suggestions endpoint
+  app.get('/api/shopping-lists/suggestions', async (req: Request, res: Response) => {
+    try {
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+      
+      // Get user preferences and recent purchases for suggestions
+      const user = await storage.getUser(userId);
+      const purchases = await storage.getPurchases(userId, 10); // Get last 10 purchases
+      
+      // Generate suggestions based on purchase patterns
+      const suggestions = await generatePersonalizedSuggestions(user, purchases);
+      
+      res.json(suggestions || []);
+    } catch (error) {
+      console.error('Error generating suggestions:', error);
+      res.json([]); // Return empty array instead of error to prevent frontend crashes
     }
   });
 
