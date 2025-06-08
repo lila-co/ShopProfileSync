@@ -1142,6 +1142,7 @@ const ShoppingListComponent: React.FC = () => {
             <Button 
               onClick={handleImportRecipe} 
               disabled={importRecipeMutation.isPending || !recipeUrl.trim()}
+              className="bg-primary text-white hover:bg-primary/90"
             >
               {importRecipeMutation.isPending ? "Importing..." : "Import Recipe"}
             </Button>
