@@ -1458,39 +1458,42 @@ const ShoppingRoute: React.FC = () => {
       <AlertDialog open={outOfStockDialogOpen} onOpenChange={setOutOfStockDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center space-x-2">
-              <AlertCircle className="h-5 w-5 text-orange-500" />
+            <AlertDialogTitle className="flex items-center space-x-3 text-lg font-semibold text-gray-900">
+              <AlertCircle className="h-6 w-6 text-orange-500" />
               <span>Item Status</span>
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              Did you find <span className="font-medium">{outOfStockItem?.productName}</span> at this location?
+            <AlertDialogDescription className="text-base text-gray-700 mt-3 leading-relaxed">
+              Did you find <span className="font-semibold text-gray-900 bg-gray-100 px-2 py-1 rounded">{outOfStockItem?.productName}</span> at this location?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+          <AlertDialogFooter className="flex flex-col space-y-3 sm:flex-row sm:space-y-0 sm:space-x-2">
             <AlertDialogAction 
               onClick={handleItemFound}
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg shadow-sm transition-colors"
             >
-              <Check className="h-4 w-4 mr-2" />
-              Found It!
+              <Check className="h-5 w-5 mr-3" />
+              <span className="text-base">Found It!</span>
             </AlertDialogAction>
             <AlertDialogAction 
               onClick={handleLeaveForFutureTrip}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg shadow-sm transition-colors"
             >
-              <Clock className="h-4 w-4 mr-2" />
-              Save for Next Trip
+              <Clock className="h-5 w-5 mr-3" />
+              <span className="text-base">Save for Next Trip</span>
             </AlertDialogAction>
             {optimizedRoute?.isMultiStore && (
               <AlertDialogAction 
                 onClick={handleMigrateToNextStore}
-                className="bg-purple-600 hover:bg-purple-700"
+                className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-4 rounded-lg shadow-sm transition-colors"
               >
-                <MapPin className="h-4 w-4 mr-2" />
-                Try Next Store
+                <MapPin className="h-5 w-5 mr-3" />
+                <span className="text-base">Try Next Store</span>
               </AlertDialogAction>
             )}
-            <AlertDialogCancel onClick={() => setOutOfStockDialogOpen(false)}>
+            <AlertDialogCancel 
+              onClick={() => setOutOfStockDialogOpen(false)}
+              className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-3 px-4 rounded-lg border border-gray-300 transition-colors"
+            >
               Cancel
             </AlertDialogCancel>
           </AlertDialogFooter>
