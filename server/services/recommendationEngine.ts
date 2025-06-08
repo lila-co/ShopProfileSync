@@ -36,19 +36,19 @@ interface RecipeIngredient {
 export async function extractRecipeIngredients(recipeUrl: string, servings: number = 4): Promise<RecipeIngredient[]> {
   try {
     console.log(`Extracting ingredients from recipe URL: ${recipeUrl}`);
-    
+
     // Check if we have an API key before making the request
     if (!process.env.OPENAI_API_KEY) {
       console.log("No OpenAI API key provided. Using mock recipe data based on URL.");
       return getRecipeSpecificMockData(recipeUrl, servings);
     }
-    
+
     const prompt = `Extract the ingredients from this recipe URL: ${recipeUrl}. 
     Identify each ingredient, its quantity, and unit. 
     Return a JSON array of ingredients formatted as: 
     [{"name": "ingredient name", "quantity": number, "unit": "unit of measurement"}].
     Adjust quantities for ${servings} servings.`;
-    
+
     const response = await openai.chat.completions.create({
       model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
       messages: [
@@ -57,12 +57,12 @@ export async function extractRecipeIngredients(recipeUrl: string, servings: numb
       ],
       response_format: { type: "json_object" }
     });
-    
+
     const content = response.choices[0].message.content;
     if (!content) {
       throw new Error("Failed to extract ingredients from recipe");
     }
-    
+
     const parsedResponse = JSON.parse(content);
     return parsedResponse.ingredients || getRecipeSpecificMockData(recipeUrl, servings);
   } catch (error) {
@@ -78,7 +78,7 @@ function getRecipeSpecificMockData(recipeUrl: string, servings: number = 4): Rec
   const baseServings = 4;
   const multiplier = servings / baseServings;
   const urlLower = recipeUrl.toLowerCase();
-  
+
   // Analyze URL for recipe type
   if (urlLower.includes('cheesecake')) {
     return [
@@ -133,7 +133,7 @@ function getRecipeSpecificMockData(recipeUrl: string, servings: number = 4): Rec
       { name: "Salt", quantity: Math.round(0.5 * multiplier), unit: "teaspoon" }
     ];
   }
-  
+
   // Default fallback for general recipes
   return getMockRecipeIngredients(servings);
 }
@@ -142,7 +142,7 @@ function getRecipeSpecificMockData(recipeUrl: string, servings: number = 4): Rec
 function getMockRecipeIngredients(servings: number = 4): RecipeIngredient[] {
   const baseServings = 4;
   const multiplier = servings / baseServings;
-  
+
   return [
     { name: "Chicken breast", quantity: Math.round(2 * multiplier), unit: "pounds" },
     { name: "Olive oil", quantity: Math.round(2 * multiplier), unit: "tablespoons" },
@@ -162,12 +162,12 @@ export function analyzeBulkVsUnitPricing(deals: any[], userPrefersBulk: boolean 
   const dealAnalysis = deals.map(deal => {
     // Calculate unit price for comparison
     const unitPrice = deal.salePrice / (deal.quantity || 1);
-    
+
     // Determine if this is a bulk deal (quantity > 12 or specifically bulk retailers)
     const isBulkDeal = deal.quantity > 12 || deal.retailerName?.toLowerCase().includes('costco') || 
                        deal.retailerName?.toLowerCase().includes('sam') || 
                        deal.retailerName?.toLowerCase().includes('bj');
-    
+
     return {
       ...deal,
       unitPrice,
@@ -175,7 +175,7 @@ export function analyzeBulkVsUnitPricing(deals: any[], userPrefersBulk: boolean 
       dealType: isBulkDeal ? 'bulk' : 'standard'
     };
   });
-  
+
   // Group by product name to find the best deals
   const productGroups = dealAnalysis.reduce((groups, deal) => {
     const key = deal.productName.toLowerCase();
@@ -183,31 +183,31 @@ export function analyzeBulkVsUnitPricing(deals: any[], userPrefersBulk: boolean 
     groups[key].push(deal);
     return groups;
   }, {} as Record<string, any[]>);
-  
+
   // Analyze each product group for best value
   const recommendations = [];
-  
+
   for (const [productName, productDeals] of Object.entries(productGroups)) {
     if (productDeals.length < 2) continue; // Need at least 2 options to compare
-    
+
     // Sort by unit price (best value first)
     const sortedDeals = productDeals.sort((a, b) => a.unitPrice - b.unitPrice);
     const bestUnitPriceDeal = sortedDeals[0];
     const bulkDeals = sortedDeals.filter(deal => deal.isBulkDeal);
     const standardDeals = sortedDeals.filter(deal => !deal.isBulkDeal);
-    
+
     if (bulkDeals.length > 0 && standardDeals.length > 0) {
       const bestBulkDeal = bulkDeals[0];
       const bestStandardDeal = standardDeals[0];
-      
+
       // Calculate savings comparison
       const bulkSavingsPerUnit = bestBulkDeal.unitPrice;
       const standardSavingsPerUnit = bestStandardDeal.unitPrice;
       const unitPriceDifference = ((standardSavingsPerUnit - bulkSavingsPerUnit) / standardSavingsPerUnit) * 100;
-      
+
       let recommendedDeal;
       let dealComparison;
-      
+
       if (userPrefersBulk && unitPriceDifference > -20) {
         // User prefers bulk and the unit price difference isn't too significant (less than 20% worse)
         recommendedDeal = bestBulkDeal;
@@ -236,7 +236,7 @@ export function analyzeBulkVsUnitPricing(deals: any[], userPrefersBulk: boolean 
           unitPriceDifference: unitPriceDifference.toFixed(1)
         };
       }
-      
+
       recommendations.push({
         ...recommendedDeal,
         dealComparison,
@@ -254,7 +254,7 @@ export function analyzeBulkVsUnitPricing(deals: any[], userPrefersBulk: boolean 
       });
     }
   }
-  
+
   return recommendations;
 }
 
@@ -265,7 +265,7 @@ export async function predictiveShoppingAnalysis(user: User, purchases: Purchase
   seasonalRecommendations: any[];
 }> {
   const patterns = analyzePurchasePatterns(purchases);
-  
+
   // Predict consumption based on household size and patterns
   const consumptionMultipliers = {
     'SINGLE': 1.0,
@@ -274,19 +274,19 @@ export async function predictiveShoppingAnalysis(user: User, purchases: Purchase
     'LARGE_FAMILY': 4.5,
     'SENIOR_LIVING': 0.8
   };
-  
+
   const multiplier = consumptionMultipliers[user.householdType] || 1.0;
-  
+
   // Predict when items will run out with 85% accuracy
   const predictedNeeds = patterns.map(pattern => {
     const adjustedConsumption = pattern.averageDaysBetweenPurchases / multiplier;
     const daysSinceLastPurchase = Math.floor(
       (new Date().getTime() - pattern.lastPurchaseDate.getTime()) / (1000 * 60 * 60 * 24)
     );
-    
+
     const daysUntilNeeded = Math.max(0, adjustedConsumption - daysSinceLastPurchase);
     const confidence = Math.min(0.95, 0.6 + (pattern.purchases.length * 0.1));
-    
+
     return {
       productName: pattern.productName,
       daysUntilNeeded,
@@ -296,13 +296,13 @@ export async function predictiveShoppingAnalysis(user: User, purchases: Purchase
       aiReasoning: `Based on ${pattern.purchases.length} previous purchases, typically consumed every ${Math.round(adjustedConsumption)} days`
     };
   }).filter(item => item.daysUntilNeeded <= 14); // Only show items needed in next 2 weeks
-  
+
   // Calculate optimal shopping days (when most deals align with needs)
   const optimalShoppingDays = calculateOptimalShoppingDays(predictedNeeds);
-  
+
   // Seasonal and weather-based recommendations
   const seasonalRecommendations = await generateSeasonalRecommendations(user);
-  
+
   return {
     predictedNeeds,
     optimalShoppingDays,
@@ -313,9 +313,9 @@ export async function predictiveShoppingAnalysis(user: User, purchases: Purchase
 // Function to generate personalized suggestions based on user profile
 export async function generatePersonalizedSuggestions(user: User): Promise<any[]> {
   console.log(`Generating personalized suggestions for user with household type: ${user.householdType}`);
-  
+
   const suggestions = [];
-  
+
   // Base suggestions on household type
   if (user.householdType === 'FAMILY_WITH_CHILDREN') {
     suggestions.push({
@@ -375,7 +375,7 @@ export async function generatePersonalizedSuggestions(user: User): Promise<any[]
       });
     }
   }
-  
+
   // Additional suggestions based on user preferences
   if (user.buyInBulk) {
     suggestions.push({
@@ -384,7 +384,7 @@ export async function generatePersonalizedSuggestions(user: User): Promise<any[]
       reason: "Perfect for storing and preserving bulk purchases"
     });
   }
-  
+
   if (user.preferOrganic && !suggestions.some(s => s.suggestedItem.includes("Organic"))) {
     suggestions.push({
       type: "swap",
@@ -393,7 +393,7 @@ export async function generatePersonalizedSuggestions(user: User): Promise<any[]
       reason: "Pesticide-free options aligned with your preference for organic foods"
     });
   }
-  
+
   return suggestions;
 }
 
@@ -417,16 +417,16 @@ export async function generateRecommendations(
   purchases: Purchase[]
 ): Promise<InsertRecommendation[]> {
   console.log("Generating recommendations for user:", user.id);
-  
+
   // Step 1: Analyze purchase patterns
   const patterns = analyzePurchasePatterns(purchases);
-  
+
   // Step 2: Filter out recently purchased items (within configurable threshold)
   const filteredPatterns = filterRecentlyPurchasedItems(patterns, purchases);
-  
+
   // Step 3: Find the best deals for products that need to be repurchased soon
   const recommendations = generateProductRecommendations(filteredPatterns, user);
-  
+
   return recommendations;
 }
 
@@ -438,10 +438,10 @@ function filterRecentlyPurchasedItems(
 ): ProductPurchasePattern[] {
   const now = new Date();
   const recentPurchaseThreshold = new Date(now.getTime() - (dayThreshold * 24 * 60 * 60 * 1000));
-  
+
   // Get all items purchased recently
   const recentlyPurchasedItems = new Set<string>();
-  
+
   purchases.forEach(purchase => {
     const purchaseDate = new Date(purchase.purchaseDate);
     if (purchaseDate >= recentPurchaseThreshold) {
@@ -451,35 +451,35 @@ function filterRecentlyPurchasedItems(
       });
     }
   });
-  
+
   // Filter patterns to exclude recently purchased items
   const filteredPatterns = patterns.filter(pattern => {
     const productName = pattern.productName.toLowerCase().trim();
     const wasRecentlyPurchased = recentlyPurchasedItems.has(productName);
-    
+
     if (wasRecentlyPurchased) {
       console.log(`Filtering out "${pattern.productName}" - purchased within last ${dayThreshold} days`);
     }
-    
+
     return !wasRecentlyPurchased;
   });
-  
-  return filteredPatterns;s;
+
+  return filteredPatterns;
 }
 
 export function analyzePurchasePatterns(purchases: Purchase[]): ProductPurchasePattern[] {
   // Group purchases by product
   const productMap = new Map<string, ProductPurchasePattern>();
-  
+
   // Sort purchases by date (oldest first)
   const sortedPurchases = [...purchases].sort(
     (a, b) => new Date(a.purchaseDate).getTime() - new Date(b.purchaseDate).getTime()
   );
-  
+
   for (const purchase of sortedPurchases) {
     // Handle both direct items and receipt data
     let items = purchase.items || [];
-    
+
     // If items are not available but receipt data exists, extract from receipt
     if (items.length === 0 && purchase.receiptData && purchase.receiptData.items) {
       items = purchase.receiptData.items.map((receiptItem: any) => ({
@@ -489,14 +489,14 @@ export function analyzePurchasePatterns(purchases: Purchase[]): ProductPurchaseP
         totalPrice: receiptItem.price || receiptItem.totalPrice
       }));
     }
-    
+
     const purchaseDate = new Date(purchase.purchaseDate);
-    
+
     for (const item of items) {
       // Normalize product name for better matching
       const normalizedProductName = item.productName.trim().toLowerCase();
       let matchingKey = item.productName;
-      
+
       // Find existing product with similar name
       for (const existingKey of productMap.keys()) {
         if (existingKey.toLowerCase() === normalizedProductName ||
@@ -506,7 +506,7 @@ export function analyzePurchasePatterns(purchases: Purchase[]): ProductPurchaseP
           break;
         }
       }
-      
+
       if (!productMap.has(matchingKey)) {
         productMap.set(matchingKey, {
           productName: matchingKey,
@@ -517,21 +517,21 @@ export function analyzePurchasePatterns(purchases: Purchase[]): ProductPurchaseP
           lastPurchaseDate: purchaseDate
         });
       }
-      
+
       const pattern = productMap.get(matchingKey)!;
-      
+
       pattern.purchases.push({
         date: purchaseDate,
         quantity: item.quantity || 1,
         retailerId: purchase.retailerId,
         price: item.unitPrice || item.totalPrice || 300 // Default price if not available
       });
-      
+
       pattern.totalQuantity += (item.quantity || 1);
       pattern.lastPurchaseDate = purchaseDate;
     }
   }
-  
+
   // Calculate average days between purchases and typical retailer/price
   for (const pattern of productMap.values()) {
     // Only consider products with multiple purchases for frequency calculation
@@ -543,7 +543,7 @@ export function analyzePurchasePatterns(purchases: Purchase[]): ProductPurchaseP
         );
         return sum + daysSincePrevious;
       }, 0);
-      
+
       pattern.averageDaysBetweenPurchases = totalDays / (pattern.purchases.length - 1);
     } else {
       // For single purchases, use product category to estimate frequency
@@ -557,7 +557,7 @@ export function analyzePurchasePatterns(purchases: Purchase[]): ProductPurchaseP
         pattern.averageDaysBetweenPurchases = 14; // Default bi-weekly
       }
     }
-    
+
     // Find typical retailer (most frequent)
     const retailerCounts = new Map<number, number>();
     for (const purchase of pattern.purchases) {
@@ -568,7 +568,7 @@ export function analyzePurchasePatterns(purchases: Purchase[]): ProductPurchaseP
         );
       }
     }
-    
+
     let maxCount = 0;
     for (const [retailerId, count] of retailerCounts.entries()) {
       if (count > maxCount) {
@@ -576,11 +576,11 @@ export function analyzePurchasePatterns(purchases: Purchase[]): ProductPurchaseP
         pattern.typicalRetailerId = retailerId;
       }
     }
-    
+
     // Calculate typical price (average)
     pattern.typicalPrice = pattern.purchases.reduce((sum, purchase) => sum + purchase.price, 0) / pattern.purchases.length;
   }
-  
+
   return Array.from(productMap.values());
 }
 
@@ -597,12 +597,12 @@ function analyzeBehavioralPatterns(user: User, patterns: ProductPurchasePattern[
   const totalPurchases = patterns.reduce((sum, p) => sum + p.purchases.length, 0);
   const avgDaysBetweenShopping = patterns.length > 0 ? 
     patterns.reduce((sum, p) => sum + p.averageDaysBetweenPurchases, 0) / patterns.length : 14;
-  
+
   // Determine shopping personality
   let shoppingPersonality = "balanced_shopper";
   if (avgDaysBetweenShopping <= 5) shoppingPersonality = "frequent_shopper";
   else if (avgDaysBetweenShopping >= 14) shoppingPersonality = "bulk_shopper";
-  
+
   // Calculate price sensitivity (based on deal seeking behavior)
   const priceVariation = patterns.map(p => {
     const prices = p.purchases.map(purchase => purchase.price);
@@ -613,7 +613,7 @@ function analyzeBehavioralPatterns(user: User, patterns: ProductPurchasePattern[
   const avgPriceVariation = priceVariation.length > 0 ? 
     priceVariation.reduce((sum, v) => sum + v, 0) / priceVariation.length : 0;
   const pricesensitivity = Math.min(1, avgPriceVariation * 2); // 0-1 scale
-  
+
   // Brand loyalty analysis
   const brandConsistency = patterns.map(p => {
     const retailers = p.purchases.map(purchase => purchase.retailerId).filter(Boolean);
@@ -622,14 +622,14 @@ function analyzeBehavioralPatterns(user: User, patterns: ProductPurchasePattern[
   });
   const brandLoyalty = brandConsistency.length > 0 ? 
     brandConsistency.reduce((sum, b) => sum + b, 0) / brandConsistency.length : 0.5;
-  
+
   // Planning style
   const planningStyle = user.buyInBulk ? "strategic_planner" : 
                        avgDaysBetweenShopping <= 7 ? "just_in_time" : "routine_shopper";
-  
+
   // Generate personalized recommendations
   const behavioralRecommendations = [];
-  
+
   if (pricesensitivity > 0.7) {
     behavioralRecommendations.push("You're price-conscious! We'll prioritize deals and bulk savings for you.");
   }
@@ -642,7 +642,7 @@ function analyzeBehavioralPatterns(user: User, patterns: ProductPurchasePattern[
   if (planningStyle === "strategic_planner") {
     behavioralRecommendations.push("You plan ahead well! We'll show monthly deals and bulk opportunities.");
   }
-  
+
   return {
     shoppingPersonality,
     pricesensitivity,
@@ -659,31 +659,31 @@ function generateProductRecommendations(
 ): InsertRecommendation[] {
   const now = new Date();
   const recommendations: InsertRecommendation[] = [];
-  
+
   // Get behavioral insights for better personalization
   const behaviorAnalysis = analyzeBehavioralPatterns(user, patterns);
-  
+
   for (const pattern of patterns) {
     // Skip if fewer than 2 purchases and pattern isn't strong
     if (pattern.purchases.length < 2 && pattern.averageDaysBetweenPurchases > 14) {
       continue;
     }
-    
+
     // Calculate days since last purchase
     const daysSinceLastPurchase = Math.floor(
       (now.getTime() - pattern.lastPurchaseDate.getTime()) / (1000 * 60 * 60 * 24)
     );
-    
+
     // Calculate days until next predicted purchase
     const daysUntilPurchase = Math.max(0, Math.floor(pattern.averageDaysBetweenPurchases - daysSinceLastPurchase));
-    
+
     // Recommend if purchase is due within next 7 days
     if (daysUntilPurchase <= 7) {
       // For demo, simulate finding the best deal
       const regularPrice = Math.round(pattern.typicalPrice);
       const salePrice = Math.round(regularPrice * (0.85 + Math.random() * 0.1)); // 5-15% discount
       const savings = regularPrice - salePrice;
-      
+
       // Create recommendation
       const recommendation: InsertRecommendation = {
         userId: user.id,
@@ -697,11 +697,11 @@ function generateProductRecommendations(
           ? "Running low based on your purchase pattern" 
           : "Best price this week"
       };
-      
+
       recommendations.push(recommendation);
     }
   }
-  
+
   // Sort by urgency (days until purchase)
   recommendations.sort((a, b) => {
     if (a.daysUntilPurchase === undefined || b.daysUntilPurchase === undefined) {
@@ -709,6 +709,6 @@ function generateProductRecommendations(
     }
     return a.daysUntilPurchase - b.daysUntilPurchase;
   });
-  
+
   return recommendations;
 }

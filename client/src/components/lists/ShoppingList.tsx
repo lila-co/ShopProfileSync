@@ -1135,14 +1135,18 @@ const ShoppingListComponent: React.FC = () => {
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRecipeDialogOpen(false)}>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setRecipeDialogOpen(false)}
+              className="mt-3 sm:mt-0"
+            >
               Cancel
             </Button>
             <Button 
               onClick={handleImportRecipe} 
               disabled={importRecipeMutation.isPending || !recipeUrl.trim()}
-              className="bg-primary text-white hover:bg-primary/90"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               {importRecipeMutation.isPending ? "Importing..." : "Import Recipe"}
             </Button>

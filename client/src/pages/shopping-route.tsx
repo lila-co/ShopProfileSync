@@ -33,6 +33,15 @@ import BottomNavigation from '@/components/layout/BottomNavigation';
 const DealsForRetailer: React.FC<{ retailerName: string; routeItems: any[] }> = ({ retailerName, routeItems }) => {
   const { data: retailers } = useQuery({
     queryKey: ['/api/retailers'],
+    queryFn: async () => {
+      const response = await fetch('/api/retailers', {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch retailers');
+      }
+      return response.json();
+    }
   });
 
   const { data: deals } = useQuery({
@@ -151,18 +160,27 @@ const ShoppingRoute: React.FC = () => {
   const [loyaltyCard, setLoyaltyCard] = useState<any>(null);
   const [startTime, setStartTime] = useState<Date | null>(null);
 
-  // Fetch loyalty card info for the retailer
+  // Get current retailer name for loyalty card fetching
+  const getCurrentRetailerName = () => {
+    if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
+      return optimizedRoute.stores[currentStoreIndex]?.retailerName;
+    }
+    return optimizedRoute?.retailerName;
+  };
+
+  // Fetch loyalty card info for the current retailer
   const { data: loyaltyCardData } = useQuery({
-    queryKey: [`/api/user/loyalty-card/${optimizedRoute?.retailerName}`],
-    enabled: !!optimizedRoute?.retailerName,
+    queryKey: [`/api/user/loyalty-card/${getCurrentRetailerName()}`],
+    enabled: !!getCurrentRetailerName(),
     queryFn: async () => {
-      console.log('Fetching loyalty card for retailer:', optimizedRoute.retailerName);
-      const response = await fetch(`/api/user/loyalty-card/${encodeURIComponent(optimizedRoute.retailerName)}`, {
+      const retailerName = getCurrentRetailerName();
+      console.log('Fetching loyalty card for retailer:', retailerName);
+      const response = await fetch(`/api/user/loyalty-card/${encodeURIComponent(retailerName)}`, {
         credentials: "include",
       });
       console.log('Loyalty card response status:', response.status);
       if (!response.ok) {
-        console.log('No loyalty card found for retailer:', optimizedRoute.retailerName);
+        console.log('No loyalty card found for retailer:', retailerName);
         return null; // No loyalty card found
       }
       const data = await response.json();
@@ -176,8 +194,10 @@ const ShoppingRoute: React.FC = () => {
     if (loyaltyCardData) {
       console.log('Setting loyalty card:', loyaltyCardData);
       setLoyaltyCard(loyaltyCardData);
+    } else {
+      setLoyaltyCard(null);
     }
-  }, [loyaltyCardData]);
+  }, [loyaltyCardData, currentStoreIndex]);
 
   // Fetch shopping list and items
   const { data: shoppingList, isLoading } = useQuery({
@@ -723,8 +743,15 @@ const ShoppingRoute: React.FC = () => {
                     <Check className="h-3 w-3 text-white" />
                   </div>
                   <div>
-                    <div className="font-semibold text-green-800">Loyalty Card Ready</div>
+                    <div className="font-semibold text-green-800">
+                      {optimizedRoute?.isMultiStore ? `${getCurrentRetailerName()} ` : ''}Loyalty Card Ready
+                    </div>
                     <div className="text-xs text-green-600">{loyaltyCard.cardNumber}</div>
+                    {optimizedRoute?.isMultiStore && (
+                      <div className="text-xs text-gray-500">
+                        Store {currentStoreIndex + 1} of {optimizedRoute.stores.length}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <Button
@@ -732,9 +759,9 @@ const ShoppingRoute: React.FC = () => {
                   size="sm"
                   className="text-green-700 border-green-300 hover:bg-green-100"
                   onClick={() => {
-                    // Generate barcode display or show scannable code
+                    const retailerName = getCurrentRetailerName();
                     toast({
-                      title: "Loyalty Card",
+                      title: `${retailerName} Loyalty Card`,
                       description: "Show this to the cashier for points/discounts",
                       duration: 5000
                     });
@@ -746,13 +773,15 @@ const ShoppingRoute: React.FC = () => {
 
               {/* Barcode Display Area */}
               <div className="bg-white p-3 rounded border text-center">
-                <div className="text-xs text-gray-500 mb-1">Loyalty Card</div>
+                <div className="text-xs text-gray-500 mb-1">
+                  {getCurrentRetailerName()} Loyalty Card
+                </div>
                 <div className="font-mono text-lg font-bold tracking-wider">
                   {loyaltyCard.barcodeNumber || loyaltyCard.cardNumber}
                 </div>
                 {/* Simple barcode visualization */}
                 <div className="flex justify-center mt-2 gap-px">
-                  {loyaltyCard.barcodeNumber?.split('').map((digit: string, index: number) => (
+                  {(loyaltyCard.barcodeNumber || loyaltyCard.cardNumber)?.split('').map((digit: string, index: number) => (
                     <div
                       key={index}
                       className={`w-1 h-8 ${parseInt(digit) % 2 === 0 ? 'bg-black' : 'bg-gray-300'}`}
@@ -767,6 +796,33 @@ const ShoppingRoute: React.FC = () => {
                     Affiliate: {loyaltyCard.affiliateCode}
                   </div>
                 )}
+                {optimizedRoute?.isMultiStore && (
+                  <div className="text-xs text-purple-600 mt-1 font-medium">
+                    🏪 Currently shopping at {getCurrentRetailerName()}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* No Loyalty Card Notice for Multi-Store */}
+        {!loyaltyCard && optimizedRoute?.isMultiStore && getCurrentRetailerName() && (
+          <Card className="mb-4 border-yellow-200 bg-yellow-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <div className="h-5 w-5 bg-yellow-500 rounded-full flex items-center justify-center">
+                  <Store className="h-3 w-3 text-white" />
+                </div>
+                <div>
+                  <div className="font-medium text-yellow-800">No Loyalty Card</div>
+                  <div className="text-xs text-yellow-600">
+                    No loyalty card found for {getCurrentRetailerName()}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Store {currentStoreIndex + 1} of {optimizedRoute.stores.length}
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>

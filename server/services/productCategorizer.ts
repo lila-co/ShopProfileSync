@@ -221,13 +221,13 @@ export class ProductCategorizerService {
     ]);
 
     this.categoryPatterns.set('personal_care', [
-      /\b(shampoo|soap|toothpaste|deodorant|lotion|sunscreen)\w*\b/i,
+      /\b(shampoo|body\s*soap|hand\s*soap|bar\s*soap|toothpaste|deodorant|lotion|sunscreen)\w*\b/i,
       /\b(hygiene|beauty|skincare|haircare)\b/i
     ]);
 
     this.categoryPatterns.set('household', [
       /\b(toilet\s*paper|paper\s*towel|tissue|napkin|paper\s*plate|paper\s*cup)\b/i,
-      /\b(cleaner|detergent|soap|trash|garbage)\w*\b/i,
+      /\b(dish\s*soap|cleaner|detergent|all\s*purpose|trash|garbage)\w*\b/i,
       /\b(cleaning|laundry|kitchen|bathroom)\b.*\b(supplies|products)\b/i
     ]);
 
