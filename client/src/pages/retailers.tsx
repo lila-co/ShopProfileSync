@@ -27,6 +27,7 @@ const RetailersPage: React.FC = () => {
 
   const { data: retailers, isLoading } = useQuery<Retailer[]>({
     queryKey: ['/api/retailers'],
+    queryFn: () => apiRequest('/api/retailers'),
     suspense: false,
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000,
@@ -34,6 +35,7 @@ const RetailersPage: React.FC = () => {
 
   const { data: connectedAccounts } = useQuery<RetailerAccount[]>({
     queryKey: ['/api/user/retailer-accounts'],
+    queryFn: () => apiRequest('/api/user/retailer-accounts'),
     suspense: false,
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000,
