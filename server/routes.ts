@@ -1311,6 +1311,125 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Deal optimization for shopping routes
+  app.post('/api/deals/optimize-route', async (req: Request, res: Response) => {
+    try {
+      const { routeItems, retailerId, loyaltyCardId } = req.body;
+      
+      if (!routeItems || !Array.isArray(routeItems)) {
+        return res.status(400).json({ error: 'Route items required' });
+      }
+
+      // Get all current deals for the retailer
+      const deals = await storage.getDeals(retailerId);
+      
+      // Get loyalty card info if provided
+      let loyaltyCard = null;
+      if (loyaltyCardId) {
+        loyaltyCard = await storage.getLoyaltyCard(loyaltyCardId);
+      }
+
+      // Enhanced deal matching algorithm
+      const optimizedResults = {
+        appliedDeals: [] as any[],
+        totalSavings: 0,
+        finalTotal: 0,
+        originalTotal: 0,
+        loyaltyDiscount: 0,
+        stackedCoupons: [] as any[]
+      };
+
+      let runningTotal = 0;
+      const originalTotal = routeItems.reduce((sum: number, item: any) => 
+        sum + (item.suggestedPrice || 0) * (item.quantity || 1), 0
+      );
+
+      // Apply item-level deals
+      for (const item of routeItems) {
+        const itemDeals = deals.filter((deal: any) => {
+          const itemName = item.productName.toLowerCase();
+          const dealName = deal.productName.toLowerCase();
+          
+          // Enhanced matching logic
+          return itemName === dealName || 
+                 itemName.includes(dealName) || 
+                 dealName.includes(itemName) ||
+                 (item.category && deal.category && 
+                  item.category.toLowerCase() === deal.category.toLowerCase());
+        });
+
+        if (itemDeals.length > 0) {
+          // Get best deal (highest savings)
+          const bestDeal = itemDeals.reduce((best: any, current: any) => {
+            const bestSavings = (item.suggestedPrice || 0) - (best.salePrice || best.regularPrice || 0);
+            const currentSavings = (item.suggestedPrice || 0) - (current.salePrice || current.regularPrice || 0);
+            return currentSavings > bestSavings ? current : best;
+          });
+
+          const dealPrice = bestDeal.salePrice || bestDeal.regularPrice || item.suggestedPrice;
+          const savings = Math.max(0, (item.suggestedPrice || 0) - dealPrice);
+          
+          if (savings > 0) {
+            optimizedResults.appliedDeals.push({
+              itemId: item.id,
+              dealId: bestDeal.id,
+              itemName: item.productName,
+              originalPrice: item.suggestedPrice,
+              dealPrice,
+              savings: savings * (item.quantity || 1),
+              dealDescription: bestDeal.productName
+            });
+            
+            optimizedResults.totalSavings += savings * (item.quantity || 1);
+            runningTotal += dealPrice * (item.quantity || 1);
+          } else {
+            runningTotal += (item.suggestedPrice || 0) * (item.quantity || 1);
+          }
+        } else {
+          runningTotal += (item.suggestedPrice || 0) * (item.quantity || 1);
+        }
+      }
+
+      // Apply loyalty card discount
+      if (loyaltyCard && loyaltyCard.discountPercentage) {
+        const loyaltyDiscount = runningTotal * (loyaltyCard.discountPercentage / 100);
+        optimizedResults.loyaltyDiscount = loyaltyDiscount;
+        optimizedResults.totalSavings += loyaltyDiscount;
+        runningTotal -= loyaltyDiscount;
+      }
+
+      // Apply store-wide coupons
+      const storeWideCoupons = deals.filter((deal: any) => 
+        deal.dealType === 'spend_threshold_percentage' ||
+        deal.dealType === 'store_wide_discount'
+      );
+
+      for (const coupon of storeWideCoupons) {
+        if (coupon.dealType === 'spend_threshold_percentage' && 
+            runningTotal >= (coupon.spendThreshold || 0)) {
+          const couponSavings = runningTotal * (coupon.discountPercentage / 100);
+          optimizedResults.stackedCoupons.push({
+            ...coupon,
+            appliedSavings: couponSavings
+          });
+          optimizedResults.totalSavings += couponSavings;
+          runningTotal -= couponSavings;
+        }
+      }
+
+      optimizedResults.originalTotal = originalTotal;
+      optimizedResults.finalTotal = runningTotal;
+
+      res.json(optimizedResults);
+    } catch (error) {
+      console.error('Error optimizing route deals:', error);
+      res.status(500).json({ 
+        error: 'Failed to optimize deals for route',
+        message: error.message || 'Internal server error'
+      });
+    }
+  });
+
   // Contextual shopping insights
   app.get('/api/insights/contextual', async (req: Request, res: Response) => {
     try {

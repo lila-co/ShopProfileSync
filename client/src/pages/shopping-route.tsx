@@ -47,8 +47,156 @@ import {
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
 
+// Enhanced deal matching and application logic
+interface AppliedDeal {
+  itemId: number;
+  dealId: number;
+  dealType: string;
+  originalPrice: number;
+  dealPrice: number;
+  savings: number;
+  dealDescription: string;
+}
+
+interface CouponStackingResult {
+  appliedDeals: AppliedDeal[];
+  totalSavings: number;
+  finalTotal: number;
+  loyaltyDiscount?: number;
+  stackedCoupons: any[];
+}
+
+// Enhanced deal application engine
+const applyDealsAndCoupons = (routeItems: any[], deals: any[], loyaltyCard: any) => {
+  const appliedDeals: AppliedDeal[] = [];
+  let totalSavings = 0;
+  let finalTotal = 0;
+  const stackedCoupons: any[] = [];
+
+  // Step 1: Match deals to items with enhanced matching
+  const enhancedMatchDeals = (item: any, deals: any[]) => {
+    const itemName = item.productName.toLowerCase();
+    const itemCategory = item.category?.toLowerCase() || '';
+    
+    return deals.filter((deal: any) => {
+      const dealName = deal.productName.toLowerCase();
+      const dealCategory = deal.category?.toLowerCase() || '';
+      
+      // Exact product match (highest priority)
+      if (itemName === dealName || 
+          itemName.includes(dealName) || 
+          dealName.includes(itemName)) {
+        return true;
+      }
+      
+      // Category match (medium priority)
+      if (itemCategory && dealCategory && itemCategory === dealCategory) {
+        return true;
+      }
+      
+      // Semantic matching for common products
+      const semanticMatches = [
+        { keywords: ['milk', 'dairy'], category: 'dairy' },
+        { keywords: ['bread', 'loaf'], category: 'bakery' },
+        { keywords: ['chicken', 'poultry'], category: 'meat' },
+        { keywords: ['apple', 'banana', 'fruit'], category: 'produce' }
+      ];
+      
+      return semanticMatches.some(match => 
+        match.keywords.some(keyword => 
+          itemName.includes(keyword) && dealName.includes(keyword)
+        )
+      );
+    });
+  };
+
+  // Step 2: Apply best deals per item
+  routeItems.forEach(item => {
+    const itemDeals = enhancedMatchDeals(item, deals);
+    if (itemDeals.length === 0) {
+      finalTotal += (item.suggestedPrice || 0) * item.quantity;
+      return;
+    }
+
+    // Sort deals by savings potential (highest first)
+    const sortedDeals = itemDeals.sort((a, b) => {
+      const savingsA = calculateDealSavings(item, a);
+      const savingsB = calculateDealSavings(item, b);
+      return savingsB - savingsA;
+    });
+
+    const bestDeal = sortedDeals[0];
+    const dealResult = applyDealToItem(item, bestDeal);
+    
+    if (dealResult.savings > 0) {
+      appliedDeals.push(dealResult);
+      totalSavings += dealResult.savings;
+      finalTotal += dealResult.dealPrice * item.quantity;
+    } else {
+      finalTotal += (item.suggestedPrice || 0) * item.quantity;
+    }
+  });
+
+  // Step 3: Apply loyalty card discounts
+  let loyaltyDiscount = 0;
+  if (loyaltyCard && loyaltyCard.discountPercentage) {
+    loyaltyDiscount = finalTotal * (loyaltyCard.discountPercentage / 100);
+    finalTotal -= loyaltyDiscount;
+    totalSavings += loyaltyDiscount;
+  }
+
+  // Step 4: Apply store-wide coupons and promotions
+  const storeWideCoupons = deals.filter(deal => 
+    deal.dealType === 'spend_threshold_percentage' ||
+    deal.dealType === 'store_wide_discount'
+  );
+
+  storeWideCoupons.forEach(coupon => {
+    if (coupon.dealType === 'spend_threshold_percentage' && 
+        finalTotal >= (coupon.spendThreshold || 0)) {
+      const couponSavings = finalTotal * (coupon.discountPercentage / 100);
+      finalTotal -= couponSavings;
+      totalSavings += couponSavings;
+      stackedCoupons.push({
+        ...coupon,
+        appliedSavings: couponSavings
+      });
+    }
+  });
+
+  return {
+    appliedDeals,
+    totalSavings,
+    finalTotal,
+    loyaltyDiscount,
+    stackedCoupons
+  };
+};
+
+const calculateDealSavings = (item: any, deal: any) => {
+  const originalPrice = item.suggestedPrice || 0;
+  const dealPrice = deal.salePrice || deal.regularPrice || originalPrice;
+  return Math.max(0, originalPrice - dealPrice);
+};
+
+const applyDealToItem = (item: any, deal: any): AppliedDeal => {
+  const originalPrice = item.suggestedPrice || 0;
+  const dealPrice = deal.salePrice || originalPrice;
+  const savings = Math.max(0, originalPrice - dealPrice);
+  
+  return {
+    itemId: item.id,
+    dealId: deal.id,
+    dealType: deal.dealType || 'price_reduction',
+    originalPrice,
+    dealPrice,
+    savings,
+    dealDescription: `${deal.productName} - ${Math.round((1 - dealPrice / originalPrice) * 100)}% off`
+  };
+};
+
 // Component to show retailer-specific deals for route items
-const DealsForRetailer: React.FC<{ retailerName: string; routeItems: any[] }> = ({ retailerName, routeItems }) => {
+const DealsForRetailer: React.FC<{ retailerName: string; routeItems: any[]; loyaltyCard?: any }> = ({ retailerName, routeItems, loyaltyCard }) => {
   const { data: retailers } = useQuery({
     queryKey: ['/api/retailers'],
     queryFn: async () => {
@@ -80,26 +228,13 @@ const DealsForRetailer: React.FC<{ retailerName: string; routeItems: any[] }> = 
     enabled: !!retailers && !!retailerName,
   });
 
-  // Filter deals to only include items that are in the current route
-  const relevantDeals = deals?.filter((deal: any) => {
-    return routeItems.some((item: any) => {
-      const itemName = item.productName.toLowerCase();
-      const dealName = deal.productName.toLowerCase();
+  // Apply comprehensive deal logic
+  const dealResults = React.useMemo(() => {
+    if (!deals || !routeItems.length) return null;
+    return applyDealsAndCoupons(routeItems, deals, loyaltyCard);
+  }, [deals, routeItems, loyaltyCard]);
 
-      // Check for exact matches or partial matches
-      return itemName === dealName || 
-             itemName.includes(dealName) || 
-             dealName.includes(itemName) ||
-             // Check for category/type matches
-             (itemName.includes('milk') && dealName.includes('milk')) ||
-             (itemName.includes('bread') && dealName.includes('bread')) ||
-             (itemName.includes('egg') && dealName.includes('egg')) ||
-             (itemName.includes('chicken') && dealName.includes('chicken')) ||
-             (itemName.includes('yogurt') && dealName.includes('yogurt'));
-    });
-  }) || [];
-
-  if (!relevantDeals.length) {
+  if (!dealResults || dealResults.appliedDeals.length === 0) {
     return null;
   }
 
@@ -112,40 +247,106 @@ const DealsForRetailer: React.FC<{ retailerName: string; routeItems: any[] }> = 
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
           <Tag className="h-5 w-5 text-green-600" />
-          Deals at {retailerName}
+          Applied Deals & Savings
         </CardTitle>
-        <p className="text-sm text-green-600">Special offers on items in your route</p>
+        <p className="text-sm text-green-600">
+          ${(dealResults.totalSavings / 100).toFixed(2)} total savings applied to your route
+        </p>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
-          {relevantDeals.slice(0, 3).map((deal: any) => (
-            <div key={deal.id} className="flex items-center justify-between p-3 bg-white rounded-lg border">
+        {/* Applied Deals */}
+        <div className="space-y-3 mb-4">
+          <h4 className="font-medium text-sm text-gray-900">Item Deals Applied:</h4>
+          {dealResults.appliedDeals.slice(0, 3).map((appliedDeal: AppliedDeal) => (
+            <div key={appliedDeal.dealId} className="flex items-center justify-between p-3 bg-white rounded-lg border border-green-200">
               <div className="flex-1">
-                <div className="font-medium text-sm text-gray-900">{deal.productName}</div>
+                <div className="font-medium text-sm text-gray-900">{appliedDeal.dealDescription}</div>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-lg font-bold text-green-700">
-                    ${deal.salePrice.toFixed(2)}
+                    ${(appliedDeal.dealPrice / 100).toFixed(2)}
                   </span>
                   <span className="text-sm text-gray-500 line-through">
-                    ${deal.regularPrice.toFixed(2)}
+                    ${(appliedDeal.originalPrice / 100).toFixed(2)}
                   </span>
                   <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
-                    {calculateSavings(deal.regularPrice, deal.salePrice)}% off
+                    Save ${(appliedDeal.savings / 100).toFixed(2)}
                   </Badge>
                 </div>
-                <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  Valid until {new Date(deal.endDate).toLocaleDateString()}
-                </div>
               </div>
-              <Star className="h-4 w-4 text-green-600" />
+              <div className="text-right">
+                <div className="text-xs text-green-600 font-medium">APPLIED</div>
+                <CheckCircle2 className="h-4 w-4 text-green-600 mx-auto mt-1" />
+              </div>
             </div>
           ))}
-          {relevantDeals.length > 3 && (
+          {dealResults.appliedDeals.length > 3 && (
             <div className="text-center text-sm text-green-600">
-              +{relevantDeals.length - 3} more deals available
+              +{dealResults.appliedDeals.length - 3} more deals applied
             </div>
           )}
+        </div>
+
+        {/* Loyalty Card Discount */}
+        {dealResults.loyaltyDiscount && dealResults.loyaltyDiscount > 0 && (
+          <div className="p-3 bg-purple-50 rounded-lg border border-purple-200 mb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center">
+                  <Check className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <div className="font-medium text-sm text-purple-900">Loyalty Card Discount</div>
+                  <div className="text-xs text-purple-600">Member savings applied</div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="font-bold text-purple-700">-${(dealResults.loyaltyDiscount / 100).toFixed(2)}</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Stacked Coupons */}
+        {dealResults.stackedCoupons.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="font-medium text-sm text-gray-900">Store Coupons:</h4>
+            {dealResults.stackedCoupons.map((coupon: any, index: number) => (
+              <div key={index} className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium text-sm text-blue-900">
+                      {coupon.dealType === 'spend_threshold_percentage' 
+                        ? `Spend $${(coupon.spendThreshold / 100).toFixed(0)}+ Save ${coupon.discountPercentage}%`
+                        : coupon.productName
+                      }
+                    </div>
+                    <div className="text-xs text-blue-600">Automatically applied</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-blue-700">-${(coupon.appliedSavings / 100).toFixed(2)}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Total Savings Summary */}
+        <div className="mt-4 p-4 bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg border border-green-300">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-bold text-lg text-green-900">Total Savings</div>
+              <div className="text-sm text-green-700">Applied to your route automatically</div>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-green-800">
+                ${(dealResults.totalSavings / 100).toFixed(2)}
+              </div>
+              <div className="text-sm text-green-600">
+                New total: ${(dealResults.finalTotal / 100).toFixed(2)}
+              </div>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -1553,6 +1754,7 @@ const ShoppingRoute: React.FC = () => {
           <DealsForRetailer 
             retailerName={optimizedRoute.retailerName}
             routeItems={optimizedRoute.aisleGroups?.flatMap(aisle => aisle.items) || []}
+            loyaltyCard={loyaltyCard}
           />
         )}
 
