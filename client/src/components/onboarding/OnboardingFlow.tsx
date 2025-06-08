@@ -426,11 +426,20 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
                 </p>
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <h4 className="font-medium text-blue-900 mb-2">What's Next?</h4>
-                  <div className="text-sm text-blue-700 space-y-1">
-                    <p>• Create your first shopping list</p>
-                    <p>• Browse deals from local stores</p>
-                    <p>• Connect stores for personalized recommendations</p>
-                  </div>
+                  <ul className="text-sm text-blue-700 space-y-1 list-none">
+                    <li className="flex items-start">
+                      <span className="text-blue-500 mr-2">•</span>
+                      <span>Create your first shopping list</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-blue-500 mr-2">•</span>
+                      <span>Browse deals from local stores</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-blue-500 mr-2">•</span>
+                      <span>Connect stores for personalized recommendations</span>
+                    </li>
+                  </ul>
                 </div>
               </CardContent>
             </Card>
@@ -601,6 +610,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
 
         {currentStep < totalSteps ? (
           <Button
+            variant="outline"
             onClick={handleNext}
             className="flex items-center space-x-2"
           >

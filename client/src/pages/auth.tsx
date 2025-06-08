@@ -290,7 +290,7 @@ const AuthPage: React.FC = () => {
                   />
                   <Button
                     type="submit"
-                    className="w-full"
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 px-6 rounded-lg shadow-md transition-all duration-200 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] border-2 border-primary hover:border-primary/80"
                     disabled={loginMutation.isPending}
                   >
                     {loginMutation.isPending ? "Signing in..." : "Sign In"}
@@ -299,8 +299,9 @@ const AuthPage: React.FC = () => {
               </Form>
 
               <div className="mt-4 text-center text-sm">
-                <button 
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={() => {
                     const email = window.prompt("Enter your email address to reset your password:");
                     if (email && email.trim()) {
@@ -328,10 +329,10 @@ const AuthPage: React.FC = () => {
                       });
                     }
                   }}
-                  className="text-primary hover:underline bg-transparent border-none p-0 cursor-pointer"
+                  className="text-primary hover:text-primary/80 hover:underline bg-transparent border border-primary/20 hover:border-primary/40 px-4 py-2 cursor-pointer font-medium transition-all duration-200 rounded-md hover:bg-primary/10 shadow-sm hover:shadow-md"
                 >
                   Forgot your password?
-                </button>
+                </Button>
               </div>
 
               <div className="relative my-6">
@@ -472,7 +473,7 @@ const AuthPage: React.FC = () => {
                   />
                   <Button
                     type="submit"
-                    className="w-full"
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 px-6 rounded-lg shadow-md transition-all duration-200 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] border-2 border-primary hover:border-primary/80"
                     disabled={registerMutation.isPending}
                   >
                     {registerMutation.isPending ? "Creating account..." : "Create Account"}
