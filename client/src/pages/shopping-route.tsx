@@ -1293,42 +1293,19 @@ const ShoppingRoute: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Out-of-stock options menu */}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 ml-2"
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setOutOfStockItem(item);
-                              setOutOfStockDialogOpen(true);
-                            }}
-                            className="flex items-center"
-                          >
-                            <AlertCircle className="h-4 w-4 mr-2" />
-                            Out of Stock Options
-                          </DropdownMenuItem>
-                          {optimizedRoute?.isMultiStore && currentStoreIndex < optimizedRoute.stores.length - 1 && (
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setOutOfStockItem(item);
-                                handleMigrateToNextStore();
-                              }}
-                              className="flex items-center"
-                            >
-                              <MapPin className="h-4 w-4 mr-2" />
-                              Move to Next Store
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      {/* Out-of-stock option button */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="ml-2 bg-white border-gray-300 hover:bg-gray-50"
+                        onClick={() => {
+                          setOutOfStockItem(item);
+                          setOutOfStockDialogOpen(true);
+                        }}
+                      >
+                        <AlertCircle className="h-4 w-4 mr-1" />
+                        Out of Stock
+                      </Button>
                     </div>
                   );
                 })}
