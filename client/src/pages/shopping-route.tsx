@@ -392,6 +392,12 @@ const ShoppingRoute: React.FC = () => {
     return route;
   };
 
+  // Define a placeholder for getShelfLocation
+  const getShelfLocation = (productName: string, category: string) => {
+      // Implement your logic to determine shelf location based on productName and category
+      return `Shelf location for ${productName} in ${category}`;
+  };
+
   // Generate optimized shopping route with AI-powered categorization
   const generateOptimizedShoppingRoute = (items: any[], retailerName?: string, planData?: any) => {
     // Define aisle mappings with better color schemes
@@ -458,7 +464,7 @@ const ShoppingRoute: React.FC = () => {
       // Add location and confidence for better UX
       const itemWithLocation = {
         ...item,
-        shelfLocation: this.getShelfLocation(item.productName, itemCategory),
+        shelfLocation: getShelfLocation(item.productName, itemCategory),
         confidence: categoryConfidence,
         category: itemCategory
       };
@@ -496,7 +502,7 @@ const ShoppingRoute: React.FC = () => {
 
               aisleGroups[betterAisleName].items.push({
                 ...itemWithLocation,
-                shelfLocation: this.getShelfLocation(item.productName, result.category),
+                shelfLocation: getShelfLocation(item.productName, result.category),
                 confidence: result.confidence,
                 category: result.category
               });
@@ -504,7 +510,7 @@ const ShoppingRoute: React.FC = () => {
               // Update in place
               const itemToUpdate = aisleGroups[aisleName].items.find(i => i.id === item.id);
               if (itemToUpdate) {
-                itemToUpdate.shelfLocation = this.getShelfLocation(item.productName, result.category);
+                itemToUpdate.shelfLocation = getShelfLocation(item.productName, result.category);
                 itemToUpdate.confidence = result.confidence;
                 itemToUpdate.category = result.category;
               }
