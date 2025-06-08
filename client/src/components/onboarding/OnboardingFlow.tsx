@@ -610,6 +610,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
 
         {currentStep < totalSteps ? (
           <Button
+            variant="outline"
             onClick={handleNext}
             className="flex items-center space-x-2"
           >
