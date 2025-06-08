@@ -10,6 +10,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 import { 
   Check, 
@@ -24,7 +40,9 @@ import {
   Navigation,
   Package,
   Tag,
-  Star
+  Star,
+  AlertCircle,
+  MoreVertical
 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
@@ -67,7 +85,7 @@ const DealsForRetailer: React.FC<{ retailerName: string; routeItems: any[] }> = 
     return routeItems.some((item: any) => {
       const itemName = item.productName.toLowerCase();
       const dealName = deal.productName.toLowerCase();
-      
+
       // Check for exact matches or partial matches
       return itemName === dealName || 
              itemName.includes(dealName) || 
@@ -144,7 +162,7 @@ const ShoppingRoute: React.FC = () => {
   const listId = searchParams.get('listId') || '1'; // Default to list 1 if not provided
   const mode = searchParams.get('mode') || 'instore';
   const planDataParam = searchParams.get('planData');
-  
+
   console.log('Shopping route loaded with location:', location);
   console.log('Shopping route loaded with params:', {
     listId,
@@ -159,6 +177,8 @@ const ShoppingRoute: React.FC = () => {
   const [completedItems, setCompletedItems] = useState<Set<number>>(new Set());
   const [loyaltyCard, setLoyaltyCard] = useState<any>(null);
   const [startTime, setStartTime] = useState<Date | null>(null);
+  const [outOfStockDialogOpen, setOutOfStockDialogOpen] = useState(false);
+  const [outOfStockItem, setOutOfStockItem] = useState<any>(null);
 
   // Get current retailer name for loyalty card fetching
   const getCurrentRetailerName = () => {
@@ -228,6 +248,17 @@ const ShoppingRoute: React.FC = () => {
     }
   });
 
+  // Update item mutation for out-of-stock handling
+  const updateItemMutation = useMutation({
+    mutationFn: async ({ itemId, updates }: { itemId: number, updates: any }) => {
+      const response = await apiRequest('PATCH', `/api/shopping-list/items/${itemId}`, updates);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists', listId] });
+    }
+  });
+
   // Parse plan data and generate route when component loads
   useEffect(() => {
     console.log('Shopping route useEffect triggered');
@@ -235,9 +266,9 @@ const ShoppingRoute: React.FC = () => {
     console.log('shoppingList:', shoppingList);
     console.log('Current location:', location);
     console.log('listId:', listId);
-    
+
     let planDataToUse = null;
-    
+
     // Try sessionStorage first (more reliable)
     const storedPlanData = sessionStorage.getItem('shoppingPlanData');
     if (storedPlanData) {
@@ -248,7 +279,7 @@ const ShoppingRoute: React.FC = () => {
         console.error('Error parsing stored plan data:', error);
       }
     }
-    
+
     // If no sessionStorage data, try URL parameter
     if (!planDataToUse && planDataParam) {
       try {
@@ -258,7 +289,7 @@ const ShoppingRoute: React.FC = () => {
         console.error('Error parsing URL plan data:', error);
       }
     }
-    
+
     if (planDataToUse) {
       setSelectedPlanData(planDataToUse);
 
@@ -267,7 +298,7 @@ const ShoppingRoute: React.FC = () => {
       console.log('Generated route from plan:', route);
       setOptimizedRoute(route);
       setStartTime(new Date());
-      
+
       toast({
         title: "Shopping Route Ready!",
         description: `Your shopping route has been created from your selected plan`,
@@ -275,7 +306,7 @@ const ShoppingRoute: React.FC = () => {
       });
     } else if (shoppingList?.items && shoppingList.items.length > 0) {
       console.log('Using shopping list items as fallback, listId:', listId);
-      
+
       // Create a simple plan data structure from shopping list items
       const fallbackPlanData = {
         stores: [{
@@ -289,13 +320,13 @@ const ShoppingRoute: React.FC = () => {
         planType: 'Shopping List',
         listId: listId
       };
-      
+
       const route = generateOptimizedShoppingRouteFromPlan(fallbackPlanData);
       console.log('Generated route from shopping list fallback:', route);
       setOptimizedRoute(route);
       setSelectedPlanData(fallbackPlanData);
       setStartTime(new Date());
-      
+
       toast({
         title: "Shopping Route Created",
         description: "Using your shopping list items",
@@ -317,7 +348,7 @@ const ShoppingRoute: React.FC = () => {
   // Generate optimized shopping route from selected plan data
   const generateOptimizedShoppingRouteFromPlan = (planData: any) => {
     console.log('generateOptimizedShoppingRouteFromPlan called with:', planData);
-    
+
     let items: any[] = [];
     let retailerName = 'Store';
     let isMultiStore = false;
@@ -326,7 +357,7 @@ const ShoppingRoute: React.FC = () => {
     // Extract items from different plan structures
     if (planData.stores && planData.stores.length > 0) {
       console.log('Processing plan with stores:', planData.stores);
-      
+
       if (planData.stores.length === 1) {
         // Single store plan
         const store = planData.stores[0];
@@ -380,7 +411,7 @@ const ShoppingRoute: React.FC = () => {
 
     console.log('Processed items for route generation:', processedItems);
     const route = generateOptimizedShoppingRoute(processedItems, retailerName, planData);
-    
+
     // Add multi-store specific data
     if (isMultiStore) {
       route.isMultiStore = true;
@@ -390,6 +421,115 @@ const ShoppingRoute: React.FC = () => {
 
     console.log('Generated final route:', route);
     return route;
+  };
+
+  // Define shelf location logic based on product and category
+  const getShelfLocation = (productName: string, category: string) => {
+    const name = productName.toLowerCase();
+    
+    // Produce section - specific areas
+    if (category === 'Produce') {
+      if (name.includes('banana') || name.includes('apple') || name.includes('orange')) {
+        return 'Front entrance display';
+      }
+      if (name.includes('lettuce') || name.includes('spinach') || name.includes('salad')) {
+        return 'Refrigerated greens wall';
+      }
+      if (name.includes('pepper') || name.includes('onion') || name.includes('tomato')) {
+        return 'Center produce bins';
+      }
+      if (name.includes('avocado') || name.includes('lime') || name.includes('lemon')) {
+        return 'Citrus & specialty section';
+      }
+      return 'Main produce area';
+    }
+    
+    // Dairy & Eggs - specific refrigerated sections
+    if (category === 'Dairy & Eggs') {
+      if (name.includes('milk')) return 'Back wall - dairy cooler';
+      if (name.includes('egg')) return 'Dairy cooler - middle shelf';
+      if (name.includes('cheese')) return 'Specialty cheese section';
+      if (name.includes('yogurt')) return 'Dairy cooler - top shelf';
+      if (name.includes('butter')) return 'Dairy cooler - bottom shelf';
+      return 'Main dairy section';
+    }
+    
+    // Meat & Seafood
+    if (category === 'Meat & Seafood') {
+      if (name.includes('chicken') || name.includes('turkey')) {
+        return 'Poultry case - left side';
+      }
+      if (name.includes('beef') || name.includes('ground')) {
+        return 'Beef case - center';
+      }
+      if (name.includes('fish') || name.includes('salmon') || name.includes('seafood')) {
+        return 'Seafood counter';
+      }
+      return 'Meat department';
+    }
+    
+    // Frozen Foods
+    if (category === 'Frozen Foods') {
+      if (name.includes('ice cream')) return 'Frozen desserts aisle';
+      if (name.includes('pizza')) return 'Frozen meals - left side';
+      if (name.includes('vegetable')) return 'Frozen vegetables';
+      return 'Frozen foods section';
+    }
+    
+    // Bakery
+    if (category === 'Bakery') {
+      if (name.includes('bread') || name.includes('loaf')) {
+        return 'Bread aisle - packaged goods';
+      }
+      return 'Fresh bakery counter';
+    }
+    
+    // Pantry & Canned Goods - more specific locations
+    if (category === 'Pantry & Canned Goods') {
+      if (name.includes('cereal')) return 'Cereal aisle - eye level';
+      if (name.includes('pasta')) return 'Pasta & sauce aisle';
+      if (name.includes('rice') || name.includes('quinoa')) {
+        return 'Grains & rice section';
+      }
+      if (name.includes('oil') || name.includes('vinegar')) {
+        return 'Cooking oils & condiments';
+      }
+      if (name.includes('can') || name.includes('soup')) {
+        return 'Canned goods - center aisles';
+      }
+      return 'Center store aisles';
+    }
+    
+    // Personal Care
+    if (category === 'Personal Care') {
+      if (name.includes('shampoo') || name.includes('soap')) {
+        return 'Health & beauty - left wall';
+      }
+      if (name.includes('toothpaste')) return 'Oral care section';
+      return 'Health & beauty department';
+    }
+    
+    // Household Items
+    if (category === 'Household Items') {
+      if (name.includes('detergent') || name.includes('cleaner')) {
+        return 'Cleaning supplies aisle';
+      }
+      if (name.includes('paper') || name.includes('towel')) {
+        return 'Paper goods aisle';
+      }
+      return 'Household goods section';
+    }
+    
+    // Beverages
+    if (name.includes('water') || name.includes('soda') || name.includes('juice')) {
+      if (name.includes('sparkling') || name.includes('carbonated')) {
+        return 'Beverage aisle - carbonated drinks';
+      }
+      return 'Beverage aisle - main section';
+    }
+    
+    // Generic fallback
+    return 'Check store directory';
   };
 
   // Generate optimized shopping route with AI-powered categorization
@@ -403,7 +543,8 @@ const ShoppingRoute: React.FC = () => {
       'Frozen Foods': { aisle: 'Aisle 7', category: 'Frozen Foods', order: 5, color: 'bg-cyan-100 text-cyan-800' },
       'Bakery': { aisle: 'Aisle 8', category: 'Bakery', order: 6, color: 'bg-orange-100 text-orange-800' },
       'Personal Care': { aisle: 'Aisle 9', category: 'Personal Care', order: 7, color: 'bg-purple-100 text-purple-800' },
-      'Household Items': { aisle: 'Aisle 10', category: 'Household Items', order: 8, color: 'bg-gray-100 text-gray-800' }
+      'Household Items': { aisle: 'Aisle 10', category: 'Household Items', order: 8, color: 'bg-gray-100 text-gray-800' },
+      'Generic': { aisle: 'Generic', category: 'Generic Items', order: 9, color: 'bg-slate-100 text-slate-800' }
     };
 
     // Use AI categorization service for better accuracy
@@ -429,77 +570,92 @@ const ShoppingRoute: React.FC = () => {
 
     // Process items with AI categorization
     items.forEach((item: any) => {
-      // Use AI service for immediate fallback categorization
-      const fallbackResult = aiCategorizationService.getQuickCategory(item.productName);
-      const fallbackAisleInfo = aisleMapping[fallbackResult.category as keyof typeof aisleMapping] || 
-                               aisleMapping['Pantry & Canned Goods'];
+      // Use existing category if available, otherwise use AI categorization
+      let itemCategory = item.category;
+      let categoryConfidence = 0.9; // High confidence for existing categories
 
-      if (!aisleGroups[fallbackAisleInfo.aisle]) {
-        aisleGroups[fallbackAisleInfo.aisle] = {
-          aisleName: fallbackAisleInfo.aisle,
-          category: fallbackAisleInfo.category,
-          order: fallbackAisleInfo.order,
-          color: fallbackAisleInfo.color,
+      if (!itemCategory) {
+        const fallbackResult = aiCategorizationService.getQuickCategory(item.productName);
+        itemCategory = fallbackResult.category;
+        categoryConfidence = fallbackResult.confidence || 0.7;
+      }
+
+      const aisleInfo = aisleMapping[itemCategory as keyof typeof aisleMapping] || 
+                       aisleMapping['Generic'];
+
+      const aisleName = aisleInfo.aisle;
+
+      if (!aisleGroups[aisleName]) {
+        aisleGroups[aisleName] = {
+          aisleName,
+          category: aisleInfo.category,
+          order: aisleInfo.order,
+          color: aisleInfo.color,
           items: []
         };
       }
 
-      // Enhanced shelf location logic with more comprehensive patterns
-      let shelfLocation = '';
-      const name = item.productName.toLowerCase();
-
-      // Dairy specific locations
-      if (name.includes('milk') || name.includes('yogurt') || name.includes('cheese')) {
-        shelfLocation = 'Dairy Cooler';
-      }
-      // Meat specific locations  
-      else if (name.includes('chicken') || name.includes('beef') || name.includes('fish') || name.includes('meat')) {
-        shelfLocation = 'Refrigerated Case';
-      }
-      // Produce specific locations
-      else if (name.includes('banana')) shelfLocation = 'Front Display';
-      else if (name.includes('apple') || name.includes('orange')) shelfLocation = 'Fruit Section';
-      else if (name.includes('lettuce') || name.includes('spinach')) shelfLocation = 'Leafy Greens';
-      else if (name.includes('tomato') || name.includes('pepper')) shelfLocation = 'Vegetable Section';
-      // Bakery specific locations
-      else if (name.includes('bread') || name.includes('bagel')) shelfLocation = 'Bakery Display';
-      // Frozen specific locations
-      else if (name.includes('frozen') || name.includes('ice cream')) shelfLocation = 'Freezer Section';
-      // Household specific locations
-      else if (name.includes('paper towel') || name.includes('toilet paper')) shelfLocation = 'Paper Goods';
-      else if (name.includes('cleaner') || name.includes('detergent')) shelfLocation = 'Cleaning Supplies';
-      // Personal care specific locations
-      else if (name.includes('shampoo') || name.includes('soap')) shelfLocation = 'Health & Beauty';
-
-      // Add item with enhanced categorization info
-      aisleGroups[fallbackAisleInfo.aisle].items.push({
+      // Add location and confidence for better UX
+      const itemWithLocation = {
         ...item,
-        shelfLocation,
-        category: fallbackResult.category,
-        confidence: 0.7 // Default confidence for fallback
-      });
+        shelfLocation: getShelfLocation(item.productName, itemCategory),
+        confidence: categoryConfidence,
+        category: itemCategory
+      };
 
-      // Queue AI categorization for background improvement
-      const aiPromise = categorizeItemWithAI(item.productName).then(aiResult => {
-        if (aiResult && aiResult.confidence > 0.7) {
-          // Find the item and update its categorization if AI is more confident
-          const currentAisle = aisleGroups[fallbackAisleInfo.aisle];
-          const itemIndex = currentAisle.items.findIndex((i: any) => i.id === item.id);
+      aisleGroups[aisleName].items.push(itemWithLocation);
 
-          if (itemIndex !== -1) {
-            currentAisle.items[itemIndex] = {
-              ...currentAisle.items[itemIndex],
-              category: aiResult.category,
-              confidence: aiResult.confidence,
-              aiSuggestion: aiResult.conversionReason
-            };
+      // Create AI categorization promise for more accurate results (only if we don't have a category)
+      if (!item.category) {
+        const aiPromise = categorizeItemWithAI(item.productName).then(result => {
+          const betterAisleInfo = aisleMapping[result.category as keyof typeof aisleMapping] || 
+                                 aisleMapping['Generic'];
+
+          // Update the item if we get better categorization
+          if (result.confidence > categoryConfidence) {
+            const betterAisleName = betterAisleInfo.aisle;
+
+            // Remove from current aisle if needed
+            if (betterAisleName !== aisleName) {
+              const currentAisleItems = aisleGroups[aisleName]?.items || [];
+              const itemIndex = currentAisleItems.findIndex(i => i.id === item.id);
+              if (itemIndex > -1) {
+                currentAisleItems.splice(itemIndex, 1);
+              }
+
+              // Add to better aisle
+              if (!aisleGroups[betterAisleName]) {
+                aisleGroups[betterAisleName] = {
+                  aisleName: betterAisleName,
+                  category: betterAisleInfo.category,
+                  order: betterAisleInfo.order,
+                  color: betterAisleInfo.color,
+                  items: []
+                };
+              }
+
+              aisleGroups[betterAisleName].items.push({
+                ...itemWithLocation,
+                shelfLocation: getShelfLocation(item.productName, result.category),
+                confidence: result.confidence,
+                category: result.category
+              });
+            } else {
+              // Update in place
+              const itemToUpdate = aisleGroups[aisleName].items.find(i => i.id === item.id);
+              if (itemToUpdate) {
+                itemToUpdate.shelfLocation = getShelfLocation(item.productName, result.category);
+                itemToUpdate.confidence = result.confidence;
+                itemToUpdate.category = result.category;
+              }
+            }
           }
-        }
-      }).catch(error => {
-        console.warn('AI categorization failed for item:', item.productName, error);
-      });
+        }).catch(error => {
+          console.warn(`Failed to get AI categorization for ${item.productName}:`, error);
+        });
 
-      itemPromises.push(aiPromise);
+        itemPromises.push(aiPromise);
+      }
     });
 
     // Allow AI categorization to complete in background without blocking UI
@@ -534,7 +690,7 @@ const ShoppingRoute: React.FC = () => {
 
     const finalRetailerName = retailerName || 'Store';
     console.log('Generated route with retailer name:', finalRetailerName);
-    
+
     return {
       aisleGroups: sortedAisleGroups,
       totalAisles,
@@ -548,54 +704,122 @@ const ShoppingRoute: React.FC = () => {
     };
   };
 
-  const handleToggleItem = (itemId: number, currentStatus: boolean) => {
-    const newCompletedItems = new Set(completedItems);
-
-    if (currentStatus) {
-      newCompletedItems.delete(itemId);
-    } else {
-      newCompletedItems.add(itemId);
+  const handleToggleItem = (itemId: number, currentStatus: boolean, item?: any) => {
+    if (!currentStatus && item) {
+      // Item is being checked off - show out-of-stock option
+      setOutOfStockItem(item);
+      setOutOfStockDialogOpen(true);
+      return;
     }
 
+    // Handle unchecking item
+    const newCompletedItems = new Set(completedItems);
+    newCompletedItems.delete(itemId);
     setCompletedItems(newCompletedItems);
-    toggleItemMutation.mutate({ itemId, completed: !currentStatus });
+    toggleItemMutation.mutate({ itemId, completed: false });
+  };
 
-    if (!currentStatus) {
+  const handleItemFound = () => {
+    if (outOfStockItem) {
+      const newCompletedItems = new Set(completedItems);
+      newCompletedItems.add(outOfStockItem.id);
+      setCompletedItems(newCompletedItems);
+      toggleItemMutation.mutate({ itemId: outOfStockItem.id, completed: true });
+
       toast({
         title: "Item checked off!",
         description: "Great job, keep shopping!",
         duration: 2000
       });
     }
+    setOutOfStockDialogOpen(false);
+    setOutOfStockItem(null);
+  };
+
+  const handleLeaveForFutureTrip = () => {
+    if (outOfStockItem) {
+      updateItemMutation.mutate({
+        itemId: outOfStockItem.id,
+        updates: {
+          notes: 'Left for future trip due to out-of-stock',
+          isCompleted: false
+        }
+      });
+      
+      toast({
+        title: "Item Saved",
+        description: `${outOfStockItem.productName} will remain on your list for your next trip`,
+      });
+    }
+    setOutOfStockDialogOpen(false);
+    setOutOfStockItem(null);
+  };
+
+  const handleMigrateToNextStore = () => {
+    if (outOfStockItem) {
+      // For multi-store plans, try to find the item in the next store
+      if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
+        const nextStoreIndex = (currentStoreIndex + 1) % optimizedRoute.stores.length;
+        const nextStore = optimizedRoute.stores[nextStoreIndex];
+        
+        // Add item to next store's items if not already there
+        const itemExistsInNextStore = nextStore.items.some((item: any) => 
+          item.productName.toLowerCase() === outOfStockItem.productName.toLowerCase()
+        );
+
+        if (!itemExistsInNextStore) {
+          nextStore.items.push({
+            ...outOfStockItem,
+            storeName: nextStore.retailerName,
+            suggestedRetailerId: nextStore.retailer?.id || nextStore.suggestedRetailerId,
+            id: outOfStockItem.id + 1000 // Temporary ID to avoid conflicts
+          });
+        }
+
+        toast({
+          title: "Item Moved",
+          description: `${outOfStockItem.productName} moved to ${nextStore.retailerName}`,
+        });
+      } else {
+        toast({
+          title: "Single Store Plan",
+          description: "This is a single-store plan. Item saved for future trip.",
+        });
+        handleLeaveForFutureTrip();
+        return;
+      }
+    }
+    setOutOfStockDialogOpen(false);
+    setOutOfStockItem(null);
   };
 
   const getProgressPercentage = () => {
     if (!optimizedRoute) return 0;
-    
+
     // For multi-store plans, calculate progress across all stores
     if (optimizedRoute.isMultiStore && optimizedRoute.stores) {
       const totalItems = optimizedRoute.stores.reduce((sum: number, store: any) => sum + store.items.length, 0);
       return totalItems > 0 ? (completedItems.size / totalItems) * 100 : 0;
     }
-    
+
     return (completedItems.size / optimizedRoute.totalItems) * 100;
   };
 
   const getCurrentAisle = () => {
     if (!optimizedRoute?.aisleGroups) return null;
-    
+
     // For multi-store plans, generate aisles from current store's items
     if (optimizedRoute.isMultiStore && optimizedRoute.stores) {
       const currentStore = optimizedRoute.stores[currentStoreIndex];
       if (!currentStore) return null;
-      
+
       // Generate aisles for current store
       const storeRoute = generateOptimizedShoppingRoute(currentStore.items, currentStore.retailerName);
       if (!storeRoute.aisleGroups || !storeRoute.aisleGroups[currentAisleIndex]) return null;
-      
+
       return storeRoute.aisleGroups[currentAisleIndex];
     }
-    
+
     return optimizedRoute.aisleGroups[currentAisleIndex];
   };
 
@@ -937,7 +1161,7 @@ const ShoppingRoute: React.FC = () => {
                   );
                 })}
               </div>
-              
+
               {/* Store Navigation Buttons */}
               <div className="mt-4 pt-3 border-t">
                 <div className="grid grid-cols-2 gap-3">
@@ -1022,7 +1246,27 @@ const ShoppingRoute: React.FC = () => {
                     >
                       <div className="flex items-center flex-1">
                         <button
-                          onClick={() => handleToggleItem(item.id, isCompleted)}
+                          onClick={() => {
+                            if (isCompleted) {
+                              // Handle unchecking item
+                              const newCompletedItems = new Set(completedItems);
+                              newCompletedItems.delete(item.id);
+                              setCompletedItems(newCompletedItems);
+                              toggleItemMutation.mutate({ itemId: item.id, completed: false });
+                            } else {
+                              // Handle checking item - mark as complete directly
+                              const newCompletedItems = new Set(completedItems);
+                              newCompletedItems.add(item.id);
+                              setCompletedItems(newCompletedItems);
+                              toggleItemMutation.mutate({ itemId: item.id, completed: true });
+                              
+                              toast({
+                                title: "Item found!",
+                                description: "Great job, keep shopping!",
+                                duration: 2000
+                              });
+                            }
+                          }}
                           className="mr-3 focus:outline-none"
                         >
                           {isCompleted ? (
@@ -1048,6 +1292,43 @@ const ShoppingRoute: React.FC = () => {
                           </div>
                         </div>
                       </div>
+
+                      {/* Out-of-stock options menu */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 ml-2"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setOutOfStockItem(item);
+                              setOutOfStockDialogOpen(true);
+                            }}
+                            className="flex items-center"
+                          >
+                            <AlertCircle className="h-4 w-4 mr-2" />
+                            Out of Stock Options
+                          </DropdownMenuItem>
+                          {optimizedRoute?.isMultiStore && currentStoreIndex < optimizedRoute.stores.length - 1 && (
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setOutOfStockItem(item);
+                                handleMigrateToNextStore();
+                              }}
+                              className="flex items-center"
+                            >
+                              <MapPin className="h-4 w-4 mr-2" />
+                              Move to Next Store
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   );
                 })}
@@ -1069,12 +1350,34 @@ const ShoppingRoute: React.FC = () => {
                   {isLastAisle ? (
                     <Button 
                       className="w-full bg-green-600 hover:bg-green-700"
-                      onClick={() => {
+                      onClick={async () => {
                         toast({
                           title: "Shopping Complete!",
                           description: "Great job! All aisles completed.",
                           duration: 5000
                         });
+
+                        // Record the completed shopping trip
+                        try {
+                          const response = await apiRequest('POST', '/api/shopping-trip/complete', {
+                            listId: listId,
+                            completedItems: Array.from(completedItems),
+                            startTime: startTime,
+                            endTime: new Date(),
+                            retailerName: optimizedRoute.retailerName
+                          });
+
+                          if (response.ok) {
+                            toast({
+                              title: "Trip Recorded!",
+                              description: "Your shopping patterns have been updated for better recommendations.",
+                              duration: 3000
+                            });
+                          }
+                        } catch (error) {
+                          console.warn('Failed to record shopping trip:', error);
+                        }
+
                         setTimeout(() => navigate('/'), 2000);
                       }}
                     >
@@ -1173,6 +1476,49 @@ const ShoppingRoute: React.FC = () => {
       </main>
 
       <BottomNavigation activeTab="lists" />
+
+      {/* Out of Stock Item Dialog */}
+      <AlertDialog open={outOfStockDialogOpen} onOpenChange={setOutOfStockDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center space-x-2">
+              <AlertCircle className="h-5 w-5 text-orange-500" />
+              <span>Item Status</span>
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Did you find <span className="font-medium">{outOfStockItem?.productName}</span> at this location?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+            <AlertDialogAction 
+              onClick={handleItemFound}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <Check className="h-4 w-4 mr-2" />
+              Found It!
+            </AlertDialogAction>
+            <AlertDialogAction 
+              onClick={handleLeaveForFutureTrip}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Clock className="h-4 w-4 mr-2" />
+              Save for Next Trip
+            </AlertDialogAction>
+            {optimizedRoute?.isMultiStore && (
+              <AlertDialogAction 
+                onClick={handleMigrateToNextStore}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                <MapPin className="h-4 w-4 mr-2" />
+                Try Next Store
+              </AlertDialogAction>
+            )}
+            <AlertDialogCancel onClick={() => setOutOfStockDialogOpen(false)}>
+              Cancel
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -1551,6 +1551,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Record completed shopping trip
+  app.post('/api/shopping-trip/complete', async (req: Request, res: Response) => {
+    try {
+      const { listId, completedItems, startTime, endTime, retailerName } = req.body;
+      
+      // Record the purchase in the system
+      const userId = 1; // Demo user
+      const retailer = await storage.getRetailerByName(retailerName);
+      
+      if (retailer) {
+        const purchase = await storage.createPurchase({
+          userId,
+          retailerId: retailer.id,
+          purchaseDate: endTime,
+          totalAmount: 0, // Could be calculated from completed items
+          paymentMethod: 'unknown'
+        });
+
+        // Add completed items to the purchase
+        for (const itemId of completedItems) {
+          const item = await storage.getShoppingListItem(itemId);
+          if (item) {
+            await storage.createPurchaseItem({
+              purchaseId: purchase.id,
+              productName: item.productName,
+              quantity: item.quantity,
+              unitPrice: item.suggestedPrice || 500, // Default price
+              totalPrice: (item.suggestedPrice || 500) * item.quantity
+            });
+          }
+        }
+
+        // Trigger automatic list regeneration for next time
+        try {
+          const response = await fetch(`http://localhost:5000/api/shopping-lists/generate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ shoppingListId: listId })
+          });
+          
+          if (response.ok) {
+            console.log('Shopping list automatically regenerated after trip completion');
+          }
+        } catch (error) {
+          console.warn('Failed to auto-regenerate shopping list:', error);
+        }
+      }
+
+      res.json({ success: true, message: 'Shopping trip recorded successfully' });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
   // Shopping list suggestions endpoint
   app.get('/api/shopping-lists/suggestions', async (req: Request, res: Response) => {
     try {

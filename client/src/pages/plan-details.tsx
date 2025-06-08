@@ -710,7 +710,9 @@ const PlanDetails: React.FC = () => {
 
       {/* Store Details */}
       <div className="space-y-4">
-        {planData.stores.map((store, index) => (
+        {planData.stores
+          .sort((a, b) => a.retailer.name.localeCompare(b.retailer.name))
+          .map((store, index) => (
           <Card key={store.retailer.id}>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
@@ -726,7 +728,9 @@ const PlanDetails: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {store.items.map((item) => (
+                {store.items
+                  .sort((a, b) => a.productName.localeCompare(b.productName))
+                  .map((item) => (
                   <div key={item.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
                     <div className="flex-1">
                       <div className="font-medium">{item.productName}</div>

@@ -8,6 +8,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { aiCategorizationService } from '@/lib/aiCategorization';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Plus, ShoppingBag, FileText, Clock, Check, Trash2, AlertTriangle, DollarSign, MapPin, Car, BarChart2, Wand2, Pencil, Image, Star, TrendingDown, Percent, Circle, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
 import { getItemImage, getBestProductImage, getCompanyLogo } from '@/lib/imageUtils';
@@ -29,6 +30,7 @@ const ShoppingListComponent: React.FC = () => {
   const [editingName, setEditingName] = useState('');
   const [editingQuantity, setEditingQuantity] = useState('');
   const [editingUnit, setEditingUnit] = useState('');
+  const [editingCategory, setEditingCategory] = useState('');
   const [isGeneratingList, setIsGeneratingList] = useState(false);
   const [generationSteps, setGenerationSteps] = useState<string[]>([]);
   const [currentStep, setCurrentStep] = useState(-1);
@@ -98,6 +100,7 @@ const ShoppingListComponent: React.FC = () => {
     'Bakery': { icon: '🍞', color: 'bg-orange-100 text-orange-800 border-orange-200', aisle: 'Aisle 8' },
     'Personal Care': { icon: '🧼', color: 'bg-purple-100 text-purple-800 border-purple-200', aisle: 'Aisle 9' },
     'Household Items': { icon: '🏠', color: 'bg-gray-100 text-gray-800 border-gray-200', aisle: 'Aisle 10' },
+    'Generic': { icon: '🛒', color: 'bg-slate-100 text-slate-800 border-slate-200', aisle: 'Generic' },
   };
 
   // Auto-categorize items using AI categorization service
@@ -114,56 +117,58 @@ const ShoppingListComponent: React.FC = () => {
       // Process items in parallel for better performance
       const categorizedPromises = items.map(async (item) => {
         let category = 'Pantry & Canned Goods'; // Default category
+        let confidence = 0.3;
 
-        try {
-          // Use AI categorization service
-          const result = await aiCategorizationService.categorizeProduct(
-            item.productName, 
-            item.quantity, 
-            item.unit
-          );
-
-          if (result && result.category) {
-            category = result.category;
-          } else {
-            // Fallback to quick categorization
-            const quickResult = aiCategorizationService.getQuickCategory(
+        // First check if item already has a manually set category from backend
+        if (item.category && item.category.trim()) {
+          category = item.category;
+          confidence = 0.9;
+        } else {
+          try {
+            // Use AI categorization service
+            const result = await aiCategorizationService.categorizeProduct(
               item.productName, 
               item.quantity, 
               item.unit
             );
+
+            if (result && result.confidence > 0.5) {
+              category = result.category;
+              confidence = result.confidence;
+              console.log(`✅ AI categorized "${item.productName}" as "${category}" with confidence ${result.confidence}`);
+            } else {
+              // Fallback to quick categorization
+              const quickResult = aiCategorizationService.getQuickCategory(item.productName);
+              category = quickResult.category;
+              confidence = quickResult.confidence;
+              console.log(`⚡ Quick categorized "${item.productName}" as "${category}" with confidence ${quickResult.confidence}`);
+            }
+          } catch (error) {
+            console.warn(`❌ Failed to categorize ${item.productName}:`, error);
+            // Use quick categorization as fallback
+            const quickResult = aiCategorizationService.getQuickCategory(item.productName);
             category = quickResult.category;
+            confidence = quickResult.confidence;
           }
-        } catch (error) {
-          console.warn('Failed to categorize item:', item.productName, error);
-          // Use quick categorization as fallback
-          const quickResult = aiCategorizationService.getQuickCategory(
-            item.productName, 
-            item.quantity, 
-            item.unit
-          );
-          category = quickResult.category;
         }
 
-        return { item, category };
+        return { ...item, category, aiConfidence: confidence };
       });
 
-      const results = await Promise.all(categorizedPromises);
+      const categorizedItemsList = await Promise.all(categorizedPromises);
 
-      // Group items by category
-      results.forEach(({ item, category }) => {
-        if (!categorized[category]) {
-          categorized[category] = [];
+      // Group by category
+      const grouped = categorizedItemsList.reduce((acc: Record<string, ShoppingListItem[]>, item) => {
+        const categoryKey = item.category || 'Pantry & Canned Goods';
+        if (!acc[categoryKey]) {
+          acc[categoryKey] = [];
         }
-        categorized[category].push(item);
-      });
+        acc[categoryKey].push(item);
+        return acc;
+      }, {});
 
-      // Sort items within each category alphabetically
-      Object.keys(categorized).forEach(category => {
-        categorized[category].sort((a, b) => a.productName.localeCompare(b.productName));
-      });
-
-      setCategorizedItems(categorized);
+      console.log('🏷️ Final categorization results:', grouped);
+      setCategorizedItems(grouped);
     } catch (error) {
       console.error('Error categorizing items:', error);
       // Fallback: group all items under default category
@@ -462,13 +467,33 @@ const ShoppingListComponent: React.FC = () => {
       const response = await apiRequest('PATCH', `/api/shopping-list/items/${itemId}`, updates);
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+    onSuccess: async (data, variables) => {
+      // Invalidate queries to get fresh data
+      await queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+
+      // Re-categorize items immediately after update
+      const updatedLists = queryClient.getQueryData(['/api/shopping-lists']) as ShoppingListType[];
+      const defaultList = updatedLists?.[0];
+      const items = defaultList?.items || [];
+
+      if (items.length > 0) {
+        await categorizeItems(items);
+      }
+
       setEditingItem(null);
-      toast({
-        title: "Item updated",
-        description: "Item has been updated successfully",
-      });
+
+      // If category was changed, show specific feedback
+      if (variables.updates.category) {
+        toast({
+          title: "Item updated",
+          description: `Item recategorized to ${variables.updates.category}`,
+        });
+      } else {
+        toast({
+          title: "Item updated",
+          description: "Item has been updated successfully",
+        });
+      }
     },
     onError: (error: any) => {
       toast({
@@ -690,6 +715,16 @@ const ShoppingListComponent: React.FC = () => {
     setEditingName(item.productName);
     setEditingQuantity(item.quantity.toString());
     setEditingUnit(item.unit || 'COUNT');
+
+    // Determine current category from categorized items
+    let currentCategory = 'Generic';
+    for (const [category, categoryItems] of Object.entries(categorizedItems)) {
+      if (categoryItems.find(catItem => catItem.id === item.id)) {
+        currentCategory = category;
+        break;
+      }
+    }
+    setEditingCategory(currentCategory);
   };
 
   const handleUpdateItem = () => {
@@ -699,7 +734,8 @@ const ShoppingListComponent: React.FC = () => {
         updates: {
           productName: editingName.trim(),
           quantity: parseInt(editingQuantity) || 1,
-          unit: editingUnit
+          unit: editingUnit,
+          category: editingCategory
         }
       });
     }
@@ -751,6 +787,8 @@ const ShoppingListComponent: React.FC = () => {
       deleteItemMutation.mutate(item.id);
     }
   };
+
+  
 
   // Show AI generation animation
   if (isGeneratingList) {
@@ -824,7 +862,7 @@ const ShoppingListComponent: React.FC = () => {
             <div key={index} className="p-4 border border-gray-200 rounded-lg">
               <div className="flex justify-between items-center">
                 <div className="w-full">
-                  <div className="h-5 bg-gray-200 rounded animate-pulse w-1/2 mb-2"></div>
+                  <div className="h-5 bg-gray-200 roundedanimate-pulse w-1/2 mb-2"></div>
                   <div className="h-4 bg-gray-200 rounded animate-pulse w-1/3"></div>
                 </div>
               </div>
@@ -855,7 +893,7 @@ const ShoppingListComponent: React.FC = () => {
           {Object.entries(categorizedItems)
             .sort(([a], [b]) => {
               // Sort categories by typical shopping order
-              const order = ['Produce', 'Dairy & Eggs', 'Meat & Seafood', 'Pantry & Canned Goods', 'Frozen Foods', 'Bakery', 'Personal Care', 'Household Items'];
+              const order = ['Produce', 'Dairy & Eggs', 'Meat & Seafood', 'Pantry & Canned Goods', 'Frozen Foods', 'Bakery', 'Personal Care', 'Household Items', 'Generic'];
               return order.indexOf(a) - order.indexOf(b);
             })
             .map(([category, categoryItems]) => {
@@ -1180,25 +1218,93 @@ const ShoppingListComponent: React.FC = () => {
             </div>
             <div>
               <Label htmlFor="edit-unit">Unit</Label>
-              <Input
+              <select
                 id="edit-unit"
                 value={editingUnit}
-                onChange={(e) => setEditingUnit(e.target.value)}
-              />
+                onChange={(e) => setEditingUnit(e.target.value as ShoppingListItem['unit'])}
+                className="w-full h-10 text-base border-2 border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 bg-white rounded-lg transition-all duration-200 cursor-pointer px-3"
+              >
+                <option value="BAG">Bag</option>
+                <option value="BARREL">Barrel</option>
+                <option value="BASKET">Basket</option>
+                <option value="BLOCK">Block</option>
+                <option value="BOTTLE">Bottle</option>
+                <option value="BOTTLES">Bottles</option>
+                <option value="BOX">Box</option>
+                <option value="BUCKET">Bucket</option>
+                <option value="BUNCH">Bunch</option>
+                <option value="BUNDLE">Bundle</option>
+                <option value="CAN">Can</option>
+                <option value="CARTON">Carton</option>
+                <option value="CASE">Case</option>
+                <option value="CLOVE">Clove</option>
+                <option value="CONTAINER">Container</option>
+                <option value="COUNT">Count</option>
+                <option value="CRATE">Crate</option>
+                <option value="CUP">Cup</option>
+                <option value="DOZEN">Dozen</option>
+                <option value="GALLON">Gallon</option>
+                <option value="GRAMS">Grams</option>
+                <option value="HEAD">Head</option>
+                <option value="JAR">Jar</option>
+                <option value="KG">Kilogram</option>
+                <option value="LB">Pound</option>
+                <option value="LITER">Liter</option>
+                <option value="LOAF">Loaf</option>
+                <option value="ML">Milliliter</option>
+                <option value="OZ">Ounce</option>
+                <option value="PACK">Pack</option>
+                <option value="PACKAGE">Package</option>
+                <option value="PIECE">Piece</option>
+                <option value="PINT">Pint</option>
+                <option value="QUART">Quart</option>
+                <option value="ROLL">Roll</option>
+                <option value="SACK">Sack</option>
+                <option value="SHEET">Sheet</option>
+                <option value="SLICE">Slice</option>
+                <option value="STICK">Stick</option>
+                <option value="TBSP">Tablespoon</option>
+                <option value="TRAY">Tray</option>
+                <option value="TSP">Teaspoon</option>
+                <option value="TUBE">Tube</option>
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="edit-category">Category</Label>
+              <select
+                id="edit-category"
+                value={editingCategory}
+                onChange={(e) => setEditingCategory(e.target.value)}
+                className="w-full h-10 text-base border-2 border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 bg-white rounded-lg transition-all duration-200 cursor-pointer px-3"
+              >
+                <option value="Produce">🍎 Produce</option>
+                <option value="Dairy & Eggs">🥛 Dairy & Eggs</option>
+                <option value="Meat & Seafood">🥩 Meat & Seafood</option>
+                <option value="Pantry & Canned Goods">🥫 Pantry & Canned Goods</option>
+                <option value="Frozen Foods">❄️ Frozen Foods</option>
+                <option value="Bakery">🍞 Bakery</option>
+                <option value="Personal Care">🧼 Personal Care</option>
+                <option value="Household Items">🏠 Household Items</option>
+                <option value="Generic">🛒 Generic</option>
+              </select>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingItem(null)}>
               Cancel
             </Button>
-            <Button onClick={handleUpdateItem} disabled={updateItemMutation.isPending}>
+            <Button 
+              onClick={handleUpdateItem} 
+              disabled={updateItemMutation.isPending}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
               Update Item
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-
+      
 
       {/* Voice AI Agent - Moved to bottom */}
       <div className="mt-6 mb-4">

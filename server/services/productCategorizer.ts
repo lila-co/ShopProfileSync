@@ -439,10 +439,10 @@ export class ProductCategorizerService {
     // Default fallback
     if (!bestMatch) {
       bestMatch = {
-        category: 'Pantry & Canned Goods',
+        category: 'Generic',
         subcategory: 'General',
-        aisle: 'Aisle 4-6',
-        section: 'Center Store',
+        aisle: 'Generic',
+        section: 'General Store',
         confidence: 0.3,
         suggestedQuantityType: 'COUNT',
         typicalRetailNames: [productName],
@@ -545,10 +545,19 @@ export class ProductCategorizerService {
         suggestedQuantityType: 'COUNT',
         typicalRetailNames: [],
         brandVariations: []
+      },
+      'generic': {
+        category: 'Generic',
+        aisle: 'Generic',
+        section: 'General Store',
+        confidence: 0.3,
+        suggestedQuantityType: 'COUNT',
+        typicalRetailNames: [],
+        brandVariations: []
       }
     };
 
-    return defaults[categoryKey] || defaults['pantry'];
+    return defaults[categoryKey] || defaults['generic'];
   }
 
   private generateRetailNames(productName: string): string[] {
@@ -1132,9 +1141,10 @@ export class ProductCategorizerService {
       'Frozen Foods': 'frozen',
       'Bakery': 'bakery',
       'Personal Care': 'personal_care',
-      'Household Items': 'household'
+      'Household Items': 'household',
+      'Generic': 'generic'
     };
-    return mapping[category] || 'pantry';
+    return mapping[category] || 'generic';
   }
 
   public getCategoryIcon(category: string): string {
@@ -1146,7 +1156,8 @@ export class ProductCategorizerService {
       'Frozen Foods': '❄️',
       'Bakery': '🍞',
       'Personal Care': '🧼',
-      'Household Items': '🏠'
+      'Household Items': '🏠',
+      'Generic': '🛒'
     };
 
     return icons[category] || '🛒';

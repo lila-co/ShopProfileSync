@@ -320,11 +320,13 @@ class AICategorationService {
           // Fruits - comprehensive list with variations
           /\b(apple|banana|orange|grape|strawberr|blueberr|raspberr|blackberr|cranberr|peach|pear|plum|cherry|kiwi|mango|pineapple|watermelon|cantaloupe|honeydew|papaya|avocado|lemon|lime|grapefruit)\w*/i,
           // Vegetables - common and specialty
-          /\b(tomato|onion|carrot|potato|sweet\s*potato|lettuce|spinach|kale|arugula|broccoli|cauliflower|cabbage|bell\s*pepper|jalape[ñn]o|pepper|cucumber|zucchini|squash|eggplant|asparagus|celery|corn|mushroom|garlic|ginger|scallion|green\s*onion|shallot|leek)\w*/i,
+          /\b(tomato|onion|carrot|potato|sweet\s*potato|lettuce|spinach|kale|arugula|broccoli|cauliflower|cabbage|bell\s*pepper|red\s*bell\s*pepper|green\s*bell\s*pepper|yellow\s*bell\s*pepper|jalape[ñn]o|pepper|cucumber|zucchini|squash|eggplant|asparagus|celery|corn|mushroom|garlic|ginger|scallion|green\s*onion|shallot|leek)\w*/i,
           // Herbs and fresh seasonings
           /\b(basil|cilantro|parsley|dill|mint|rosemary|thyme|oregano|sage|chive)\w*/i,
           // Produce-specific descriptors
           /\b(fresh|organic|local|seasonal|ripe|bunch|head)\s+(fruit|vegetable|herb|green)\w*/i,
+          // Specific produce items that might be missed
+          /\b(red\s*bell\s*peppers?|green\s*bell\s*peppers?|yellow\s*bell\s*peppers?|avocados?)\b/i,
           // Common produce packaging terms
           /\b(bag\s+of|bunch\s+of|head\s+of|lb\s+of|pound\s+of).*(apple|banana|carrot|potato|lettuce|spinach|onion)\w*/i
         ]
@@ -426,7 +428,7 @@ class AICategorationService {
         confidence: 0.7,
         patterns: [
           // Grains and starches
-          /\b(rice|pasta|noodle|quinoa|bulgur|couscous|barley|oat|cereal|granola|oatmeal)\w*/i,
+          /\b(rice|pasta|noodle|quinoa|bulgur|couscous|barley|oat|cereal|granola|oatmeal|grain|whole\s*grain)\w*/i,
           // Canned goods
           /\b(can|canned|tomato\s*sauce|marinara|pasta\s*sauce|soup|broth|stock|canned\s*bean|canned\s*corn|canned\s*tomato)\w*/i,
           // Baking supplies
@@ -437,15 +439,38 @@ class AICategorationService {
           /\b(ketchup|mustard|mayonnaise|mayo|barbecue\s*sauce|soy\s*sauce|hot\s*sauce|salad\s*dressing|peanut\s*butter|jelly|jam)\w*/i,
           // Snacks
           /\b(chip|cracker|pretzel|nut|almond|peanut|cashew|walnut|granola\s*bar|protein\s*bar)\w*/i,
+          // Specific grains and healthy pantry items
+          /\b(quinoa|chia\s*seed|flax\s*seed|hemp\s*seed|ancient\s*grain)\w*/i,
           // Beverages (non-dairy)
           /\b(coffee|tea|soda|juice|water|sports\s*drink|energy\s*drink|sparkling\s*water|carbonated\s*water|seltzer|mineral\s*water|flavored\s*water)\w*/i
         ]
       }
     ];
 
+    // Check for specific high-priority matches first - these should override any other patterns
+    const specificMatches = [
+      { pattern: /\b(avocados?)\b/i, category: 'Produce', confidence: 0.98 },
+      { pattern: /\b(red\s*bell\s*peppers?|green\s*bell\s*peppers?|yellow\s*bell\s*peppers?|bell\s*peppers?)\b/i, category: 'Produce', confidence: 0.98 },
+      { pattern: /\b(quinoa)\b/i, category: 'Pantry & Canned Goods', confidence: 0.98 },
+      { pattern: /\b(pine\s*nuts?)\b/i, category: 'Pantry & Canned Goods', confidence: 0.98 },
+      { pattern: /\b(chia\s*seeds?|flax\s*seeds?|hemp\s*seeds?)\b/i, category: 'Pantry & Canned Goods', confidence: 0.95 }
+    ];
+
+    for (const { pattern, category, confidence } of specificMatches) {
+      if (pattern.test(name)) {
+        console.log(`🎯 Specific pattern match: "${name}" -> "${category}" (confidence: ${confidence})`);
+        return { 
+          category, 
+          confidence,
+          suggestedQuantity: quantity,
+          suggestedUnit: unit
+        };
+      }
+    }
+
     // Score each category and find the best match
-    let bestCategory = 'Pantry & Canned Goods';
-    let bestConfidence = 0.3;
+    let bestCategory = 'Generic';
+    let bestConfidence = 0.2;
     let bestScore = 0;
 
     for (const { category, confidence, patterns } of categoryPatterns) {
@@ -459,14 +484,23 @@ class AICategorationService {
         }
       }
 
-      // Boost confidence for multiple pattern matches
-      const adjustedConfidence = confidence + (matchedPatterns > 1 ? 0.1 : 0);
+      // Only consider it a match if at least one pattern matched
+      if (score > 0) {
+        // Boost confidence for multiple pattern matches
+        const adjustedConfidence = confidence + (matchedPatterns > 1 ? 0.1 : 0);
 
-      if (score > bestScore || (score === bestScore && adjustedConfidence > bestConfidence)) {
-        bestScore = score;
-        bestCategory = category;
-        bestConfidence = Math.min(0.95, adjustedConfidence);
+        if (score > bestScore || (score === bestScore && adjustedConfidence > bestConfidence)) {
+          bestScore = score;
+          bestCategory = category;
+          bestConfidence = Math.min(0.95, adjustedConfidence);
+        }
       }
+    }
+
+    // If no patterns matched, use Generic category with low confidence
+    if (bestScore === 0) {
+      bestCategory = 'Generic';
+      bestConfidence = 0.2;
     }
 
     // Apply count optimization suggestions

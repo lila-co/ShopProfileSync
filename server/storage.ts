@@ -845,27 +845,23 @@ export class MemStorage implements IStorage {
     return newItem;
   }
 
-  async updateShoppingListItem(id: number, updates: Partial<ShoppingListItem>): Promise<ShoppingListItem> {
-    try {
-      const item = this.shoppingListItems.get(id);
-      if (!item) {
-        throw new Error("Shopping list item not found");
-      }
-
-      const updatedItem = { ...item, ...updates };
-      this.shoppingListItems.set(id, updatedItem);
-
-      // Add retailer data if available
-      if (updatedItem.suggestedRetailerId) {
-        const retailer = await this.getRetailer(updatedItem.suggestedRetailerId);
-        return { ...updatedItem, suggestedRetailer: retailer };
-      }
-
-      return updatedItem;
-    } catch (error) {
-      console.error('Error updating shopping list item:', error);
-      throw error;
+  // Update shopping list item
+  async updateShoppingListItem(itemId: number, updates: Partial<ShoppingListItem>): Promise<ShoppingListItem | null> {
+    const item = this.shoppingListItems.get(itemId);
+    if (!item) {
+      return null;
     }
+
+    const updatedItem = { ...item, ...updates };
+    this.shoppingListItems.set(itemId, updatedItem);
+
+    // If category was updated, learn from this user correction
+    if (updates.category && updates.category !== item.category) {
+      const { productCategorizer } = await import('./services/productCategorizer');
+      productCategorizer.learnFromUserCorrection(updatedItem.productName, updates.category);
+    }
+
+    return updatedItem;
   }
 
   async deleteShoppingListItem(id: number): Promise<void> {
