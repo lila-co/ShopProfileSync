@@ -1070,12 +1070,34 @@ const ShoppingRoute: React.FC = () => {
                   {isLastAisle ? (
                     <Button 
                       className="w-full bg-green-600 hover:bg-green-700"
-                      onClick={() => {
+                      onClick={async () => {
                         toast({
                           title: "Shopping Complete!",
                           description: "Great job! All aisles completed.",
                           duration: 5000
                         });
+
+                        // Record the completed shopping trip
+                        try {
+                          const response = await apiRequest('POST', '/api/shopping-trip/complete', {
+                            listId: listId,
+                            completedItems: Array.from(completedItems),
+                            startTime: startTime,
+                            endTime: new Date(),
+                            retailerName: optimizedRoute.retailerName
+                          });
+
+                          if (response.ok) {
+                            toast({
+                              title: "Trip Recorded!",
+                              description: "Your shopping patterns have been updated for better recommendations.",
+                              duration: 3000
+                            });
+                          }
+                        } catch (error) {
+                          console.warn('Failed to record shopping trip:', error);
+                        }
+
                         setTimeout(() => navigate('/'), 2000);
                       }}
                     >
