@@ -1314,7 +1314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Deal optimization for shopping routes
   app.post('/api/deals/optimize-route', async (req: Request, res: Response) => {
     try {
-      const { routeItems, retailerId, loyaltyCardId } = req.body;
+      const { routeItems, retailerId, loyaltyCardId, movedItems = [] } = req.body;
       
       if (!routeItems || !Array.isArray(routeItems)) {
         return res.status(400).json({ error: 'Route items required' });
@@ -1322,6 +1322,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get all current deals for the retailer
       const deals = await storage.getDeals(retailerId);
+      
+      console.log(`Optimizing route for retailer ${retailerId} with ${routeItems.length} items, including ${movedItems.length} moved items`);
       
       // Get loyalty card info if provided
       let loyaltyCard = null;

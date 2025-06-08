@@ -77,23 +77,23 @@ const applyDealsAndCoupons = (routeItems: any[], deals: any[], loyaltyCard: any)
   const enhancedMatchDeals = (item: any, deals: any[]) => {
     const itemName = item.productName.toLowerCase();
     const itemCategory = item.category?.toLowerCase() || '';
-    
+
     return deals.filter((deal: any) => {
       const dealName = deal.productName.toLowerCase();
       const dealCategory = deal.category?.toLowerCase() || '';
-      
+
       // Exact product match (highest priority)
       if (itemName === dealName || 
           itemName.includes(dealName) || 
           dealName.includes(itemName)) {
         return true;
       }
-      
+
       // Category match (medium priority)
       if (itemCategory && dealCategory && itemCategory === dealCategory) {
         return true;
       }
-      
+
       // Semantic matching for common products
       const semanticMatches = [
         { keywords: ['milk', 'dairy'], category: 'dairy' },
@@ -101,7 +101,7 @@ const applyDealsAndCoupons = (routeItems: any[], deals: any[], loyaltyCard: any)
         { keywords: ['chicken', 'poultry'], category: 'meat' },
         { keywords: ['apple', 'banana', 'fruit'], category: 'produce' }
       ];
-      
+
       return semanticMatches.some(match => 
         match.keywords.some(keyword => 
           itemName.includes(keyword) && dealName.includes(keyword)
@@ -127,7 +127,7 @@ const applyDealsAndCoupons = (routeItems: any[], deals: any[], loyaltyCard: any)
 
     const bestDeal = sortedDeals[0];
     const dealResult = applyDealToItem(item, bestDeal);
-    
+
     if (dealResult.savings > 0) {
       appliedDeals.push(dealResult);
       totalSavings += dealResult.savings;
@@ -183,7 +183,7 @@ const applyDealToItem = (item: any, deal: any): AppliedDeal => {
   const originalPrice = item.suggestedPrice || 0;
   const dealPrice = deal.salePrice || originalPrice;
   const savings = Math.max(0, originalPrice - dealPrice);
-  
+
   return {
     itemId: item.id,
     dealId: deal.id,
@@ -803,8 +803,7 @@ const ShoppingRoute: React.FC = () => {
         ...item,
         shelfLocation: getShelfLocation(item.productName, itemCategory),
         confidence: categoryConfidence,
-        category: itemCategory
-      };
+        category: itemCategory      };
 
       aisleGroups[aisleName].items.push(itemWithLocation);
 
@@ -1666,7 +1665,7 @@ const ShoppingRoute: React.FC = () => {
             <CardContent>
               <div className="space-y-3">
                 {optimizedRoute.stores.map((store: any, index: number) => {
-                  const storeCompletedItems = store.items.filter((item: any) => 
+                  const storeCompletedItems = store.items.//filter((item: any) => 
                     completedItems.has(item.id) || item.isCompleted
                   ).length;
                   const isCurrent = index === currentStoreIndex;
