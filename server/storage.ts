@@ -1366,8 +1366,7 @@ export class MemStorage implements IStorage {
       dealAlerts: true,
       priceDropAlerts: true,
       weeklyDigest: false,
-      ```text
-expirationAlerts: true,
+      expirationAlerts: true,
       recommendationUpdates: true,
       pushNotifications: false,
       emailNotifications: true,
