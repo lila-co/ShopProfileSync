@@ -893,7 +893,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log(`Successfully deleted retailer account with ID: ${accountId}`);
-      res.status(204).send();
+      res.status(204).<code>send();
     } catch (error) {
       console.error('Error deleting retailer account:', error);
       handleError(res, error);
@@ -2123,6 +2123,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error finding nearest store:', error);
       res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Categorization learning analytics endpoint
+  app.get('/api/admin/categorization-analytics', async (req: Request, res: Response) => {
+    try {
+      const stats = productCategorizer.getLearningStats();
+
+      res.json({
+        learningStats: stats,
+        systemHealth: {
+          categoriesWithLearning: stats.categoriesLearned,
+          avgCategoryConfidence: stats.avgConfidence,
+          totalFeedbackReceived: stats.totalCorrections,
+          learningRate: stats.totalCorrections > 0 ? 'Active' : 'Inactive'
+        },
+        recommendations: [
+          stats.avgConfidence < 0.7 ? 'Consider gathering more user feedback to improve accuracy' : null,
+          stats.categoriesLearned < 5 ? 'System is still learning - encourage user corrections' : null,
+          stats.totalCorrections > 100 ? 'Good learning progress - system is becoming more accurate' : null
+        ].filter(Boolean)
+      });
+    } catch (error) {
+      console.error('Error getting categorization analytics:', error);
+      res.status(500).json({ error: 'Failed to get analytics' });
     }
   });
 

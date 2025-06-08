@@ -194,6 +194,44 @@ class AICategorationService {
     return null;
   }
 
+  // Submit user feedback for learning
+  async submitCategoryFeedback(
+    productName: string, 
+    originalCategory: string, 
+    correctedCategory: string,
+    confidence: number = 1.0
+  ): Promise<boolean> {
+    try {
+      const response = await fetch('/api/products/categorization-feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          productName,
+          originalCategory,
+          correctedCategory,
+          confidence
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Categorization feedback submitted:', result.message);
+        
+        // Invalidate cache for this item so it uses the new learning
+        const normalizedName = productName.toLowerCase().trim();
+        delete this.cache[normalizedName];
+        
+        return true;
+      }
+    } catch (error) {
+      console.warn('Failed to submit categorization feedback:', error);
+    }
+    return false;
+  }
+
   // Batch categorize multiple items efficiently
   async categorizeProducts(items: Array<{productName: string, quantity?: number, unit?: string}>): Promise<AICategorization[]> {
     const results: AICategorization[] = [];
