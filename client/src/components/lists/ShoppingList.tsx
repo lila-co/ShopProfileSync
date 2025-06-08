@@ -29,6 +29,7 @@ const ShoppingListComponent: React.FC = () => {
   const [editingName, setEditingName] = useState('');
   const [editingQuantity, setEditingQuantity] = useState('');
   const [editingUnit, setEditingUnit] = useState('');
+  const [editingCategory, setEditingCategory] = useState('');
   const [isGeneratingList, setIsGeneratingList] = useState(false);
   const [generationSteps, setGenerationSteps] = useState<string[]>([]);
   const [currentStep, setCurrentStep] = useState(-1);
@@ -463,13 +464,22 @@ const ShoppingListComponent: React.FC = () => {
       const response = await apiRequest('PATCH', `/api/shopping-list/items/${itemId}`, updates);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
       setEditingItem(null);
-      toast({
-        title: "Item updated",
-        description: "Item has been updated successfully",
-      });
+      
+      // If category was changed, show specific feedback
+      if (variables.updates.category) {
+        toast({
+          title: "Item updated",
+          description: `Item recategorized to ${variables.updates.category}`,
+        });
+      } else {
+        toast({
+          title: "Item updated",
+          description: "Item has been updated successfully",
+        });
+      }
     },
     onError: (error: any) => {
       toast({
@@ -691,6 +701,16 @@ const ShoppingListComponent: React.FC = () => {
     setEditingName(item.productName);
     setEditingQuantity(item.quantity.toString());
     setEditingUnit(item.unit || 'COUNT');
+    
+    // Determine current category from categorized items
+    let currentCategory = 'Generic';
+    for (const [category, categoryItems] of Object.entries(categorizedItems)) {
+      if (categoryItems.find(catItem => catItem.id === item.id)) {
+        currentCategory = category;
+        break;
+      }
+    }
+    setEditingCategory(currentCategory);
   };
 
   const handleUpdateItem = () => {
@@ -700,7 +720,8 @@ const ShoppingListComponent: React.FC = () => {
         updates: {
           productName: editingName.trim(),
           quantity: parseInt(editingQuantity) || 1,
-          unit: editingUnit
+          unit: editingUnit,
+          category: editingCategory
         }
       });
     }
@@ -1181,11 +1202,75 @@ const ShoppingListComponent: React.FC = () => {
             </div>
             <div>
               <Label htmlFor="edit-unit">Unit</Label>
-              <Input
+              <select
                 id="edit-unit"
                 value={editingUnit}
-                onChange={(e) => setEditingUnit(e.target.value)}
-              />
+                onChange={(e) => setEditingUnit(e.target.value as ShoppingListItem['unit'])}
+                className="w-full h-10 text-base border-2 border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 bg-white rounded-lg transition-all duration-200 cursor-pointer px-3"
+              >
+                <option value="BAG">Bag</option>
+                <option value="BARREL">Barrel</option>
+                <option value="BASKET">Basket</option>
+                <option value="BLOCK">Block</option>
+                <option value="BOTTLE">Bottle</option>
+                <option value="BOTTLES">Bottles</option>
+                <option value="BOX">Box</option>
+                <option value="BUCKET">Bucket</option>
+                <option value="BUNCH">Bunch</option>
+                <option value="BUNDLE">Bundle</option>
+                <option value="CAN">Can</option>
+                <option value="CARTON">Carton</option>
+                <option value="CASE">Case</option>
+                <option value="CLOVE">Clove</option>
+                <option value="CONTAINER">Container</option>
+                <option value="COUNT">Count</option>
+                <option value="CRATE">Crate</option>
+                <option value="CUP">Cup</option>
+                <option value="DOZEN">Dozen</option>
+                <option value="GALLON">Gallon</option>
+                <option value="GRAMS">Grams</option>
+                <option value="HEAD">Head</option>
+                <option value="JAR">Jar</option>
+                <option value="KG">Kilogram</option>
+                <option value="LB">Pound</option>
+                <option value="LITER">Liter</option>
+                <option value="LOAF">Loaf</option>
+                <option value="ML">Milliliter</option>
+                <option value="OZ">Ounce</option>
+                <option value="PACK">Pack</option>
+                <option value="PACKAGE">Package</option>
+                <option value="PIECE">Piece</option>
+                <option value="PINT">Pint</option>
+                <option value="QUART">Quart</option>
+                <option value="ROLL">Roll</option>
+                <option value="SACK">Sack</option>
+                <option value="SHEET">Sheet</option>
+                <option value="SLICE">Slice</option>
+                <option value="STICK">Stick</option>
+                <option value="TBSP">Tablespoon</option>
+                <option value="TRAY">Tray</option>
+                <option value="TSP">Teaspoon</option>
+                <option value="TUBE">Tube</option>
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="edit-category">Category</Label>
+              <select
+                id="edit-category"
+                value={editingCategory}
+                onChange={(e) => setEditingCategory(e.target.value)}
+                className="w-full h-10 text-base border-2 border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 bg-white rounded-lg transition-all duration-200 cursor-pointer px-3"
+              >
+                <option value="Produce">🍎 Produce</option>
+                <option value="Dairy & Eggs">🥛 Dairy & Eggs</option>
+                <option value="Meat & Seafood">🥩 Meat & Seafood</option>
+                <option value="Pantry & Canned Goods">🥫 Pantry & Canned Goods</option>
+                <option value="Frozen Foods">❄️ Frozen Foods</option>
+                <option value="Bakery">🍞 Bakery</option>
+                <option value="Personal Care">🧼 Personal Care</option>
+                <option value="Household Items">🏠 Household Items</option>
+                <option value="Generic">🛒 Generic</option>
+              </select>
             </div>
           </div>
           <DialogFooter>
