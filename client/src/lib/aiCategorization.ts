@@ -469,8 +469,8 @@ class AICategorationService {
     }
 
     // Score each category and find the best match
-    let bestCategory = 'Pantry & Canned Goods';
-    let bestConfidence = 0.3;
+    let bestCategory = 'Generic';
+    let bestConfidence = 0.2;
     let bestScore = 0;
 
     for (const { category, confidence, patterns } of categoryPatterns) {
@@ -484,14 +484,23 @@ class AICategorationService {
         }
       }
 
-      // Boost confidence for multiple pattern matches
-      const adjustedConfidence = confidence + (matchedPatterns > 1 ? 0.1 : 0);
+      // Only consider it a match if at least one pattern matched
+      if (score > 0) {
+        // Boost confidence for multiple pattern matches
+        const adjustedConfidence = confidence + (matchedPatterns > 1 ? 0.1 : 0);
 
-      if (score > bestScore || (score === bestScore && adjustedConfidence > bestConfidence)) {
-        bestScore = score;
-        bestCategory = category;
-        bestConfidence = Math.min(0.95, adjustedConfidence);
+        if (score > bestScore || (score === bestScore && adjustedConfidence > bestConfidence)) {
+          bestScore = score;
+          bestCategory = category;
+          bestConfidence = Math.min(0.95, adjustedConfidence);
+        }
       }
+    }
+
+    // If no patterns matched, use Generic category with low confidence
+    if (bestScore === 0) {
+      bestCategory = 'Generic';
+      bestConfidence = 0.2;
     }
 
     // Apply count optimization suggestions
