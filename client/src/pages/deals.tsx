@@ -32,29 +32,14 @@ const DealsPage: React.FC = () => {
 
   const { data: deals = [], isLoading: dealsLoading } = useQuery({
     queryKey: ['/api/deals'],
-    queryFn: async () => {
-      // Assuming apiRequest is defined elsewhere and handles the actual API call
-      const response = await fetch('/api/deals');
-      return response.json();
-    },
   });
 
   const { data: dealsSummary } = useQuery({
     queryKey: ['/api/deals/summary'],
-    queryFn: async () => {
-      // Assuming apiRequest is defined elsewhere and handles the actual API call
-      const response = await fetch('/api/deals/summary');
-      return response.json();
-    },
   });
 
   const { data: retailers = [] } = useQuery({
     queryKey: ['/api/retailers'],
-    queryFn: async () => {
-      // Assuming apiRequest is defined elsewhere and handles the actual API call
-      const response = await fetch('/api/retailers');
-      return response.json();
-    },
   });
 
   return (

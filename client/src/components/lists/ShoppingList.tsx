@@ -72,21 +72,11 @@ const ShoppingListComponent: React.FC = () => {
 
   const { data: shoppingLists, isLoading, refetch: refetchLists } = useQuery<ShoppingListType[]>({
     queryKey: ['/api/shopping-lists'],
-    queryFn: async () => {
-      const response = await apiRequest('GET', '/api/shopping-lists');
-      return response.json();
-    },
-    staleTime: 60 * 60 * 1000, // 1 hour
-    refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
 
   const { data: suggestions, isLoading: suggestionsLoading } = useQuery({
     queryKey: ['/api/shopping-lists/suggestions'],
-    queryFn: async () => {
-      const response = await apiRequest('GET', '/api/shopping-lists/suggestions');
-      return response.json();
-    },
     enabled: !!shoppingLists,
   });
 
