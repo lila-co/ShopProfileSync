@@ -27,20 +27,6 @@ const RetailerDetailsPage: React.FC = () => {
   const { data: retailer, isLoading, error } = useQuery<Retailer>({
     queryKey: [`/api/retailers/${retailerId}`],
     enabled: !!retailerId && retailerId > 0,
-    retry: 1,
-    staleTime: 5 * 60 * 1000,
-    suspense: false,
-    refetchOnWindowFocus: false,
-    refetchOnMount: true,
-    queryFn: async () => {
-      const response = await fetch(`/api/retailers/${retailerId}`, {
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch retailer');
-      }
-      return response.json();
-    }
   });
 
   if (isLoading) {
