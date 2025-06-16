@@ -464,7 +464,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.headers['x-current-user-id'] ? 
         parseInt(req.headers['x-current-user-id'] as string) : 1;
-      
+
       const shoppingLists = await storage.getShoppingListsByUserId(userId);
       res.json(shoppingLists);
     } catch (error) {
@@ -477,13 +477,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.headers['x-current-user-id'] ? 
         parseInt(req.headers['x-current-user-id'] as string) : 1;
       const listId = parseInt(req.params.id);
-      
+
       if (isNaN(listId)) {
         return res.status(400).json({ message: 'Invalid list ID' });
       }
-      
+
       const shoppingList = await storage.getShoppingListById(listId);
-      
+
       if (!shoppingList) {
         return res.status(404).json({ message: 'Shopping list not found' });
       }
@@ -500,14 +500,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.headers['x-current-user-id'] ? 
         parseInt(req.headers['x-current-user-id'] as string) : 1;
-      
+
       // Return sample suggestions for now
       const suggestions = [
         { id: 1, name: 'Weekly Essentials', count: 12 },
         { id: 2, name: 'Quick Meals', count: 8 },
         { id: 3, name: 'Healthy Options', count: 15 }
       ];
-      
+
       res.json(suggestions);
     } catch (error) {
       handleError(res, error);
@@ -518,7 +518,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/shopping-list/items/:id', async (req: Request, res: Response) => {
     try {
       const itemId = parseInt(req.params.id);
-      
+
       if (isNaN(itemId)) {
         console.log(`Invalid item ID provided: ${req.params.id}`);
         return res.status(400).json({ message: 'Invalid item ID' });
@@ -526,7 +526,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Attempting to delete shopping list item ${itemId}`);
       const success = await storage.deleteShoppingListItem(itemId);
-      
+
       if (!success) {
         console.log(`Shopping list item ${itemId} not found`);
         return res.status(404).json({ message: 'Item not found' });
@@ -1585,7 +1585,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Generate CSV format
         let csvContent = `Retailer Analytics Export - ${retailer?.name}\n`;
         csvContent += `Period: ${analyticsData.analytics.period.startDate} to ${analyticsData.analytics.period.endDate}\n\n`;
-        
+
         csvContent += `Summary Metrics\n`;
         csvContent += `Total Trips,${analyticsData.analytics.summary.totalTrips}\n`;
         csvContent += `Items Requested,${analyticsData.analytics.summary.totalItemsRequested}\n`;
@@ -1612,6 +1612,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error exporting retailer analytics:', error);
       handleError(res, error);
+    }
+  });
+
+  // Update shopping list item
+  app.patch('/api/shopping-list/items/:itemId', async (req: Request, res: Response) => {
+    try {
+      const itemId = parseInt(req.params.itemId);
+      const updates = req.body;
+
+      const updatedItem = await storage.updateShoppingListItem(itemId, updates);
+
+      if (!updatedItem) {
+        return res.status(404).json({ message: 'Item not found' });
+      }
+
+      res.json(updatedItem);
+    } catch (error) {
+      console.error('Error updating shopping list item:', error);
+      res.status(500).json({ message: 'Failed to update item' });
+    }
+  });
+
+  // Delete shopping list item
+  app.delete('/api/shopping-list/items/:itemId', async (req: Request, res: Response) => {
+    try {
+      const itemId = parseInt(req.params.itemId);
+
+      const deleted = await storage.deleteShoppingListItem(itemId);
+
+      if (!deleted) {
+        return res.status(404).json({ message: 'Item not found' });
+      }
+
+      res.json({ message: 'Item deleted successfully', itemId });
+    } catch (error) {
+      console.error('Error deleting shopping list item:', error);
+      res.status(500).json({ message: 'Failed to delete item' });
     }
   });
 

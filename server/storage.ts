@@ -60,7 +60,7 @@ export interface IStorage {
   getShoppingListItems(listId: number): Promise<ShoppingListItem[]>;
   addShoppingListItem(item: Partial<ShoppingListItem>): Promise<ShoppingListItem>;
   updateShoppingListItem(id: number, updates: Partial<ShoppingListItem>): Promise<ShoppingListItem>;
-  deleteShoppingListItem(id: number): Promise<void>;
+  deleteShoppingListItem(id: number): Promise<boolean>;
 
   // Deal methods
   getDeals(retailerId?: number, category?: string): Promise<StoreDeal[]>;
@@ -444,7 +444,8 @@ export class MemStorage implements IStorage {
     // Last month's purchases
     this.createSamplePurchase(defaultUser.id, 1, now.getFullYear(), now.getMonth() - 1, 15);
     this.createSamplePurchase(defaultUser.id, 2, now.getFullYear(), now.getMonth() - 1, 5);
-    this.createSamplePurchase(defaultUser.id, 4, now.getFullYear(), now.getMonth() - 1, 22);
+    this.createSamplePurchase(defaultUser.id, 4,```python
+ now.getFullYear(), now.getMonth() - 1, 22);
 
     // This month's purchases 
     this.createSamplePurchase(defaultUser.id, 1, now.getFullYear(), now.getMonth(), 2);
@@ -1360,7 +1361,8 @@ export class MemStorage implements IStorage {
 
   async updateAffiliateConversionStatus(id: number, status: string): Promise<AffiliateConversion> {
     const conversion = this.affiliateConversions.get(id);
-    if (!conversion) throw new Error("Affiliate conversion not found");
+    ```python
+if (!conversion) throw new Error("Affiliate conversion not found");
 
     const updatedConversion = { ...conversion, status };
     this.affiliateConversions.set(id, updatedConversion);

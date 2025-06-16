@@ -1151,12 +1151,18 @@ const ShoppingRoute: React.FC = () => {
             // Delete completed items from the shopping list
             deletePromises.push(
                 apiRequest('DELETE', `/api/shopping-list/items/${item.id}`)
-                    .then(() => {
-                        console.log(`Successfully deleted completed item ${item.id}: ${item.productName}`);
+                    .then(response => {
+                        if (response.ok) {
+                            console.log(`Successfully deleted completed item ${item.id}: ${item.productName}`);
+                            return { success: true, itemId: item.id };
+                        } else {
+                            console.error(`Failed to delete completed item ${item.id}: HTTP ${response.status}`);
+                            return { success: false, itemId: item.id, error: `HTTP ${response.status}` };
+                        }
                     })
                     .catch(error => {
                         console.error(`Failed to delete completed item ${item.id}:`, error);
-                        return null;
+                        return { success: false, itemId: item.id, error: error.message };
                     })
             );
         }
@@ -1167,8 +1173,12 @@ const ShoppingRoute: React.FC = () => {
     const deleteResults = await Promise.allSettled(deletePromises);
     
     // Log results for debugging
-    const successfulDeletes = deleteResults.filter(result => result.status === 'fulfilled').length;
-    const failedDeletes = deleteResults.filter(result => result.status === 'rejected').length;
+    const successfulDeletes = deleteResults.filter(result => 
+        result.status === 'fulfilled' && result.value?.success
+    ).length;
+    const failedDeletes = deleteResults.filter(result => 
+        result.status === 'rejected' || (result.status === 'fulfilled' && !result.value?.success)
+    ).length;
     console.log(`Deletion results: ${successfulDeletes} successful, ${failedDeletes} failed`);
 
     // Invalidate queries to refresh the shopping list
