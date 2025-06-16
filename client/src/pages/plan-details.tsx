@@ -51,9 +51,11 @@ const PlanDetails: React.FC = () => {
   const { data: shoppingItems, isLoading, error } = useQuery({
     queryKey: ['shopping-items', listId],
     queryFn: async () => {
-      const response = await apiRequest('GET', `/api/shopping-lists/${listId}`);
+      const response = await apiRequest('GET', '/api/shopping-lists');
       const data = await response.json();
-      return data.items || [];
+      // Find the list with the matching ID and return its items
+      const targetList = data.find((list: any) => list.id.toString() === listId);
+      return targetList?.items || [];
     },
   });
 
