@@ -549,10 +549,15 @@ const ShoppingListComponent: React.FC = () => {
         };
       } catch (error) {
         console.error('Network or API error:', error);
-        if (error.message && error.message.includes('Failed to generate shopping list')) {
-          throw error; // Re-throw API errors as-is
+        // Check if error has a message property and is a proper Error object
+        if (error instanceof Error && error.message) {
+          if (error.message.includes('Failed to generate shopping list')) {
+            throw error; // Re-throw API errors as-is
+          }
+          throw new Error(`Generation failed: ${error.message}`);
         }
-        throw new Error('Failed to connect to server. Please check your connection and try again.');
+        // Handle cases where error is not a proper Error object
+        throw new Error('Failed to generate shopping list. Please try again.');
       }
     },
     onSuccess: (data) => {
@@ -578,9 +583,20 @@ const ShoppingListComponent: React.FC = () => {
     },
     onError: (error: any) => {
       console.error('Regeneration failed:', error);
+      
+      // Extract meaningful error message
+      let errorMessage = "Failed to enhance list. Please try again.";
+      if (error instanceof Error && error.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Error",
-        description: error.message || "Failed to enhance list. Please try again.",
+        description: errorMessage,
         variant: "destructive"
       });
     }

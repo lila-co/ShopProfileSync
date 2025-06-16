@@ -490,6 +490,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/shopping-lists/suggestions', async (req: Request, res: Response) => {
+    try {
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+      
+      // Return sample suggestions for now
+      const suggestions = [
+        { id: 1, name: 'Weekly Essentials', count: 12 },
+        { id: 2, name: 'Quick Meals', count: 8 },
+        { id: 3, name: 'Healthy Options', count: 15 }
+      ];
+      
+      res.json(suggestions);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
   // User profile routes
   app.get('/api/user/profile', async (req: Request, res: Response) => {
     try {
