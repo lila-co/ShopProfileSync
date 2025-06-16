@@ -800,7 +800,8 @@ const ShoppingRoute: React.FC = () => {
               });
             } else {
               // Update in place
-              const itemToUpdate = aisleGroups[aisleName].items.find(i => i.id === item.id);
+              const itemToUpdate```text
+ = aisleGroups[aisleName].items.find(i => i.id === item.id);
               if (itemToUpdate) {
                 itemToUpdate.shelfLocation = getShelfLocation(item.productName, result.category);
                 itemToUpdate.confidence = result.confidence;
@@ -1129,35 +1130,34 @@ const ShoppingRoute: React.FC = () => {
       ? optimizedRoute.stores[currentStoreIndex]?.retailerName 
       : optimizedRoute?.retailerName;
 
-    // Update the completion status for the items that were found
-    const itemsToUpdate = optimizedRoute?.aisleGroups?.flatMap(aisle => aisle.items) || [];
-    for (const item of itemsToUpdate) {
-        if (completedItems.has(item.id) && !item.isCompleted) {
-            try {
-                await updateItemMutation.mutateAsync({
-                    itemId: item.id,
-                    updates: {
-                        isCompleted: true,
-                        notes: `Purchased during shopping trip on ${new Date().toLocaleDateString()}`
-                    }
-                });
-            } catch (error) {
-                console.warn(`Failed to update item ${item.id}:`, error);
-            }
-        } else if (!completedItems.has(item.id) && item.isCompleted) {
-          try {
-            await updateItemMutation.mutateAsync({
-              itemId: item.id,
-              updates: {
-                isCompleted: false,
-                notes: `Returned to list - not purchased during shopping trip on ${new Date().toLocaleDateString()}`
-              }
-            });
-          } catch (error) {
-            console.warn(`Failed to update item ${item.id}:`, error);
-          }
+    // Remove completed items from the shopping list and leave uncompleted items
+    const itemsToProcess = optimizedRoute?.aisleGroups?.flatMap(aisle => aisle.items) || [];
+    const deletePromises = [];
+
+    for (const item of itemsToProcess) {
+        if (completedItems.has(item.id)) {
+            // Delete completed items from the shopping list
+            deletePromises.push(
+                apiRequest('DELETE', `/api/shopping-list/items/${item.id}`, {})
+                    .then(() => {
+                        console.log(`Successfully deleted completed item ${item.id}: ${item.productName}`);
+                    })
+                    .catch(error => {
+                        console.error(`Failed to delete completed item ${item.id}:`, error);
+                        return null;
+                    })
+            );
         }
+        // Uncompleted items remain on the list unchanged
     }
+
+    // Wait for all deletions to complete
+    await Promise.allSettled(deletePromises);
+
+    // Invalidate queries to refresh the shopping list
+    queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+    queryClient.invalidateQueries({ queryKey: [`/api/shopping-lists/${listId}`] });
+
     // Record the completed shopping trip for this store
     try {
       const response = await apiRequest('POST', '/api/shopping-trip/complete', {

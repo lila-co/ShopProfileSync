@@ -514,6 +514,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete shopping list item
+  app.delete('/api/shopping-list/items/:id', async (req: Request, res: Response) => {
+    try {
+      const itemId = parseInt(req.params.id);
+      
+      if (isNaN(itemId)) {
+        return res.status(400).json({ message: 'Invalid item ID' });
+      }
+
+      const success = await storage.deleteShoppingListItem(itemId);
+      
+      if (!success) {
+        return res.status(404).json({ message: 'Item not found' });
+      }
+
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting shopping list item:', error);
+      handleError(res, error);
+    }
+  });
+
   // Add shopping list generation endpoint
   app.post('/api/shopping-lists/generate', async (req: Request, res: Response) => {
     try {

@@ -768,7 +768,7 @@ export class MemStorage implements IStorage {
 
   async getShoppingListsByUserId(userId: number): Promise<ShoppingList[]> {
     const lists = Array.from(this.shoppingLists.values()).filter(list => list.userId === userId);
-    
+
     // If no lists exist for this user, create a default one
     if (lists.length === 0) {
       const defaultList: ShoppingList = {
@@ -900,11 +900,22 @@ export class MemStorage implements IStorage {
     return updatedItem;
   }
 
-  async deleteShoppingListItem(id: number): Promise<void> {
-    if (!this.shoppingListItems.has(id)) {
-      throw new Error("Shopping list item not found");
+  async createShoppingListItem(item: Omit<ShoppingListItem, 'id'>): Promise<ShoppingListItem> {
+    const newItem: ShoppingListItem = {
+      ...item,
+      id: this.shoppingListItemIdCounter++
+    };
+    this.shoppingListItems.set(newItem.id, newItem);
+    return newItem;
+  }
+
+  async deleteShoppingListItem(itemId: number): Promise<boolean> {
+    const exists = this.shoppingListItems.has(itemId);
+    if (exists) {
+      this.shoppingListItems.delete(itemId);
+      return true;
     }
-    this.shoppingListItems.delete(id);
+    return false;
   }
 
   // Deal methods
