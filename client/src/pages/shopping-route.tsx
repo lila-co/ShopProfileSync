@@ -1462,21 +1462,27 @@ const ShoppingRoute: React.FC = () => {
   };
 
   const handleFinishStore = () => {
-    // Get uncompleted items from current store, excluding temporary/moved items
-    const currentStore = optimizedRoute?.stores?.[currentStoreIndex];
-    const currentStoreItems = currentStore?.items || [];
-    const uncompleted = currentStoreItems.filter(item => 
-      !completedItems.has(item.id) && 
-      !item.isCompleted &&
-      typeof item.id === 'number' && 
-      item.id < 10000 // Exclude temporary IDs from moved items
-    );
+    // For multi-store plans, check uncompleted items at intermediary stores
+    if (optimizedRoute?.isMultiStore && currentStoreIndex < optimizedRoute.stores.length - 1) {
+      // Get uncompleted items from current store, excluding temporary/moved items
+      const currentStore = optimizedRoute.stores[currentStoreIndex];
+      const currentStoreItems = currentStore?.items || [];
+      const uncompleted = currentStoreItems.filter(item => 
+        !completedItems.has(item.id) && 
+        !item.isCompleted &&
+        typeof item.id === 'number' && 
+        item.id < 10000 // Exclude temporary IDs from moved items
+      );
 
-    if (uncompleted.length > 0) {
-      setUncompletedItems(uncompleted);
-      setEndStoreDialogOpen(true);
+      if (uncompleted.length > 0) {
+        setUncompletedItems(uncompleted);
+        setEndStoreDialogOpen(true);
+      } else {
+        completeCurrentStore();
+      }
     } else {
-      handleStoreComplete();
+      // For last store or single store, use the existing handleEndStore logic
+      handleEndStore();
     }
   };
 
@@ -1961,7 +1967,7 @@ const ShoppingRoute: React.FC = () => {
                   {isLastAisle ? (
                     <Button 
                       className="w-full bg-green-600 hover:bg-green-700"
-                      onClick={() => handleEndStore()}
+                      onClick={() => handleFinishStore()}
                     >
                       <Check className="h-4 w-4 mr-2" />
                       {optimizedRoute?.isMultiStore && currentStoreIndex < optimizedRoute.stores.length - 1 
