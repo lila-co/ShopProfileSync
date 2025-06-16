@@ -51,6 +51,8 @@ export interface IStorage {
 
   // Shopping List methods
   getShoppingLists(): Promise<ShoppingList[]>;
+  getShoppingListsByUserId(userId: number): Promise<ShoppingList[]>;
+  getShoppingListById(id: number): Promise<ShoppingList | undefined>;
   getShoppingList(id: number): Promise<ShoppingList | undefined>;
   createShoppingList(list: InsertShoppingList): Promise<ShoppingList>;
 
@@ -757,6 +759,40 @@ export class MemStorage implements IStorage {
   }
 
   async getShoppingList(id: number): Promise<ShoppingList | undefined> {
+    const list = this.shoppingLists.get(id);
+    if (!list) return undefined;
+
+    const items = await this.getShoppingListItems(id);
+    return { ...list, items };
+  }
+
+  async getShoppingListsByUserId(userId: number): Promise<ShoppingList[]> {
+    const lists = Array.from(this.shoppingLists.values()).filter(list => list.userId === userId);
+    
+    // If no lists exist for this user, create a default one
+    if (lists.length === 0) {
+      const defaultList: ShoppingList = {
+        id: this.shoppingListIdCounter++,
+        userId: userId,
+        name: 'My Shopping List',
+        isDefault: true
+      };
+      this.shoppingLists.set(defaultList.id, defaultList);
+      return [defaultList];
+    }
+
+    // Add items to each list
+    const listsWithItems = await Promise.all(
+      lists.map(async (list) => {
+        const items = await this.getShoppingListItems(list.id);
+        return { ...list, items };
+      })
+    );
+
+    return listsWithItems;
+  }
+
+  async getShoppingListById(id: number): Promise<ShoppingList | undefined> {
     const list = this.shoppingLists.get(id);
     if (!list) return undefined;
 

@@ -556,7 +556,6 @@ const ShoppingListComponent: React.FC = () => {
       }
     },
     onSuccess: (data) => {
-      console.log('Regeneration successful, invalidating queries');
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
 
       let title, description;
@@ -571,8 +570,6 @@ const ShoppingListComponent: React.FC = () => {
           description += ` (${data.itemsSkipped} similar items already existed)`;
         }
       }
-
-      console.log('Showing success toast:', title, description);
 
       toast({
         title,
