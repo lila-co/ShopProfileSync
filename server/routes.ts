@@ -1615,6 +1615,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Shopping trip completion endpoint
+  app.post('/api/shopping-trip/complete', async (req: Request, res: Response) => {
+    try {
+      const { 
+        listId, 
+        completedItems, 
+        uncompletedItems, 
+        movedItems,
+        startTime, 
+        endTime, 
+        retailerName,
+        planType,
+        totalStores
+      } = req.body;
+
+      const userId = getCurrentUserId(req);
+
+      console.log('Shopping trip completion request:', {
+        listId,
+        completedItemsCount: completedItems?.length || 0,
+        uncompletedItemsCount: uncompletedItems?.length || 0,
+        movedItemsCount: movedItems?.length || 0,
+        retailerName,
+        planType
+      });
+
+      // Delete completed items from shopping list
+      if (completedItems && completedItems.length > 0) {
+        const deletePromises = completedItems.map(async (itemId: number) => {
+          try {
+            console.log(`Attempting to delete completed item ${itemId}`);
+            const success = await storage.deleteShoppingListItem(itemId);
+            console.log(`Delete result for item ${itemId}:`, success);
+            return { itemId, success };
+          } catch (error) {
+            console.error(`Failed to delete item ${itemId}:`, error);
+            return { itemId, success: false, error };
+          }
+        });
+
+        const deleteResults = await Promise.allSettled(deletePromises);
+        const successfulDeletes = deleteResults.filter(result => 
+          result.status === 'fulfilled' && result.value?.success
+        ).length;
+        
+        console.log(`Completed items deletion: ${successfulDeletes}/${completedItems.length} successful`);
+      }
+
+      // Update uncompleted items with notes indicating they were left during shopping
+      if (uncompletedItems && uncompletedItems.length > 0) {
+        const updatePromises = uncompletedItems.map(async (item: any) => {
+          try {
+            const notes = item.reason === 'out_of_stock' 
+              ? `Out of stock during shopping trip on ${new Date().toLocaleDateString()}`
+              : `Not found during shopping trip on ${new Date().toLocaleDateString()}`;
+            
+            console.log(`Updating uncompleted item ${item.id} with notes: "${notes}"`);
+            
+            const success = await storage.updateShoppingListItem(item.id, {
+              isCompleted: false,
+              notes: notes
+            });
+            
+            console.log(`Update result for uncompleted item ${item.id}:`, success);
+            return { itemId: item.id, success: !!success };
+          } catch (error) {
+            console.error(`Failed to update uncompleted item ${item.id}:`, error);
+            return { itemId: item.id, success: false, error };
+          }
+        });
+
+        const updateResults = await Promise.allSettled(updatePromises);
+        const successfulUpdates = updateResults.filter(result =>
+          result.status === 'fulfilled' && result.value?.success
+        ).length;
+
+        console.log(`Uncompleted items update: ${successfulUpdates}/${uncompletedItems.length} successful`);
+      }
+
+      // Log trip analytics for insights
+      logger.info('Shopping trip completed', {
+        userId,
+        listId,
+        tripAnalytics: {
+          totalItems: (completedItems?.length || 0) + (uncompletedItems?.length || 0),
+          completedItems: completedItems?.length || 0,
+          uncompletedItems: uncompletedItems?.length || 0,
+          movedItems: movedItems?.length || 0,
+          completionRate: ((completedItems?.length || 0) / ((completedItems?.length || 0) + (uncompletedItems?.length || 0))) * 100,
+          tripDurationMinutes: startTime && endTime ? 
+            Math.round((new Date(endTime).getTime() - new Date(startTime).getTime()) / 60000) : 0
+        },
+        retailerName,
+        planType,
+        totalStores,
+        uncompletedItemDetails: uncompletedItems?.map((item: any) => ({
+          productName: item.productName,
+          category: item.category || 'Unknown',
+          reason: item.reason || 'not_found'
+        })),
+        movedItemDetails: movedItems?.map((item: any) => ({
+          productName: item.productName,
+          fromStore: retailerName,
+          toStore: item.toStore || 'Unknown'
+        }))
+      });
+
+      res.json({ 
+        success: true, 
+        message: 'Shopping trip completed successfully',
+        deletedItems: completedItems?.length || 0,
+        updatedItems: uncompletedItems?.length || 0
+      });
+
+    } catch (error) {
+      console.error('Error completing shopping trip:', error);
+      handleError(res, error);
+    }
+  });
+
   // Update shopping list item
   app.patch('/api/shopping-list/items/:itemId', async (req: Request, res: Response) => {
     try {
