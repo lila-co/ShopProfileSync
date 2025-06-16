@@ -1361,8 +1361,7 @@ export class MemStorage implements IStorage {
 
   async updateAffiliateConversionStatus(id: number, status: string): Promise<AffiliateConversion> {
     const conversion = this.affiliateConversions.get(id);
-    ```python
-if (!conversion) throw new Error("Affiliate conversion not found");
+    if (!conversion) throw new Error("Affiliate conversion not found");
 
     const updatedConversion = { ...conversion, status };
     this.affiliateConversions.set(id, updatedConversion);
