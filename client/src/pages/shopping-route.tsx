@@ -2120,7 +2120,7 @@ const ShoppingRoute: React.FC = () => {
             <AlertDialogDescription className="text-gray-600 mt-2">
               You have {uncompletedItems.length} uncompleted item{uncompletedItems.length !== 1 ? 's' : ''} 
               {optimizedRoute?.isMultiStore && currentStoreIndex < optimizedRoute.stores.length - 1 
-                ? " at this store. What would you like to do with them?" 
+                ? ` at ${optimizedRoute.stores[currentStoreIndex]?.retailerName}. You can move them to ${optimizedRoute.stores[currentStoreIndex + 1]?.retailerName} or save them for a future shopping trip.`
                 : " in your shopping trip. What would you like to do with them?"
               }
             </AlertDialogDescription>
@@ -2149,38 +2149,51 @@ const ShoppingRoute: React.FC = () => {
               Mark as Found
             </Button>
 
+            {/* For intermediary stores in multi-store plans - only show move to next store and save for future */}
             {optimizedRoute?.isMultiStore && optimizedRoute.stores && currentStoreIndex < optimizedRoute.stores.length - 1 && (
-              <Button 
-                onClick={handleTryNextStore}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
-              >
-                <MapPin className="h-5 w-5" />
-                Try Next Store
-              </Button>
+              <>
+                <Button 
+                  onClick={handleTryNextStore}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
+                >
+                  <MapPin className="h-5 w-5" />
+                  Move to {optimizedRoute.stores[currentStoreIndex + 1]?.retailerName}
+                </Button>
+
+                <Button 
+                  onClick={handleSaveForNextTrip}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
+                >
+                  <Clock className="h-5 w-5" />
+                  Leave for Future Trip
+                </Button>
+              </>
             )}
 
-            {/* Show "End Shopping" option only for last store */}
+            {/* For single store or last store in multi-store - show all options including end shopping */}
             {(!optimizedRoute?.isMultiStore || 
               (optimizedRoute?.isMultiStore && currentStoreIndex >= optimizedRoute.stores.length - 1)) && (
-              <Button 
-                onClick={() => {
-                  setEndStoreDialogOpen(false);
-                  endShopping();
-                }}
-                className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
-              >
-                <ShoppingCart className="h-5 w-5" />
-                End Shopping Trip
-              </Button>
-            )}
+              <>
+                <Button 
+                  onClick={() => {
+                    setEndStoreDialogOpen(false);
+                    endShopping();
+                  }}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                  End Shopping Trip
+                </Button>
 
-            <Button 
-              onClick={handleSaveForNextTrip}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
-            >
-              <Clock className="h-5 w-5" />
-              Save for Next Trip
-            </Button>
+                <Button 
+                  onClick={handleSaveForNextTrip}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
+                >
+                  <Clock className="h-5 w-5" />
+                  Save for Next Trip
+                </Button>
+              </>
+            )}
 
             <Button 
               variant="outline" 
