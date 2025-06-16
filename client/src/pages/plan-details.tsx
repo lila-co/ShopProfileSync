@@ -191,24 +191,28 @@ const PlanDetails: React.FC = () => {
     let availableItems = 0;
     const missingItems: any[] = [];
 
-    // Get retailer IDs from current plan
-    const planRetailerIds = new Set(planData.stores.map(store => store.retailer.id));
+    // For single-store plans, all items are considered available since we put them all in one store
+    if (selectedPlanType === 'single-store') {
+      availableItems = totalItems;
+    } else {
+      // For multi-store and balanced plans, check actual availability
+      const planRetailerIds = new Set(planData.stores.map(store => store.retailer.id));
 
-    // Check each item's availability in plan stores
-    shoppingItems.forEach(item => {
-      if (item.suggestedRetailer && planRetailerIds.has(item.suggestedRetailer.id)) {
-        availableItems++;
-      } else {
-        missingItems.push(item);
-      }
-    });
+      shoppingItems.forEach(item => {
+        if (item.suggestedRetailer && planRetailerIds.has(item.suggestedRetailer.id)) {
+          availableItems++;
+        } else {
+          missingItems.push(item);
+        }
+      });
+    }
 
     return {
       totalItems,
       availableItems,
       missingItems
     };
-  }, [shoppingItems, planData.stores]);
+  }, [shoppingItems, planData.stores, selectedPlanType]);
 
   if (isLoading) {
     return (

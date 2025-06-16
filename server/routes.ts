@@ -1197,1012 +1197,268 @@ export async function registerRoutes(app: Express): Promise<Server> {
         trendingCategory: "Organic Products",
         trendDescription: "More families in your area are choosing organic alternatives",
         growthPercentage: 25,
-        popularStore: "Whole Foods Market",
-        bestDealDay: "Wednesday",
-        averageAreaSpend: 127,
-        topAreaCategories: ["Organic produce", "Local products", "Sustainable goods"],
-        peakShoppingTimes: ["Saturday morning", "Sunday afternoon", "Wednesday evening"],
-        seasonalTrends: [
-          {
-            season: "Current",
-            trending: ["Fresh produce", "Outdoor dining", "BBQ supplies"]
-          }
-        ],
-        demographicBreakdown: {
-          families: 45,
-          singles: 28,
-          seniors: 15,
-          students: 12
-        },
-        localEvents: [
-          {
-            event: "Farmer's Market",
-            impact: "30% increase in organic purchases",
-            day: "Saturday"
-          }
-        ]
+        popularStores: ["Whole Foods", "Target", "Walmart"],
+        savingsOpportunity: 15.2
       };
 
       res.json(areaInsights);
     } catch (error) {
-      console.error('Error in area insights endpoint:', error);
-      res.status(500).json({ 
-        error: 'Failed to fetch area insights',
-        message: error.message || 'Internal server error'
-      });
+      handleError(res, error);
     }
   });
 
-  // Smart deals with AI analysis
-  app.get('/api/deals/smart-analysis', async (req: Request, res: Response) => {
+  // Retailer analytics endpoint for sharing insights
+  app.get('/api/analytics/retailer-insights/:retailerId', async (req: Request, res: Response) => {
     try {
-      const userId = req.headers['x-current-user-id'] ? 
+      const { retailerId } = req.params;
+      const { startDate, endDate, format = 'summary' } = req.query;
+
+      const currentUserId = req.headers['x-current-user-id'] ? 
         parseInt(req.headers['x-current-user-id'] as string) : 1;
 
-      const user = await storage.getUser(userId) || await storage.getDefaultUser();
-      const purchases = await storage.getPurchases(userId);
-
-      // Generate AI-enhanced smart deals
-      const smartDeals = [
-        {
-          productName: "Organic Bananas",
-          category: "Produce",
-          salePrice: 198,
-          originalPrice: 298,
-          savings: 100,
-          retailer: "Whole Foods",
-          validUntil: "2025-01-15",
-          aiReason: "Price 33% below average",
-          confidence: 92
-        },
-        {
-          productName: "Greek Yogurt 32oz",
-          category: "Dairy",
-          salePrice: 549,
-          originalPrice: 699,
-          savings: 150,
-          retailer: "Target",
-          validUntil: "2025-01-12",
-          aiReason: "Bulk size better value",
-          confidence: 87
-        },
-        {
-          productName: "Olive Oil Extra Virgin",
-          category: "Pantry",
-          salePrice: 891,
-          originalPrice: 1299,
-          savings: 408,
-          retailer: "Costco",
-          validUntil: "2025-01-20",
-          aiReason: "Matches your preferences",
-          confidence: 95
-        },
-        {
-          productName: "Salmon Fillets",
-          category: "Meat & Seafood",
-          salePrice: 1299,
-          originalPrice: 1599,
-          savings: 300,
-          retailer: "Walmart",
-          validUntil: "2025-01-14",
-          aiReason: "Seasonal pricing dip",
-          confidence: 84
-        }
-      ];
-
-      // Filter based on user purchase history
-      const relevantDeals = smartDeals.filter(deal => {
-        const hasRelatedPurchase = purchases.some(purchase => 
-          purchase.items?.some(item => 
-            item.name.toLowerCase().includes(deal.category.toLowerCase()) ||
-            item.name.toLowerCase().includes(deal.productName.toLowerCase().split(' ')[0])
-          )
-        );
-        return hasRelatedPurchase || deal.confidence > 90;
-      });
-
-      res.json(relevantDeals.length > 0 ? relevantDeals : smartDeals.slice(0, 3));
-    } catch (error) {
-      console.error('Error in smart deals analysis:', error);
-      res.status(500).json({ 
-        error: 'Failed to analyze smart deals',
-        message: error.message || 'Internal server error'
-      });
-    }
-  });
-
-  // Contextual shopping insights
-  app.get('/api/insights/contextual', async (req: Request, res: Response) => {
-    try {
-      const contextualInsights = {
-        optimalShoppingTime: "Tuesday 10 AM",
-        weatherImpact: "Rain expected - indoor shopping recommended",
-        crowdLevel: "Low traffic expected",
-        budgetAlert: "You're 15% under monthly budget",
-        seasonalTrend: "Winter produce prices dropping",
-        personalizedTip: "Your usual shopping day saves you $12 on average"
-      };
-
-      res.json(contextualInsights);
-    } catch (error) {
-      console.error('Error in contextual insights:', error);
-      res.status(500).json({ 
-        error: 'Failed to fetch contextual insights',
-        message: error.message || 'Internal server error'
-      });
-    }
-  });
-
-  // Recommendations routes
-  app.get('/api/recommendations', async (req: Request, res: Response) => {
-    try {
-      // Get or generate recommendations based on purchase history
-      let recommendations = await storage.getRecommendations();
-
-      // If no recommendations exist, generate some
-      if (!recommendations || recommendations.length === 0) {
-        try {
-          const userId = req.headers['x-current-user-id'] ? 
-            parseInt(req.headers['x-current-user-id'] as string) : 1;
-          const user = await storage.getUser(userId) || await storage.getDefaultUser();
-          const purchases = await storage.getPurchases(userId);
-
-          console.log(`Generating recommendations for user ${userId} with ${purchases.length} purchases`);
-          recommendations = await generateRecommendations(user, purchases);
-
-          // Save the generated recommendations
-          for (const rec of recommendations) {
-            try {
-              await storage.createRecommendation(rec);
-            } catch (saveError) {
-              console.error('Error saving recommendation:', saveError);
-              // Continue with other recommendations
-            }
-          }
-
-          console.log(`Generated and saved ${recommendations.length} recommendations from purchase history`);
-        } catch (generateError) {
-          console.error('Error generating recommendations:', generateError);
-          // Return empty array if generation fails
-          recommendations = [];
-        }
+      const currentUser = await storage.getUser(currentUserId);
+      if (!currentUser || (currentUser.role !== 'owner' && currentUser.role !== 'admin')) {
+        return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
       }
 
-      res.json(recommendations || []);
-    } catch (error) {
-      console.error('Error in recommendations endpoint:', error);
-      // Return empty array instead of error to prevent frontend crashes
-      res.json([]);
-    }
-  });
-
-  // Shopping list item routes
-  app.post('/api/shopping-list/items', sanitizeInput, validateBody(serverShoppingListItemSchema), async (req: Request, res: Response) => {
-    try {
-      const { shoppingListId, productName, quantity, unit, notes } = req.body;
-
-      if (!shoppingListId || !productName) {
-        return res.status(400).json({ message: 'Shopping list ID and product name are required' });
-      }
-
-      const newItem = await storage.addShoppingListItem({
-        shoppingListId,
-        productName: productName.trim(),
-        quantity: quantity || 1,
-        unit: unit || 'COUNT',
-        notes: notes || null
-      });
-
-      res.status(201).json(newItem);
-    } catch (error) {
-      console.error('Error adding shopping list item:', error);
-      handleError(res, error);
-    }
-  });
-
-  app.patch('/api/shopping-list/items/:id', async (req: Request, res: Response) => {
-    try {
-      const itemId = parseInt(req.params.id);
-      const updates = req.body;
-
-      if (isNaN(itemId)) {
-        return res.status(400).json({ message: 'Invalid item ID' });
-      }
-
-      const updatedItem = await storage.updateShoppingListItem(itemId, updates);
-
-      if (!updatedItem) {
-        return res.status(404).json({ message: 'Shopping list item not found' });
-      }
-
-      res.json(updatedItem);
-    } catch (error) {
-      console.error('Error updating shopping list item:', error);
-      handleError(res, error);
-    }
-  });
-
-  app.delete('/api/shopping-list/items/:id', async (req: Request, res: Response) => {
-    try {
-      const itemId = parseInt(req.params.id);
-
-      if (isNaN(itemId)) {
-        return res.status(400).json({ message: 'Invalid item ID' });
-      }
-
-      await storage.deleteShoppingListItem(itemId);
-      res.status(204).send();
-    } catch (error) {
-      console.error('Error deleting shopping list item:', error);
-      handleError(res, error);
-    }
-  });
-
-  // Shopping list routes
-  app.get('/api/shopping-lists/:id', async (req: Request, res: Response) => {
-    try {
-      const listId = parseInt(req.params.id);
-      const lists = await storage.getShoppingLists();
-      const list = lists.find(l => l.id === listId);
-
-      if (!list) {
-        return res.status(404).json({ message: 'Shopping list not found' });
-      }
-
-      // Fetch items for this shopping list
-      const items = await storage.getShoppingListItems(list.id);
-      console.log(`List ${list.id} has ${items.length} items:`, items);
-
-      res.json({ ...list, items });
-    } catch (error) {
-      handleError(res, error);
-    }
-  });
-
-  // Create new shopping list
-  app.post('/api/shopping-lists', sanitizeInput, validateBody(serverShoppingListSchema.omit({ userId: true })), async (req: Request, res: Response) => {
-    try {
-      const { name, description, isDefault } = req.body;
-      const userId = req.headers['x-current-user-id'] ? 
-        parseInt(req.headers['x-current-user-id'] as string) : 1;
-
-      if (!userId || userId <= 0) {
-        return res.status(400).json({ message: 'Invalid user ID' });
-      }
-
-      const newList = await storage.createShoppingList({
-        name,
-        description: description || '',
-        userId,
-        isDefault: isDefault || false
-      });
-
-      res.status(201).json(newList);
-    } catch (error) {
-      handleError(res, error);
-    }
-  });
-
-  // Update shopping list
-  app.patch('/api/shopping-lists/:id', async (req: Request, res: Response) => {
-    try {
-      const listId = parseInt(req.params.id);
-      const { name, description, isDefault } = req.body;
-
-      const updatedList = await storage.updateShoppingList(listId, {
-        name,
-        description,
-        isDefault
-      });
-
-      if (!updatedList) {
-        return res.status(404).json({ message: 'Shopping list not found' });
-      }
-
-      res.json(updatedList);
-    } catch (error) {
-      handleError(res, error);
-    }
-  });
-
-  // Delete shopping list
-  app.delete('/api/shopping-lists/:id', async (req: Request, res: Response) => {
-    try {
-      const listId = parseInt(req.params.id);
-
-      await storage.deleteShoppingList(listId);
-      res.status(204).send();
-    } catch (error) {
-      handleError(res, error);
-    }
-  });
-
-  app.get('/api/shopping-lists', async (req: Request, res: Response) => {
-    try {
-      const lists = await storage.getShoppingLists();
-
-      // Fetch items for each shopping list
-      const listsWithItems = await Promise.all(lists.map(async (list) => {
-        const items = await storage.getShoppingListItems(list.id);
-        console.log(`List ${list.id} has ${items.length} items:`, items);
-        return { ...list, items };
-      }));
-
-      res.json(listsWithItems);
-    } catch (error) {
-      handleError(res, error);
-    }
-  });
-
-  // Get recent purchases to refresh shopping lists
-  app.get('/api/purchases/recent', async (req: Request, res: Response) => {
-    try {
-      const userId = 1; // For demo purposes, use default user
-      const purchases = await storage.getPurchases();
-
-      // Get the 5 most recent purchases
-      const recentPurchases = purchases
-        .sort((a, b) => new Date(b.purchaseDate).getTime() - new Date(a.purchaseDate).getTime())
-        .slice(0, 5);
-
-      res.json(recentPurchases);
-    } catch (error) {
-      handleError(res, error);
-    }
-  });
-
-  // Record completed shopping trip
-  app.post('/api/shopping-trip/complete', async (req: Request, res: Response) => {
-    try {
-      const { listId, completedItems, startTime, endTime, retailerName } = req.body;
-      
-      // Record the purchase in the system
-      const userId = 1; // Demo user
-      const retailers = await storage.getRetailers();
-      const retailer = retailers.find(r => r.name === retailerName);
-      
-      if (retailer) {
-        const purchase = await storage.createPurchase({
-          userId,
-          retailerId: retailer.id,
-          purchaseDate: endTime,
-          totalAmount: 0, // Could be calculated from completed items
-          paymentMethod: 'unknown'
-        });
-
-        // Add completed items to the purchase
-        for (const itemId of completedItems) {
-          const item = await storage.getShoppingListItem(itemId);
-          if (item) {
-            await storage.createPurchaseItem({
-              purchaseId: purchase.id,
-              productName: item.productName,
-              quantity: item.quantity,
-              unitPrice: item.suggestedPrice || 500, // Default price
-              totalPrice: (item.suggestedPrice || 500) * item.quantity
-            });
-          }
-        }
-
-        // Trigger automatic list regeneration for next time
-        try {
-          const response = await fetch(`http://localhost:5000/api/shopping-lists/generate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ shoppingListId: listId })
-          });
-          
-          if (response.ok) {
-            console.log('Shopping list automatically regenerated after trip completion');
-          }
-        } catch (error) {
-          console.warn('Failed to auto-regenerate shopping list:', error);
-        }
-      }
-
-      res.json({ success: true, message: 'Shopping trip recorded successfully' });
-    } catch (error) {
-      handleError(res, error);
-    }
-  });
-
-  // Shopping list suggestions endpoint
-  app.get('/api/shopping-lists/suggestions', async (req: Request, res: Response) => {
-    try {
-      const userId = req.headers['x-current-user-id'] ? 
-        parseInt(req.headers['x-current-user-id'] as string) : 1;
-
-      // Get user preferences and recent purchases for suggestions
-      const user = await storage.getUser(userId);
-      const purchases = await storage.getPurchases(userId, 10); // Get last 10 purchases
-
-      // Generate suggestions based on purchase patterns
-      const suggestions = await generatePersonalizedSuggestions(user, purchases);
-
-      res.json(suggestions || []);
-    } catch (error) {
-      console.error('Error generating suggestions:', error);
-      res.json([]); // Return empty array instead of error to prevent frontend crashes
-    }
-  });
-
-  // Get all purchases for a user
-  app.get('/api/purchases', async (req: Request, res: Response) => {
-    try {
-      const userId = req.headers['x-current-user-id'] ? 
-        parseInt(req.headers['x-current-user-id'] as string) : 1;
-      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
-      const offset = req.query.offset ? parseInt(req.query.offset as string) : undefined;
-
-      const purchases = await storage.getPurchases(userId, limit, offset);
-      res.json(purchases);
-    } catch (error) {
-      handleError(res, error);
-    }
-  });
-
-  // Create manual purchase entry
-  app.post('/api/purchases', sanitizeInput, validateBody(serverPurchaseSchema.omit({ userId: true })), async (req: Request, res: Response) => {
-    try {
-      const { retailerId, items, totalAmount, purchaseDate } = req.body;
-      const userId = req.headers['x-current-user-id'] ? 
-        parseInt(req.headers['x-current-user-id'] as string) : 1;
-
-      if (!userId || userId <= 0) {
-        return res.status(400).json({ message: 'Invalid user ID' });
-      }
-
-      const purchase = await storage.createPurchase({
-        userId,
-        retailerId,
-        items,
-        totalAmount,
-        purchaseDate: purchaseDate ? new Date(purchaseDate) : new Date()
-      });
-
-      res.status(201).json(purchase);
-    } catch (error) {
-      handleError(res, error);
-    }
-  });
-
-  // Update purchase
-  app.patch('/api/purchases/:id', async (req: Request, res: Response) => {
-    try {
-      const purchaseId = parseInt(req.params.id);
-      const updates = req.body;
-
-      const updatedPurchase = await storage.updatePurchase(purchaseId, updates);
-
-      if (!updatedPurchase) {
-        return res.status(404).json({ message: 'Purchase not found' });
-      }
-
-      res.json(updatedPurchase);
-    } catch (error) {
-      handleError(res, error);
-    }
-  });
-
-  // Delete purchase
-  app.delete('/api/purchases/:id', async (req: Request, res: Response) => {
-    try {
-      const purchaseId = parseInt(req.params.id);
-
-      await storage.deletePurchase(purchaseId);
-      res.status(204).send();
-    } catch (error) {
-      handleError(res, error);
-    }
-  });
-
-  // Recipe import endpoint
-  app.post('/api/shopping-lists/recipe', rateLimiters.shoppingList.middleware(), async (req: Request, res: Response) => {
-    try {
-      const { recipeUrl, shoppingListId, servings } = req.body;
-
-      if (!recipeUrl || !shoppingListId) {
-        return res.status(400).json({ message: 'Recipe URL and shopping list ID are required' });
-      }
-
-      console.log('Recipe import request:', { recipeUrl, shoppingListId, servings });
-
-      // Extract ingredients from recipe URL
-      const ingredients = await extractRecipeIngredients(recipeUrl, servings || 4);
-
-      if (!ingredients || ingredients.length === 0) {
-        return res.status(400).json({ message: 'No ingredients found in recipe' });
-      }
-
-      const addedItems = [];
-      const skippedItems = [];
-
-      // Get existing items to check for duplicates
-      const existingItems = await storage.getShoppingListItems(shoppingListId);
-
-      // Process each ingredient
-      for (const ingredient of ingredients) {
-        try {
-          // Check for duplicates
-          const existingItem = existingItems.find(item => 
-            item.productName.toLowerCase().includes(ingredient.name.toLowerCase()) ||
-            ingredient.name.toLowerCase().includes(item.productName.toLowerCase())
-          );
-
-          if (existingItem) {
-            skippedItems.push(ingredient.name);
-            continue;
-          }
-
-          // Convert ingredient to shopping list item
-          const newItem = await storage.addShoppingListItem({
-            shoppingListId,
-            productName: ingredient.name,
-            quantity: ingredient.quantity || 1,
-            unit: ingredient.unit || 'COUNT'
-          });
-
-          addedItems.push(newItem);
-        } catch (error) {
-          console.error('Failed to add ingredient:', ingredient.name, error);
-          skippedItems.push(ingredient.name);
-        }
-      }
-
-      res.json({
-        success: true,
-        itemsAdded: addedItems.length,
-        itemsSkipped: skippedItems.length,
-        addedItems,
-        skippedItems,
-        message: `Added ${addedItems.length} ingredients from recipe`
-      });
-
-    } catch (error) {
-      console.error('Recipe import error:', error);
-      res.status(500).json({ 
-        message: 'Failed to import recipe', 
-        error: error.message || 'Unknown error occurred'
-      });
-    }
-  });
-
-  // Unified shopping list generation for all scenarios
-  app.post('/api/shopping-lists/generate', rateLimiters.shoppingList.middleware(), async (req: Request, res: Response) => {
-    try {
-      const { items: selectedItems, shoppingListId } = req.body;
-      const userId = 1; // For demo purposes, use default user
-
-      console.log('Shopping list generation request received:', { selectedItems, shoppingListId });
-
-      // Get the target shopping list
-      const lists = await storage.getShoppingLists();
-      const targetListId = shoppingListId || lists[0]?.id;
-
-      if (!targetListId) {
-        console.error('No shopping list available');
-        return res.status(400).json({ message: 'No shopping list available' });
-      }
-
-      // Get existing items to determine if this is an empty list
-      const existingItems = await storage.getShoppingListItems(targetListId);
-      const isEmptyList = existingItems.length === 0;
-
-      console.log(`Generating list - Target: ${targetListId}, Existing items: ${existingItems.length}, Empty: ${isEmptyList}`);
-
-      // Define sample items to add
-      let itemsToProcess = selectedItems;
-
-      // If no specific items provided, use sample data
-      if (!itemsToProcess || !Array.isArray(itemsToProcess)) {
-        if (isEmptyList) {
-          // For empty lists, create a comprehensive starter list
-          itemsToProcess = [
-            // Essential dairy & proteins
-            { productName: 'Milk', quantity: 1, unit: 'GALLON', isSelected: true },
-            { productName: 'Eggs', quantity: 1, unit: 'DOZEN', isSelected: true },
-            { productName: 'Greek Yogurt', quantity: 4, unit: 'CONTAINER', isSelected: true },
-            { productName: 'Chicken Breast', quantity: 2, unit: 'LB', isSelected: true },
-
-            // Fresh produce
-            { productName: 'Bananas', quantity: 2, unit: 'LB', isSelected: true },
-            { productName: 'Baby Spinach', quantity: 1, unit: 'BAG', isSelected: true },
-            { productName: 'Roma Tomatoes', quantity: 2, unit: 'LB', isSelected: true },
-            { productName: 'Avocados', quantity: 3, unit: 'COUNT', isSelected: true },
-
-            // Pantry staples
-            { productName: 'Whole Wheat Bread', quantity: 1, unit: 'LOAF', isSelected: true },
-            { productName: 'Brown Rice', quantity: 1, unit: 'BAG', isSelected: true },
-            { productName: 'Olive Oil', quantity: 1, unit: 'BOTTLE', isSelected: true },
-            { productName: 'Black Beans', quantity: 2, unit: 'CAN', isSelected: true }
-          ];
-        } else {
-          // For non-empty lists, add complementary items
-          itemsToProcess = [
-            // Fresh additions
-            { productName: 'Fresh Strawberries', quantity: 1, unit: 'CONTAINER', isSelected: true },
-            { productName: 'Cucumber', quantity: 2, unit: 'COUNT', isSelected: true },
-            { productName: 'Sweet Potatoes', quantity: 3, unit: 'LB', isSelected: true },
-            { productName: 'Salmon Fillet', quantity: 1, unit: 'LB', isSelected: true },
-
-            // Pantry enhancements
-            { productName: 'Pasta', quantity: 2, unit: 'BOX', isSelected: true },
-            { productName: 'Marinara Sauce', quantity: 1, unit: 'JAR', isSelected: true },
-            { productName: 'Parmesan Cheese', quantity: 1, unit: 'CONTAINER', isSelected: true },
-            { productName: 'Pine Nuts', quantity: 1, unit: 'BAG', isSelected: true },
-
-            // Household essentials
-            { productName: 'Dish Soap', quantity: 1, unit: 'BOTTLE', isSelected: true },
-            { productName: 'Laundry Detergent', quantity: 1, unit: 'BOTTLE', isSelected: true }
-          ];
-        }
-      }
-
-      console.log(`Processing ${itemsToProcess.length} items for ${isEmptyList ? 'empty' : 'existing'} list`);
-
-      const addedItems = [];
-      const updatedItems = [];
-      const skippedItems = [];
-
-      // Common item corrections for duplicate detection
-      const commonItemCorrections: Record<string, string[]> = {
-        'banana': ['banan', 'bananna', 'banannas', 'bannana'],
-        'apple': ['appl', 'apples', 'aple'],
-        'milk': ['millk', 'milks', 'mlik'],
-        'bread': ['bred', 'breads', 'loaf'],
-        'egg': ['eggs', 'egss'],
-        'potato': ['potatos', 'potatoe', 'potatoes'],
-        'tomato': ['tomatos', 'tomatoe', 'tomatoes'],
-        'cheese': ['chese', 'cheez', 'chees'],
-        'chicken': ['chickn', 'checken', 'chiken'],
-        'strawberries': ['strawberry', 'strawberies']
-      };
-
-      // Process each item
-      for (const item of itemsToProcess) {
-        if (!item.isSelected) continue;
-
-        const normalizedName = item.productName.toLowerCase().trim();
-
-        // Check for duplicates using comprehensive matching
-        let existingItem = existingItems.find(existing => 
-          existing.productName.toLowerCase() === normalizedName ||
-          existing.productName.toLowerCase() + 's' === normalizedName ||
-          existing.productName.toLowerCase() === normalizedName + 's'
-        );
-
-        // Check for common item variations
-        if (!existingItem) {
-          for (const [baseItem, variations] of Object.entries(commonItemCorrections)) {
-            if (normalizedName.includes(baseItem) || variations.some(v => normalizedName.includes(v.toLowerCase()))) {
-              existingItem = existingItems.find(existing => {
-                const existingName = existing.productName.toLowerCase();
-                return existingName.includes(baseItem) || variations.some(v => existingName.includes(v.toLowerCase()));
-              });
-              if (existingItem) break;
-            }
-          }
-        }
-
-        if (existingItem) {
-          // Skip duplicate items for regeneration to avoid confusion
-          console.log(`Skipping duplicate item: ${item.productName} (matches existing: ${existingItem.productName})`);
-          skippedItems.push(item.productName);
-        } else {
-          // Add as new item
-          try {
-            const newItem = await storage.addShoppingListItem({
-              shoppingListId: targetListId,
-              productName: item.productName,
-              quantity: item.quantity || 1,
-              unit: item.unit || 'COUNT'
-            });
-            addedItems.push(newItem);
-            console.log(`Added new item: ${item.productName}`);
-          } catch (error) {
-            console.error('Failed to add item:', item.productName, error);
-            skippedItems.push(item.productName);
-          }
-        }
-      }
-
-      const result = {
-        addedItems,
-        updatedItems,
-        skippedItems,
-        itemsAdded: addedItems.length,
-        itemsUpdated: updatedItems.length,
-        itemsSkipped: skippedItems.length,
-        totalItems: addedItems.length + updatedItems.length,
-        isEmptyList,
-        message: isEmptyList ? 'Shopping list created successfully' : `Added ${addedItems.length} new items to your shopping list`
-      };
-
-      console.log('Shopping list generation completed:', result);
-      res.json(result);
-    } catch (error) {
-      console.error('Shopping list generation error:', error);
-
-      // Provide detailed error information
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      const errorStack = error instanceof Error ? error.stack : '';
-
-      console.error('Error details:', { message: errorMessage, stack: errorStack });
-
-      res.status(500).json({ 
-        message: 'Failed to generate shopping list', 
-        error: errorMessage,
-        details: 'Check server logs for more information'
-      });
-    }
-  });
-
-  // Generate shopping list preview with personalized recommendations
-  app.post('/api/shopping-lists/preview', rateLimiters.shoppingList.middleware(), async (req: Request, res: Response) => {
-    try {
-      const userId = req.body.userId || 1; // Default to user 1 for demo
-
-      // Get user preferences and recent purchases
-      const user = await storage.getUser(userId);
-      const userPrefersBulk = user?.buyInBulk || false;
-      const userPrioritizesCost = user?.prioritizeCostSavings || false;
-
-      // Get recent purchases to filter out recently bought items
-      const recentPurchases = await storage.getPurchases(userId, 50); // Get last 50 purchases
-      const recentlyPurchasedItems = getRecentlyPurchasedItems(recentPurchases, 3); // Last 3 days
-
-      // Analyze purchase patterns from receipts for better recommendations
-      let purchaseBasedRecommendations = [];
-      try {
-        const purchasePatterns = analyzePurchasePatterns(recentPurchases);
-        const analysisRecommendations = await generateRecommendations(user, recentPurchases);
-
-        // Convert recommendations to preview format
-        purchaseBasedRecommendations = analysisRecommendations
-          .filter(rec => !wasItemRecentlyPurchased(rec.productName, recentlyPurchasedItems))
-          .map(rec => ({
-            productName: rec.productName,
-            quantity: Math.max(1, Math.floor(Math.random() * 3) + 1), // Suggest reasonable quantities
-            unit: 'COUNT',
-            suggestedRetailerId: rec.suggestedRetailerId || 1,
-            suggestedPrice: rec.suggestedPrice || 300,
-            savings: rec.savings || 0,
-            category: 'Based on Purchase History',
-            confidence: 0.95,
-            reason: rec.reason || 'Based on your recent purchases',
-            daysUntilPurchase: rec.daysUntilPurchase || 5,
-            isSelected: true,
-            fromReceipts: true
-          }));
-
-        console.log(`Generated ${purchaseBasedRecommendations.length} recommendations from receipt analysis`);
-      } catch (error) {
-        console.warn('Error analyzing purchase patterns from receipts:', error);
-      }
-
-      // AI-enhanced deal data with comprehensive categorization and optimization
-      const availableDeals = [
-        // Streamlined deal suggestions
-        {
-          productName: 'Sparkling Water',
-          retailerName: 'Target', 
-          salePrice: 1500, // $15.00
-          quantity: 24,
-          unit: 'CANS',
-          savings: 300,
-          category: 'Beverages'
-        },
-        {
-          productName: 'Milk',
-          retailerName: 'Walmart',
-          salePrice: 359, // $3.59 per gallon
-          quantity: 1,
-          unit: 'GALLON', 
-          savings: 40,
-          category: 'Dairy & Eggs',
-          conversionReason: 'AI suggests 1 gallon for smaller households'
-        },
-        // AI-optimized Eggs with COUNT to DOZEN conversion
-        {
-          productName: 'Eggs',
-          retailerName: 'Costco',
-          salePrice: 899, // $8.99 for 24 count
-          quantity: 2,
-          unit: 'DOZEN',
-          savings: 150,
-          category: 'Dairy & Eggs',
-          aiOptimized: true,
-          conversionReason: 'AI converted 24 COUNT to 2 DOZEN for standard shopping format'
-        },
-        {
-          productName: 'Eggs', 
-          retailerName: 'Target',
-          salePrice: 249, // $2.49 per dozen
-          quantity: 1,
-          unit: 'DOZEN',
-          savings: 50,
-          category: 'Dairy & Eggs',
-          aiOptimized: true,
-          conversionReason: 'AI suggests 1 dozen for regular household use'
-        },
-        // AI-optimized Produce
-        {
-          productName: 'Bananas',
-          retailerName: 'Walmart',
-          salePrice: 298, // $2.98
-          quantity: 2,
-          unit: 'LB',
-          savings: 50,
-          category: 'Produce',
-          aiOptimized: true,
-          conversionReason: 'AI suggests 2 lbs bananas - typical bunch size for households'
-        },
-        // AI-optimized Household Items
-        {
-          productName: 'Paper Towels',
-          retailerName: 'Costco',
-          salePrice: 1899, // $18.99
-          quantity: 12,
-          unit: 'ROLL',
-          savings: 300,
-          category: 'Household Items',
-          aiOptimized: true,
-          conversionReason: 'AI suggests 12-pack for bulk savings and convenience'
-        },
-        // AI-optimized Pantry Staples
-        {
-          productName: 'Pasta',
-          retailerName: 'Target',
-          salePrice: 498, // $4.98
-          quantity: 2,
-          unit: 'BOX',
-          savings: 100,
-          category: 'Pantry & Canned Goods',
-          aiOptimized: true,
-          conversionReason: 'AI suggests 2 boxes pasta for multiple meals and better value'
-        }
-      ];
-
-      // Process deals through AI categorization service
-      const aiEnhancedDeals = await Promise.all(availableDeals.map(async (deal) => {
-        try {
-          // Use AI categorization to validate and enhance the deal
-          const aiCategory = productCategorizer.categorizeProduct(deal.productName);
-          const aiQuantityOptimization = productCategorizer.normalizeQuantity(
-            deal.productName, 
-            deal.quantity, 
-            deal.unit
-          );
-
-          return {
-            ...deal,
-            category: aiCategory.category,
-            confidence: aiCategory.confidence,
-            aisle: aiCategory.aisle,
-            section: aiCategory.section,
-            // Use AI quantity suggestions if they're better
-            quantity: aiQuantityOptimization.suggestedQuantity || deal.quantity,
-            unit: aiQuantityOptimization.suggestedUnit || deal.unit,
-            aiReasoning: aiQuantityOptimization.conversionReason || deal.conversionReason,
-            originalQuantity: deal.quantity,
-            originalUnit: deal.unit
-          };
-        } catch (error) {
-          console.warn('AI enhancement failed for deal:', deal.productName, error);
-          return deal; // Return original deal if AI fails
-        }
-      }));
-
-      // Analyze deals considering user preferences
-      const analyzedDeals = analyzeBulkVsUnitPricing(aiEnhancedDeals, userPrefersBulk);
-
-      // Convert to recommendation format with AI enhancements and filter recently purchased
-      const recommendedItems = analyzedDeals
-        .filter(deal => !wasItemRecentlyPurchased(deal.productName, recentlyPurchasedItems))
-        .map(deal => ({
-          productName: deal.productName,
-          quantity: deal.quantity,
-          unit: deal.unit || 'COUNT',
-          suggestedRetailerId: 1, // Mock Retailer ID
-          suggestedPrice: deal.salePrice,
-          savings: deal.savings,
-          category: deal.category,
-          confidence: deal.confidence || 0.8,
-          aisle: deal.aisle,
-          section: deal.section,
-        }));
-
-      res.json({
-        recommendations: recommendedItems,
-        totalRecommendations: recommendedItems.length,
-        source: 'ai_enhanced_deals',
-        userPreferences: {
-          prefersBulk: userPrefersBulk,
-          hasRecentPurchases: recentlyPurchasedItems.size > 0
-        }
-      });
-    } catch (error) {
-      handleError(res, error);
-    }
-  });
-
-  // Get retailer by ID
-  app.get('/api/retailers/:id', async (req: Request, res: Response) => {
-    try {
-      const retailerId = parseInt(req.params.id);
-      const retailer = await storage.getRetailer(retailerId);
-
+      // Get retailer information
+      const retailer = await storage.getRetailer(parseInt(retailerId));
       if (!retailer) {
-        return res.status(404).json({ error: 'Retailer not found' });
+        return res.status(404).json({ message: 'Retailer not found' });
       }
 
-      res.json(retailer);
-    } catch (error: any) {
-      console.error('Error fetching retailer:', error);
-      res.status(500).json({ error: 'Failed to fetch retailer' });
-    }
-  });
+      // Parse date range (default to last 30 days)
+      const endDateTime = endDate ? new Date(endDate as string) : new Date();
+      const startDateTime = startDate ? new Date(startDate as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-  // Find nearest store for a retailer
-  app.post('/api/stores/find-nearest', async (req: Request, res: Response) => {
-    try {
-      const { retailerId, userLat, userLng } = req.body;
+      // Get logs and metrics for this retailer
+      const logs = logger.getRecentLogs('info', 1000);
+      const metrics = logger.getMetricsSummary(24 * 30); // Last 30 days
 
-      if (!retailerId || !userLat || !userLng) {
-        return res.status(400).json({ message: 'Missing required parameters' });
+      // Filter logs for this retailer and date range
+      const retailerLogs = logs.filter(log => {
+        const logDate = new Date(log.timestamp);
+        const isInDateRange = logDate >= startDateTime && logDate <= endDateTime;
+        const isRetailerRelated = log.message.includes('Shopping trip completed') && 
+          log.metadata?.retailerName === retailer.name;
+        return isInDateRange && isRetailerRelated;
+      });
+
+      // Analyze the data
+      const analytics = {
+        retailer: {
+          id: retailer.id,
+          name: retailer.name
+        },
+        period: {
+          startDate: startDateTime.toISOString(),
+          endDate: endDateTime.toISOString(),
+          days: Math.ceil((endDateTime.getTime() - startDateTime.getTime()) / (24 * 60 * 60 * 1000))
+        },
+        summary: {
+          totalTrips: retailerLogs.length,
+          totalItemsRequested: 0,
+          totalItemsFound: 0,
+          totalItemsNotFound: 0,
+          totalItemsMovedToOtherStores: 0,
+          averageCompletionRate: 0,
+          averageTripDuration: 0
+        },
+        topUnfoundItems: {} as Record<string, { count: number, category: string }>,
+        topUnfoundCategories: {} as Record<string, number>,
+        itemsMostlyMovedToCompetitors: {} as Record<string, { count: number, destinationStores: string[] }>,
+        hourlyPatterns: Array(24).fill(0),
+        weeklyPatterns: Array(7).fill(0)
+      };
+
+      // Process each trip log
+      retailerLogs.forEach(log => {
+        if (log.metadata?.tripAnalytics) {
+          const trip = log.metadata.tripAnalytics;
+          const tripTime = new Date(log.timestamp);
+
+          analytics.summary.totalItemsRequested += trip.totalItems || 0;
+          analytics.summary.totalItemsFound += trip.completedItems || 0;
+          analytics.summary.totalItemsNotFound += trip.uncompletedItems || 0;
+          analytics.summary.totalItemsMovedToOtherStores += trip.movedItems || 0;
+          analytics.summary.averageCompletionRate += trip.completionRate || 0;
+          analytics.summary.averageTripDuration += trip.tripDurationMinutes || 0;
+
+          // Track hourly and weekly patterns
+          analytics.hourlyPatterns[tripTime.getHours()]++;
+          analytics.weeklyPatterns[tripTime.getDay()]++;
+
+          // Process unfound items
+          if (log.metadata.uncompletedItemDetails) {
+            log.metadata.uncompletedItemDetails.forEach((item: any) => {
+              if (!analytics.topUnfoundItems[item.productName]) {
+                analytics.topUnfoundItems[item.productName] = { count: 0, category: item.category };
+              }
+              analytics.topUnfoundItems[item.productName].count++;
+
+              if (!analytics.topUnfoundCategories[item.category]) {
+                analytics.topUnfoundCategories[item.category] = 0;
+              }
+              analytics.topUnfoundCategories[item.category]++;
+            });
+          }
+
+          // Process moved items
+          if (log.metadata.movedItemDetails) {
+            log.metadata.movedItemDetails.forEach((item: any) => {
+              if (!analytics.itemsMostlyMovedToCompetitors[item.productName]) {
+                analytics.itemsMostlyMovedToCompetitors[item.productName] = { 
+                  count: 0, 
+                  destinationStores: [] 
+                };
+              }
+              analytics.itemsMostlyMovedToCompetitors[item.productName].count++;
+              if (!analytics.itemsMostlyMovedToCompetitors[item.productName].destinationStores.includes(item.toStore)) {
+                analytics.itemsMostlyMovedToCompetitors[item.productName].destinationStores.push(item.toStore);
+              }
+            });
+          }
+        }
+      });
+
+      // Calculate averages
+      if (analytics.summary.totalTrips > 0) {
+        analytics.summary.averageCompletionRate = analytics.summary.averageCompletionRate / analytics.summary.totalTrips;
+        analytics.summary.averageTripDuration = analytics.summary.averageTripDuration / analytics.summary.totalTrips;
       }
 
-      const nearestStore = locationBasedCircularManager.findNearestStoreLocation(
-        retailerId,
-        userLat,
-        userLng
-      );
+      // Sort and limit top items
+      const sortedUnfoundItems = Object.entries(analytics.topUnfoundItems)
+        .sort(([, a], [, b]) => b.count - a.count)
+        .slice(0, 20);
 
-      if (nearestStore) {
-        // Calculate distance
-        const distance = locationBasedCircularManager['calculateDistance'](
-          userLat,
-          userLng,
-          nearestStore.lat,
-          nearestStore.lng
-        );
+      const sortedUnfoundCategories = Object.entries(analytics.topUnfoundCategories)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 10);
 
+      const sortedMovedItems = Object.entries(analytics.itemsMostlyMovedToCompetitors)
+        .sort(([, a], [, b]) => b.count - a.count)
+        .slice(0, 15);
+
+      // Generate actionable insights
+      const insights = {
+        inventoryOpportunities: sortedUnfoundItems.slice(0, 10).map(([item, data]) => ({
+          item,
+          category: data.category,
+          requestCount: data.count,
+          missedRevenue: data.count * 10, // Estimated average item value
+          priority: data.count > 5 ? 'High' : data.count > 2 ? 'Medium' : 'Low'
+        })),
+        categoryGaps: sortedUnfoundCategories.slice(0, 5).map(([category, count]) => ({
+          category,
+          missedItems: count,
+          priority: count > 10 ? 'High' : count > 5 ? 'Medium' : 'Low'
+        })),
+        competitorLeakage: sortedMovedItems.slice(0, 8).map(([item, data]) => ({
+          item,
+          timesLost: data.count,
+          competitorsGaining: data.destinationStores,
+          urgency: data.count > 3 ? 'High' : 'Medium'
+        })),
+        peakShoppingHours: analytics.hourlyPatterns
+          .map((count, hour) => ({ hour, count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 5),
+        recommendations: [
+          analytics.summary.averageCompletionRate < 80 ? 
+            'Consider expanding inventory - completion rate below 80%' : null,
+          sortedUnfoundItems.length > 10 ? 
+            'High number of unfound items suggests inventory gaps' : null,
+          sortedMovedItems.length > 5 ? 
+            'Customers frequently shopping elsewhere for specific items' : null
+        ].filter(Boolean)
+      };
+
+      if (format === 'detailed') {
         res.json({
-          storeLocation: nearestStore,
-          distance: distance,
-          retailerId: retailerId
+          analytics,
+          insights,
+          rawData: {
+            topUnfoundItems: Object.fromEntries(sortedUnfoundItems),
+            topUnfoundCategories: Object.fromEntries(sortedUnfoundCategories),
+            topMovedItems: Object.fromEntries(sortedMovedItems)
+          }
         });
       } else {
-        res.status(404).json({ message: 'No stores found for this retailer' });
+        res.json({
+          analytics: {
+            ...analytics,
+            topUnfoundItems: Object.fromEntries(sortedUnfoundItems.slice(0, 10)),
+            topUnfoundCategories: Object.fromEntries(sortedUnfoundCategories.slice(0, 5)),
+            itemsMostlyMovedToCompetitors: Object.fromEntries(sortedMovedItems.slice(0, 8))
+          },
+          insights
+        });
       }
+
     } catch (error) {
-      console.error('Error finding nearest store:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      console.error('Error generating retailer insights:', error);
+      handleError(res, error);
     }
   });
 
-  // Categorization learning analytics endpoint
-  app.get('/api/admin/categorization-analytics', async (req: Request, res: Response) => {
+  // Export retailer analytics data
+  app.get('/api/analytics/retailer-export/:retailerId', async (req: Request, res: Response) => {
     try {
-      const stats = productCategorizer.getLearningStats();
+      const { retailerId } = req.params;
+      const { startDate, endDate, format = 'csv' } = req.query;
 
-      res.json({
-        learningStats: stats,
-        systemHealth: {
-          categoriesWithLearning: stats.categoriesLearned,
-          avgCategoryConfidence: stats.avgConfidence,
-          totalFeedbackReceived: stats.totalCorrections,
-          learningRate: stats.totalCorrections > 0 ? 'Active' : 'Inactive'
-        },
-        recommendations: [
-          stats.avgConfidence < 0.7 ? 'Consider gathering more user feedback to improve accuracy' : null,
-          stats.categoriesLearned < 5 ? 'System is still learning - encourage user corrections' : null,
-          stats.totalCorrections > 100 ? 'Good learning progress - system is becoming more accurate' : null
-        ].filter(Boolean)
+      const currentUserId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+
+      const currentUser = await storage.getUser(currentUserId);
+      if (!currentUser || (currentUser.role !== 'owner' && currentUser.role !== 'admin')) {
+        return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+      }
+
+      // Get the analytics data (reuse the logic from above)
+      const analyticsResponse = await fetch(`http://localhost:5000/api/analytics/retailer-insights/${retailerId}?startDate=${startDate}&endDate=${endDate}&format=detailed`, {
+        headers: { 'x-current-user-id': currentUserId.toString() }
       });
+
+      if (!analyticsResponse.ok) {
+        return res.status(500).json({ message: 'Failed to generate analytics' });
+      }
+
+      const analyticsData = await analyticsResponse.json();
+      const retailer = await storage.getRetailer(parseInt(retailerId));
+
+      if (format === 'csv') {
+        // Generate CSV format
+        let csvContent = `Retailer Analytics Export - ${retailer?.name}\n`;
+        csvContent += `Period: ${analyticsData.analytics.period.startDate} to ${analyticsData.analytics.period.endDate}\n\n`;
+        
+        csvContent += `Summary Metrics\n`;
+        csvContent += `Total Trips,${analyticsData.analytics.summary.totalTrips}\n`;
+        csvContent += `Items Requested,${analyticsData.analytics.summary.totalItemsRequested}\n`;
+        csvContent += `Items Found,${analyticsData.analytics.summary.totalItemsFound}\n`;
+        csvContent += `Items Not Found,${analyticsData.analytics.summary.totalItemsNotFound}\n`;
+        csvContent += `Completion Rate,${analyticsData.analytics.summary.averageCompletionRate.toFixed(2)}%\n\n`;
+
+        csvContent += `Top Unfound Items\n`;
+        csvContent += `Item Name,Category,Request Count,Priority\n`;
+        analyticsData.insights.inventoryOpportunities.forEach((item: any) => {
+          csvContent += `"${item.item}","${item.category}",${item.requestCount},"${item.priority}"\n`;
+        });
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="retailer-analytics-${retailer?.name}-${Date.now()}.csv"`);
+        res.send(csvContent);
+      } else {
+        // JSON format
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename="retailer-analytics-${retailer?.name}-${Date.now()}.json"`);
+        res.json(analyticsData);
+      }
+
     } catch (error) {
-      console.error('Error getting categorization analytics:', error);
-      res.status(500).json({ error: 'Failed to get analytics' });
+      console.error('Error exporting retailer analytics:', error);
+      handleError(res, error);
     }
   });
 

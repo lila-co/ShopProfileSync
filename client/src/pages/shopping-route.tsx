@@ -47,8 +47,156 @@ import {
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
 
+// Enhanced deal matching and application logic
+interface AppliedDeal {
+  itemId: number;
+  dealId: number;
+  dealType: string;
+  originalPrice: number;
+  dealPrice: number;
+  savings: number;
+  dealDescription: string;
+}
+
+interface CouponStackingResult {
+  appliedDeals: AppliedDeal[];
+  totalSavings: number;
+  finalTotal: number;
+  loyaltyDiscount?: number;
+  stackedCoupons: any[];
+}
+
+// Enhanced deal application engine
+const applyDealsAndCoupons = (routeItems: any[], deals: any[], loyaltyCard: any) => {
+  const appliedDeals: AppliedDeal[] = [];
+  let totalSavings = 0;
+  let finalTotal = 0;
+  const stackedCoupons: any[] = [];
+
+  // Step 1: Match deals to items with enhanced matching
+  const enhancedMatchDeals = (item: any, deals: any[]) => {
+    const itemName = item.productName.toLowerCase();
+    const itemCategory = item.category?.toLowerCase() || '';
+
+    return deals.filter((deal: any) => {
+      const dealName = deal.productName.toLowerCase();
+      const dealCategory = deal.category?.toLowerCase() || '';
+
+      // Exact product match (highest priority)
+      if (itemName === dealName || 
+          itemName.includes(dealName) || 
+          dealName.includes(itemName)) {
+        return true;
+      }
+
+      // Category match (medium priority)
+      if (itemCategory && dealCategory && itemCategory === dealCategory) {
+        return true;
+      }
+
+      // Semantic matching for common products
+      const semanticMatches = [
+        { keywords: ['milk', 'dairy'], category: 'dairy' },
+        { keywords: ['bread', 'loaf'], category: 'bakery' },
+        { keywords: ['chicken', 'poultry'], category: 'meat' },
+        { keywords: ['apple', 'banana', 'fruit'], category: 'produce' }
+      ];
+
+      return semanticMatches.some(match => 
+        match.keywords.some(keyword => 
+          itemName.includes(keyword) && dealName.includes(keyword)
+        )
+      );
+    });
+  };
+
+  // Step 2: Apply best deals per item
+  routeItems.forEach(item => {
+    const itemDeals = enhancedMatchDeals(item, deals);
+    if (itemDeals.length === 0) {
+      finalTotal += (item.suggestedPrice || 0) * item.quantity;
+      return;
+    }
+
+    // Sort deals by savings potential (highest first)
+    const sortedDeals = itemDeals.sort((a, b) => {
+      const savingsA = calculateDealSavings(item, a);
+      const savingsB = calculateDealSavings(item, b);
+      return savingsB - savingsA;
+    });
+
+    const bestDeal = sortedDeals[0];
+    const dealResult = applyDealToItem(item, bestDeal);
+
+    if (dealResult.savings > 0) {
+      appliedDeals.push(dealResult);
+      totalSavings += dealResult.savings;
+      finalTotal += dealResult.dealPrice * item.quantity;
+    } else {
+      finalTotal += (item.suggestedPrice || 0) * item.quantity;
+    }
+  });
+
+  // Step 3: Apply loyalty card discounts
+  let loyaltyDiscount = 0;
+  if (loyaltyCard && loyaltyCard.discountPercentage) {
+    loyaltyDiscount = finalTotal * (loyaltyCard.discountPercentage / 100);
+    finalTotal -= loyaltyDiscount;
+    totalSavings += loyaltyDiscount;
+  }
+
+  // Step 4: Apply store-wide coupons and promotions
+  const storeWideCoupons = deals.filter(deal => 
+    deal.dealType === 'spend_threshold_percentage' ||
+    deal.dealType === 'store_wide_discount'
+  );
+
+  storeWideCoupons.forEach(coupon => {
+    if (coupon.dealType === 'spend_threshold_percentage' && 
+        finalTotal >= (coupon.spendThreshold || 0)) {
+      const couponSavings = finalTotal * (coupon.discountPercentage / 100);
+      finalTotal -= couponSavings;
+      totalSavings += couponSavings;
+      stackedCoupons.push({
+        ...coupon,
+        appliedSavings: couponSavings
+      });
+    }
+  });
+
+  return {
+    appliedDeals,
+    totalSavings,
+    finalTotal,
+    loyaltyDiscount,
+    stackedCoupons
+  };
+};
+
+const calculateDealSavings = (item: any, deal: any) => {
+  const originalPrice = item.suggestedPrice || 0;
+  const dealPrice = deal.salePrice || deal.regularPrice || originalPrice;
+  return Math.max(0, originalPrice - dealPrice);
+};
+
+const applyDealToItem = (item: any, deal: any): AppliedDeal => {
+  const originalPrice = item.suggestedPrice || 0;
+  const dealPrice = deal.salePrice || originalPrice;
+  const savings = Math.max(0, originalPrice - dealPrice);
+
+  return {
+    itemId: item.id,
+    dealId: deal.id,
+    dealType: deal.dealType || 'price_reduction',
+    originalPrice,
+    dealPrice,
+    savings,
+    dealDescription: `${deal.productName} - ${Math.round((1 - dealPrice / originalPrice) * 100)}% off`
+  };
+};
+
 // Component to show retailer-specific deals for route items
-const DealsForRetailer: React.FC<{ retailerName: string; routeItems: any[] }> = ({ retailerName, routeItems }) => {
+const DealsForRetailer: React.FC<{ retailerName: string; routeItems: any[]; loyaltyCard?: any }> = ({ retailerName, routeItems, loyaltyCard }) => {
   const { data: retailers } = useQuery({
     queryKey: ['/api/retailers'],
     queryFn: async () => {
@@ -80,26 +228,13 @@ const DealsForRetailer: React.FC<{ retailerName: string; routeItems: any[] }> = 
     enabled: !!retailers && !!retailerName,
   });
 
-  // Filter deals to only include items that are in the current route
-  const relevantDeals = deals?.filter((deal: any) => {
-    return routeItems.some((item: any) => {
-      const itemName = item.productName.toLowerCase();
-      const dealName = deal.productName.toLowerCase();
+  // Apply comprehensive deal logic
+  const dealResults = React.useMemo(() => {
+    if (!deals || !routeItems.length) return null;
+    return applyDealsAndCoupons(routeItems, deals, loyaltyCard);
+  }, [deals, routeItems, loyaltyCard]);
 
-      // Check for exact matches or partial matches
-      return itemName === dealName || 
-             itemName.includes(dealName) || 
-             dealName.includes(itemName) ||
-             // Check for category/type matches
-             (itemName.includes('milk') && dealName.includes('milk')) ||
-             (itemName.includes('bread') && dealName.includes('bread')) ||
-             (itemName.includes('egg') && dealName.includes('egg')) ||
-             (itemName.includes('chicken') && dealName.includes('chicken')) ||
-             (itemName.includes('yogurt') && dealName.includes('yogurt'));
-    });
-  }) || [];
-
-  if (!relevantDeals.length) {
+  if (!dealResults || dealResults.appliedDeals.length === 0) {
     return null;
   }
 
@@ -112,40 +247,106 @@ const DealsForRetailer: React.FC<{ retailerName: string; routeItems: any[] }> = 
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
           <Tag className="h-5 w-5 text-green-600" />
-          Deals at {retailerName}
+          Applied Deals & Savings
         </CardTitle>
-        <p className="text-sm text-green-600">Special offers on items in your route</p>
+        <p className="text-sm text-green-600">
+          ${(dealResults.totalSavings / 100).toFixed(2)} total savings applied to your route
+        </p>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
-          {relevantDeals.slice(0, 3).map((deal: any) => (
-            <div key={deal.id} className="flex items-center justify-between p-3 bg-white rounded-lg border">
+        {/* Applied Deals */}
+        <div className="space-y-3 mb-4">
+          <h4 className="font-medium text-sm text-gray-900">Item Deals Applied:</h4>
+          {dealResults.appliedDeals.slice(0, 3).map((appliedDeal: AppliedDeal) => (
+            <div key={appliedDeal.dealId} className="flex items-center justify-between p-3 bg-white rounded-lg border border-green-200">
               <div className="flex-1">
-                <div className="font-medium text-sm text-gray-900">{deal.productName}</div>
+                <div className="font-medium text-sm text-gray-900">{appliedDeal.dealDescription}</div>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-lg font-bold text-green-700">
-                    ${deal.salePrice.toFixed(2)}
+                    ${(appliedDeal.dealPrice / 100).toFixed(2)}
                   </span>
                   <span className="text-sm text-gray-500 line-through">
-                    ${deal.regularPrice.toFixed(2)}
+                    ${(appliedDeal.originalPrice / 100).toFixed(2)}
                   </span>
                   <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
-                    {calculateSavings(deal.regularPrice, deal.salePrice)}% off
+                    Save ${(appliedDeal.savings / 100).toFixed(2)}
                   </Badge>
                 </div>
-                <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  Valid until {new Date(deal.endDate).toLocaleDateString()}
-                </div>
               </div>
-              <Star className="h-4 w-4 text-green-600" />
+              <div className="text-right">
+                <div className="text-xs text-green-600 font-medium">APPLIED</div>
+                <CheckCircle2 className="h-4 w-4 text-green-600 mx-auto mt-1" />
+              </div>
             </div>
           ))}
-          {relevantDeals.length > 3 && (
+          {dealResults.appliedDeals.length > 3 && (
             <div className="text-center text-sm text-green-600">
-              +{relevantDeals.length - 3} more deals available
+              +{dealResults.appliedDeals.length - 3} more deals applied
             </div>
           )}
+        </div>
+
+        {/* Loyalty Card Discount */}
+        {dealResults.loyaltyDiscount && dealResults.loyaltyDiscount > 0 && (
+          <div className="p-3 bg-purple-50 rounded-lg border border-purple-200 mb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center">
+                  <Check className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <div className="font-medium text-sm text-purple-900">Loyalty Card Discount</div>
+                  <div className="text-xs text-purple-600">Member savings applied</div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="font-bold text-purple-700">-${(dealResults.loyaltyDiscount / 100).toFixed(2)}</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Stacked Coupons */}
+        {dealResults.stackedCoupons.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="font-medium text-sm text-gray-900">Store Coupons:</h4>
+            {dealResults.stackedCoupons.map((coupon: any, index: number) => (
+              <div key={index} className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium text-sm text-blue-900">
+                      {coupon.dealType === 'spend_threshold_percentage' 
+                        ? `Spend $${(coupon.spendThreshold / 100).toFixed(0)}+ Save ${coupon.discountPercentage}%`
+                        : coupon.productName
+                      }
+                    </div>
+                    <div className="text-xs text-blue-600">Automatically applied</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-blue-700">-${(coupon.appliedSavings / 100).toFixed(2)}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Total Savings Summary */}
+        <div className="mt-4 p-4 bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg border border-green-300">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-bold text-lg text-green-900">Total Savings</div>
+              <div className="text-sm text-green-700">Applied to your route automatically</div>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-green-800">
+                ${(dealResults.totalSavings / 100).toFixed(2)}
+              </div>
+              <div className="text-sm text-green-600">
+                New total: ${(dealResults.finalTotal / 100).toFixed(2)}
+              </div>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -428,7 +629,7 @@ const ShoppingRoute: React.FC = () => {
   // Define shelf location logic based on product and category
   const getShelfLocation = (productName: string, category: string) => {
     const name = productName.toLowerCase();
-    
+
     // Produce section - specific areas
     if (category === 'Produce') {
       if (name.includes('banana') || name.includes('apple') || name.includes('orange')) {
@@ -445,7 +646,7 @@ const ShoppingRoute: React.FC = () => {
       }
       return 'Main produce area';
     }
-    
+
     // Dairy & Eggs - specific refrigerated sections
     if (category === 'Dairy & Eggs') {
       if (name.includes('milk')) return 'Back wall - dairy cooler';
@@ -455,7 +656,7 @@ const ShoppingRoute: React.FC = () => {
       if (name.includes('butter')) return 'Dairy cooler - bottom shelf';
       return 'Main dairy section';
     }
-    
+
     // Meat & Seafood
     if (category === 'Meat & Seafood') {
       if (name.includes('chicken') || name.includes('turkey')) {
@@ -469,7 +670,7 @@ const ShoppingRoute: React.FC = () => {
       }
       return 'Meat department';
     }
-    
+
     // Frozen Foods
     if (category === 'Frozen Foods') {
       if (name.includes('ice cream')) return 'Frozen desserts aisle';
@@ -477,7 +678,7 @@ const ShoppingRoute: React.FC = () => {
       if (name.includes('vegetable')) return 'Frozen vegetables';
       return 'Frozen foods section';
     }
-    
+
     // Bakery
     if (category === 'Bakery') {
       if (name.includes('bread') || name.includes('loaf')) {
@@ -485,7 +686,7 @@ const ShoppingRoute: React.FC = () => {
       }
       return 'Fresh bakery counter';
     }
-    
+
     // Pantry & Canned Goods - more specific locations
     if (category === 'Pantry & Canned Goods') {
       if (name.includes('cereal')) return 'Cereal aisle - eye level';
@@ -501,7 +702,7 @@ const ShoppingRoute: React.FC = () => {
       }
       return 'Center store aisles';
     }
-    
+
     // Personal Care
     if (category === 'Personal Care') {
       if (name.includes('shampoo') || name.includes('soap')) {
@@ -510,7 +711,7 @@ const ShoppingRoute: React.FC = () => {
       if (name.includes('toothpaste')) return 'Oral care section';
       return 'Health & beauty department';
     }
-    
+
     // Household Items
     if (category === 'Household Items') {
       if (name.includes('detergent') || name.includes('cleaner')) {
@@ -521,7 +722,7 @@ const ShoppingRoute: React.FC = () => {
       }
       return 'Household goods section';
     }
-    
+
     // Beverages
     if (name.includes('water') || name.includes('soda') || name.includes('juice')) {
       if (name.includes('sparkling') || name.includes('carbonated')) {
@@ -529,7 +730,7 @@ const ShoppingRoute: React.FC = () => {
       }
       return 'Beverage aisle - main section';
     }
-    
+
     // Generic fallback
     return 'Check store directory';
   };
@@ -602,8 +803,7 @@ const ShoppingRoute: React.FC = () => {
         ...item,
         shelfLocation: getShelfLocation(item.productName, itemCategory),
         confidence: categoryConfidence,
-        category: itemCategory
-      };
+        category: itemCategory      };
 
       aisleGroups[aisleName].items.push(itemWithLocation);
 
@@ -771,7 +971,7 @@ const ShoppingRoute: React.FC = () => {
 
       // Force a re-render by updating the route state
       setOptimizedRoute({...optimizedRoute});
-      
+
       toast({
         title: "Item Saved for Next Trip",
         description: `${outOfStockItem.productName} has been removed from this trip and will remain on your list for next time`,
@@ -788,7 +988,7 @@ const ShoppingRoute: React.FC = () => {
       if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
         const nextStoreIndex = (currentStoreIndex + 1) % optimizedRoute.stores.length;
         const nextStore = optimizedRoute.stores[nextStoreIndex];
-        
+
         // Add item to next store's items if not already there
         const itemExistsInNextStore = nextStore.items.some((item: any) => 
           item.productName.toLowerCase() === outOfStockItem.productName.toLowerCase()
@@ -850,7 +1050,7 @@ const ShoppingRoute: React.FC = () => {
             isCompleted: false
           }
         });
-        
+
         toast({
           title: "Item Marked for Alternative Store",
           description: `${outOfStockItem.productName} saved with note to try alternative store`,
@@ -938,7 +1138,7 @@ const ShoppingRoute: React.FC = () => {
   const handleEndStore = () => {
     // Get all items from current store
     let allStoreItems: any[] = [];
-    
+
     if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
       const currentStore = optimizedRoute.stores[currentStoreIndex];
       allStoreItems = currentStore?.items || [];
@@ -995,7 +1195,7 @@ const ShoppingRoute: React.FC = () => {
         setCurrentStoreIndex(currentStoreIndex + 1);
         setCurrentAisleIndex(0);
         setCompletedItems(new Set()); // Reset completed items for new store
-        
+
         const nextStore = optimizedRoute.stores[currentStoreIndex + 1];
         toast({
           title: "Moving to Next Store",
@@ -1015,14 +1215,32 @@ const ShoppingRoute: React.FC = () => {
   const endShopping = async () => {
     // Get all uncompleted items across all stores
     let allUncompletedItems: any[] = [];
-    
+    let allMovedItems: any[] = [];
+
     if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
       // Multi-store: collect uncompleted items from all stores
-      optimizedRoute.stores.forEach(store => {
+      optimizedRoute.stores.forEach((store, index) => {
         const storeUncompleted = store.items.filter((item: any) => 
           !completedItems.has(item.id) && !item.isCompleted
         );
-        allUncompletedItems.push(...storeUncompleted);
+        
+        // Track which items were moved between stores
+        const itemsMovedFromThisStore = store.items.filter((item: any) => 
+          item.movedFrom && item.movedFrom !== store.retailerName
+        );
+        
+        allUncompletedItems.push(...storeUncompleted.map(item => ({
+          ...item,
+          storeName: store.retailerName,
+          storeIndex: index
+        })));
+        
+        allMovedItems.push(...itemsMovedFromThisStore.map(item => ({
+          ...item,
+          fromStore: item.movedFrom,
+          toStore: store.retailerName,
+          reason: 'unavailable_at_original_store'
+        })));
       });
     } else {
       // Single store: get uncompleted items from current route
@@ -1060,9 +1278,38 @@ const ShoppingRoute: React.FC = () => {
       });
     }
 
+    // Send comprehensive analytics to server
+    try {
+      const tripAnalytics = {
+        listId: listId,
+        completedItems: Array.from(completedItems),
+        uncompletedItems: allUncompletedItems.map(item => ({
+          ...item,
+          reason: item.notes?.includes('out of stock') ? 'out_of_stock' : 'not_found'
+        })),
+        movedItems: allMovedItems,
+        startTime: startTime,
+        endTime: new Date(),
+        retailerName: optimizedRoute?.isMultiStore ? 'Multi-Store' : optimizedRoute?.retailerName,
+        planType: optimizedRoute?.planType,
+        totalStores: optimizedRoute?.isMultiStore ? optimizedRoute.stores.length : 1
+      };
+
+      await fetch('/api/shopping-trip/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(tripAnalytics)
+      });
+
+      console.log('Shopping trip analytics sent successfully:', tripAnalytics);
+    } catch (error) {
+      console.warn('Failed to send shopping trip analytics:', error);
+    }
+
     // Clear any temporary shopping data
     sessionStorage.removeItem('shoppingPlanData');
-    
+
     // Navigate back to shopping list after a delay
     setTimeout(() => navigate('/shopping-list'), 2000);
   };
@@ -1075,13 +1322,13 @@ const ShoppingRoute: React.FC = () => {
     });
     setCompletedItems(newCompletedItems);
     setEndStoreDialogOpen(false);
-    
+
     toast({
       title: "Items Marked as Found",
       description: `Marked ${uncompletedItems.length} items as found`,
       duration: 3000
     });
-    
+
     completeCurrentStore();
   };
 
@@ -1089,7 +1336,7 @@ const ShoppingRoute: React.FC = () => {
     if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
       const nextStoreIndex = (currentStoreIndex + 1) % optimizedRoute.stores.length;
       const nextStore = optimizedRoute.stores[nextStoreIndex];
-      
+
       // Move uncompleted items to next store
       uncompletedItems.forEach(item => {
         // Add item to next store's items if not already there
@@ -1118,13 +1365,13 @@ const ShoppingRoute: React.FC = () => {
       });
 
       setEndStoreDialogOpen(false);
-      
+
       toast({
         title: "Items Moved to Next Store",
         description: `${uncompletedItems.length} items will be available at ${nextStore.retailerName}`,
         duration: 4000
       });
-      
+
       completeCurrentStore();
     } else {
       // Single store - create reminder for alternative store
@@ -1137,15 +1384,15 @@ const ShoppingRoute: React.FC = () => {
           }
         });
       });
-      
+
       setEndStoreDialogOpen(false);
-      
+
       toast({
         title: "Items Saved for Alternative Store",
         description: `${uncompletedItems.length} items marked to try at alternative stores`,
         duration: 4000
       });
-      
+
       completeCurrentStore();
     }
   };
@@ -1162,16 +1409,59 @@ const ShoppingRoute: React.FC = () => {
     });
 
     setEndStoreDialogOpen(false);
-    
+
     toast({
       title: "Items Saved for Next Trip",
       description: `${uncompletedItems.length} items will remain on your list for next time`,
       duration: 4000
     });
-    
+
     completeCurrentStore();
   };
 
+  const handleFinishStore = () => {
+    // Get uncompleted items from current store, excluding temporary/moved items
+    const currentStore = optimizedRoute?.stores?.[currentStoreIndex];
+    const currentStoreItems = currentStore?.items || [];
+    const uncompleted = currentStoreItems.filter(item => 
+      !completedItems.has(item.id) && 
+      !item.isCompleted &&
+      typeof item.id === 'number' && 
+      item.id < 10000 // Exclude temporary IDs from moved items
+    );
+
+    if (uncompleted.length > 0) {
+      setUncompletedItems(uncompleted);
+      setEndStoreDialogOpen(true);
+    } else {
+      handleStoreComplete();
+    }
+  };
+
+  const handleStoreComplete = () => {
+    // Handle multi-store vs single store completion
+    if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
+      if (currentStoreIndex < optimizedRoute.stores.length - 1) {
+        // Move to next store
+        setCurrentStoreIndex(currentStoreIndex + 1);
+        setCurrentAisleIndex(0);
+        // Don't reset completed items completely - keep items completed in previous stores
+
+        const nextStore = optimizedRoute.stores[currentStoreIndex + 1];
+        toast({
+          title: "Moving to Next Store",
+          description: `Now shopping at ${nextStore.retailerName}`,
+          duration: 3000
+        });
+      } else {
+        // All stores completed - end shopping
+        endShopping();
+      }
+    } else {
+      // Single store completion - end shopping
+      endShopping();
+    }
+  };
 
 
   if (isLoading) {
@@ -1422,7 +1712,7 @@ const ShoppingRoute: React.FC = () => {
             <CardContent>
               <div className="space-y-3">
                 {optimizedRoute.stores.map((store: any, index: number) => {
-                  const storeCompletedItems = store.items.filter((item: any) => 
+                  const storeCompletedItems = store.items.//filter((item: any) => 
                     completedItems.has(item.id) || item.isCompleted
                   ).length;
                   const isCurrent = index === currentStoreIndex;
@@ -1510,6 +1800,7 @@ const ShoppingRoute: React.FC = () => {
           <DealsForRetailer 
             retailerName={optimizedRoute.retailerName}
             routeItems={optimizedRoute.aisleGroups?.flatMap(aisle => aisle.items) || []}
+            loyaltyCard={loyaltyCard}
           />
         )}
 
@@ -1565,7 +1856,7 @@ const ShoppingRoute: React.FC = () => {
                               newCompletedItems.add(item.id);
                               setCompletedItems(newCompletedItems);
                               toggleItemMutation.mutate({ itemId: item.id, completed: true });
-                              
+
                               toast({
                                 title: "Item found!",
                                 description: "Great job, keep shopping!",
@@ -1804,7 +2095,7 @@ const ShoppingRoute: React.FC = () => {
               }
             </AlertDialogDescription>
           </AlertDialogHeader>
-          
+
           {/* Show list of uncompleted items */}
           {uncompletedItems.length > 0 && (
             <div className="max-h-40 overflow-y-auto border rounded-lg p-3 bg-gray-50">
@@ -1827,7 +2118,7 @@ const ShoppingRoute: React.FC = () => {
               <Check className="h-5 w-5" />
               Mark as Found
             </Button>
-            
+
             {optimizedRoute?.isMultiStore && optimizedRoute.stores && currentStoreIndex < optimizedRoute.stores.length - 1 && (
               <Button 
                 onClick={handleTryNextStore}
@@ -1837,7 +2128,7 @@ const ShoppingRoute: React.FC = () => {
                 Try Next Store
               </Button>
             )}
-            
+
             {/* Show "End Shopping" option for last store */}
             {(!optimizedRoute?.isMultiStore || 
               (optimizedRoute?.isMultiStore && currentStoreIndex >= optimizedRoute.stores.length - 1)) && (
@@ -1852,7 +2143,7 @@ const ShoppingRoute: React.FC = () => {
                 End Shopping Trip
               </Button>
             )}
-            
+
             <Button 
               onClick={handleSaveForNextTrip}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
@@ -1860,7 +2151,7 @@ const ShoppingRoute: React.FC = () => {
               <Clock className="h-5 w-5" />
               Save for Next Trip
             </Button>
-            
+
             <Button 
               variant="outline" 
               onClick={() => setEndStoreDialogOpen(false)}
