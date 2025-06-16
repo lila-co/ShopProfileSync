@@ -199,32 +199,10 @@ const applyDealToItem = (item: any, deal: any): AppliedDeal => {
 const DealsForRetailer: React.FC<{ retailerName: string; routeItems: any[]; loyaltyCard?: any }> = ({ retailerName, routeItems, loyaltyCard }) => {
   const { data: retailers } = useQuery({
     queryKey: ['/api/retailers'],
-    queryFn: async () => {
-      const response = await fetch('/api/retailers', {
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch retailers');
-      }
-      return response.json();
-    }
   });
 
   const { data: deals } = useQuery({
     queryKey: ['/api/deals', { retailerName }],
-    queryFn: async () => {
-      // Find the retailer ID by name
-      const retailer = retailers?.find((r: any) => r.name === retailerName);
-      if (!retailer) return [];
-
-      const response = await fetch(`/api/deals?retailerId=${retailer.id}`, {
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch deals');
-      }
-      return response.json();
-    },
     enabled: !!retailers && !!retailerName,
   });
 
@@ -395,21 +373,6 @@ const ShoppingRoute: React.FC = () => {
   const { data: loyaltyCardData } = useQuery({
     queryKey: [`/api/user/loyalty-card/${getCurrentRetailerName()}`],
     enabled: !!getCurrentRetailerName(),
-    queryFn: async () => {
-      const retailerName = getCurrentRetailerName();
-      console.log('Fetching loyalty card for retailer:', retailerName);
-      const response = await fetch(`/api/user/loyalty-card/${encodeURIComponent(retailerName)}`, {
-        credentials: "include",
-      });
-      console.log('Loyalty card response status:', response.status);
-      if (!response.ok) {
-        console.log('No loyalty card found for retailer:', retailerName);
-        return null; // No loyalty card found
-      }
-      const data = await response.json();
-      console.log('Loyalty card data received:', data);
-      return data;
-    }
   });
 
   useEffect(() => {
@@ -426,16 +389,6 @@ const ShoppingRoute: React.FC = () => {
   const { data: shoppingList, isLoading } = useQuery({
     queryKey: [`/api/shopping-lists/${listId}`],
     enabled: !!listId,
-    queryFn: async () => {
-      const response = await fetch(`/api/shopping-lists/${listId}`, {
-        credentials: "include",
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch shopping list');
-      }
-      const data = await response.json();
-      return data;
-    }
   });
 
   // Toggle item completion
