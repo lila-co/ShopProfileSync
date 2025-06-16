@@ -890,7 +890,7 @@ const ShoppingRoute: React.FC = () => {
         }
       });
 
-      
+
     }
     setOutOfStockDialogOpen(false);
     setOutOfStockItem(null);
@@ -944,7 +944,7 @@ const ShoppingRoute: React.FC = () => {
     if (outOfStockItem && optimizedRoute?.isMultiStore && optimizedRoute.stores) {
       // Find the best next store for this item based on availability and price
       const remainingStores = optimizedRoute.stores.slice(currentStoreIndex + 1);
-      
+
       if (remainingStores.length === 0) {
         // No more stores left, save for future trip
         handleLeaveForFutureTrip();
@@ -1171,7 +1171,7 @@ const ShoppingRoute: React.FC = () => {
 
     // Wait for all deletions to complete
     const deleteResults = await Promise.allSettled(deletePromises);
-    
+
     // Log results for debugging
     const successfulDeletes = deleteResults.filter(result => 
         result.status === 'fulfilled' && result.value?.success
@@ -2066,7 +2066,7 @@ const ShoppingRoute: React.FC = () => {
               <Check className="h-5 w-5" />
               Actually Found It
             </Button>
-            
+
             {optimizedRoute?.isMultiStore && optimizedRoute.stores && currentStoreIndex < optimizedRoute.stores.length - 1 ? (
               <Button 
                 onClick={handleMigrateToNextStore}
@@ -2084,7 +2084,7 @@ const ShoppingRoute: React.FC = () => {
                 Try Alternative Store
               </Button>
             )}
-            
+
             <Button 
               onClick={handleLeaveForFutureTrip}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
@@ -2092,7 +2092,7 @@ const ShoppingRoute: React.FC = () => {
               <Clock className="h-5 w-5" />
               Save for Future Trip
             </Button>
-            
+
             <Button 
               variant="outline" 
               onClick={() => setOutOfStockDialogOpen(false)}
@@ -2159,7 +2159,7 @@ const ShoppingRoute: React.FC = () => {
               </Button>
             )}
 
-            {/* Show "End Shopping" option for last store */}
+            {/* Show "End Shopping" option only for last store */}
             {(!optimizedRoute?.isMultiStore || 
               (optimizedRoute?.isMultiStore && currentStoreIndex >= optimizedRoute.stores.length - 1)) && (
               <Button 
