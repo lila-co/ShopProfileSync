@@ -72,7 +72,14 @@ const ShoppingListComponent: React.FC = () => {
 
   const { data: shoppingLists, isLoading, refetch: refetchLists } = useQuery<ShoppingListType[]>({
     queryKey: ['/api/shopping-lists'],
-    refetchOnMount: false,
+  });
+
+  // Debug logging to understand the loading state
+  console.log('ShoppingList component state:', {
+    isLoading,
+    hasData: !!shoppingLists,
+    dataLength: shoppingLists?.length,
+    firstListItems: shoppingLists?.[0]?.items?.length
   });
 
   const { data: suggestions, isLoading: suggestionsLoading } = useQuery({
