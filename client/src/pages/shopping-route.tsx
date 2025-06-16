@@ -1665,7 +1665,7 @@ const ShoppingRoute: React.FC = () => {
             <CardContent>
               <div className="space-y-3">
                 {optimizedRoute.stores.map((store: any, index: number) => {
-                  const storeCompletedItems = store.items.//filter((item: any) => 
+                  const storeCompletedItems = store.items.filter((item: any) => 
                     completedItems.has(item.id) || item.isCompleted
                   ).length;
                   const isCurrent = index === currentStoreIndex;
