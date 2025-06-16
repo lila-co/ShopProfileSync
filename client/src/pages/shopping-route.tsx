@@ -890,11 +890,7 @@ const ShoppingRoute: React.FC = () => {
         }
       });
 
-      toast({
-        title: "Item checked off!",
-        description: "Great job, keep shopping!",
-        duration: 2000
-      });
+      
     }
     setOutOfStockDialogOpen(false);
     setOutOfStockItem(null);
@@ -936,8 +932,8 @@ const ShoppingRoute: React.FC = () => {
 
       toast({
         title: "Item Saved for Next Trip",
-        description: `${outOfStockItem.productName} has been removed from this trip and will remain on your list for next time`,
-        duration: 4000
+        description: `${outOfStockItem.productName} will remain on your list for next time`,
+        duration: 3000
       });
     }
     setOutOfStockDialogOpen(false);
@@ -945,80 +941,88 @@ const ShoppingRoute: React.FC = () => {
   };
 
   const handleMigrateToNextStore = () => {
-    if (outOfStockItem) {
-      // For multi-store plans, try to find the item in the next store
-      if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
-        const nextStoreIndex = (currentStoreIndex + 1) % optimizedRoute.stores.length;
-        const nextStore = optimizedRoute.stores[nextStoreIndex];
+    if (outOfStockItem && optimizedRoute?.isMultiStore && optimizedRoute.stores) {
+      // Find the best next store for this item based on availability and price
+      const remainingStores = optimizedRoute.stores.slice(currentStoreIndex + 1);
+      
+      if (remainingStores.length === 0) {
+        // No more stores left, save for future trip
+        handleLeaveForFutureTrip();
+        return;
+      }
 
-        // Add item to next store's items if not already there
-        const itemExistsInNextStore = nextStore.items.some((item: any) => 
-          item.productName.toLowerCase() === outOfStockItem.productName.toLowerCase()
-        );
+      // For now, add to the immediate next store (can be enhanced with price comparison later)
+      const nextStore = remainingStores[0];
+      const nextStoreIndex = currentStoreIndex + 1;
 
-        if (!itemExistsInNextStore) {
-          // Add item to next store's items array
-          nextStore.items.push({
-            ...outOfStockItem,
-            storeName: nextStore.retailerName,
-            suggestedRetailerId: nextStore.retailer?.id || nextStore.suggestedRetailerId,
-            id: outOfStockItem.id + 1000 // Temporary ID to avoid conflicts
-          });
-        }
+      // Add item to next store's items if not already there
+      const itemExistsInNextStore = nextStore.items.some((item: any) => 
+        item.productName.toLowerCase() === outOfStockItem.productName.toLowerCase()
+      );
 
-        // Update the item in the database to reflect the new store assignment
-        updateItemMutation.mutate({
-          itemId: outOfStockItem.id,
-          updates: {
-            suggestedRetailerId: nextStore.retailer?.id || nextStore.suggestedRetailerId,
-            notes: `Moved from ${optimizedRoute.stores[currentStoreIndex]?.retailerName} - out of stock. Try at ${nextStore.retailerName}`,
-            isCompleted: false
-          }
-        });
-
-        // Remove item from current store's route display
-        const currentStore = optimizedRoute.stores[currentStoreIndex];
-        if (currentStore) {
-          const itemIndex = currentStore.items.findIndex((item: any) => item.id === outOfStockItem.id);
-          if (itemIndex > -1) {
-            currentStore.items.splice(itemIndex, 1);
-          }
-        }
-
-        // Also remove from current aisle in the optimized route display
-        if (optimizedRoute.aisleGroups) {
-          optimizedRoute.aisleGroups.forEach((aisle: any) => {
-            const itemIndex = aisle.items.findIndex((item: any) => item.id === outOfStockItem.id);
-            if (itemIndex > -1) {
-              aisle.items.splice(itemIndex, 1);
-            }
-          });
-        }
-
-        // Force a re-render by updating the route state
-        setOptimizedRoute({...optimizedRoute});
-
-        toast({
-          title: "Item Moved to Next Store",
-          description: `${outOfStockItem.productName} will be available when you shop at ${nextStore.retailerName}`,
-          duration: 4000
-        });
-      } else {
-        // For single-store plans, create a reminder or alternative suggestion
-        updateItemMutation.mutate({
-          itemId: outOfStockItem.id,
-          updates: {
-            notes: `Try alternative store - out of stock at ${optimizedRoute?.retailerName || 'current store'}`,
-            isCompleted: false
-          }
-        });
-
-        toast({
-          title: "Item Marked for Alternative Store",
-          description: `${outOfStockItem.productName} saved with note to try alternative store`,
-          duration: 4000
+      if (!itemExistsInNextStore) {
+        // Add item to next store's items array
+        nextStore.items.push({
+          ...outOfStockItem,
+          storeName: nextStore.retailerName,
+          suggestedRetailerId: nextStore.retailer?.id || nextStore.suggestedRetailerId,
+          id: outOfStockItem.id + (nextStoreIndex * 1000), // Unique temporary ID
+          movedFrom: optimizedRoute.stores[currentStoreIndex]?.retailerName
         });
       }
+
+      // Update the item in the database to reflect the new store assignment
+      updateItemMutation.mutate({
+        itemId: outOfStockItem.id,
+        updates: {
+          suggestedRetailerId: nextStore.retailer?.id || nextStore.suggestedRetailerId,
+          notes: `Moved from ${optimizedRoute.stores[currentStoreIndex]?.retailerName} - not available. Try at ${nextStore.retailerName}`,
+          isCompleted: false
+        }
+      });
+
+      // Remove item from current store's route display
+      const currentStore = optimizedRoute.stores[currentStoreIndex];
+      if (currentStore) {
+        const itemIndex = currentStore.items.findIndex((item: any) => item.id === outOfStockItem.id);
+        if (itemIndex > -1) {
+          currentStore.items.splice(itemIndex, 1);
+        }
+      }
+
+      // Also remove from current aisle in the optimized route display
+      if (optimizedRoute.aisleGroups) {
+        optimizedRoute.aisleGroups.forEach((aisle: any) => {
+          const itemIndex = aisle.items.findIndex((item: any) => item.id === outOfStockItem.id);
+          if (itemIndex > -1) {
+            aisle.items.splice(itemIndex, 1);
+          }
+        });
+      }
+
+      // Force a re-render by updating the route state
+      setOptimizedRoute({...optimizedRoute});
+
+      toast({
+        title: "Item Moved to Next Store",
+        description: `${outOfStockItem.productName} will be available at ${nextStore.retailerName}`,
+        duration: 3000
+      });
+    } else {
+      // For single-store plans, create a reminder or alternative suggestion
+      updateItemMutation.mutate({
+        itemId: outOfStockItem.id,
+        updates: {
+          notes: `Try alternative store - not available at ${optimizedRoute?.retailerName || 'current store'}`,
+          isCompleted: false
+        }
+      });
+
+      toast({
+        title: "Item Marked for Alternative Store",
+        description: `${outOfStockItem.productName} saved with note to try alternative store`,
+        duration: 3000
+      });
     }
     setOutOfStockDialogOpen(false);
     setOutOfStockItem(null);
@@ -1860,12 +1864,6 @@ const ShoppingRoute: React.FC = () => {
                               newCompletedItems.add(item.id);
                               setCompletedItems(newCompletedItems);
                               toggleItemMutation.mutate({ itemId: item.id, completed: true });
-
-                              toast({
-                                title: "Item found!",
-                                description: "Great job, keep shopping!",
-                                duration: 2000
-                              });
                             }
                           }}
                           className="mr-3 focus:outline-none"
@@ -2037,10 +2035,15 @@ const ShoppingRoute: React.FC = () => {
               <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
                 <AlertCircle className="h-5 w-5 text-orange-600" />
               </div>
-              Item Status
+              Item Not Available
             </AlertDialogTitle>
             <AlertDialogDescription className="text-gray-600 mt-2">
-              Did you find <strong>{outOfStockItem?.productName}</strong> at this location?
+              <strong>{outOfStockItem?.productName}</strong> is not available at this location.
+              {optimizedRoute?.isMultiStore && optimizedRoute.stores && currentStoreIndex < optimizedRoute.stores.length - 1 && (
+                <div className="mt-2 text-sm">
+                  You have {optimizedRoute.stores.length - currentStoreIndex - 1} more store{optimizedRoute.stores.length - currentStoreIndex - 1 !== 1 ? 's' : ''} to visit.
+                </div>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex flex-col gap-3 mt-6">
@@ -2049,24 +2052,35 @@ const ShoppingRoute: React.FC = () => {
               className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
             >
               <Check className="h-5 w-5" />
-              Found It!
+              Actually Found It
             </Button>
-            <Button 
-              onClick={handleLeaveForFutureTrip}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
-            >
-              <Clock className="h-5 w-5" />
-              Save for Next Trip
-            </Button>
-            {optimizedRoute?.isMultiStore && (
+            
+            {optimizedRoute?.isMultiStore && optimizedRoute.stores && currentStoreIndex < optimizedRoute.stores.length - 1 ? (
               <Button 
                 onClick={handleMigrateToNextStore}
                 className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
               >
                 <MapPin className="h-5 w-5" />
-                Try Next Store
+                Try at {optimizedRoute.stores[currentStoreIndex + 1]?.retailerName}
+              </Button>
+            ) : (
+              <Button 
+                onClick={handleMigrateToNextStore}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
+              >
+                <MapPin className="h-5 w-5" />
+                Try Alternative Store
               </Button>
             )}
+            
+            <Button 
+              onClick={handleLeaveForFutureTrip}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
+            >
+              <Clock className="h-5 w-5" />
+              Save for Future Trip
+            </Button>
+            
             <Button 
               variant="outline" 
               onClick={() => setOutOfStockDialogOpen(false)}
