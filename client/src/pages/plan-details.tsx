@@ -49,7 +49,13 @@ const PlanDetails: React.FC = () => {
 
   // Fetch shopping list items
   const { data: shoppingItems, isLoading, error } = useQuery({
-    queryKey: ['shopping-items', listId],
+    queryKey: [`/api/shopping-lists/${listId}`],
+    enabled: !!listId,
+    retry: (failureCount, error) => {
+      // Don't retry on 404 errors
+      if (error?.message?.includes('404')) return false;
+      return failureCount < 2;
+    }
   });
 
   // Generate plan data based on shopping items and plan type
@@ -219,8 +225,44 @@ const PlanDetails: React.FC = () => {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg text-red-600">Error loading shopping list: {error.message}</div>
+      <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
+        <div className="flex items-center gap-4 mb-6 p-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/shopping-list')}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Shopping List
+          </Button>
+          <h1 className="text-2xl font-bold">Shopping Plans</h1>
+        </div>
+        <main className="flex-1 flex items-center justify-center p-4">
+          <Card>
+            <CardContent className="p-6 text-center">
+              <div className="text-red-600 mb-4">
+                <AlertTriangle className="h-12 w-12 mx-auto mb-2" />
+                <h3 className="text-lg font-semibold">Error Loading Shopping List</h3>
+              </div>
+              <p className="text-gray-600 mb-4">
+                {error?.message?.includes('JSON') 
+                  ? 'There was a server error. Please try again.'
+                  : error.message || 'Failed to load shopping list data.'
+                }
+              </p>
+              <div className="space-y-2">
+                <Button onClick={() => window.location.reload()}>
+                  Try Again
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/shopping-list')}>
+                  Go to Shopping List
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+        <BottomNavigation activeTab="plan-details" />
       </div>
     );
   }
