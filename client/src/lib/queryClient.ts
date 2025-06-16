@@ -29,35 +29,38 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    console.log('Default queryFn called with:', queryKey[0]);
+    
     const res = await fetch(queryKey[0] as string, {
       credentials: "include",
     });
+
+    console.log('Response status:', res.status, 'Content-Type:', res.headers.get('content-type'));
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
       return null;
     }
 
     await throwIfResNotOk(res);
-    return await res.json();
+    const data = await res.json();
+    console.log('Query response data:', data);
+    return data;
   };
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: getQueryFn({ on401: "returnNull" }),
-      staleTime: 30 * 60 * 1000, // 30 minutes - much longer to reduce requests
-      gcTime: 60 * 60 * 1000, // 60 minutes (was cacheTime)
-      refetchOnWindowFocus: false, // Disable refetch on window focus
-      refetchOnMount: false, // Disable refetch on component mount if data exists
-      refetchInterval: false, // Disable automatic polling
-      retry: (failureCount, error: any) => {
-        // Don't retry on 4xx errors except 408, 429
-        if (error?.status >= 400 && error?.status < 500) {
-          return error?.status === 408 || error?.status === 429;
-        }
-        return failureCount < 2; // Reduce retry attempts
-      },
-      retryDelay: (attemptIndex) => Math.min(2000 * 2 ** attemptIndex, 30000), // Longer delays
+      staleTime: 0, // Force fresh queries
+      gcTime: 0, // Don't cache
+      refetchOnWindowFocus: false,
+      refetchOnMount: true, // Always refetch on mount
+      refetchInterval: false,
+      retry: 1,
+      retryDelay: 1000,
     },
   },
 });
+
+// Clear all cached queries on startup
+queryClient.clear();
