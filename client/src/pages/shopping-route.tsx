@@ -1946,6 +1946,7 @@ const ShoppingRoute: React.FC = () => {
                     </Button>
                   ) : (
                     <Button 
+                      variant="outline"
                       className="w-full"
                       onClick={moveToNextAisle}
                     >
