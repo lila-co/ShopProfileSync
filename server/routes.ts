@@ -520,15 +520,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const itemId = parseInt(req.params.id);
       
       if (isNaN(itemId)) {
+        console.log(`Invalid item ID provided: ${req.params.id}`);
         return res.status(400).json({ message: 'Invalid item ID' });
       }
 
+      console.log(`Attempting to delete shopping list item ${itemId}`);
       const success = await storage.deleteShoppingListItem(itemId);
       
       if (!success) {
+        console.log(`Shopping list item ${itemId} not found`);
         return res.status(404).json({ message: 'Item not found' });
       }
 
+      console.log(`Successfully deleted shopping list item ${itemId}`);
       res.status(204).send();
     } catch (error) {
       console.error('Error deleting shopping list item:', error);

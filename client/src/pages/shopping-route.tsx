@@ -1137,7 +1137,7 @@ const ShoppingRoute: React.FC = () => {
         if (completedItems.has(item.id)) {
             // Delete completed items from the shopping list
             deletePromises.push(
-                apiRequest('DELETE', `/api/shopping-list/items/${item.id}`, {})
+                apiRequest('DELETE', `/api/shopping-list/items/${item.id}`)
                     .then(() => {
                         console.log(`Successfully deleted completed item ${item.id}: ${item.productName}`);
                     })
@@ -1151,7 +1151,12 @@ const ShoppingRoute: React.FC = () => {
     }
 
     // Wait for all deletions to complete
-    await Promise.allSettled(deletePromises);
+    const deleteResults = await Promise.allSettled(deletePromises);
+    
+    // Log results for debugging
+    const successfulDeletes = deleteResults.filter(result => result.status === 'fulfilled').length;
+    const failedDeletes = deleteResults.filter(result => result.status === 'rejected').length;
+    console.log(`Deletion results: ${successfulDeletes} successful, ${failedDeletes} failed`);
 
     // Invalidate queries to refresh the shopping list
     queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });

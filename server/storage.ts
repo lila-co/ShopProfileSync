@@ -913,8 +913,10 @@ export class MemStorage implements IStorage {
     const exists = this.shoppingListItems.has(itemId);
     if (exists) {
       this.shoppingListItems.delete(itemId);
+      console.log(`Successfully deleted shopping list item ${itemId} from storage`);
       return true;
     }
+    console.log(`Shopping list item ${itemId} not found in storage`);
     return false;
   }
 
