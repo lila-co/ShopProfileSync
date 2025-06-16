@@ -1142,6 +1142,13 @@ const ShoppingRoute: React.FC = () => {
       ? optimizedRoute.stores[currentStoreIndex]?.retailerName 
       : optimizedRoute?.retailerName;
 
+    // Show immediate feedback for store completion
+    toast({
+      title: `${currentRetailerName} Complete!`,
+      description: "Processing your completed items...",
+      duration: 2000
+    });
+
     // Remove completed items from the shopping list and leave uncompleted items
     const itemsToProcess = optimizedRoute?.aisleGroups?.flatMap(aisle => aisle.items) || [];
     const deletePromises = [];
@@ -1185,48 +1192,57 @@ const ShoppingRoute: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
     queryClient.invalidateQueries({ queryKey: [`/api/shopping-lists/${listId}`] });
 
-    // Record the completed shopping trip for this store
-    try {
-      const response = await apiRequest('POST', '/api/shopping-trip/complete', {
-        listId: listId,
-        completedItems: Array.from(completedItems),
-        startTime: startTime,
-        endTime: new Date(),
-        retailerName: currentRetailerName
-      });
-
-      if (response.ok) {
-        toast({
-          title: "Store Completed!",
-          description: "Your shopping patterns have been updated for better recommendations.",
-          duration: 3000
-        });
-      }
-    } catch (error) {
+    // Record the completed shopping trip for this store (don't wait for it to complete)
+    apiRequest('POST', '/api/shopping-trip/complete', {
+      listId: listId,
+      completedItems: Array.from(completedItems),
+      startTime: startTime,
+      endTime: new Date(),
+      retailerName: currentRetailerName
+    }).catch(error => {
       console.warn('Failed to record shopping trip:', error);
-    }
+    });
 
     // Handle multi-store vs single store completion
     if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
       if (currentStoreIndex < optimizedRoute.stores.length - 1) {
         // Move to next store
-        setCurrentStoreIndex(currentStoreIndex + 1);
+        const nextStoreIndex = currentStoreIndex + 1;
+        const nextStore = optimizedRoute.stores[nextStoreIndex];
+        
+        // Update state for next store
+        setCurrentStoreIndex(nextStoreIndex);
         setCurrentAisleIndex(0);
         setCompletedItems(new Set()); // Reset completed items for new store
 
-        const nextStore = optimizedRoute.stores[currentStoreIndex + 1];
-        toast({
-          title: "Moving to Next Store",
-          description: `Now shopping at ${nextStore.retailerName}`,
-          duration: 3000
-        });
+        // Show transition message with delay to ensure it's visible
+        setTimeout(() => {
+          toast({
+            title: "🏪 Moving to Next Store",
+            description: `Now shopping at ${nextStore.retailerName} (Store ${nextStoreIndex + 1} of ${optimizedRoute.stores.length})`,
+            duration: 4000
+          });
+        }, 500);
       } else {
-        // All stores completed - end shopping
-        endShopping();
+        // All stores completed - show completion message before ending
+        setTimeout(() => {
+          toast({
+            title: "🎉 All Stores Complete!",
+            description: "You've finished shopping at all stores. Great job!",
+            duration: 3000
+          });
+          
+          // End shopping after showing the message
+          setTimeout(() => {
+            endShopping();
+          }, 1000);
+        }, 500);
       }
     } else {
       // Single store completion - end shopping
-      endShopping();
+      setTimeout(() => {
+        endShopping();
+      }, 1000);
     }
   };
 
@@ -1283,53 +1299,61 @@ const ShoppingRoute: React.FC = () => {
         }
       }
 
+      const storeText = optimizedRoute?.isMultiStore 
+        ? `all ${optimizedRoute.stores.length} stores` 
+        : optimizedRoute?.retailerName || 'the store';
+
       toast({
-        title: "Shopping Trip Complete!",
-        description: `${allUncompletedItems.length} uncompleted items returned to your shopping list for next time.`,
-        duration: 5000
+        title: "🛒 Shopping Trip Complete!",
+        description: `Finished shopping at ${storeText}. ${allUncompletedItems.length} items returned to your list for next time.`,
+        duration: 6000
       });
     } else {
+      const storeText = optimizedRoute?.isMultiStore 
+        ? `all ${optimizedRoute.stores.length} stores` 
+        : optimizedRoute?.retailerName || 'the store';
+
       toast({
-        title: "Shopping Trip Complete!",
-        description: "All items completed. Great job!",
-        duration: 5000
+        title: "🎉 Perfect Shopping Trip!",
+        description: `Completed all items at ${storeText}. Excellent work!`,
+        duration: 6000
       });
     }
 
-    // Send comprehensive analytics to server
-    try {
-      const tripAnalytics = {
-        listId: listId,
-        completedItems: Array.from(completedItems),
-        uncompletedItems: allUncompletedItems.map(item => ({
-          ...item,
-          reason: item.notes?.includes('out of stock') ? 'out_of_stock' : 'not_found'
-        })),
-        movedItems: allMovedItems,
-        startTime: startTime,
-        endTime: new Date(),
-        retailerName: optimizedRoute?.isMultiStore ? 'Multi-Store' : optimizedRoute?.retailerName,
-        planType: optimizedRoute?.planType,
-        totalStores: optimizedRoute?.isMultiStore ? optimizedRoute.stores.length : 1
-      };
+    // Send comprehensive analytics to server (don't block on this)
+    const tripAnalytics = {
+      listId: listId,
+      completedItems: Array.from(completedItems),
+      uncompletedItems: allUncompletedItems.map(item => ({
+        ...item,
+        reason: item.notes?.includes('out of stock') ? 'out_of_stock' : 'not_found'
+      })),
+      movedItems: allMovedItems,
+      startTime: startTime,
+      endTime: new Date(),
+      retailerName: optimizedRoute?.isMultiStore ? 'Multi-Store' : optimizedRoute?.retailerName,
+      planType: optimizedRoute?.planType,
+      totalStores: optimizedRoute?.isMultiStore ? optimizedRoute.stores.length : 1
+    };
 
-      await fetch('/api/shopping-trip/complete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(tripAnalytics)
-      });
-
-      console.log('Shopping trip analytics sent successfully:', tripAnalytics);
-    } catch (error) {
+    fetch('/api/shopping-trip/complete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(tripAnalytics)
+    }).then(() => {
+      console.log('Shopping trip analytics sent successfully');
+    }).catch(error => {
       console.warn('Failed to send shopping trip analytics:', error);
-    }
+    });
 
     // Clear any temporary shopping data
     sessionStorage.removeItem('shoppingPlanData');
 
-    // Navigate back to shopping list after a delay
-    setTimeout(() => navigate('/shopping-list'), 2000);
+    // Navigate back to shopping list after a delay to allow user to see the completion message
+    setTimeout(() => {
+      navigate('/shopping-list');
+    }, 3000);
   };
 
   const handleMarkAllFound = () => {
@@ -1941,7 +1965,7 @@ const ShoppingRoute: React.FC = () => {
                     >
                       <Check className="h-4 w-4 mr-2" />
                       {optimizedRoute?.isMultiStore && currentStoreIndex < optimizedRoute.stores.length - 1 
-                        ? "Next Store" 
+                        ? `Finish ${optimizedRoute.stores[currentStoreIndex]?.retailerName}` 
                         : "End Shopping"
                       }
                     </Button>
