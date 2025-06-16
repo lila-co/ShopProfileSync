@@ -1098,29 +1098,38 @@ const ShoppingRoute: React.FC = () => {
   };
 
   const handleEndStore = () => {
-    // Get all items from current store
-    let allStoreItems: any[] = [];
+    // Check if this is the last store (single store or last store in multi-store)
+    const isLastStore = !optimizedRoute?.isMultiStore || 
+                        (optimizedRoute?.isMultiStore && currentStoreIndex >= optimizedRoute.stores.length - 1);
 
-    if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
-      const currentStore = optimizedRoute.stores[currentStoreIndex];
-      allStoreItems = currentStore?.items || [];
+    if (isLastStore) {
+      // Only show uncompleted items dialog for the final store/end of shopping
+      let allStoreItems: any[] = [];
+
+      if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
+        const currentStore = optimizedRoute.stores[currentStoreIndex];
+        allStoreItems = currentStore?.items || [];
+      } else {
+        // Single store - get all items from all aisles
+        allStoreItems = optimizedRoute?.aisleGroups?.flatMap(aisle => aisle.items) || [];
+      }
+
+      // Find uncompleted items
+      const uncompleted = allStoreItems.filter(item => 
+        !completedItems.has(item.id) && !item.isCompleted
+      );
+
+      if (uncompleted.length === 0) {
+        // No uncompleted items, proceed with completion
+        completeCurrentStore();
+      } else {
+        // Show dialog for uncompleted items only at the end
+        setUncompletedItems(uncompleted);
+        setEndStoreDialogOpen(true);
+      }
     } else {
-      // Single store - get all items from all aisles
-      allStoreItems = optimizedRoute?.aisleGroups?.flatMap(aisle => aisle.items) || [];
-    }
-
-    // Find uncompleted items
-    const uncompleted = allStoreItems.filter(item => 
-      !completedItems.has(item.id) && !item.isCompleted
-    );
-
-    if (uncompleted.length === 0) {
-      // No uncompleted items, proceed with completion
+      // For intermediate stores in multi-store plans, just move to next store
       completeCurrentStore();
-    } else {
-      // Show dialog for uncompleted items
-      setUncompletedItems(uncompleted);
-      setEndStoreDialogOpen(true);
     }
   };
 
@@ -1923,7 +1932,7 @@ const ShoppingRoute: React.FC = () => {
                     >
                       <Check className="h-4 w-4 mr-2" />
                       {optimizedRoute?.isMultiStore && currentStoreIndex < optimizedRoute.stores.length - 1 
-                        ? "End Store" 
+                        ? "Next Store" 
                         : "End Shopping"
                       }
                     </Button>
