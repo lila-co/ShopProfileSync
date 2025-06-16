@@ -459,6 +459,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // API Routes
+  // Shopping lists endpoints
+  app.get('/api/shopping-lists', async (req: Request, res: Response) => {
+    try {
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+      
+      const shoppingLists = await storage.getShoppingListsByUserId(userId);
+      res.json(shoppingLists);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  app.get('/api/shopping-lists/:id', async (req: Request, res: Response) => {
+    try {
+      const userId = req.headers['x-current-user-id'] ? 
+        parseInt(req.headers['x-current-user-id'] as string) : 1;
+      const listId = parseInt(req.params.id);
+      
+      const shoppingList = await storage.getShoppingListById(listId);
+      
+      if (!shoppingList || shoppingList.userId !== userId) {
+        return res.status(404).json({ message: 'Shopping list not found' });
+      }
+
+      res.json(shoppingList);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
   // User profile routes
   app.get('/api/user/profile', async (req: Request, res: Response) => {
     try {
