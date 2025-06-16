@@ -44,6 +44,7 @@ export const getQueryFn: <T>(options: {
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      queryFn: getQueryFn({ on401: "returnNull" }),
       staleTime: 30 * 60 * 1000, // 30 minutes - much longer to reduce requests
       gcTime: 60 * 60 * 1000, // 60 minutes (was cacheTime)
       refetchOnWindowFocus: false, // Disable refetch on window focus
