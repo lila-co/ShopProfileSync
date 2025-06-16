@@ -48,7 +48,7 @@ const PlanDetails: React.FC = () => {
   const listId = searchParams.get('listId') || '1';
 
   // Fetch shopping list items
-  const { data: shoppingItems, isLoading, error } = useQuery({
+  const { data: shoppingListData, isLoading, error } = useQuery({
     queryKey: [`/api/shopping-lists/${listId}`],
     enabled: !!listId,
     retry: (failureCount, error) => {
@@ -58,11 +58,17 @@ const PlanDetails: React.FC = () => {
     }
   });
 
+  // Extract items from the shopping list data
+  const shoppingItems = shoppingListData?.items || [];
+
   // Generate plan data based on shopping items and plan type
   const generatePlanData = (items: ShoppingItem[], planType: string): PlanData => {
+    console.log('generatePlanData called with:', { items, planType, itemsLength: items?.length });
+    
     // Ensure items is a valid array
     if (!items || !Array.isArray(items) || items.length === 0) {
       console.warn('generatePlanData received invalid items:', items);
+      console.log('Shopping list data structure:', shoppingListData);
       return { totalCost: 0, estimatedTime: '0 min', stores: [] };
     }
 
@@ -247,7 +253,6 @@ const PlanDetails: React.FC = () => {
           <Card>
             <CardContent className="p-6 text-center">
               <div className="text-red-600 mb-4">
-                <AlertTriangle className="h-12 w-12 mx-auto mb-2" />
                 <h3 className="text-lg font-semibold">Error Loading Shopping List</h3>
               </div>
               <p className="text-gray-600 mb-4">
