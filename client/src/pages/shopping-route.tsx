@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation, useRoute } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
@@ -336,6 +336,20 @@ const ShoppingRoute: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Mutation for updating shopping list items
+  const updateItemMutation = useMutation({
+    mutationFn: async ({ itemId, updates }: { itemId: number; updates: Partial<any> }) => {
+      const response = await apiRequest('PATCH', `/api/shopping-list/items/${itemId}`, updates);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+    },
+    onError: (error: any) => {
+      console.error('Failed to update item:', error);
+    }
+  });
+
   // Get URL parameters from current location
   const searchParams = new URLSearchParams(location.split('?')[1] || '');
   const listId = searchParams.get('listId') || '1'; // Default to list 1 if not provided
@@ -397,17 +411,6 @@ const ShoppingRoute: React.FC = () => {
       const response = await apiRequest('PATCH', `/api/shopping-list/items/${itemId}`, {
         isCompleted: completed
       });
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists', listId] });
-    }
-  });
-
-  // Update item mutation for out-of-stock handling
-  const updateItemMutation = useMutation({
-    mutationFn: async ({ itemId, updates }: { itemId: number, updates: any }) => {
-      const response = await apiRequest('PATCH', `/api/shopping-list/items/${itemId}`, updates);
       return response.json();
     },
     onSuccess: () => {
@@ -879,7 +882,13 @@ const ShoppingRoute: React.FC = () => {
       const newCompletedItems = new Set(completedItems);
       newCompletedItems.add(outOfStockItem.id);
       setCompletedItems(newCompletedItems);
-      toggleItemMutation.mutate({ itemId: outOfStockItem.id, completed: true });
+
+      updateItemMutation.mutate({
+        itemId: outOfStockItem.id,
+        updates: {
+          isCompleted: true
+        }
+      });
 
       toast({
         title: "Item checked off!",
@@ -1120,6 +1129,35 @@ const ShoppingRoute: React.FC = () => {
       ? optimizedRoute.stores[currentStoreIndex]?.retailerName 
       : optimizedRoute?.retailerName;
 
+    // Update the completion status for the items that were found
+    const itemsToUpdate = optimizedRoute?.aisleGroups?.flatMap(aisle => aisle.items) || [];
+    for (const item of itemsToUpdate) {
+        if (completedItems.has(item.id) && !item.isCompleted) {
+            try {
+                await updateItemMutation.mutateAsync({
+                    itemId: item.id,
+                    updates: {
+                        isCompleted: true,
+                        notes: `Purchased during shopping trip on ${new Date().toLocaleDateString()}`
+                    }
+                });
+            } catch (error) {
+                console.warn(`Failed to update item ${item.id}:`, error);
+            }
+        } else if (!completedItems.has(item.id) && item.isCompleted) {
+          try {
+            await updateItemMutation.mutateAsync({
+              itemId: item.id,
+              updates: {
+                isCompleted: false,
+                notes: `Returned to list - not purchased during shopping trip on ${new Date().toLocaleDateString()}`
+              }
+            });
+          } catch (error) {
+            console.warn(`Failed to update item ${item.id}:`, error);
+          }
+        }
+    }
     // Record the completed shopping trip for this store
     try {
       const response = await apiRequest('POST', '/api/shopping-trip/complete', {
@@ -1176,18 +1214,18 @@ const ShoppingRoute: React.FC = () => {
         const storeUncompleted = store.items.filter((item: any) => 
           !completedItems.has(item.id) && !item.isCompleted
         );
-        
+
         // Track which items were moved between stores
         const itemsMovedFromThisStore = store.items.filter((item: any) => 
           item.movedFrom && item.movedFrom !== store.retailerName
         );
-        
+
         allUncompletedItems.push(...storeUncompleted.map(item => ({
           ...item,
           storeName: store.retailerName,
           storeIndex: index
         })));
-        
+
         allMovedItems.push(...itemsMovedFromThisStore.map(item => ({
           ...item,
           fromStore: item.movedFrom,
