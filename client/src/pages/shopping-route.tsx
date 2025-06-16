@@ -1790,6 +1790,7 @@ const ShoppingRoute: React.FC = () => {
                   </Button>
 
                   <Button 
+                    variant="outline"
                     className="w-full"
                     onClick={() => {
                       if (currentStoreIndex < optimizedRoute.stores.length - 1) {
