@@ -800,8 +800,7 @@ const ShoppingRoute: React.FC = () => {
               });
             } else {
               // Update in place
-              const itemToUpdate```text
- = aisleGroups[aisleName].items.find(i => i.id === item.id);
+              const itemToUpdate = aisleGroups[aisleName].items.find(i => i.id === item.id);
               if (itemToUpdate) {
                 itemToUpdate.shelfLocation = getShelfLocation(item.productName, result.category);
                 itemToUpdate.confidence = result.confidence;
