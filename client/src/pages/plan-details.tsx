@@ -60,7 +60,9 @@ const PlanDetails: React.FC = () => {
 
   // Generate plan data based on shopping items and plan type
   const generatePlanData = (items: ShoppingItem[], planType: string): PlanData => {
-    if (!items || items.length === 0) {
+    // Ensure items is a valid array
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      console.warn('generatePlanData received invalid items:', items);
       return { totalCost: 0, estimatedTime: '0 min', stores: [] };
     }
 
@@ -160,7 +162,10 @@ const PlanDetails: React.FC = () => {
     }
   };
 
-  const planData = generatePlanData(shoppingItems || [], selectedPlanType);
+  const planData = generatePlanData(
+    Array.isArray(shoppingItems) ? shoppingItems : [], 
+    selectedPlanType
+  );
 
   const formatPrice = (price: number) => {
     return `$${(price / 100).toFixed(2)}`;
@@ -180,7 +185,7 @@ const PlanDetails: React.FC = () => {
 
   // Calculate availability of items based on plan type and stores
   const availability = React.useMemo(() => {
-    if (!shoppingItems || shoppingItems.length === 0) {
+    if (!shoppingItems || !Array.isArray(shoppingItems) || shoppingItems.length === 0) {
       return {
         totalItems: 0,
         availableItems: 0,
@@ -267,7 +272,7 @@ const PlanDetails: React.FC = () => {
     );
   }
 
-  if (!shoppingItems || shoppingItems.length === 0) {
+  if (!shoppingItems || !Array.isArray(shoppingItems) || shoppingItems.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-lg">No items found in shopping list</div>
