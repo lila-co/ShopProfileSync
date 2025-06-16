@@ -539,8 +539,19 @@ const ShoppingListComponent: React.FC = () => {
           throw new Error(`Failed to generate shopping list: ${errorMessage}`);
         }
 
-        const result = await response.json();
-        console.log('API response data:', result);
+        let result;
+        try {
+          result = await response.json();
+          console.log('API response data:', result);
+        } catch (parseError) {
+          console.error('Failed to parse JSON response:', parseError);
+          throw new Error('Server response was invalid. Please try again.');
+        }
+
+        // Validate the response structure
+        if (!result || typeof result !== 'object') {
+          throw new Error('Invalid response from server. Please try again.');
+        }
 
         return {
           ...result,
@@ -549,10 +560,28 @@ const ShoppingListComponent: React.FC = () => {
         };
       } catch (error) {
         console.error('Network or API error:', error);
-        if (error.message && error.message.includes('Failed to generate shopping list')) {
-          throw error; // Re-throw API errors as-is
+        
+        // Handle empty error objects or non-Error objects
+        if (!error || (typeof error === 'object' && Object.keys(error).length === 0)) {
+          console.warn('Received empty error object, likely a parsing issue');
+          throw new Error('Response parsing failed. Please try again.');
         }
-        throw new Error('Failed to connect to server. Please check your connection and try again.');
+        
+        // Check if error has a message property and is a proper Error object
+        if (error instanceof Error && error.message) {
+          if (error.message.includes('Failed to generate shopping list')) {
+            throw error; // Re-throw API errors as-is
+          }
+          throw new Error(`Generation failed: ${error.message}`);
+        }
+        
+        // Handle string errors
+        if (typeof error === 'string') {
+          throw new Error(`Generation failed: ${error}`);
+        }
+        
+        // Handle cases where error is not a proper Error object
+        throw new Error('Failed to generate shopping list. Please try again.');
       }
     },
     onSuccess: (data) => {
@@ -578,9 +607,20 @@ const ShoppingListComponent: React.FC = () => {
     },
     onError: (error: any) => {
       console.error('Regeneration failed:', error);
+      
+      // Extract meaningful error message
+      let errorMessage = "Failed to enhance list. Please try again.";
+      if (error instanceof Error && error.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Error",
-        description: error.message || "Failed to enhance list. Please try again.",
+        description: errorMessage,
         variant: "destructive"
       });
     }

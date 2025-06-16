@@ -60,7 +60,7 @@ export interface IStorage {
   getShoppingListItems(listId: number): Promise<ShoppingListItem[]>;
   addShoppingListItem(item: Partial<ShoppingListItem>): Promise<ShoppingListItem>;
   updateShoppingListItem(id: number, updates: Partial<ShoppingListItem>): Promise<ShoppingListItem>;
-  deleteShoppingListItem(id: number): Promise<void>;
+  deleteShoppingListItem(id: number): Promise<boolean>;
 
   // Deal methods
   getDeals(retailerId?: number, category?: string): Promise<StoreDeal[]>;
@@ -768,7 +768,7 @@ export class MemStorage implements IStorage {
 
   async getShoppingListsByUserId(userId: number): Promise<ShoppingList[]> {
     const lists = Array.from(this.shoppingLists.values()).filter(list => list.userId === userId);
-    
+
     // If no lists exist for this user, create a default one
     if (lists.length === 0) {
       const defaultList: ShoppingList = {
@@ -885,26 +885,50 @@ export class MemStorage implements IStorage {
   async updateShoppingListItem(itemId: number, updates: Partial<ShoppingListItem>): Promise<ShoppingListItem | null> {
     const item = this.shoppingListItems.get(itemId);
     if (!item) {
+      console.log(`Shopping list item ${itemId} not found for update`);
       return null;
     }
 
     const updatedItem = { ...item, ...updates };
     this.shoppingListItems.set(itemId, updatedItem);
+    
+    console.log(`Successfully updated shopping list item ${itemId}:`, {
+      productName: updatedItem.productName,
+      isCompleted: updatedItem.isCompleted,
+      notes: updatedItem.notes
+    });
 
     // If category was updated, learn from this user correction
     if (updates.category && updates.category !== item.category) {
-      const { productCategorizer } = await import('./services/productCategorizer');
-      productCategorizer.learnFromUserCorrection(updatedItem.productName, updates.category);
+      try {
+        const { productCategorizer } = await import('./services/productCategorizer');
+        productCategorizer.learnFromUserCorrection(updatedItem.productName, updates.category);
+      } catch (error) {
+        console.warn('Failed to update product categorizer learning:', error);
+      }
     }
 
     return updatedItem;
   }
 
-  async deleteShoppingListItem(id: number): Promise<void> {
-    if (!this.shoppingListItems.has(id)) {
-      throw new Error("Shopping list item not found");
+  async createShoppingListItem(item: Omit<ShoppingListItem, 'id'>): Promise<ShoppingListItem> {
+    const newItem: ShoppingListItem = {
+      ...item,
+      id: this.shoppingListItemIdCounter++
+    };
+    this.shoppingListItems.set(newItem.id, newItem);
+    return newItem;
+  }
+
+  async deleteShoppingListItem(itemId: number): Promise<boolean> {
+    const exists = this.shoppingListItems.has(itemId);
+    if (exists) {
+      this.shoppingListItems.delete(itemId);
+      console.log(`Successfully deleted shopping list item ${itemId} from storage`);
+      return true;
     }
-    this.shoppingListItems.delete(id);
+    console.log(`Shopping list item ${itemId} not found in storage`);
+    return false;
   }
 
   // Deal methods
