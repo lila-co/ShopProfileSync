@@ -124,7 +124,7 @@ export const rateLimiters = {
   // General API endpoints - increased to accommodate optimized polling
   general: new RateLimiter({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    maxRequests: 600, // Increased for development and testing
+    maxRequests: 10000, // DEVELOPMENT: Greatly increased for testing
     message: 'Too many API requests. Please try again later.'
   }),
 
@@ -139,7 +139,7 @@ export const rateLimiters = {
   // Shopping list operations - 500 requests per 15 minutes
   shoppingList: new RateLimiter({
     windowMs: 15 * 60 * 1000,
-    maxRequests: 500,
+    maxRequests: 5000, // DEVELOPMENT: Increased for testing
     message: 'Too many shopping list requests. Please slow down.'
   }),
 
