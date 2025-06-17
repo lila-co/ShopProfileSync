@@ -9,6 +9,7 @@ import BottomNavigation from '@/components/layout/BottomNavigation';
 import ProfileSetup from '@/components/profile/ProfileSetup';
 import RetailerLinking from '@/components/profile/RetailerLinking';
 import PurchaseAnomalies from '@/components/profile/PurchaseAnomalies';
+import RetailersContent from '@/components/profile/RetailersContent';
 import ShoppingInsights from '@/components/dashboard/ShoppingInsights';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -196,8 +197,9 @@ const ProfilePage: React.FC = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4 text-xs">
+          <TabsList className="grid w-full grid-cols-5 text-xs">
             <TabsTrigger value="profile">Profile</TabsTrigger>
+            <TabsTrigger value="retailers">Stores</TabsTrigger>
             <TabsTrigger value="insights">Insights</TabsTrigger>
             <TabsTrigger value="privacy">Privacy</TabsTrigger>
             <TabsTrigger value="notifications">Alerts</TabsTrigger>
@@ -383,6 +385,22 @@ const ProfilePage: React.FC = () => {
               </CardContent>
             </Card>
 
+          </TabsContent>
+
+          <TabsContent value="retailers" className="space-y-4">
+            {/* Retailers content moved from retailers page */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Store className="w-5 h-5 mr-2 text-purple-600" />
+                  Partner Retailers
+                </CardTitle>
+                <CardDescription>View and manage your store connections</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <RetailersContent />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="insights" className="space-y-4">

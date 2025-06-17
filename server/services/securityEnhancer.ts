@@ -146,13 +146,14 @@ class SecurityEnhancer {
           timeWindow: '10 minutes'
         });
 
+        // DEVELOPMENT: Disabled suspicious activity blocking
         // Optional: Add additional restrictions for suspicious IPs
-        if (activity.count > 200) {
-          return res.status(429).json({
-            error: 'Suspicious activity detected',
-            message: 'Your request pattern has been flagged. Please contact support if this is an error.'
-          });
-        }
+        // if (activity.count > 200) {
+        //   return res.status(429).json({
+        //     error: 'Suspicious activity detected',
+        //     message: 'Your request pattern has been flagged. Please contact support if this is an error.'
+        //   });
+        // }
       }
 
       next();

@@ -64,7 +64,7 @@ const PlanDetails: React.FC = () => {
   // Generate plan data based on shopping items and plan type
   const generatePlanData = (items: ShoppingItem[], planType: string): PlanData => {
     console.log('generatePlanData called with:', { items, planType, itemsLength: items?.length });
-    
+
     // Ensure items is a valid array
     if (!items || !Array.isArray(items) || items.length === 0) {
       console.warn('generatePlanData received invalid items:', items);
@@ -624,15 +624,12 @@ const PlanDetails: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-4 gap-3 mb-6">
+              <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="text-center">
                   <div className="text-xl font-bold text-green-600">{formatPrice(planData.totalCost)}</div>
                   <div className="text-xs text-gray-500">Total Cost</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-xl font-bold text-blue-600">{planData.estimatedTime}</div>
-                  <div className="text-xs text-gray-500">Est. Time</div>
-                </div>
+                
                 <div className="text-center">
                   <div className="text-xl font-bold text-purple-600">{planData.stores.length}</div>
                   <div className="text-xs text-gray-500">Store(s)</div>
@@ -660,15 +657,12 @@ const PlanDetails: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-4 gap-3 mb-6">
+              <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="text-center">
                   <div className="text-xl font-bold text-green-600">{formatPrice(planData.totalCost)}</div>
                   <div className="text-xs text-gray-500">Total Cost</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-xl font-bold text-blue-600">{planData.estimatedTime}</div>
-                  <div className="text-xs text-gray-500">Est. Time</div>
-                </div>
+                
                 <div className="text-center">
                   <div className="text-xl font-bold text-purple-600">{planData.stores.length}</div>
                   <div className="text-xs text-gray-500">Store(s)</div>
@@ -696,15 +690,12 @@ const PlanDetails: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-4 gap-3 mb-6">
+              <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="text-center">
                   <div className="text-xl font-bold text-green-600">{formatPrice(planData.totalCost)}</div>
                   <div className="text-xs text-gray-500">Total Cost</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-xl font-bold text-blue-600">{planData.estimatedTime}</div>
-                  <div className="text-xs text-gray-500">Est. Time</div>
-                </div>
+                
                 <div className="text-center">
                   <div className="text-xl font-bold text-purple-600">{planData.stores.length}</div>
                   <div className="text-xs text-gray-500">Store(s)</div>
