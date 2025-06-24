@@ -77,7 +77,7 @@ const PlanDetails: React.FC = () => {
         // Find the most common retailer
         const retailerCounts = items.reduce((acc, item) => {
           if (item.suggestedRetailer?.id) {
-            const retailerId = item.suggestedRetailer.id;
+            const retailerId = Number(item.suggestedRetailer.id);
             acc[retailerId] = (acc[retailerId] || 0) + 1;
           }
           return acc;
@@ -100,13 +100,19 @@ const PlanDetails: React.FC = () => {
           return { totalCost: 0, estimatedTime: '0 min', stores: [] };
         }
 
+        const totalCost = items.reduce((sum, item) => {
+          const price = Number(item.suggestedPrice) || 0;
+          const quantity = Number(item.quantity) || 0;
+          return sum + (price * quantity);
+        }, 0);
+
         return {
-          totalCost: items.reduce((sum, item) => sum + (item.suggestedPrice || 0) * item.quantity, 0),
+          totalCost: totalCost,
           estimatedTime: '25-35 min',
           stores: [{
-            retailer: primaryRetailer!,
+            retailer: primaryRetailer,
             items: items,
-            subtotal: items.reduce((sum, item) => sum + (item.suggestedPrice || 0) * item.quantity, 0)
+            subtotal: totalCost
           }]
         };
 
@@ -114,7 +120,7 @@ const PlanDetails: React.FC = () => {
         // Group by retailer for best prices
         const storeGroups = items.reduce((acc, item) => {
           if (item.suggestedRetailer?.id) {
-            const retailerId = item.suggestedRetailer.id;
+            const retailerId = Number(item.suggestedRetailer.id);
             if (!acc[retailerId]) {
               acc[retailerId] = {
                 retailer: item.suggestedRetailer,
@@ -123,13 +129,15 @@ const PlanDetails: React.FC = () => {
               };
             }
             acc[retailerId].items.push(item);
-            acc[retailerId].subtotal += (item.suggestedPrice || 0) * item.quantity;
+            const price = Number(item.suggestedPrice) || 0;
+            const quantity = Number(item.quantity) || 0;
+            acc[retailerId].subtotal += price * quantity;
           }
           return acc;
         }, {} as Record<number, any>);
 
         return {
-          totalCost: Object.values(storeGroups).reduce((sum: number, store: any) => sum + store.subtotal, 0),
+          totalCost: Object.values(storeGroups).reduce((sum: number, store: any) => sum + Number(store.subtotal || 0), 0),
           estimatedTime: '45-60 min',
           stores: Object.values(storeGroups)
         };
@@ -138,7 +146,7 @@ const PlanDetails: React.FC = () => {
         // Balance between convenience and savings
         const balancedStores = items.reduce((acc, item) => {
           if (item.suggestedRetailer?.id) {
-            const retailerId = item.suggestedRetailer.id;
+            const retailerId = Number(item.suggestedRetailer.id);
             if (!acc[retailerId]) {
               acc[retailerId] = {
                 retailer: item.suggestedRetailer,
@@ -147,18 +155,20 @@ const PlanDetails: React.FC = () => {
               };
             }
             acc[retailerId].items.push(item);
-            acc[retailerId].subtotal += (item.suggestedPrice || 0) * item.quantity;
+            const price = Number(item.suggestedPrice) || 0;
+            const quantity = Number(item.quantity) || 0;
+            acc[retailerId].subtotal += price * quantity;
           }
           return acc;
         }, {} as Record<number, any>);
 
         // Limit to 2 stores maximum for balance
         const topStores = Object.values(balancedStores)
-          .sort((a: any, b: any) => b.subtotal - a.subtotal)
+          .sort((a: any, b: any) => Number(b.subtotal || 0) - Number(a.subtotal || 0))
           .slice(0, 2);
 
         return {
-          totalCost: topStores.reduce((sum: number, store: any) => sum + store.subtotal, 0),
+          totalCost: topStores.reduce((sum: number, store: any) => sum + Number(store.subtotal || 0), 0),
           estimatedTime: '35-45 min',
           stores: topStores
         };
@@ -173,8 +183,9 @@ const PlanDetails: React.FC = () => {
     selectedPlanType
   );
 
-  const formatPrice = (price: number) => {
-    return `$${(price / 100).toFixed(2)}`;
+  const formatPrice = (price: number | undefined | null) => {
+    const numericPrice = Number(price) || 0;
+    return `$${(numericPrice / 100).toFixed(2)}`;
   };
 
   // Fetch deals for price comparison
@@ -208,10 +219,14 @@ const PlanDetails: React.FC = () => {
       availableItems = totalItems;
     } else {
       // For multi-store and balanced plans, check actual availability
-      const planRetailerIds = new Set(planData.stores.map(store => store.retailer.id));
+      const planRetailerIds = new Set(
+        planData.stores
+          .filter(store => store.retailer?.id)
+          .map(store => Number(store.retailer.id))
+      );
 
       shoppingItems.forEach(item => {
-        if (item.suggestedRetailer && planRetailerIds.has(item.suggestedRetailer.id)) {
+        if (item.suggestedRetailer?.id && planRetailerIds.has(Number(item.suggestedRetailer.id))) {
           availableItems++;
         } else {
           missingItems.push(item);
