@@ -1007,6 +1007,48 @@ const ShoppingRoute: React.FC = () => {
     setOutOfStockItem(null);
   };
 
+  const handleRemoveFromList = async () => {
+    if (outOfStockItem) {
+      try {
+        // Delete the item from the shopping list entirely
+        await apiRequest('DELETE', `/api/shopping-list/items/${outOfStockItem.id}`);
+
+        // Remove item from current shopping route display
+        if (optimizedRoute?.aisleGroups) {
+          optimizedRoute.aisleGroups.forEach((aisle: any) => {
+            const itemIndex = aisle.items.findIndex((item: any) => item.id === outOfStockItem.id);
+            if (itemIndex > -1) {
+              aisle.items.splice(itemIndex, 1);
+            }
+          });
+        }
+
+        // Invalidate queries to refresh the shopping list
+        queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+        queryClient.invalidateQueries({ queryKey: [`/api/shopping-lists/${listId}`] });
+
+        // Force a re-render by updating the route state
+        setOptimizedRoute({...optimizedRoute});
+
+        toast({
+          title: "Item Removed",
+          description: `${outOfStockItem.productName} has been removed from your list`,
+          duration: 3000
+        });
+      } catch (error) {
+        console.error('Failed to remove item:', error);
+        toast({
+          title: "Error",
+          description: "Failed to remove item from list",
+          variant: "destructive",
+          duration: 3000
+        });
+      }
+    }
+    setOutOfStockDialogOpen(false);
+    setOutOfStockItem(null);
+  };
+
   const handleMigrateToNextStore = () => {
     if (outOfStockItem && optimizedRoute?.isMultiStore && optimizedRoute.stores) {
       // Find the best next store for this item based on availability and price
@@ -2252,6 +2294,7 @@ const ShoppingRoute: React.FC = () => {
               Actually Found It
             </Button>
 
+            {/* Multi-store routes show migration options */}
             {optimizedRoute?.isMultiStore && optimizedRoute.stores && currentStoreIndex < optimizedRoute.stores.length - 1 ? (
               <Button 
                 onClick={handleMigrateToNextStore}
@@ -2260,13 +2303,16 @@ const ShoppingRoute: React.FC = () => {
                 <MapPin className="h-5 w-5" />
                 Try at {optimizedRoute.stores[currentStoreIndex + 1]?.retailerName}
               </Button>
-            ) : (
+            ) : null}
+
+            {/* For single-store routes, show simplified options */}
+            {!optimizedRoute?.isMultiStore && (
               <Button 
-                onClick={handleMigrateToNextStore}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
+                onClick={handleRemoveFromList}
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
               >
-                <MapPin className="h-5 w-5" />
-                Try Alternative Store
+                <Package className="h-5 w-5" />
+                Remove from List
               </Button>
             )}
 
