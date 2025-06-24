@@ -462,6 +462,9 @@ const ShoppingRoute: React.FC = () => {
         if (sessionAge < maxAge) {
           planDataToUse = sessionData.planData;
 
+          // Set restoration flag to prevent false "started shopping" detection
+          setIsRestoringSession(true);
+
           // Restore shopping progress
           if (sessionData.currentStoreIndex !== undefined) {
             setCurrentStoreIndex(sessionData.currentStoreIndex);
@@ -472,6 +475,18 @@ const ShoppingRoute: React.FC = () => {
           if (sessionData.completedItems) {
             setCompletedItems(new Set(sessionData.completedItems));
           }
+
+          // Check if the session had actual progress to set hasStartedShopping correctly
+          const sessionHadProgress = (sessionData.completedItems && sessionData.completedItems.length > 0) ||
+                                    sessionData.currentAisleIndex > 0 ||
+                                    sessionData.currentStoreIndex > 0;
+          
+          if (sessionHadProgress) {
+            setHasStartedShopping(true);
+          }
+
+          // Clear restoration flag after a brief delay
+          setTimeout(() => setIsRestoringSession(false), 100);
 
           console.log('Restored shopping session - Store:', sessionData.currentStoreIndex, 'Aisle:', sessionData.currentAisleIndex);
 
@@ -1742,31 +1757,22 @@ const ShoppingRoute: React.FC = () => {
 
   // Check if user has started shopping based on progress
   useEffect(() => {
-    if (completedItems.size > 0 || currentAisleIndex > 0 || currentStoreIndex > 0) {
+    // Only set hasStartedShopping to true if user has made meaningful progress
+    // Don't count initial state restoration as "starting"
+    const hasActualProgress = completedItems.size > 0 || 
+                             (currentAisleIndex > 0 && !isRestoringSession) || 
+                             (currentStoreIndex > 0 && !isRestoringSession);
+    
+    if (hasActualProgress) {
       setHasStartedShopping(true);
     }
   }, [completedItems.size, currentAisleIndex, currentStoreIndex]);
 
-  useEffect(() => {
-    console.log('Shopping route loaded with location:', location);
-    console.log('Shopping route loaded with params:', { listId, mode, planDataParam: planDataParam ? 'present' : 'missing' });
+  // Track if we're currently restoring a session to avoid false "started shopping" detection
+  const [isRestoringSession, setIsRestoringSession] = useState(false);
 
-    // Only save persistent shopping session when user has actually started shopping
-    if (optimizedRoute && listId && !isShoppingComplete && hasStartedShopping) {
-      const sessionData = {
-        planData: optimizedRoute,
-        shoppingMode: mode || 'instore',
-        currentStoreIndex: currentStoreIndex,
-        completedItems: Array.from(completedItems),
-        timestamp: Date.now(),
-        currentStoreName: optimizedRoute?.retailerName,
-        currentAisleIndex: currentAisleIndex,
-      };
-
-      localStorage.setItem(`shopping_session_${listId}`, JSON.stringify(sessionData));
-      console.log('Saved persistent shopping session for list', listId);
-    }
-  }, [optimizedRoute, listId, mode, currentStoreIndex, completedItems, isShoppingComplete, currentAisleIndex, hasStartedShopping]);
+  // Remove this useEffect - session saving is now handled only in the savePersistentShoppingSession function
+  // which is called from the other useEffect that tracks progress changes
 
   const proceedAfterLoyaltyCard = () => {
     console.log('proceedAfterLoyaltyCard called');

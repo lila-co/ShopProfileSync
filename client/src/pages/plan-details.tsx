@@ -594,9 +594,15 @@ const PlanDetails: React.FC = () => {
     if (persistentSession) {
       try {
         const sessionData = JSON.parse(persistentSession);
+        
+        // Only consider it progress if:
+        // 1. Items have been completed, OR
+        // 2. User has moved to aisle 2+ (not just initial aisle), OR  
+        // 3. User has moved to store 2+ (not just initial store)
         const hasProgress = (sessionData.completedItems && sessionData.completedItems.length > 0) ||
-                           sessionData.currentAisleIndex > 0 ||
-                           sessionData.currentStoreIndex > 0;
+                           (sessionData.currentAisleIndex && sessionData.currentAisleIndex > 1) ||
+                           (sessionData.currentStoreIndex && sessionData.currentStoreIndex > 0);
+        
         return hasProgress;
       } catch (error) {
         console.warn('Error parsing persistent session:', error);
