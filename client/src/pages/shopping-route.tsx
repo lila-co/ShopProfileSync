@@ -1700,6 +1700,11 @@ const ShoppingRoute: React.FC = () => {
 
   // Save shopping session to localStorage (survives app closure)
   const savePersistentShoppingSession = (planData: any, route: any) => {
+    // Only save if user has actually started shopping
+    if (!hasStartedShopping) {
+      return;
+    }
+    
     try {
       const sessionKey = `shopping_session_${listId}`;
       const currentStore = route?.isMultiStore && route.stores 
@@ -1725,24 +1730,34 @@ const ShoppingRoute: React.FC = () => {
     }
   };
 
-  // Update session whenever progress changes
+  // Update session whenever progress changes (only if user has started shopping)
   useEffect(() => {
-    if (optimizedRoute && selectedPlanData) {
+    if (optimizedRoute && selectedPlanData && hasStartedShopping) {
       savePersistentShoppingSession(selectedPlanData, optimizedRoute);
     }
-  }, [currentStoreIndex, currentAisleIndex, completedItems, optimizedRoute, selectedPlanData]);
+  }, [currentStoreIndex, currentAisleIndex, completedItems, optimizedRoute, selectedPlanData, hasStartedShopping]);
+
+  // Track if user has actually started shopping (moved aisles or completed items)
+  const [hasStartedShopping, setHasStartedShopping] = useState(false);
+
+  // Check if user has started shopping based on progress
+  useEffect(() => {
+    if (completedItems.size > 0 || currentAisleIndex > 0 || currentStoreIndex > 0) {
+      setHasStartedShopping(true);
+    }
+  }, [completedItems.size, currentAisleIndex, currentStoreIndex]);
 
   useEffect(() => {
     console.log('Shopping route loaded with location:', location);
     console.log('Shopping route loaded with params:', { listId, mode, planDataParam: planDataParam ? 'present' : 'missing' });
 
-    // Only save persistent shopping session when actually starting shopping, not when completing
-    if (optimizedRoute && listId && !isShoppingComplete) {
+    // Only save persistent shopping session when user has actually started shopping
+    if (optimizedRoute && listId && !isShoppingComplete && hasStartedShopping) {
       const sessionData = {
         planData: optimizedRoute,
         shoppingMode: mode || 'instore',
         currentStoreIndex: currentStoreIndex,
-        completedItems: completedItems,
+        completedItems: Array.from(completedItems),
         timestamp: Date.now(),
         currentStoreName: optimizedRoute?.retailerName,
         currentAisleIndex: currentAisleIndex,
@@ -1751,7 +1766,7 @@ const ShoppingRoute: React.FC = () => {
       localStorage.setItem(`shopping_session_${listId}`, JSON.stringify(sessionData));
       console.log('Saved persistent shopping session for list', listId);
     }
-  }, [optimizedRoute, listId, mode, currentStoreIndex, completedItems, isShoppingComplete, currentAisleIndex, location, planDataParam]);
+  }, [optimizedRoute, listId, mode, currentStoreIndex, completedItems, isShoppingComplete, currentAisleIndex, hasStartedShopping]);
 
   const proceedAfterLoyaltyCard = () => {
     console.log('proceedAfterLoyaltyCard called');

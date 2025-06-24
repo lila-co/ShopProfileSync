@@ -589,7 +589,24 @@ const PlanDetails: React.FC = () => {
   const hasInterruptedSession = (listId: string): boolean => {
     const interruptedSession = localStorage.getItem(`interruptedSession-${listId}`);
     const persistentSession = localStorage.getItem(`shopping_session_${listId}`);
-    return !!interruptedSession || !!persistentSession;
+    
+    // Check if persistent session has meaningful progress
+    if (persistentSession) {
+      try {
+        const sessionData = JSON.parse(persistentSession);
+        const hasProgress = (sessionData.completedItems && sessionData.completedItems.length > 0) ||
+                           sessionData.currentAisleIndex > 0 ||
+                           sessionData.currentStoreIndex > 0;
+        return hasProgress;
+      } catch (error) {
+        console.warn('Error parsing persistent session:', error);
+        // Clean up corrupted session
+        localStorage.removeItem(`shopping_session_${listId}`);
+        return false;
+      }
+    }
+    
+    return !!interruptedSession;
   };
 
   // React component to display the interrupted session card
