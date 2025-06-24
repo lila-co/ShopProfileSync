@@ -648,6 +648,7 @@ const PlanDetails: React.FC = () => {
     // Clear interrupted session
     const clearSession = () => {
       localStorage.removeItem(`interruptedSession-${listId}`);
+      localStorage.removeItem(`shopping_session_${listId}`); // Also clear persistent shopping session
       setHasSession(false);
       toast({
         title: "Ready to Go!",
