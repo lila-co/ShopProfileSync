@@ -1642,57 +1642,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
         planType
       });
 
-      // Delete completed items from shopping list
+      let deletedCount = 0;
+      let updatedCount = 0;
+
+      // Delete completed items from shopping list - these should be permanently removed
       if (completedItems && completedItems.length > 0) {
-        const deletePromises = completedItems.map(async (itemId: number) => {
+        console.log(`Processing deletion of ${completedItems.length} completed items`);
+        
+        for (const itemId of completedItems) {
           try {
             console.log(`Attempting to delete completed item ${itemId}`);
             const success = await storage.deleteShoppingListItem(itemId);
-            console.log(`Delete result for item ${itemId}:`, success);
-            return { itemId, success };
+            
+            if (success) {
+              deletedCount++;
+              console.log(`Successfully deleted completed item ${itemId}`);
+            } else {
+              console.error(`Failed to delete completed item ${itemId} - item not found or deletion failed`);
+            }
           } catch (error) {
-            console.error(`Failed to delete item ${itemId}:`, error);
-            return { itemId, success: false, error };
+            console.error(`Exception while deleting item ${itemId}:`, error);
           }
-        });
-
-        const deleteResults = await Promise.allSettled(deletePromises);
-        const successfulDeletes = deleteResults.filter(result => 
-          result.status === 'fulfilled' && result.value?.success
-        ).length;
+        }
         
-        console.log(`Completed items deletion: ${successfulDeletes}/${completedItems.length} successful`);
+        console.log(`Completed items deletion: ${deletedCount}/${completedItems.length} successful`);
       }
 
-      // Update uncompleted items with notes indicating they were left during shopping
+      // Update uncompleted items with notes (but keep them on the list for future shopping)
       if (uncompletedItems && uncompletedItems.length > 0) {
-        const updatePromises = uncompletedItems.map(async (item: any) => {
+        console.log(`Processing ${uncompletedItems.length} uncompleted items`);
+        
+        for (const item of uncompletedItems) {
           try {
             const notes = item.reason === 'out_of_stock' 
-              ? `Out of stock during shopping trip on ${new Date().toLocaleDateString()}`
-              : `Not found during shopping trip on ${new Date().toLocaleDateString()}`;
+              ? `Out of stock at ${retailerName} on ${new Date().toLocaleDateString()}`
+              : `Not found at ${retailerName} on ${new Date().toLocaleDateString()}`;
             
-            console.log(`Updating uncompleted item ${item.id} with notes: "${notes}"`);
+            console.log(`Updating uncompleted item ${item.id || item} with notes`);
             
-            const success = await storage.updateShoppingListItem(item.id, {
+            const itemId = typeof item === 'object' ? item.id : item;
+            const success = await storage.updateShoppingListItem(itemId, {
               isCompleted: false,
               notes: notes
             });
             
-            console.log(`Update result for uncompleted item ${item.id}:`, success);
-            return { itemId: item.id, success: !!success };
+            if (success) {
+              updatedCount++;
+              console.log(`Successfully updated uncompleted item ${itemId}`);
+            } else {
+              console.error(`Failed to update uncompleted item ${itemId}`);
+            }
           } catch (error) {
-            console.error(`Failed to update uncompleted item ${item.id}:`, error);
-            return { itemId: item.id, success: false, error };
+            console.error(`Exception while updating uncompleted item:`, error);
           }
-        });
+        }
 
-        const updateResults = await Promise.allSettled(updatePromises);
-        const successfulUpdates = updateResults.filter(result =>
-          result.status === 'fulfilled' && result.value?.success
-        ).length;
-
-        console.log(`Uncompleted items update: ${successfulUpdates}/${uncompletedItems.length} successful`);
+        console.log(`Uncompleted items update: ${updatedCount}/${uncompletedItems.length} successful`);
       }
 
       // Log trip analytics for insights
@@ -1706,15 +1711,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           movedItems: movedItems?.length || 0,
           completionRate: ((completedItems?.length || 0) / ((completedItems?.length || 0) + (uncompletedItems?.length || 0))) * 100,
           tripDurationMinutes: startTime && endTime ? 
-            Math.round((new Date(endTime).getTime() - new Date(startTime).getTime()) / 60000) : 0
+            Math.round((new Date(endTime).getTime() - new Date(startTime).getTime()) / 60000) : 0,
+          deletedCount,
+          updatedCount
         },
         retailerName,
         planType,
         totalStores,
         uncompletedItemDetails: uncompletedItems?.map((item: any) => ({
-          productName: item.productName,
-          category: item.category || 'Unknown',
-          reason: item.reason || 'not_found'
+          productName: typeof item === 'object' ? item.productName : 'Unknown',
+          category: typeof item === 'object' ? item.category : 'Unknown',
+          reason: typeof item === 'object' ? item.reason : 'not_found'
         })),
         movedItemDetails: movedItems?.map((item: any) => ({
           productName: item.productName,
@@ -1726,8 +1733,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ 
         success: true, 
         message: 'Shopping trip completed successfully',
-        deletedItems: completedItems?.length || 0,
-        updatedItems: uncompletedItems?.length || 0
+        deletedItems: deletedCount,
+        updatedItems: updatedCount,
+        summary: {
+          completed: completedItems?.length || 0,
+          actuallyDeleted: deletedCount,
+          uncompleted: uncompletedItems?.length || 0,
+          actuallyUpdated: updatedCount
+        }
       });
 
     } catch (error) {

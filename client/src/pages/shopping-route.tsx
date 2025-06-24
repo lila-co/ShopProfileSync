@@ -1267,59 +1267,112 @@ const ShoppingRoute: React.FC = () => {
       duration: 2000
     });
 
-    // Remove completed items from the shopping list and leave uncompleted items
+    // Get all items from the current shopping route
     const itemsToProcess = optimizedRoute?.aisleGroups?.flatMap(aisle => aisle.items) || [];
-    const deletePromises = [];
+    console.log(`Processing ${itemsToProcess.length} items, ${completedItems.size} marked as completed`);
 
-    for (const item of itemsToProcess) {
-        if (completedItems.has(item.id)) {
-            // Delete completed items from the shopping list
-            deletePromises.push(
-                apiRequest('DELETE', `/api/shopping-list/items/${item.id}`)
-                    .then(response => {
-                        if (response.ok) {
-                            console.log(`Successfully deleted completed item ${item.id}: ${item.productName}`);
-                            return { success: true, itemId: item.id };
-                        } else {
-                            console.error(`Failed to delete completed item ${item.id}: HTTP ${response.status}`);
-                            return { success: false, itemId: item.id, error: `HTTP ${response.status}` };
-                        }
-                    })
-                    .catch(error => {
-                        console.error(`Failed to delete completed item ${item.id}:`, error);
-                        return { success: false, itemId: item.id, error: error.message };
-                    })
-            );
+    // Separate completed and uncompleted items
+    const completedItemIds = Array.from(completedItems);
+    const uncompletedItemIds = itemsToProcess
+      .filter(item => !completedItems.has(item.id))
+      .map(item => item.id);
+
+    console.log(`Items to delete (completed): ${completedItemIds}`);
+    console.log(`Items to keep (uncompleted): ${uncompletedItemIds}`);
+
+    // Delete only the completed items from the shopping list
+    if (completedItemIds.length > 0) {
+      const deletePromises = completedItemIds.map(async (itemId) => {
+        try {
+          console.log(`Deleting completed item ${itemId}`);
+          const response = await apiRequest('DELETE', `/api/shopping-list/items/${itemId}`);
+          
+          if (response.ok) {
+            console.log(`Successfully deleted completed item ${itemId}`);
+            return { success: true, itemId };
+          } else {
+            console.error(`Failed to delete completed item ${itemId}: HTTP ${response.status}`);
+            return { success: false, itemId, error: `HTTP ${response.status}` };
+          }
+        } catch (error) {
+          console.error(`Failed to delete completed item ${itemId}:`, error);
+          return { success: false, itemId, error: error.message };
         }
-        // Uncompleted items remain on the list unchanged
+      });
+
+      // Wait for all deletions to complete
+      const deleteResults = await Promise.allSettled(deletePromises);
+
+      // Log results for debugging
+      const successfulDeletes = deleteResults.filter(result => 
+        result.status === 'fulfilled' && result.value?.success
+      ).length;
+      const failedDeletes = deleteResults.filter(result => 
+        result.status === 'rejected' || (result.status === 'fulfilled' && !result.value?.success)
+      ).length;
+      
+      console.log(`Deletion results: ${successfulDeletes}/${completedItemIds.length} successful, ${failedDeletes} failed`);
+      
+      if (successfulDeletes > 0) {
+        toast({
+          title: "Items Completed",
+          description: `${successfulDeletes} items removed from your shopping list`,
+          duration: 3000
+        });
+      }
     }
 
-    // Wait for all deletions to complete
-    const deleteResults = await Promise.allSettled(deletePromises);
+    // Update uncompleted items with notes (but don't delete them)
+    if (uncompletedItemIds.length > 0) {
+      console.log(`Updating ${uncompletedItemIds.length} uncompleted items with notes`);
+      
+      const updatePromises = uncompletedItemIds.map(async (itemId) => {
+        try {
+          const item = itemsToProcess.find(i => i.id === itemId);
+          const notes = `Not purchased during shopping trip on ${new Date().toLocaleDateString()} at ${currentRetailerName}`;
+          
+          await updateItemMutation.mutateAsync({
+            itemId,
+            updates: {
+              isCompleted: false,
+              notes: notes
+            }
+          });
+          
+          return { success: true, itemId };
+        } catch (error) {
+          console.error(`Failed to update uncompleted item ${itemId}:`, error);
+          return { success: false, itemId };
+        }
+      });
 
-    // Log results for debugging
-    const successfulDeletes = deleteResults.filter(result => 
-        result.status === 'fulfilled' && result.value?.success
-    ).length;
-    const failedDeletes = deleteResults.filter(result => 
-        result.status === 'rejected' || (result.status === 'fulfilled' && !result.value?.success)
-    ).length;
-    console.log(`Deletion results: ${successfulDeletes} successful, ${failedDeletes} failed`);
+      await Promise.allSettled(updatePromises);
+    }
 
     // Invalidate queries to refresh the shopping list
     queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
     queryClient.invalidateQueries({ queryKey: [`/api/shopping-lists/${listId}`] });
 
-    // Record the completed shopping trip for this store (don't wait for it to complete)
-    apiRequest('POST', '/api/shopping-trip/complete', {
-      listId: listId,
-      completedItems: Array.from(completedItems),
-      startTime: startTime,
-      endTime: new Date(),
-      retailerName: currentRetailerName
-    }).catch(error => {
-      console.warn('Failed to record shopping trip:', error);
-    });
+    // Record the completed shopping trip for analytics
+    try {
+      await apiRequest('POST', '/api/shopping-trip/complete', {
+        listId: listId,
+        completedItems: completedItemIds,
+        uncompletedItems: uncompletedItemIds.map(id => {
+          const item = itemsToProcess.find(i => i.id === id);
+          return {
+            id,
+            productName: item?.productName || 'Unknown',
+            reason: 'not_found'
+          };
+        }),
+        startTime: startTime,
+        endTime: new Date(),
+        retailerName: currentRetailerName
+      });
+    } catch (error) {
+      console.warn('Failed to record shopping trip analytics:', error);
+    }
 
     // Handle multi-store vs single store completion
     if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
