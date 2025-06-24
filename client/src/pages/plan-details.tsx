@@ -96,6 +96,11 @@ const PlanDetails: React.FC = () => {
           item.suggestedRetailer?.id === Number(mostCommonRetailerId)
         )?.suggestedRetailer;
 
+        if (!primaryRetailer || !primaryRetailer.name) {
+          console.warn('No valid primary retailer found');
+          return { totalCost: 0, estimatedTime: '0 min', stores: [] };
+        }
+
         if (!primaryRetailer) {
           return { totalCost: 0, estimatedTime: '0 min', stores: [] };
         }
@@ -184,7 +189,8 @@ const PlanDetails: React.FC = () => {
   );
 
   const formatPrice = (price: number | undefined | null) => {
-    const numericPrice = Number(price) || 0;
+    if (price === null || price === undefined) return '$0.00';
+    const numericPrice = typeof price === 'number' ? price : parseFloat(String(price)) || 0;
     return `$${(numericPrice / 100).toFixed(2)}`;
   };
 
@@ -1051,10 +1057,11 @@ const PlanDetails: React.FC = () => {
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div 
-                    className={`w-4 h-4 rounded-full bg-${store.retailer.logoColor}-500`}
+                    className={`w-4 h-4 rounded-full`}
+                    style={{ backgroundColor: typeof store.retailer.logoColor === 'string' ? store.retailer.logoColor : '#6B7280' }}
                   />
-                  <span>{store.retailer.name}</span>
-                  <Badge variant="secondary">{store.items.length} items</Badge>
+                  <span>{store.retailer.name || 'Unknown Store'}</span>
+                  <Badge variant="secondary">{store.items?.length || 0} items</Badge>
                 </div>
                 <div className="text-lg font-bold">{formatPrice(store.subtotal)}</div>
               </CardTitle>
@@ -1062,18 +1069,19 @@ const PlanDetails: React.FC = () => {
             <CardContent>
               <div className="space-y-2">
                 {store.items
-                  .sort((a, b) => a.productName.localeCompare(b.productName))
+                  ?.filter(item => item && item.productName)
+                  .sort((a, b) => (a.productName || '').localeCompare(b.productName || ''))
                   .map((item) => (
-                  <div key={item.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
+                  <div key={item.id || Math.random()} className="flex items-center justify-between py-2 border-b last:border-b-0">
                     <div className="flex-1">
-                      <div className="font-medium">{item.productName}</div>
+                      <div className="font-medium">{item.productName || 'Unknown Item'}</div>
                       <div className="text-sm text-gray-500">
-                        {item.quantity} {item.unit.toLowerCase()}
+                        {item.quantity || 0} {(item.unit || '').toLowerCase() || 'unit'}
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-medium">{formatPrice(item.suggestedPrice * item.quantity)}</div>
-                      <div className="text-sm text-gray-500">{formatPrice(item.suggestedPrice)} each</div>
+                      <div className="font-medium">{formatPrice((item.suggestedPrice || 0) * (item.quantity || 0))}</div>
+                      <div className="text-sm text-gray-500">{formatPrice(item.suggestedPrice || 0)} each</div>
                     </div>
                   </div>
                 ))}
