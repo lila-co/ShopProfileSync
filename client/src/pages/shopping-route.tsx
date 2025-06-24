@@ -446,8 +446,29 @@ const ShoppingRoute: React.FC = () => {
 
     let planDataToUse = null;
 
-    // Check for persistent shopping session first (survives app closure)
+    // Clean up any existing session without meaningful progress first
     const persistentSessionKey = `shopping_session_${listId}`;
+    const existingSession = localStorage.getItem(persistentSessionKey);
+    if (existingSession) {
+      try {
+        const sessionData = JSON.parse(existingSession);
+        const hasProgress = (sessionData.completedItems && sessionData.completedItems.length > 0) ||
+                           (sessionData.currentAisleIndex && sessionData.currentAisleIndex > 1) ||
+                           (sessionData.currentStoreIndex && sessionData.currentStoreIndex > 0);
+        
+        if (!hasProgress) {
+          console.log('Cleaning up session without meaningful progress');
+          localStorage.removeItem(persistentSessionKey);
+          localStorage.removeItem(`interruptedSession-${listId}`);
+        }
+      } catch (error) {
+        console.warn('Error checking existing session, removing it:', error);
+        localStorage.removeItem(persistentSessionKey);
+        localStorage.removeItem(`interruptedSession-${listId}`);
+      }
+    }
+
+    // Check for persistent shopping session (survives app closure)
     const persistentSession = localStorage.getItem(persistentSessionKey);
 
     if (persistentSession) {
