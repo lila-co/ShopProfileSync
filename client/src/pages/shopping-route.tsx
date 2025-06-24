@@ -1667,8 +1667,7 @@ const ShoppingRoute: React.FC = () => {
       // Single store - create reminder for alternative store
       uncompletedItems.forEach(item => {
         updateItemMutation.mutate({
-          itemId: item<replit_final_file>
-.id,
+          itemId: item.id,
           updates: {
             notes: `Try alternative store - not found at ${optimizedRoute?.retailerName || 'current store'}`,
             isCompleted: false
