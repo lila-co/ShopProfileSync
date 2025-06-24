@@ -1983,16 +1983,100 @@ const ShoppingRoute: React.FC = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48">
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setOutOfStockItem(item);
-                              setOutOfStockDialogOpen(true);
-                            }}
-                            className="flex items-center gap-2"
-                          >
-                            <AlertCircle className="h-4 w-4 text-orange-600" />
-                            Can't find item
-                          </DropdownMenuItem>
+                          {/* For single-store routes, show simplified options directly */}
+                          {!optimizedRoute?.isMultiStore ? (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  updateItemMutation.mutate({
+                                    itemId: item.id,
+                                    updates: {
+                                      notes: 'Saved for future trip',
+                                      isCompleted: false
+                                    }
+                                  });
+
+                                  // Remove item from current shopping route display
+                                  if (optimizedRoute?.aisleGroups) {
+                                    optimizedRoute.aisleGroups.forEach((aisle: any) => {
+                                      const itemIndex = aisle.items.findIndex((routeItem: any) => routeItem.id === item.id);
+                                      if (itemIndex > -1) {
+                                        aisle.items.splice(itemIndex, 1);
+                                      }
+                                    });
+                                  }
+
+                                  // Force a re-render by updating the route state
+                                  setOptimizedRoute({...optimizedRoute});
+
+                                  toast({
+                                    title: "Item Saved for Later",
+                                    description: `${item.productName} will remain on your list for next time`,
+                                    duration: 3000
+                                  });
+                                }}
+                                className="flex items-center gap-2"
+                              >
+                                <Clock className="h-4 w-4 text-blue-600" />
+                                Save for Later
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={async () => {
+                                  try {
+                                    // Delete the item from the shopping list entirely
+                                    await apiRequest('DELETE', `/api/shopping-list/items/${item.id}`);
+
+                                    // Remove item from current shopping route display
+                                    if (optimizedRoute?.aisleGroups) {
+                                      optimizedRoute.aisleGroups.forEach((aisle: any) => {
+                                        const itemIndex = aisle.items.findIndex((routeItem: any) => routeItem.id === item.id);
+                                        if (itemIndex > -1) {
+                                          aisle.items.splice(itemIndex, 1);
+                                        }
+                                      });
+                                    }
+
+                                    // Invalidate queries to refresh the shopping list
+                                    queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+                                    queryClient.invalidateQueries({ queryKey: [`/api/shopping-lists/${listId}`] });
+
+                                    // Force a re-render by updating the route state
+                                    setOptimizedRoute({...optimizedRoute});
+
+                                    toast({
+                                      title: "Item Removed",
+                                      description: `${item.productName} has been removed from your list`,
+                                      duration: 3000
+                                    });
+                                  } catch (error) {
+                                    console.error('Failed to remove item:', error);
+                                    toast({
+                                      title: "Error",
+                                      description: "Failed to remove item from list",
+                                      variant: "destructive",
+                                      duration: 3000
+                                    });
+                                  }
+                                }}
+                                className="flex items-center gap-2"
+                              >
+                                <Package className="h-4 w-4 text-red-600" />
+                                Remove from List
+                              </DropdownMenuItem>
+                            </>
+                          ) : (
+                            /* For multi-store routes, keep the original "Can't find item" option */
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setOutOfStockItem(item);
+                                setOutOfStockDialogOpen(true);
+                              }}
+                              className="flex items-center gap-2"
+                            >
+                              <AlertCircle className="h-4 w-4 text-orange-600" />
+                              Can't find item
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
