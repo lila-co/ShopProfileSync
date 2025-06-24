@@ -589,9 +589,9 @@ const PlanDetails: React.FC = () => {
   const hasInterruptedSession = (listId: string): boolean => {
     const interruptedSession = localStorage.getItem(`interruptedSession-${listId}`);
     const persistentSession = localStorage.getItem(`shopping_session_${listId}`);
-    
 
-    
+
+
     // Check if persistent session has meaningful progress
     if (persistentSession) {
       try {
@@ -599,12 +599,12 @@ const PlanDetails: React.FC = () => {
         // Check if session is recent (within last 24 hours)
         const sessionAge = Date.now() - (sessionData.timestamp || 0);
         const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-        
+
         if (sessionAge > maxAge) {
           localStorage.removeItem(`shopping_session_${listId}`);
           return false;
         }
-        
+
         // Only consider it progress if:
         // 1. Items have been completed, OR
         // 2. User has moved to aisle 2+ (not just initial aisle), OR  
@@ -614,13 +614,13 @@ const PlanDetails: React.FC = () => {
                            (sessionData.currentAisleIndex && sessionData.currentAisleIndex > 1) ||
                            (sessionData.currentStoreIndex && sessionData.currentStoreIndex > 0)) &&
                            !sessionData.isCompleted; // Check if session is marked as completed
-        
+
         if (!hasProgress) {
           localStorage.removeItem(`shopping_session_${listId}`);
           localStorage.removeItem(`interruptedSession-${listId}`);
           return false;
         }
-        
+
         return hasProgress;
       } catch (error) {
         console.warn('Error parsing persistent session:', error);
@@ -629,7 +629,7 @@ const PlanDetails: React.FC = () => {
         return false;
       }
     }
-    
+
     // Also check if interruptedSession has meaningful data
     if (interruptedSession) {
       try {
@@ -637,12 +637,12 @@ const PlanDetails: React.FC = () => {
         const hasProgress = (sessionData.completedItems && sessionData.completedItems.length > 0) ||
                            (sessionData.currentAisleIndex && sessionData.currentAisleIndex > 1) ||
                            (sessionData.currentStoreIndex && sessionData.currentStoreIndex > 0);
-        
+
         if (!hasProgress) {
           localStorage.removeItem(`interruptedSession-${listId}`);
           return false;
         }
-        
+
         return hasProgress;
       } catch (error) {
         console.warn('Error parsing interrupted session:', error);
@@ -650,7 +650,7 @@ const PlanDetails: React.FC = () => {
         return false;
       }
     }
-    
+
     return false;
   };
 
@@ -658,36 +658,87 @@ const PlanDetails: React.FC = () => {
   const InterruptedSessionCard: React.FC<{ listId: string }> = ({ listId }) => {
     const [hasSession, setHasSession] = useState(hasInterruptedSession(listId));
 
-    useEffect(() => {
-      // Clean up any completed sessions first
+    // Check for any interrupted shopping session (both types)
+  useEffect(() => {
+    const checkForInterruptedSession = () => {
+      // Check for both session types
+      const interruptedSession = localStorage.getItem(`interruptedSession-${listId}`);
       const persistentSession = localStorage.getItem(`shopping_session_${listId}`);
+
+      // Check if persistent session is completed
+      let isSessionActive = false;
+
+      if (interruptedSession) {
+        isSessionActive = true;
+      }
+
       if (persistentSession) {
         try {
           const sessionData = JSON.parse(persistentSession);
-          if (sessionData.isCompleted) {
+          // Only consider session active if it's not completed and not expired
+          const sessionAge = Date.now() - sessionData.timestamp;
+          const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+
+          if (!sessionData.isCompleted && sessionAge < maxAge) {
+            isSessionActive = true;
+          } else {
+            // Clean up completed or expired sessions
             localStorage.removeItem(`shopping_session_${listId}`);
-            localStorage.removeItem(`interruptedSession-${listId}`);
           }
         } catch (error) {
-          console.warn('Error checking session completion:', error);
+          // Clean up corrupted session data
+          localStorage.removeItem(`shopping_session_${listId}`);
         }
       }
-      
-      // Update session state when component mounts
-      setHasSession(hasInterruptedSession(listId));
-    }, [listId]);
+
+      setHasSession(isSessionActive);
+    };
+
+    if (listId) {
+      checkForInterruptedSession();
+    }
+  }, [listId]);
 
   // Function to resume interrupted shopping session
   const resumeShopping = () => {
-    const interruptedSession = localStorage.getItem(`interruptedSession-${listId}`);
-    const persistentSession = localStorage.getItem(`shopping_session_${listId}`);
+    // Try to get interrupted session first, then persistent session
+    const interruptedSessionData = localStorage.getItem(`interruptedSession-${listId}`);
+    const persistentSessionData = localStorage.getItem(`shopping_session_${listId}`);
 
-    const sessionToUse = interruptedSession || persistentSession;
+    let sessionDataStr = interruptedSessionData;
 
-    if (sessionToUse) {
+    // If no interrupted session, check persistent session
+    if (!sessionDataStr && persistentSessionData) {
       try {
-        const sessionData = JSON.parse(sessionToUse);
-        console.log('Resuming session with data:', sessionData);
+        const persistentData = JSON.parse(persistentSessionData);
+        // Only use persistent session if it's not completed and not expired
+        const sessionAge = Date.now() - persistentData.timestamp;
+        const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+
+        if (!persistentData.isCompleted && sessionAge < maxAge) {
+          sessionDataStr = persistentSessionData;
+        } else {
+          // Clean up completed or expired session
+          localStorage.removeItem(`shopping_session_${listId}`);
+          setHasSession(false);
+          toast({
+            title: "Session Expired",
+            description: "Your previous shopping session has expired. Starting fresh!",
+            duration: 2000
+          });
+          return;
+        }
+      } catch (error) {
+        localStorage.removeItem(`shopping_session_${listId}`);
+        setHasSession(false);
+        return;
+      }
+    }
+
+    if (sessionDataStr) {
+      try {
+        const sessionData = JSON.parse(sessionDataStr);
+        console.log('Resuming shopping with session data:', sessionData);
 
         // Restore plan data and shopping mode
         sessionStorage.setItem('shoppingPlanData', JSON.stringify(sessionData.planData));
@@ -711,6 +762,11 @@ const PlanDetails: React.FC = () => {
         });
       } catch (error) {
         console.error('Error parsing session data:', error);
+        // Clean up corrupted session data
+        localStorage.removeItem(`interruptedSession-${listId}`);
+        localStorage.removeItem(`shopping_session_${listId}`);
+        setHasSession(false);
+
         toast({
           title: "Oops!",
           description: "We couldn't restore your previous shopping trip. Let's start fresh!",
@@ -718,6 +774,7 @@ const PlanDetails: React.FC = () => {
         });
       }
     } else {
+      setHasSession(false);
       toast({
         title: "All Set!",
         description: "No previous shopping trip found. Ready to start fresh!",
@@ -838,7 +895,7 @@ const PlanDetails: React.FC = () => {
               <CardDescription>
                 Get the best prices by shopping at multiple stores
               </CardDescription>
-            </CardHeader>
+            </CardHeader```text
             <CardContent>
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="text-center">
