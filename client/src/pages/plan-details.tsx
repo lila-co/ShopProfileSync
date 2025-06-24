@@ -595,13 +595,31 @@ const PlanDetails: React.FC = () => {
       try {
         const sessionData = JSON.parse(persistentSession);
         
+        // Check if session is recent (within last 24 hours)
+        const sessionAge = Date.now() - (sessionData.timestamp || 0);
+        const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+        
+        if (sessionAge > maxAge) {
+          // Clean up expired session
+          localStorage.removeItem(`shopping_session_${listId}`);
+          return false;
+        }
+        
         // Only consider it progress if:
         // 1. Items have been completed, OR
         // 2. User has moved to aisle 2+ (not just initial aisle), OR  
         // 3. User has moved to store 2+ (not just initial store)
-        const hasProgress = (sessionData.completedItems && sessionData.completedItems.length > 0) ||
+        // AND the session isn't marked as completed
+        const hasProgress = ((sessionData.completedItems && sessionData.completedItems.length > 0) ||
                            (sessionData.currentAisleIndex && sessionData.currentAisleIndex > 1) ||
-                           (sessionData.currentStoreIndex && sessionData.currentStoreIndex > 0);
+                           (sessionData.currentStoreIndex && sessionData.currentStoreIndex > 0)) &&
+                           !sessionData.isCompleted; // Check if session is marked as completed
+        
+        if (!hasProgress) {
+          // Clean up session with no meaningful progress
+          localStorage.removeItem(`shopping_session_${listId}`);
+          return false;
+        }
         
         return hasProgress;
       } catch (error) {
@@ -620,6 +638,20 @@ const PlanDetails: React.FC = () => {
     const [hasSession, setHasSession] = useState(hasInterruptedSession(listId));
 
     useEffect(() => {
+      // Clean up any completed sessions first
+      const persistentSession = localStorage.getItem(`shopping_session_${listId}`);
+      if (persistentSession) {
+        try {
+          const sessionData = JSON.parse(persistentSession);
+          if (sessionData.isCompleted) {
+            localStorage.removeItem(`shopping_session_${listId}`);
+            localStorage.removeItem(`interruptedSession-${listId}`);
+          }
+        } catch (error) {
+          console.warn('Error checking session completion:', error);
+        }
+      }
+      
       // Update session state when component mounts
       setHasSession(hasInterruptedSession(listId));
     }, [listId]);

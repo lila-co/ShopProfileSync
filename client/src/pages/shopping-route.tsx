@@ -1538,10 +1538,29 @@ const ShoppingRoute: React.FC = () => {
     // Clear any temporary shopping data
     sessionStorage.removeItem('shoppingPlanData');
 
-    // Clear persistent shopping session
+    // Mark persistent shopping session as completed before clearing
     const persistentSessionKey = `shopping_session_${listId}`;
-    localStorage.removeItem(persistentSessionKey);
-    console.log('Cleared persistent shopping session');
+    const existingSession = localStorage.getItem(persistentSessionKey);
+    if (existingSession) {
+      try {
+        const sessionData = JSON.parse(existingSession);
+        // Mark as completed before removing
+        sessionData.isCompleted = true;
+        sessionData.completedAt = Date.now();
+        localStorage.setItem(persistentSessionKey, JSON.stringify(sessionData));
+        
+        // Clear after a brief delay to allow plan-details to detect completion
+        setTimeout(() => {
+          localStorage.removeItem(persistentSessionKey);
+          localStorage.removeItem(`interruptedSession-${listId}`);
+          console.log('Cleared persistent shopping session');
+        }, 500);
+      } catch (error) {
+        console.warn('Error updating session completion status:', error);
+        localStorage.removeItem(persistentSessionKey);
+      }
+    }
+    localStorage.removeItem(`interruptedSession-${listId}`);
 
     // Navigate back to shopping list after a delay to allow user to see the completion message
     setTimeout(() => {
