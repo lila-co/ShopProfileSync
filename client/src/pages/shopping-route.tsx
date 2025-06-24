@@ -382,6 +382,7 @@ const ShoppingRoute: React.FC = () => {
   const [endStoreDialogOpen, setEndStoreDialogOpen] = useState(false);
   const [uncompletedItems, setUncompletedItems] = useState<any[]>([]);
   const [loyaltyBarcodeDialogOpen, setLoyaltyBarcodeDialogOpen] = useState(false);
+  const [isShoppingComplete, setIsShoppingComplete] = useState(false);
 
   // Get current retailer name for loyalty card fetching
   const getCurrentRetailerName = () => {
@@ -448,19 +449,19 @@ const ShoppingRoute: React.FC = () => {
     // Check for persistent shopping session first (survives app closure)
     const persistentSessionKey = `shopping_session_${listId}`;
     const persistentSession = localStorage.getItem(persistentSessionKey);
-    
+
     if (persistentSession) {
       try {
         const sessionData = JSON.parse(persistentSession);
         console.log('Found persistent shopping session:', sessionData);
-        
+
         // Check if session is still valid (within 24 hours)
         const sessionAge = Date.now() - sessionData.timestamp;
         const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-        
+
         if (sessionAge < maxAge) {
           planDataToUse = sessionData.planData;
-          
+
           // Restore shopping progress
           if (sessionData.currentStoreIndex !== undefined) {
             setCurrentStoreIndex(sessionData.currentStoreIndex);
@@ -471,9 +472,9 @@ const ShoppingRoute: React.FC = () => {
           if (sessionData.completedItems) {
             setCompletedItems(new Set(sessionData.completedItems));
           }
-          
+
           console.log('Restored shopping session - Store:', sessionData.currentStoreIndex, 'Aisle:', sessionData.currentAisleIndex);
-          
+
           toast({
             title: "Shopping Session Restored",
             description: `Continuing from where you left off at ${sessionData.currentStoreName || 'your store'}`,
@@ -524,7 +525,7 @@ const ShoppingRoute: React.FC = () => {
 
       // Save initial shopping session to persistent storage
       savePersistentShoppingSession(planDataToUse, route);
-      
+
       toast({
         title: "Shopping Route Ready!",
         description: `Your shopping route has been created from your selected plan`,
@@ -796,8 +797,7 @@ const ShoppingRoute: React.FC = () => {
 
     // Process items with AI categorization
     items.forEach((item: any) => {
-      // Use existing category if available, otherwise use AI categorization
-      let itemCategory = item.category;
+      // Use existing category if available,      let itemCategory = item.category;
       let categoryConfidence = 0.9; // High confidence for existing categories
 
       if (!itemCategory) {
@@ -1212,7 +1212,7 @@ const ShoppingRoute: React.FC = () => {
 
   const handleEndStore = () => {
     console.log('handleEndStore called, loyaltyCard:', loyaltyCard, 'retailer:', getCurrentRetailerName());
-    
+
     // Show loyalty barcode dialog first if user has a loyalty card for current retailer
     if (loyaltyCard && loyaltyCard.retailerName === getCurrentRetailerName()) {
       console.log('Showing loyalty barcode dialog for:', getCurrentRetailerName());
@@ -1286,7 +1286,7 @@ const ShoppingRoute: React.FC = () => {
         try {
           console.log(`Deleting completed item ${itemId}`);
           const response = await apiRequest('DELETE', `/api/shopping-list/items/${itemId}`);
-          
+
           if (response.ok) {
             console.log(`Successfully deleted completed item ${itemId}`);
             return { success: true, itemId };
@@ -1310,9 +1310,9 @@ const ShoppingRoute: React.FC = () => {
       const failedDeletes = deleteResults.filter(result => 
         result.status === 'rejected' || (result.status === 'fulfilled' && !result.value?.success)
       ).length;
-      
+
       console.log(`Deletion results: ${successfulDeletes}/${completedItemIds.length} successful, ${failedDeletes} failed`);
-      
+
       if (successfulDeletes > 0) {
         toast({
           title: "Items Completed",
@@ -1325,12 +1325,12 @@ const ShoppingRoute: React.FC = () => {
     // Update uncompleted items with notes (but don't delete them)
     if (uncompletedItemIds.length > 0) {
       console.log(`Updating ${uncompletedItemIds.length} uncompleted items with notes`);
-      
+
       const updatePromises = uncompletedItemIds.map(async (itemId) => {
         try {
           const item = itemsToProcess.find(i => i.id === itemId);
           const notes = `Not purchased during shopping trip on ${new Date().toLocaleDateString()} at ${currentRetailerName}`;
-          
+
           await updateItemMutation.mutateAsync({
             itemId,
             updates: {
@@ -1338,7 +1338,7 @@ const ShoppingRoute: React.FC = () => {
               notes: notes
             }
           });
-          
+
           return { success: true, itemId };
         } catch (error) {
           console.error(`Failed to update uncompleted item ${itemId}:`, error);
@@ -1380,7 +1380,7 @@ const ShoppingRoute: React.FC = () => {
         // Move to next store
         const nextStoreIndex = currentStoreIndex + 1;
         const nextStore = optimizedRoute.stores[nextStoreIndex];
-        
+
         // Update state for next store
         setCurrentStoreIndex(nextStoreIndex);
         setCurrentAisleIndex(0);
@@ -1402,7 +1402,7 @@ const ShoppingRoute: React.FC = () => {
             description: "You've finished shopping at all stores. Great job!",
             duration: 3000
           });
-          
+
           // End shopping after showing the message
           setTimeout(() => {
             endShopping();
@@ -1418,6 +1418,8 @@ const ShoppingRoute: React.FC = () => {
   };
 
   const endShopping = async () => {
+    setIsShoppingComplete(true);
+
     // Get all uncompleted items across all stores
     let allUncompletedItems: any[] = [];
     let allMovedItems: any[] = [];
@@ -1520,7 +1522,7 @@ const ShoppingRoute: React.FC = () => {
 
     // Clear any temporary shopping data
     sessionStorage.removeItem('shoppingPlanData');
-    
+
     // Clear persistent shopping session
     const persistentSessionKey = `shopping_session_${listId}`;
     localStorage.removeItem(persistentSessionKey);
@@ -1639,7 +1641,7 @@ const ShoppingRoute: React.FC = () => {
 
   const handleFinishStore = () => {
     console.log('handleFinishStore called, loyaltyCard:', loyaltyCard, 'retailer:', getCurrentRetailerName());
-    
+
     // Show loyalty barcode dialog first if user has a loyalty card for current retailer
     if (loyaltyCard && loyaltyCard.retailerName === getCurrentRetailerName()) {
       console.log('Showing loyalty barcode dialog for:', getCurrentRetailerName());
@@ -1703,7 +1705,7 @@ const ShoppingRoute: React.FC = () => {
       const currentStore = route?.isMultiStore && route.stores 
         ? route.stores[currentStoreIndex] 
         : { retailerName: route?.retailerName };
-      
+
       const sessionData = {
         planData,
         listId,
@@ -1715,7 +1717,7 @@ const ShoppingRoute: React.FC = () => {
         isMultiStore: route?.isMultiStore || false,
         totalStores: route?.stores?.length || 1
       };
-      
+
       localStorage.setItem(sessionKey, JSON.stringify(sessionData));
       console.log('Saved persistent shopping session for list', listId);
     } catch (error) {
@@ -1730,17 +1732,38 @@ const ShoppingRoute: React.FC = () => {
     }
   }, [currentStoreIndex, currentAisleIndex, completedItems, optimizedRoute, selectedPlanData]);
 
+  useEffect(() => {
+    console.log('Shopping route loaded with location:', location);
+    console.log('Shopping route loaded with params:', { listId, mode, planDataParam: planDataParam ? 'present' : 'missing' });
+
+    // Only save persistent shopping session when actually starting shopping, not when completing
+    if (optimizedRoute && listId && !isShoppingComplete) {
+      const sessionData = {
+        planData: optimizedRoute,
+        shoppingMode: mode || 'instore',
+        currentStoreIndex: currentStoreIndex,
+        completedItems: completedItems,
+        timestamp: Date.now(),
+        currentStoreName: optimizedRoute?.retailerName,
+        currentAisleIndex: currentAisleIndex,
+      };
+
+      localStorage.setItem(`shopping_session_${listId}`, JSON.stringify(sessionData));
+      console.log('Saved persistent shopping session for list', listId);
+    }
+  }, [optimizedRoute, listId, mode, currentStoreIndex, completedItems, isShoppingComplete, currentAisleIndex, location, planDataParam]);
+
   const proceedAfterLoyaltyCard = () => {
     console.log('proceedAfterLoyaltyCard called');
     setLoyaltyBarcodeDialogOpen(false);
-    
+
     // Show success message for loyalty card usage
     toast({
       title: "Loyalty Card Applied",
       description: `Your ${getCurrentRetailerName()} loyalty card has been used successfully!`,
       duration: 3000
     });
-    
+
     // Check if this is the last store (single store or last store in multi-store)
     const isLastStore = !optimizedRoute?.isMultiStore || 
                         (optimizedRoute?.isMultiStore && currentStoreIndex >= optimizedRoute.stores.length - 1);
@@ -1931,9 +1954,9 @@ const ShoppingRoute: React.FC = () => {
           </Card>
         )}
 
-        
 
-        
+
+
 
         {/* Retailer-Specific Deals Section */}
         {optimizedRoute?.retailerName && (
@@ -2482,8 +2505,7 @@ const ShoppingRoute: React.FC = () => {
               </div>
               {optimizedRoute?.isMultiStore && currentStoreIndex < optimizedRoute.stores.length - 1 
                 ? "End Store - Uncompleted Items" 
-                : "End Shopping - Uncompleted Items"
-              }
+                : "End Shopping - Uncompleted Items"              }
             </AlertDialogTitle>
             <AlertDialogDescription className="text-gray-600 mt-2">
               You have {uncompletedItems.length} uncompleted item{uncompletedItems.length !== 1 ? 's' : ''} 
@@ -2601,12 +2623,12 @@ const ShoppingRoute: React.FC = () => {
                 <div className="text-sm text-gray-600 mb-2 font-medium">
                   {loyaltyCard.retailerName || getCurrentRetailerName()} Member Card
                 </div>
-                
+
                 {/* Large barcode number */}
                 <div className="font-mono text-2xl font-bold tracking-wider mb-4 text-gray-900">
                   {loyaltyCard.barcodeNumber || loyaltyCard.cardNumber}
                 </div>
-                
+
                 {/* Enhanced barcode visualization */}
                 <div className="flex justify-center mb-4 gap-px bg-white p-4 border rounded">
                   {(loyaltyCard.barcodeNumber || loyaltyCard.cardNumber)?.split('').map((digit: string, index: number) => {
@@ -2621,7 +2643,7 @@ const ShoppingRoute: React.FC = () => {
                     );
                   })}
                 </div>
-                
+
                 {/* Member details */}
                 <div className="space-y-1 text-sm text-gray-600">
                   <div className="font-medium">
@@ -2666,7 +2688,7 @@ const ShoppingRoute: React.FC = () => {
                   <Check className="h-5 w-5" />
                   Card Scanned - Continue Checkout
                 </Button>
-                
+
                 <Button 
                   variant="outline" 
                   onClick={() => setLoyaltyBarcodeDialogOpen(false)}
