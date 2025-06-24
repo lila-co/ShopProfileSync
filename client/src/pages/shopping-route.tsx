@@ -538,8 +538,7 @@ const ShoppingRoute: React.FC = () => {
       setOptimizedRoute(route);
       setStartTime(new Date());
 
-      // Save initial shopping session to persistent storage
-      savePersistentShoppingSession(planDataToUse, route);
+      // Don't save session immediately - only save when user actually starts shopping
 
       toast({
         title: "Shopping Route Ready!",
@@ -812,7 +811,8 @@ const ShoppingRoute: React.FC = () => {
 
     // Process items with AI categorization
     items.forEach((item: any) => {
-      // Use existing category if available,      let itemCategory = item.category;
+      // Use existing category if available
+      let itemCategory = item.category;
       let categoryConfidence = 0.9; // High confidence for existing categories
 
       if (!itemCategory) {
@@ -841,7 +841,8 @@ const ShoppingRoute: React.FC = () => {
         ...item,
         shelfLocation: getShelfLocation(item.productName, itemCategory),
         confidence: categoryConfidence,
-        category: itemCategory      };
+        category: itemCategory
+      };
 
       aisleGroups[aisleName].items.push(itemWithLocation);
 
@@ -1734,8 +1735,8 @@ const ShoppingRoute: React.FC = () => {
 
   // Save shopping session to localStorage (survives app closure)
   const savePersistentShoppingSession = (planData: any, route: any) => {
-    // Only save if user has actually started shopping
-    if (!hasStartedShopping) {
+    // Only save if user has actually started shopping (made meaningful progress)
+    if (!hasStartedShopping || completedItems.size === 0) {
       return;
     }
     
