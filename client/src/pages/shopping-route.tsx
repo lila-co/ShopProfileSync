@@ -455,7 +455,7 @@ const ShoppingRoute: React.FC = () => {
         const hasProgress = (sessionData.completedItems && sessionData.completedItems.length > 0) ||
                            (sessionData.currentAisleIndex && sessionData.currentAisleIndex > 1) ||
                            (sessionData.currentStoreIndex && sessionData.currentStoreIndex > 0);
-        
+
         if (!hasProgress) {
           localStorage.removeItem(persistentSessionKey);
           localStorage.removeItem(`interruptedSession-${listId}`);
@@ -499,7 +499,7 @@ const ShoppingRoute: React.FC = () => {
           const sessionHadProgress = (sessionData.completedItems && sessionData.completedItems.length > 0) ||
                                     sessionData.currentAisleIndex > 0 ||
                                     sessionData.currentStoreIndex > 0;
-          
+
           if (sessionHadProgress) {
             setHasStartedShopping(true);
           }
@@ -802,7 +802,7 @@ const ShoppingRoute: React.FC = () => {
       'Pantry & Canned Goods': { aisle: 'Aisle 4-6', category: 'Pantry & Canned Goods', order: 4, color: 'bg-yellow-100 text-yellow-800' },
       'Frozen Foods': { aisle: 'Aisle 7', category: 'Frozen Foods', order: 5, color: 'bg-cyan-100 text-cyan-800' },
       'Bakery': { aisle: 'Aisle 8', category: 'Bakery', order: 6, color: 'bg-orange-100 text-orange-800' },
-      'Personal Care': { aisle: 'Aisle 9', category: 'Personal Care', order: 7, color: 'bg-purple-100 text-purple-800' },
+      'Personal Care': { aisle: 'Aisle 9', category: 'Personal Care', order: 7, color: 'bg-purple-100 text-purple-100 text-purple-800' },
       'Household Items': { aisle: 'Aisle 10', category: 'Household Items', order: 8, color: 'bg-gray-100 text-gray-800' },
       'Generic': { aisle: 'Generic', category: 'Generic Items', order: 9, color: 'bg-slate-100 text-slate-800' }
     };
@@ -1568,7 +1568,7 @@ const ShoppingRoute: React.FC = () => {
         sessionData.isCompleted = true;
         sessionData.completedAt = Date.now();
         localStorage.setItem(persistentSessionKey, JSON.stringify(sessionData));
-        
+
         // Clear after a brief delay to allow plan-details to detect completion
         setTimeout(() => {
           localStorage.removeItem(persistentSessionKey);
@@ -1676,8 +1676,7 @@ const ShoppingRoute: React.FC = () => {
       updateItemMutation.mutate({
         itemId: item.id,
         updates: {
-          notes: 'Saved for future trip - not needed this time',
-          isCompleted: false
+          notes: 'Saved for future trip - not needed this time',          isCompleted: false
         }
       });
     });
@@ -1758,7 +1757,7 @@ const ShoppingRoute: React.FC = () => {
     if (!hasStartedShopping || completedItems.size === 0) {
       return;
     }
-    
+
     try {
       const sessionKey = `shopping_session_${listId}`;
       const currentStore = route?.isMultiStore && route.stores 
@@ -1801,7 +1800,7 @@ const ShoppingRoute: React.FC = () => {
     const hasActualProgress = completedItems.size > 0 || 
                              (currentAisleIndex > 0 && !isRestoringSession) || 
                              (currentStoreIndex > 0 && !isRestoringSession);
-    
+
     if (hasActualProgress) {
       setHasStartedShopping(true);
     }
@@ -1870,6 +1869,42 @@ const ShoppingRoute: React.FC = () => {
       } else {
         completeCurrentStore();
       }
+    }
+  };
+
+  // Helper function to check and handle empty aisles
+  const checkAndHandleEmptyAisle = () => {
+    if (!optimizedRoute || !optimizedRoute.aisleGroups) return;
+
+    const currentAisle = optimizedRoute.aisleGroups[currentAisleIndex];
+    if (!currentAisle || currentAisle.items.length > 0) return;
+
+    // Current aisle is empty
+
+    // If it's the last aisle, end store/shopping trip
+    if (currentAisleIndex === optimizedRoute.aisleGroups.length - 1) {
+      handleFinishStore();
+      return;
+    }
+
+    // Move to the next non-empty aisle or end the shopping trip
+    let nextAisleIndex = currentAisleIndex + 1;
+    while (nextAisleIndex < optimizedRoute.aisleGroups.length &&
+           optimizedRoute.aisleGroups[nextAisleIndex].items.length === 0) {
+      nextAisleIndex++;
+    }
+
+    if (nextAisleIndex < optimizedRoute.aisleGroups.length) {
+      // Found a non-empty aisle, move to it
+      setCurrentAisleIndex(nextAisleIndex);
+      toast({
+        title: "Skipping Empty Aisle",
+        description: `Moving to next aisle: ${optimizedRoute.aisleGroups[nextAisleIndex].aisleName}`,
+        duration: 3000
+      });
+    } else {
+      // All remaining aisles are empty, end the shopping trip
+      handleFinishStore();
     }
   };
 
@@ -1950,7 +1985,7 @@ const ShoppingRoute: React.FC = () => {
       </header>
 
       <main className="flex-1 overflow-y-auto p-4 pb-20">
-        
+
 
         {/* Loyalty Card Indicator */}
         {loyaltyCard && loyaltyCard.retailerName === getCurrentRetailerName() && (
@@ -2140,6 +2175,11 @@ const ShoppingRoute: React.FC = () => {
                                     description: `${item.productName} will remain on your list for next time`,
                                     duration: 3000
                                   });
+
+                                  // Check if aisle is now empty after a brief delay
+                                  setTimeout(() => {
+                                    checkAndHandleEmptyAisle();
+                                  }, 100);
                                 }}
                                 className="flex items-center gap-2"
                               >
@@ -2174,6 +2214,11 @@ const ShoppingRoute: React.FC = () => {
                                       description: `${item.productName} has been removed from your list`,
                                       duration: 3000
                                     });
+
+                                    // Check if aisle is now empty after a brief delay
+                                    setTimeout(() => {
+                                      checkAndHandleEmptyAisle();
+                                    }, 100);
                                   } catch (error) {
                                     console.error('Failed to remove item:', error);
                                     toast({
@@ -2232,6 +2277,11 @@ const ShoppingRoute: React.FC = () => {
                                     description: `${item.productName} will remain on your list for next time`,
                                     duration: 3000
                                   });
+
+                                  // Check if aisle is now empty after a brief delay
+                                  setTimeout(() => {
+                                    checkAndHandleEmptyAisle();
+                                  }, 100);
                                 }}
                                 className="flex items-center gap-2"
                               >
@@ -2339,6 +2389,11 @@ const ShoppingRoute: React.FC = () => {
                                       description: `${item.productName} will remain on your list for next time`,
                                       duration: 3000
                                     });
+
+                                    // Check if aisle is now empty after a brief delay
+                                    setTimeout(() => {
+                                      checkAndHandleEmptyAisle();
+                                    }, 100);
                                   } else {
                                     // For single-store plans, create a reminder or alternative suggestion
                                     updateItemMutation.mutate({
@@ -2401,6 +2456,11 @@ const ShoppingRoute: React.FC = () => {
                                       description: `${item.productName} has been removed from your list`,
                                       duration: 3000
                                     });
+
+                                    // Check if aisle is now empty after a brief delay
+                                    setTimeout(() => {
+                                      checkAndHandleEmptyAisle();
+                                    }, 100);
                                   } catch (error) {
                                     console.error('Failed to remove item:', error);
                                     toast({
