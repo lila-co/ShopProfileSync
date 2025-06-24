@@ -1745,15 +1745,15 @@ const ShoppingRoute: React.FC = () => {
     }
   };
 
+  // Track if user has actually started shopping (moved aisles or completed items)
+  const [hasStartedShopping, setHasStartedShopping] = useState(false);
+
   // Update session whenever progress changes (only if user has started shopping)
   useEffect(() => {
     if (optimizedRoute && selectedPlanData && hasStartedShopping) {
       savePersistentShoppingSession(selectedPlanData, optimizedRoute);
     }
   }, [currentStoreIndex, currentAisleIndex, completedItems, optimizedRoute, selectedPlanData, hasStartedShopping]);
-
-  // Track if user has actually started shopping (moved aisles or completed items)
-  const [hasStartedShopping, setHasStartedShopping] = useState(false);
 
   // Check if user has started shopping based on progress
   useEffect(() => {
