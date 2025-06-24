@@ -2300,21 +2300,59 @@ const ShoppingRoute: React.FC = () => {
                                       description: `${item.productName} will be available at ${nextStore.retailerName}`,
                                       duration: 3000
                                     });
-                                  } else {
-                                    // No more stores available
-                                    toast({
-                                      title: "No More Stores",
-                                      description: "This is the last store in your plan. Item will be saved for future trip.",
-                                      duration: 3000
-                                    });
-                                    
-                                    // Save for future trip instead
+                                  } else if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
+                                    // This is the last store - save for future trip
                                     updateItemMutation.mutate({
                                       itemId: item.id,
                                       updates: {
                                         notes: 'Saved for future trip - no more stores in current plan',
                                         isCompleted: false
                                       }
+                                    });
+
+                                    // Remove item from current shopping route display
+                                    if (optimizedRoute?.aisleGroups) {
+                                      optimizedRoute.aisleGroups.forEach((aisle: any) => {
+                                        const itemIndex = aisle.items.findIndex((routeItem: any) => routeItem.id === item.id);
+                                        if (itemIndex > -1) {
+                                          aisle.items.splice(itemIndex, 1);
+                                        }
+                                      });
+                                    }
+
+                                    // For multi-store plans, also remove from current store's items
+                                    if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
+                                      const currentStore = optimizedRoute.stores[currentStoreIndex];
+                                      if (currentStore) {
+                                        const itemIndex = currentStore.items.findIndex((storeItem: any) => storeItem.id === item.id);
+                                        if (itemIndex > -1) {
+                                          currentStore.items.splice(itemIndex, 1);
+                                        }
+                                      }
+                                    }
+
+                                    // Force a re-render by updating the route state
+                                    setOptimizedRoute({...optimizedRoute});
+
+                                    toast({
+                                      title: "Item Saved for Future Trip",
+                                      description: `${item.productName} will remain on your list for next time`,
+                                      duration: 3000
+                                    });
+                                  } else {
+                                    // For single-store plans, create a reminder or alternative suggestion
+                                    updateItemMutation.mutate({
+                                      itemId: item.id,
+                                      updates: {
+                                        notes: `Try alternative store - not available at ${optimizedRoute?.retailerName || 'current store'}`,
+                                        isCompleted: false
+                                      }
+                                    });
+
+                                    toast({
+                                      title: "Item Marked for Alternative Store",
+                                      description: `${item.productName} saved with note to try alternative store`,
+                                      duration: 3000
                                     });
                                   }
                                 }}
