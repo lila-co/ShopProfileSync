@@ -1639,7 +1639,7 @@ const ShoppingRoute: React.FC = () => {
             ...item,
             storeName: nextStore.retailerName,
             suggestedRetailerId: nextStore.retailer?.id || nextStore.suggestedRetailerId,
-            id: item.id + 10000 // Temporary ID to avoid conflicts
+            id: item.id + 10000
           });
         }
 
