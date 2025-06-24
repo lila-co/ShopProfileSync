@@ -2109,7 +2109,7 @@ const ShoppingRoute: React.FC = () => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48 bg-white border border-gray-200 shadow-lg backdrop-blur-none">
                           {/* Check if this is a single-store plan */}
-                          {(!optimizedRoute?.isMultiStore && (!selectedPlanData?.planType || selectedPlanData?.planType === 'Single Store' || selectedPlanData?.selectedPlanType === 'single-store')) ? (
+                          {!optimizedRoute?.isMultiStore ? (
                             <>
                               {/* Single-store plan options */}
                               <DropdownMenuItem
