@@ -7,6 +7,7 @@ SmartCart is a web application designed to help users optimize their shopping ex
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Request type: Fix crashes and loading issues only - no UI, functionality, or layout changes.
 
 ## System Architecture
 
@@ -141,6 +142,15 @@ The application is deployed on Replit with the following configuration:
    - DATABASE_URL: Connection string for PostgreSQL
 3. Run migrations with `npm run db:push`
 4. Start the development server with `npm run dev`
+
+## Recent Changes
+
+**June 24, 2025**
+- Fixed critical JavaScript error causing session state corruption in shopping-route.tsx
+- Prevented premature session creation on route load - sessions now only persist with meaningful progress
+- Added comprehensive session cleanup logic to remove invalid/expired sessions automatically
+- Updated session validation to require actual shopping progress (completed items, aisle movement, etc.)
+- Resolved "Continue Where You Left Off" notice appearing inappropriately - now only shows when user has made meaningful shopping progress
 
 ## API Structure
 
