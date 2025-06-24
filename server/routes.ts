@@ -562,25 +562,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const currentItems = shoppingList.items || [];
       const isEmptyList = currentItems.length === 0;
 
-      // Sample generated items - in production this would use AI
-      const generatedItems = [
-        { productName: 'Fresh Strawberries', quantity: 1, unit: 'CONTAINER' },
-        { productName: 'Yogurt Parfait', quantity: 2, unit: 'COUNT' },
-        { productName: 'Whole Grain Cereal', quantity: 1, unit: 'BOX' },
-        { productName: 'Almond Milk', quantity: 1, unit: 'CARTON' }
-      ];
-
+      // Only generate items if the list is empty or if we need intelligent additions
       let itemsAdded = 0;
       let itemsSkipped = 0;
+      
+      if (isEmptyList) {
+        // Sample generated items for empty lists - in production this would use AI
+        const generatedItems = [
+          { productName: 'Fresh Strawberries', quantity: 1, unit: 'CONTAINER' },
+          { productName: 'Yogurt Parfait', quantity: 2, unit: 'COUNT' },
+          { productName: 'Whole Grain Cereal', quantity: 1, unit: 'BOX' },
+          { productName: 'Almond Milk', quantity: 1, unit: 'CARTON' }
+        ];
 
-      // Add items that don't already exist
-      for (const item of generatedItems) {
-        const exists = currentItems.some(existing => 
-          existing.productName.toLowerCase().includes(item.productName.toLowerCase()) ||
-          item.productName.toLowerCase().includes(existing.productName.toLowerCase())
-        );
-
-        if (!exists) {
+        // Add items that don't already exist
+        for (const item of generatedItems) {
           try {
             await storage.createShoppingListItem({
               shoppingListId: shoppingListId,
@@ -593,10 +589,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } catch (error) {
             console.warn('Failed to add generated item:', item.productName, error);
           }
+        }
+      } else {
+        // For non-empty lists, only add complementary items occasionally (every 3rd regeneration)
+        const regenerationCount = parseInt(req.headers['x-regeneration-count'] as string) || 0;
+        
+        if (regenerationCount % 3 === 0) {
+          // Smart complementary items based on what's already in the list
+          const complementaryItems = [];
+          
+          // Analyze existing items and suggest complements
+          const hasProteins = currentItems.some(item => 
+            item.productName.toLowerCase().includes('chicken') || 
+            item.productName.toLowerCase().includes('turkey') ||
+            item.productName.toLowerCase().includes('beef') ||
+            item.productName.toLowerCase().includes('eggs')
+          );
+          
+          const hasDairy = currentItems.some(item => 
+            item.productName.toLowerCase().includes('milk') || 
+            item.productName.toLowerCase().includes('cheese') ||
+            item.productName.toLowerCase().includes('yogurt')
+          );
+          
+          const hasVegetables = currentItems.some(item => 
+            item.productName.toLowerCase().includes('spinach') || 
+            item.productName.toLowerCase().includes('tomato') ||
+            item.productName.toLowerCase().includes('pepper') ||
+            item.productName.toLowerCase().includes('avocado')
+          );
+
+          // Suggest complementary items based on what's missing
+          if (hasProteins && !hasVegetables) {
+            complementaryItems.push({ productName: 'Mixed Vegetables', quantity: 1, unit: 'BAG' });
+          }
+          if (hasVegetables && !hasDairy) {
+            complementaryItems.push({ productName: 'Shredded Mozzarella', quantity: 1, unit: 'BAG' });
+          }
+          if (currentItems.length > 5 && !currentItems.some(item => item.productName.toLowerCase().includes('spice'))) {
+            complementaryItems.push({ productName: 'Garlic Powder', quantity: 1, unit: 'CONTAINER' });
+          }
+
+          // Add complementary items that don't already exist
+          for (const item of complementaryItems) {
+            const exists = currentItems.some(existing => 
+              existing.productName.toLowerCase().includes(item.productName.toLowerCase()) ||
+              item.productName.toLowerCase().includes(existing.productName.toLowerCase())
+            );
+
+            if (!exists) {
+              try {
+                await storage.createShoppingListItem({
+                  shoppingListId: shoppingListId,
+                  productName: item.productName,
+                  quantity: item.quantity,
+                  unit: item.unit as any,
+                  isCompleted: false
+                });
+                itemsAdded++;
+              } catch (error) {
+                console.warn('Failed to add complementary item:', item.productName, error);
+              }
+            } else {
+              itemsSkipped++;
+            }
+          }
         } else {
-          itemsSkipped++;
+          // No new items added, but we can report optimization of existing items
+          itemsSkipped = 0; // Reset since we're not actually checking duplicates
         }
       }
+
+      const finalMessage = isEmptyList 
+        ? 'Shopping list created successfully' 
+        : itemsAdded > 0 
+          ? `Added ${itemsAdded} complementary items to your list`
+          : 'List reviewed - no new items needed at this time';
 
       res.json({
         success: true,
@@ -604,7 +672,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         itemsAdded,
         itemsSkipped,
         totalItems: currentItems.length + itemsAdded,
-        message: isEmptyList ? 'Shopping list created successfully' : 'Shopping list enhanced with new items'
+        message: finalMessage
       });
 
     } catch (error) {
@@ -1642,57 +1710,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
         planType
       });
 
-      // Delete completed items from shopping list
+      let deletedCount = 0;
+      let updatedCount = 0;
+
+      // Delete completed items from shopping list - these should be permanently removed
       if (completedItems && completedItems.length > 0) {
-        const deletePromises = completedItems.map(async (itemId: number) => {
+        console.log(`Processing deletion of ${completedItems.length} completed items`);
+        
+        for (const itemId of completedItems) {
           try {
             console.log(`Attempting to delete completed item ${itemId}`);
             const success = await storage.deleteShoppingListItem(itemId);
-            console.log(`Delete result for item ${itemId}:`, success);
-            return { itemId, success };
+            
+            if (success) {
+              deletedCount++;
+              console.log(`Successfully deleted completed item ${itemId}`);
+            } else {
+              console.error(`Failed to delete completed item ${itemId} - item not found or deletion failed`);
+            }
           } catch (error) {
-            console.error(`Failed to delete item ${itemId}:`, error);
-            return { itemId, success: false, error };
+            console.error(`Exception while deleting item ${itemId}:`, error);
           }
-        });
-
-        const deleteResults = await Promise.allSettled(deletePromises);
-        const successfulDeletes = deleteResults.filter(result => 
-          result.status === 'fulfilled' && result.value?.success
-        ).length;
+        }
         
-        console.log(`Completed items deletion: ${successfulDeletes}/${completedItems.length} successful`);
+        console.log(`Completed items deletion: ${deletedCount}/${completedItems.length} successful`);
       }
 
-      // Update uncompleted items with notes indicating they were left during shopping
+      // Update uncompleted items with notes (but keep them on the list for future shopping)
       if (uncompletedItems && uncompletedItems.length > 0) {
-        const updatePromises = uncompletedItems.map(async (item: any) => {
+        console.log(`Processing ${uncompletedItems.length} uncompleted items`);
+        
+        for (const item of uncompletedItems) {
           try {
             const notes = item.reason === 'out_of_stock' 
-              ? `Out of stock during shopping trip on ${new Date().toLocaleDateString()}`
-              : `Not found during shopping trip on ${new Date().toLocaleDateString()}`;
+              ? `Out of stock at ${retailerName} on ${new Date().toLocaleDateString()}`
+              : `Not found at ${retailerName} on ${new Date().toLocaleDateString()}`;
             
-            console.log(`Updating uncompleted item ${item.id} with notes: "${notes}"`);
+            console.log(`Updating uncompleted item ${item.id || item} with notes`);
             
-            const success = await storage.updateShoppingListItem(item.id, {
+            const itemId = typeof item === 'object' ? item.id : item;
+            const success = await storage.updateShoppingListItem(itemId, {
               isCompleted: false,
               notes: notes
             });
             
-            console.log(`Update result for uncompleted item ${item.id}:`, success);
-            return { itemId: item.id, success: !!success };
+            if (success) {
+              updatedCount++;
+              console.log(`Successfully updated uncompleted item ${itemId}`);
+            } else {
+              console.error(`Failed to update uncompleted item ${itemId}`);
+            }
           } catch (error) {
-            console.error(`Failed to update uncompleted item ${item.id}:`, error);
-            return { itemId: item.id, success: false, error };
+            console.error(`Exception while updating uncompleted item:`, error);
           }
-        });
+        }
 
-        const updateResults = await Promise.allSettled(updatePromises);
-        const successfulUpdates = updateResults.filter(result =>
-          result.status === 'fulfilled' && result.value?.success
-        ).length;
-
-        console.log(`Uncompleted items update: ${successfulUpdates}/${uncompletedItems.length} successful`);
+        console.log(`Uncompleted items update: ${updatedCount}/${uncompletedItems.length} successful`);
       }
 
       // Log trip analytics for insights
@@ -1706,15 +1779,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           movedItems: movedItems?.length || 0,
           completionRate: ((completedItems?.length || 0) / ((completedItems?.length || 0) + (uncompletedItems?.length || 0))) * 100,
           tripDurationMinutes: startTime && endTime ? 
-            Math.round((new Date(endTime).getTime() - new Date(startTime).getTime()) / 60000) : 0
+            Math.round((new Date(endTime).getTime() - new Date(startTime).getTime()) / 60000) : 0,
+          deletedCount,
+          updatedCount
         },
         retailerName,
         planType,
         totalStores,
         uncompletedItemDetails: uncompletedItems?.map((item: any) => ({
-          productName: item.productName,
-          category: item.category || 'Unknown',
-          reason: item.reason || 'not_found'
+          productName: typeof item === 'object' ? item.productName : 'Unknown',
+          category: typeof item === 'object' ? item.category : 'Unknown',
+          reason: typeof item === 'object' ? item.reason : 'not_found'
         })),
         movedItemDetails: movedItems?.map((item: any) => ({
           productName: item.productName,
@@ -1726,8 +1801,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ 
         success: true, 
         message: 'Shopping trip completed successfully',
-        deletedItems: completedItems?.length || 0,
-        updatedItems: uncompletedItems?.length || 0
+        deletedItems: deletedCount,
+        updatedItems: updatedCount,
+        summary: {
+          completed: completedItems?.length || 0,
+          actuallyDeleted: deletedCount,
+          uncompleted: uncompletedItems?.length || 0,
+          actuallyUpdated: updatedCount
+        }
       });
 
     } catch (error) {
