@@ -590,17 +590,17 @@ const PlanDetails: React.FC = () => {
     const interruptedSession = localStorage.getItem(`interruptedSession-${listId}`);
     const persistentSession = localStorage.getItem(`shopping_session_${listId}`);
     
+
+    
     // Check if persistent session has meaningful progress
     if (persistentSession) {
       try {
         const sessionData = JSON.parse(persistentSession);
-        
         // Check if session is recent (within last 24 hours)
         const sessionAge = Date.now() - (sessionData.timestamp || 0);
         const maxAge = 24 * 60 * 60 * 1000; // 24 hours
         
         if (sessionAge > maxAge) {
-          // Clean up expired session
           localStorage.removeItem(`shopping_session_${listId}`);
           return false;
         }
@@ -616,21 +616,42 @@ const PlanDetails: React.FC = () => {
                            !sessionData.isCompleted; // Check if session is marked as completed
         
         if (!hasProgress) {
-          // Clean up session with no meaningful progress
           localStorage.removeItem(`shopping_session_${listId}`);
+          localStorage.removeItem(`interruptedSession-${listId}`);
           return false;
         }
         
         return hasProgress;
       } catch (error) {
         console.warn('Error parsing persistent session:', error);
-        // Clean up corrupted session
         localStorage.removeItem(`shopping_session_${listId}`);
+        localStorage.removeItem(`interruptedSession-${listId}`);
         return false;
       }
     }
     
-    return !!interruptedSession;
+    // Also check if interruptedSession has meaningful data
+    if (interruptedSession) {
+      try {
+        const sessionData = JSON.parse(interruptedSession);
+        const hasProgress = (sessionData.completedItems && sessionData.completedItems.length > 0) ||
+                           (sessionData.currentAisleIndex && sessionData.currentAisleIndex > 1) ||
+                           (sessionData.currentStoreIndex && sessionData.currentStoreIndex > 0);
+        
+        if (!hasProgress) {
+          localStorage.removeItem(`interruptedSession-${listId}`);
+          return false;
+        }
+        
+        return hasProgress;
+      } catch (error) {
+        console.warn('Error parsing interrupted session:', error);
+        localStorage.removeItem(`interruptedSession-${listId}`);
+        return false;
+      }
+    }
+    
+    return false;
   };
 
   // React component to display the interrupted session card
