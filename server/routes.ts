@@ -309,6 +309,7 @@ async function createSampleDealsFromURL(retailerId: number, circularId: number, 
 }
 
 import { locationBasedCircularManager } from './services/locationBasedCircularManager';
+import { logger } from './services/logger';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create HTTP server

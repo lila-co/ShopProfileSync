@@ -585,6 +585,100 @@ const PlanDetails: React.FC = () => {
     }
   };
 
+  // Function to check for an interrupted shopping session in localStorage
+  const hasInterruptedSession = (listId: string): boolean => {
+    const interruptedSession = localStorage.getItem(`interruptedSession-${listId}`);
+    return !!interruptedSession;
+  };
+
+  // React component to display the interrupted session card
+  const InterruptedSessionCard: React.FC<{ listId: string }> = ({ listId }) => {
+    const [hasSession, setHasSession] = useState(hasInterruptedSession(listId));
+
+    useEffect(() => {
+      // Update session state when component mounts
+      setHasSession(hasInterruptedSession(listId));
+    }, [listId]);
+
+    // Function to resume interrupted shopping session
+    const resumeShopping = () => {
+      const interruptedSession = localStorage.getItem(`interruptedSession-${listId}`);
+
+      if (interruptedSession) {
+        try {
+          const sessionData = JSON.parse(interruptedSession);
+          console.log('Resuming interrupted session with data:', sessionData);
+
+          // Restore plan data and shopping mode
+          sessionStorage.setItem('shoppingPlanData', JSON.stringify(sessionData.planData));
+          sessionStorage.setItem('shoppingListId', listId);
+          sessionStorage.setItem('shoppingMode', sessionData.shoppingMode);
+
+          // Redirect to the shopping route page
+          const targetUrl = `/shopping-route?listId=${listId}&mode=${sessionData.shoppingMode}&fromPlan=true&resume=true`;
+          console.log('Navigating to:', targetUrl);
+          navigate(targetUrl);
+
+          // Clear interrupted session data
+          localStorage.removeItem(`interruptedSession-${listId}`);
+          setHasSession(false);
+
+          toast({
+            title: "Resuming Shopping Route",
+            description: "Restoring your previous shopping session...",
+            duration: 2000
+          });
+        } catch (error) {
+          console.error('Error parsing interrupted session data:', error);
+          toast({
+            title: "Session Error",
+            description: "Failed to resume previous shopping session.",
+            variant: "destructive"
+          });
+        }
+      } else {
+        toast({
+          title: "No Session Found",
+          description: "No interrupted shopping session found.",
+          variant: "destructive"
+        });
+      }
+    };
+
+    // Clear interrupted session
+    const clearSession = () => {
+      localStorage.removeItem(`interruptedSession-${listId}`);
+      setHasSession(false);
+      toast({
+        title: "Session Cleared",
+        description: "Interrupted shopping session cleared.",
+        duration: 2000
+      });
+    };
+
+    if (!hasSession) {
+      return null;
+    }
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Interrupted Shopping Session
+          </CardTitle>
+          <CardDescription>
+            It appears you have an interrupted shopping session.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex justify-between">
+          <Button onClick={resumeShopping}>Resume Shopping</Button>
+          <Button variant="outline" onClick={clearSession}>Clear Session</Button>
+        </CardContent>
+      </Card>
+    );
+  };
+
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
       {/* Header */}
@@ -603,6 +697,9 @@ const PlanDetails: React.FC = () => {
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto p-4 pb-20 space-y-6">
+      
+      {/* Check for interrupted shopping session */}
+      <InterruptedSessionCard listId={listId} />
 
       {/* Plan Type Selector */}
       <Tabs value={selectedPlanType} onValueChange={setSelectedPlanType} className="w-full">
@@ -629,7 +726,7 @@ const PlanDetails: React.FC = () => {
                   <div className="text-xl font-bold text-green-600">{formatPrice(planData.totalCost)}</div>
                   <div className="text-xs text-gray-500">Total Cost</div>
                 </div>
-                
+
                 <div className="text-center">
                   <div className="text-xl font-bold text-purple-600">{planData.stores.length}</div>
                   <div className="text-xs text-gray-500">Store(s)</div>
@@ -662,7 +759,7 @@ const PlanDetails: React.FC = () => {
                   <div className="text-xl font-bold text-green-600">{formatPrice(planData.totalCost)}</div>
                   <div className="text-xs text-gray-500">Total Cost</div>
                 </div>
-                
+
                 <div className="text-center">
                   <div className="text-xl font-bold text-purple-600">{planData.stores.length}</div>
                   <div className="text-xs text-gray-500">Store(s)</div>
@@ -695,7 +792,7 @@ const PlanDetails: React.FC = () => {
                   <div className="text-xl font-bold text-green-600">{formatPrice(planData.totalCost)}</div>
                   <div className="text-xs text-gray-500">Total Cost</div>
                 </div>
-                
+
                 <div className="text-center">
                   <div className="text-xl font-bold text-purple-600">{planData.stores.length}</div>
                   <div className="text-xs text-gray-500">Store(s)</div>
@@ -746,6 +843,12 @@ const PlanDetails: React.FC = () => {
                 sessionStorage.setItem('shoppingPlanData', JSON.stringify(enhancedPlanData));
                 sessionStorage.setItem('shoppingListId', listId);
                 sessionStorage.setItem('shoppingMode', 'instore');
+
+                // Store current session data in localStorage for recovery
+                localStorage.setItem(`interruptedSession-${listId}`, JSON.stringify({
+                  planData: enhancedPlanData,
+                  shoppingMode: 'instore'
+                }));
 
                 // Navigate with simple parameters to avoid URL corruption
                 const targetUrl = `/shopping-route?listId=${listId}&mode=instore&fromPlan=true`;

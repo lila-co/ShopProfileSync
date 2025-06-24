@@ -436,18 +436,65 @@ const ShoppingRoute: React.FC = () => {
 
     let planDataToUse = null;
 
-    // Try sessionStorage first (more reliable)
-    const storedPlanData = sessionStorage.getItem('shoppingPlanData');
-    if (storedPlanData) {
+    // Check for persistent shopping session first (survives app closure)
+    const persistentSessionKey = `shopping_session_${listId}`;
+    const persistentSession = localStorage.getItem(persistentSessionKey);
+    
+    if (persistentSession) {
       try {
-        planDataToUse = JSON.parse(storedPlanData);
-        console.log('Using stored plan data from sessionStorage:', planDataToUse);
+        const sessionData = JSON.parse(persistentSession);
+        console.log('Found persistent shopping session:', sessionData);
+        
+        // Check if session is still valid (within 24 hours)
+        const sessionAge = Date.now() - sessionData.timestamp;
+        const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+        
+        if (sessionAge < maxAge) {
+          planDataToUse = sessionData.planData;
+          
+          // Restore shopping progress
+          if (sessionData.currentStoreIndex !== undefined) {
+            setCurrentStoreIndex(sessionData.currentStoreIndex);
+          }
+          if (sessionData.currentAisleIndex !== undefined) {
+            setCurrentAisleIndex(sessionData.currentAisleIndex);
+          }
+          if (sessionData.completedItems) {
+            setCompletedItems(new Set(sessionData.completedItems));
+          }
+          
+          console.log('Restored shopping session - Store:', sessionData.currentStoreIndex, 'Aisle:', sessionData.currentAisleIndex);
+          
+          toast({
+            title: "Shopping Session Restored",
+            description: `Continuing from where you left off at ${sessionData.currentStoreName || 'your store'}`,
+            duration: 4000
+          });
+        } else {
+          // Clean up old session
+          localStorage.removeItem(persistentSessionKey);
+          console.log('Cleaned up expired shopping session');
+        }
       } catch (error) {
-        console.error('Error parsing stored plan data:', error);
+        console.error('Error parsing persistent session:', error);
+        localStorage.removeItem(persistentSessionKey);
       }
     }
 
-    // If no sessionStorage data, try URL parameter
+    // Try sessionStorage if no persistent session (for same-session navigation)
+    if (!planDataToUse) {
+      const storedPlanData = sessionStorage.getItem('shoppingPlanData');
+      if (storedPlanData) {
+        try {
+          planDataToUse = JSON.parse(storedPlanData);
+          console.log('Using stored plan data from sessionStorage:', planDataToUse);
+        } catch (error) {
+          console.error('Error parsing stored plan data:', error);
+        }
+      }
+    }
+
+    // If no stored data, try URL parameter
     if (!planDataToUse && planDataParam) {
       try {
         planDataToUse = JSON.parse(decodeURIComponent(planDataParam));
@@ -466,6 +513,9 @@ const ShoppingRoute: React.FC = () => {
       setOptimizedRoute(route);
       setStartTime(new Date());
 
+      // Save initial shopping session to persistent storage
+      savePersistentShoppingSession(planDataToUse, route);
+      
       toast({
         title: "Shopping Route Ready!",
         description: `Your shopping route has been created from your selected plan`,
@@ -1363,6 +1413,11 @@ const ShoppingRoute: React.FC = () => {
 
     // Clear any temporary shopping data
     sessionStorage.removeItem('shoppingPlanData');
+    
+    // Clear persistent shopping session
+    const persistentSessionKey = `shopping_session_${listId}`;
+    localStorage.removeItem(persistentSessionKey);
+    console.log('Cleared persistent shopping session');
 
     // Navigate back to shopping list after a delay to allow user to see the completion message
     setTimeout(() => {
@@ -1530,6 +1585,40 @@ const ShoppingRoute: React.FC = () => {
       endShopping();
     }
   };
+
+  // Save shopping session to localStorage (survives app closure)
+  const savePersistentShoppingSession = (planData: any, route: any) => {
+    try {
+      const sessionKey = `shopping_session_${listId}`;
+      const currentStore = route?.isMultiStore && route.stores 
+        ? route.stores[currentStoreIndex] 
+        : { retailerName: route?.retailerName };
+      
+      const sessionData = {
+        planData,
+        listId,
+        currentStoreIndex,
+        currentAisleIndex,
+        completedItems: Array.from(completedItems),
+        timestamp: Date.now(),
+        currentStoreName: currentStore?.retailerName,
+        isMultiStore: route?.isMultiStore || false,
+        totalStores: route?.stores?.length || 1
+      };
+      
+      localStorage.setItem(sessionKey, JSON.stringify(sessionData));
+      console.log('Saved persistent shopping session for list', listId);
+    } catch (error) {
+      console.warn('Failed to save shopping session:', error);
+    }
+  };
+
+  // Update session whenever progress changes
+  useEffect(() => {
+    if (optimizedRoute && selectedPlanData) {
+      savePersistentShoppingSession(selectedPlanData, optimizedRoute);
+    }
+  }, [currentStoreIndex, currentAisleIndex, completedItems, optimizedRoute, selectedPlanData]);
 
   const proceedAfterLoyaltyCard = () => {
     setLoyaltyBarcodeDialogOpen(false);
