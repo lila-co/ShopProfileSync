@@ -562,25 +562,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const currentItems = shoppingList.items || [];
       const isEmptyList = currentItems.length === 0;
 
-      // Sample generated items - in production this would use AI
-      const generatedItems = [
-        { productName: 'Fresh Strawberries', quantity: 1, unit: 'CONTAINER' },
-        { productName: 'Yogurt Parfait', quantity: 2, unit: 'COUNT' },
-        { productName: 'Whole Grain Cereal', quantity: 1, unit: 'BOX' },
-        { productName: 'Almond Milk', quantity: 1, unit: 'CARTON' }
-      ];
-
+      // Only generate items if the list is empty or if we need intelligent additions
       let itemsAdded = 0;
       let itemsSkipped = 0;
+      
+      if (isEmptyList) {
+        // Sample generated items for empty lists - in production this would use AI
+        const generatedItems = [
+          { productName: 'Fresh Strawberries', quantity: 1, unit: 'CONTAINER' },
+          { productName: 'Yogurt Parfait', quantity: 2, unit: 'COUNT' },
+          { productName: 'Whole Grain Cereal', quantity: 1, unit: 'BOX' },
+          { productName: 'Almond Milk', quantity: 1, unit: 'CARTON' }
+        ];
 
-      // Add items that don't already exist
-      for (const item of generatedItems) {
-        const exists = currentItems.some(existing => 
-          existing.productName.toLowerCase().includes(item.productName.toLowerCase()) ||
-          item.productName.toLowerCase().includes(existing.productName.toLowerCase())
-        );
-
-        if (!exists) {
+        // Add items that don't already exist
+        for (const item of generatedItems) {
           try {
             await storage.createShoppingListItem({
               shoppingListId: shoppingListId,
@@ -593,10 +589,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } catch (error) {
             console.warn('Failed to add generated item:', item.productName, error);
           }
+        }
+      } else {
+        // For non-empty lists, only add complementary items occasionally (every 3rd regeneration)
+        const regenerationCount = parseInt(req.headers['x-regeneration-count'] as string) || 0;
+        
+        if (regenerationCount % 3 === 0) {
+          // Smart complementary items based on what's already in the list
+          const complementaryItems = [];
+          
+          // Analyze existing items and suggest complements
+          const hasProteins = currentItems.some(item => 
+            item.productName.toLowerCase().includes('chicken') || 
+            item.productName.toLowerCase().includes('turkey') ||
+            item.productName.toLowerCase().includes('beef') ||
+            item.productName.toLowerCase().includes('eggs')
+          );
+          
+          const hasDairy = currentItems.some(item => 
+            item.productName.toLowerCase().includes('milk') || 
+            item.productName.toLowerCase().includes('cheese') ||
+            item.productName.toLowerCase().includes('yogurt')
+          );
+          
+          const hasVegetables = currentItems.some(item => 
+            item.productName.toLowerCase().includes('spinach') || 
+            item.productName.toLowerCase().includes('tomato') ||
+            item.productName.toLowerCase().includes('pepper') ||
+            item.productName.toLowerCase().includes('avocado')
+          );
+
+          // Suggest complementary items based on what's missing
+          if (hasProteins && !hasVegetables) {
+            complementaryItems.push({ productName: 'Mixed Vegetables', quantity: 1, unit: 'BAG' });
+          }
+          if (hasVegetables && !hasDairy) {
+            complementaryItems.push({ productName: 'Shredded Mozzarella', quantity: 1, unit: 'BAG' });
+          }
+          if (currentItems.length > 5 && !currentItems.some(item => item.productName.toLowerCase().includes('spice'))) {
+            complementaryItems.push({ productName: 'Garlic Powder', quantity: 1, unit: 'CONTAINER' });
+          }
+
+          // Add complementary items that don't already exist
+          for (const item of complementaryItems) {
+            const exists = currentItems.some(existing => 
+              existing.productName.toLowerCase().includes(item.productName.toLowerCase()) ||
+              item.productName.toLowerCase().includes(existing.productName.toLowerCase())
+            );
+
+            if (!exists) {
+              try {
+                await storage.createShoppingListItem({
+                  shoppingListId: shoppingListId,
+                  productName: item.productName,
+                  quantity: item.quantity,
+                  unit: item.unit as any,
+                  isCompleted: false
+                });
+                itemsAdded++;
+              } catch (error) {
+                console.warn('Failed to add complementary item:', item.productName, error);
+              }
+            } else {
+              itemsSkipped++;
+            }
+          }
         } else {
-          itemsSkipped++;
+          // No new items added, but we can report optimization of existing items
+          itemsSkipped = 0; // Reset since we're not actually checking duplicates
         }
       }
+
+      const finalMessage = isEmptyList 
+        ? 'Shopping list created successfully' 
+        : itemsAdded > 0 
+          ? `Added ${itemsAdded} complementary items to your list`
+          : 'List reviewed - no new items needed at this time';
 
       res.json({
         success: true,
@@ -604,7 +672,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         itemsAdded,
         itemsSkipped,
         totalItems: currentItems.length + itemsAdded,
-        message: isEmptyList ? 'Shopping list created successfully' : 'Shopping list enhanced with new items'
+        message: finalMessage
       });
 
     } catch (error) {

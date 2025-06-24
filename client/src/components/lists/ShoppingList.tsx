@@ -560,13 +560,13 @@ const ShoppingListComponent: React.FC = () => {
         };
       } catch (error) {
         console.error('Network or API error:', error);
-        
+
         // Handle empty error objects or non-Error objects
         if (!error || (typeof error === 'object' && Object.keys(error).length === 0)) {
           console.warn('Received empty error object, likely a parsing issue');
           throw new Error('Response parsing failed. Please try again.');
         }
-        
+
         // Check if error has a message property and is a proper Error object
         if (error instanceof Error && error.message) {
           if (error.message.includes('Failed to generate shopping list')) {
@@ -574,17 +574,20 @@ const ShoppingListComponent: React.FC = () => {
           }
           throw new Error(`Generation failed: ${error.message}`);
         }
-        
+
         // Handle string errors
         if (typeof error === 'string') {
           throw new Error(`Generation failed: ${error}`);
         }
-        
+
         // Handle cases where error is not a proper Error object
         throw new Error('Failed to generate shopping list. Please try again.');
       }
     },
     onSuccess: (data) => {
+      console.log('API response data:', data);
+
+      // Invalidate and refetch the shopping lists to get the latest data
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
 
       let title, description;
@@ -592,12 +595,12 @@ const ShoppingListComponent: React.FC = () => {
       if (data.isEmptyList) {
         title = "Shopping List Created";
         description = `Created a new list with ${data.itemsAdded || data.totalItems || 'essential'} items`;
+      } else if (data.itemsAdded > 0) {
+        title = "List Enhanced";
+        description = `Added ${data.itemsAdded} new items to your shopping list`;
       } else {
-        title = "List Regenerated";
-        description = `Added ${data.itemsAdded || data.totalItems || 'new'} items to your shopping list`;
-        if (data.itemsSkipped && data.itemsSkipped > 0) {
-          description += ` (${data.itemsSkipped} similar items already existed)`;
-        }
+        title = "List Reviewed";
+        description = data.message || "Your list is already optimized - no new items needed";
       }
 
       toast({
@@ -607,7 +610,7 @@ const ShoppingListComponent: React.FC = () => {
     },
     onError: (error: any) => {
       console.error('Regeneration failed:', error);
-      
+
       // Extract meaningful error message
       let errorMessage = "Failed to enhance list. Please try again.";
       if (error instanceof Error && error.message) {
@@ -617,7 +620,7 @@ const ShoppingListComponent: React.FC = () => {
       } else if (error?.message) {
         errorMessage = error.message;
       }
-      
+
       toast({
         title: "Error",
         description: errorMessage,
@@ -822,7 +825,7 @@ const ShoppingListComponent: React.FC = () => {
     }
   };
 
-  
+
 
   // Show AI generation animation
   if (isGeneratingList) {
@@ -870,7 +873,7 @@ const ShoppingListComponent: React.FC = () => {
               <div className="mt-6 bg-white rounded-lg p-4">
                 <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
                   <span>Progress</span>
-                  <span>{Math.round(((currentStep + 1) / generationSteps.length) * 100)}%</span>
+                  <span>{Math.round(((currentStep + 1) / generationSteps.length) * 10)}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div 
@@ -1338,7 +1341,7 @@ const ShoppingListComponent: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      
+
 
       {/* Voice AI Agent - Moved to bottom */}
       <div className="mt-6 mb-4">
