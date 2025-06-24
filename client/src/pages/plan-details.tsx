@@ -77,7 +77,7 @@ const PlanDetails: React.FC = () => {
         // Find the most common retailer
         const retailerCounts = items.reduce((acc, item) => {
           if (item.suggestedRetailer?.id) {
-            const retailerId = Number(item.suggestedRetailer.id);
+            const retailerId = item.suggestedRetailer.id;
             acc[retailerId] = (acc[retailerId] || 0) + 1;
           }
           return acc;
@@ -96,28 +96,17 @@ const PlanDetails: React.FC = () => {
           item.suggestedRetailer?.id === Number(mostCommonRetailerId)
         )?.suggestedRetailer;
 
-        if (!primaryRetailer || !primaryRetailer.name) {
-          console.warn('No valid primary retailer found');
-          return { totalCost: 0, estimatedTime: '0 min', stores: [] };
-        }
-
         if (!primaryRetailer) {
           return { totalCost: 0, estimatedTime: '0 min', stores: [] };
         }
 
-        const totalCost = items.reduce((sum, item) => {
-          const price = Number(item.suggestedPrice) || 0;
-          const quantity = Number(item.quantity) || 0;
-          return sum + (price * quantity);
-        }, 0);
-
         return {
-          totalCost: totalCost,
+          totalCost: items.reduce((sum, item) => sum + (item.suggestedPrice || 0) * item.quantity, 0),
           estimatedTime: '25-35 min',
           stores: [{
-            retailer: primaryRetailer,
+            retailer: primaryRetailer!,
             items: items,
-            subtotal: totalCost
+            subtotal: items.reduce((sum, item) => sum + (item.suggestedPrice || 0) * item.quantity, 0)
           }]
         };
 
@@ -125,7 +114,7 @@ const PlanDetails: React.FC = () => {
         // Group by retailer for best prices
         const storeGroups = items.reduce((acc, item) => {
           if (item.suggestedRetailer?.id) {
-            const retailerId = Number(item.suggestedRetailer.id);
+            const retailerId = item.suggestedRetailer.id;
             if (!acc[retailerId]) {
               acc[retailerId] = {
                 retailer: item.suggestedRetailer,
@@ -134,15 +123,13 @@ const PlanDetails: React.FC = () => {
               };
             }
             acc[retailerId].items.push(item);
-            const price = Number(item.suggestedPrice) || 0;
-            const quantity = Number(item.quantity) || 0;
-            acc[retailerId].subtotal += price * quantity;
+            acc[retailerId].subtotal += (item.suggestedPrice || 0) * item.quantity;
           }
           return acc;
         }, {} as Record<number, any>);
 
         return {
-          totalCost: Object.values(storeGroups).reduce((sum: number, store: any) => sum + Number(store.subtotal || 0), 0),
+          totalCost: Object.values(storeGroups).reduce((sum: number, store: any) => sum + store.subtotal, 0),
           estimatedTime: '45-60 min',
           stores: Object.values(storeGroups)
         };
@@ -151,7 +138,7 @@ const PlanDetails: React.FC = () => {
         // Balance between convenience and savings
         const balancedStores = items.reduce((acc, item) => {
           if (item.suggestedRetailer?.id) {
-            const retailerId = Number(item.suggestedRetailer.id);
+            const retailerId = item.suggestedRetailer.id;
             if (!acc[retailerId]) {
               acc[retailerId] = {
                 retailer: item.suggestedRetailer,
@@ -160,20 +147,18 @@ const PlanDetails: React.FC = () => {
               };
             }
             acc[retailerId].items.push(item);
-            const price = Number(item.suggestedPrice) || 0;
-            const quantity = Number(item.quantity) || 0;
-            acc[retailerId].subtotal += price * quantity;
+            acc[retailerId].subtotal += (item.suggestedPrice || 0) * item.quantity;
           }
           return acc;
         }, {} as Record<number, any>);
 
         // Limit to 2 stores maximum for balance
         const topStores = Object.values(balancedStores)
-          .sort((a: any, b: any) => Number(b.subtotal || 0) - Number(a.subtotal || 0))
+          .sort((a: any, b: any) => b.subtotal - a.subtotal)
           .slice(0, 2);
 
         return {
-          totalCost: topStores.reduce((sum: number, store: any) => sum + Number(store.subtotal || 0), 0),
+          totalCost: topStores.reduce((sum: number, store: any) => sum + store.subtotal, 0),
           estimatedTime: '35-45 min',
           stores: topStores
         };
@@ -188,10 +173,8 @@ const PlanDetails: React.FC = () => {
     selectedPlanType
   );
 
-  const formatPrice = (price: number | undefined | null) => {
-    if (price === null || price === undefined) return '$0.00';
-    const numericPrice = typeof price === 'number' ? price : parseFloat(String(price)) || 0;
-    return `$${(numericPrice / 100).toFixed(2)}`;
+  const formatPrice = (price: number) => {
+    return `$${(price / 100).toFixed(2)}`;
   };
 
   // Fetch deals for price comparison
@@ -225,14 +208,10 @@ const PlanDetails: React.FC = () => {
       availableItems = totalItems;
     } else {
       // For multi-store and balanced plans, check actual availability
-      const planRetailerIds = new Set(
-        planData.stores
-          .filter(store => store.retailer?.id)
-          .map(store => Number(store.retailer.id))
-      );
+      const planRetailerIds = new Set(planData.stores.map(store => store.retailer.id));
 
       shoppingItems.forEach(item => {
-        if (item.suggestedRetailer?.id && planRetailerIds.has(Number(item.suggestedRetailer.id))) {
+        if (item.suggestedRetailer && planRetailerIds.has(item.suggestedRetailer.id)) {
           availableItems++;
         } else {
           missingItems.push(item);
@@ -1057,11 +1036,10 @@ const PlanDetails: React.FC = () => {
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div 
-                    className={`w-4 h-4 rounded-full`}
-                    style={{ backgroundColor: typeof store.retailer.logoColor === 'string' ? store.retailer.logoColor : '#6B7280' }}
+                    className={`w-4 h-4 rounded-full bg-${store.retailer.logoColor}-500`}
                   />
-                  <span>{store.retailer.name || 'Unknown Store'}</span>
-                  <Badge variant="secondary">{store.items?.length || 0} items</Badge>
+                  <span>{store.retailer.name}</span>
+                  <Badge variant="secondary">{store.items.length} items</Badge>
                 </div>
                 <div className="text-lg font-bold">{formatPrice(store.subtotal)}</div>
               </CardTitle>
@@ -1069,19 +1047,18 @@ const PlanDetails: React.FC = () => {
             <CardContent>
               <div className="space-y-2">
                 {store.items
-                  ?.filter(item => item && item.productName)
-                  .sort((a, b) => (a.productName || '').localeCompare(b.productName || ''))
+                  .sort((a, b) => a.productName.localeCompare(b.productName))
                   .map((item) => (
-                  <div key={item.id || Math.random()} className="flex items-center justify-between py-2 border-b last:border-b-0">
+                  <div key={item.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
                     <div className="flex-1">
-                      <div className="font-medium">{item.productName || 'Unknown Item'}</div>
+                      <div className="font-medium">{item.productName}</div>
                       <div className="text-sm text-gray-500">
-                        {item.quantity || 0} {(item.unit || '').toLowerCase() || 'unit'}
+                        {item.quantity} {item.unit.toLowerCase()}
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-medium">{formatPrice((item.suggestedPrice || 0) * (item.quantity || 0))}</div>
-                      <div className="text-sm text-gray-500">{formatPrice(item.suggestedPrice || 0)} each</div>
+                      <div className="font-medium">{formatPrice(item.suggestedPrice * item.quantity)}</div>
+                      <div className="text-sm text-gray-500">{formatPrice(item.suggestedPrice)} each</div>
                     </div>
                   </div>
                 ))}
