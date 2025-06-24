@@ -21,6 +21,13 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -374,6 +381,7 @@ const ShoppingRoute: React.FC = () => {
   const [outOfStockItem, setOutOfStockItem] = useState<any>(null);
   const [endStoreDialogOpen, setEndStoreDialogOpen] = useState(false);
   const [uncompletedItems, setUncompletedItems] = useState<any[]>([]);
+  const [loyaltyBarcodeDialogOpen, setLoyaltyBarcodeDialogOpen] = useState(false);
 
   // Get current retailer name for loyalty card fetching
   const getCurrentRetailerName = () => {
@@ -1102,6 +1110,12 @@ const ShoppingRoute: React.FC = () => {
   };
 
   const handleEndStore = () => {
+    // Show loyalty barcode dialog first if user has a loyalty card
+    if (loyaltyCard) {
+      setLoyaltyBarcodeDialogOpen(true);
+      return;
+    }
+
     // Check if this is the last store (single store or last store in multi-store)
     const isLastStore = !optimizedRoute?.isMultiStore || 
                         (optimizedRoute?.isMultiStore && currentStoreIndex >= optimizedRoute.stores.length - 1);
@@ -1462,6 +1476,12 @@ const ShoppingRoute: React.FC = () => {
   };
 
   const handleFinishStore = () => {
+    // Show loyalty barcode dialog first if user has a loyalty card
+    if (loyaltyCard) {
+      setLoyaltyBarcodeDialogOpen(true);
+      return;
+    }
+
     // For multi-store plans, check uncompleted items at intermediary stores
     if (optimizedRoute?.isMultiStore && currentStoreIndex < optimizedRoute.stores.length - 1) {
       // Get uncompleted items from current store, excluding temporary/moved items
@@ -1508,6 +1528,58 @@ const ShoppingRoute: React.FC = () => {
     } else {
       // Single store completion - end shopping
       endShopping();
+    }
+  };
+
+  const proceedAfterLoyaltyCard = () => {
+    setLoyaltyBarcodeDialogOpen(false);
+    
+    // Check if this is the last store (single store or last store in multi-store)
+    const isLastStore = !optimizedRoute?.isMultiStore || 
+                        (optimizedRoute?.isMultiStore && currentStoreIndex >= optimizedRoute.stores.length - 1);
+
+    if (isLastStore) {
+      // Only show uncompleted items dialog for the final store/end of shopping
+      let allStoreItems: any[] = [];
+
+      if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
+        const currentStore = optimizedRoute.stores[currentStoreIndex];
+        allStoreItems = currentStore?.items || [];
+      } else {
+        // Single store - get all items from all aisles
+        allStoreItems = optimizedRoute?.aisleGroups?.flatMap(aisle => aisle.items) || [];
+      }
+
+      // Find uncompleted items
+      const uncompleted = allStoreItems.filter(item => 
+        !completedItems.has(item.id) && !item.isCompleted
+      );
+
+      if (uncompleted.length === 0) {
+        // No uncompleted items, proceed with completion
+        completeCurrentStore();
+      } else {
+        // Show dialog for uncompleted items only at the end
+        setUncompletedItems(uncompleted);
+        setEndStoreDialogOpen(true);
+      }
+    } else {
+      // For intermediate stores in multi-store plans
+      const currentStore = optimizedRoute.stores[currentStoreIndex];
+      const currentStoreItems = currentStore?.items || [];
+      const uncompleted = currentStoreItems.filter(item => 
+        !completedItems.has(item.id) && 
+        !item.isCompleted &&
+        typeof item.id === 'number' && 
+        item.id < 10000 // Exclude temporary IDs from moved items
+      );
+
+      if (uncompleted.length > 0) {
+        setUncompletedItems(uncompleted);
+        setEndStoreDialogOpen(true);
+      } else {
+        completeCurrentStore();
+      }
     }
   };
 
@@ -1601,74 +1673,30 @@ const ShoppingRoute: React.FC = () => {
           </Card>
         )}
 
-        {/* Loyalty Card Section */}
+        {/* Loyalty Card Indicator */}
         {loyaltyCard && (
           <Card className="mb-4 border-green-200 bg-green-50">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="h-5 w-5 bg-green-600 rounded-full flex items-center justify-center">
+                  <div className="h-4 w-4 bg-green-600 rounded-full flex items-center justify-center">
                     <Check className="h-3 w-3 text-white" />
                   </div>
                   <div>
-                    <div className="font-semibold text-green-800">
+                    <div className="font-medium text-green-800 text-sm">
                       {optimizedRoute?.isMultiStore ? `${getCurrentRetailerName()} ` : ''}Loyalty Card Ready
                     </div>
-                    <div className="text-xs text-green-600">{loyaltyCard.cardNumber}</div>
-                    {optimizedRoute?.isMultiStore && (
-                      <div className="text-xs text-gray-500">
-                        Store {currentStoreIndex + 1} of {optimizedRoute.stores.length}
-                      </div>
-                    )}
+                    <div className="text-xs text-green-600">Card ending in {loyaltyCard.cardNumber?.slice(-4)}</div>
                   </div>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="text-green-700 border-green-300 hover:bg-green-100"
-                  onClick={() => {
-                    const retailerName = getCurrentRetailerName();
-                    toast({
-                      title: `${retailerName} Loyalty Card`,
-                      description: "Show this to the cashier for points/discounts",
-                      duration: 5000
-                    });
-                  }}
+                  className="text-green-700 border-green-300 hover:bg-green-100 text-xs"
+                  onClick={() => setLoyaltyBarcodeDialogOpen(true)}
                 >
                   Show Barcode
                 </Button>
-              </div>
-
-              {/* Barcode Display Area */}
-              <div className="bg-white p-3 rounded border text-center">
-                <div className="text-xs text-gray-500 mb-1">
-                  {getCurrentRetailerName()} Loyalty Card
-                </div>
-                <div className="font-mono text-lg font-bold tracking-wider">
-                  {loyaltyCard.barcodeNumber || loyaltyCard.cardNumber}
-                </div>
-                {/* Simple barcode visualization */}
-                <div className="flex justify-center mt-2 gap-px">
-                  {(loyaltyCard.barcodeNumber || loyaltyCard.cardNumber)?.split('').map((digit: string, index: number) => (
-                    <div
-                      key={index}
-                      className={`w-1 h-8 ${parseInt(digit) % 2 === 0 ? 'bg-black' : 'bg-gray-300'}`}
-                    />
-                  ))}
-                </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Member ID: {loyaltyCard.memberId || loyaltyCard.cardNumber}
-                </div>
-                {loyaltyCard.affiliateCode && (
-                  <div className="text-xs text-blue-600 mt-1">
-                    Affiliate: {loyaltyCard.affiliateCode}
-                  </div>
-                )}
-                {optimizedRoute?.isMultiStore && (
-                  <div className="text-xs text-purple-600 mt-1 font-medium">
-                    🏪 Currently shopping at {getCurrentRetailerName()}
-                  </div>
-                )}
               </div>
             </CardContent>
           </Card>
@@ -2239,6 +2267,112 @@ const ShoppingRoute: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Loyalty Barcode Dialog */}
+      <Dialog open={loyaltyBarcodeDialogOpen} onOpenChange={setLoyaltyBarcodeDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl font-semibold text-gray-900">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                <Star className="h-5 w-5 text-green-600" />
+              </div>
+              {getCurrentRetailerName()} Loyalty Card
+            </DialogTitle>
+            <DialogDescription className="text-gray-600 mt-2">
+              Show this barcode to the cashier to earn points and apply member discounts.
+              {optimizedRoute?.isMultiStore && (
+                <div className="mt-1 text-sm">
+                  Store {currentStoreIndex + 1} of {optimizedRoute.stores.length}
+                </div>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {loyaltyCard && (
+            <div className="mt-4">
+              {/* Enhanced Barcode Display */}
+              <div className="bg-white p-6 rounded-lg border-2 border-gray-300 text-center">
+                <div className="text-sm text-gray-600 mb-2 font-medium">
+                  {getCurrentRetailerName()} Member Card
+                </div>
+                
+                {/* Large barcode number */}
+                <div className="font-mono text-2xl font-bold tracking-wider mb-4 text-gray-900">
+                  {loyaltyCard.barcodeNumber || loyaltyCard.cardNumber}
+                </div>
+                
+                {/* Enhanced barcode visualization */}
+                <div className="flex justify-center mb-4 gap-px bg-white p-4 border rounded">
+                  {(loyaltyCard.barcodeNumber || loyaltyCard.cardNumber)?.split('').map((digit: string, index: number) => {
+                    // Create more realistic barcode pattern
+                    const isWideBar = parseInt(digit) % 3 === 0;
+                    const isBlackBar = parseInt(digit) % 2 === 0;
+                    return (
+                      <div
+                        key={index}
+                        className={`${isWideBar ? 'w-2' : 'w-1'} h-16 ${isBlackBar ? 'bg-black' : 'bg-gray-200'}`}
+                      />
+                    );
+                  })}
+                </div>
+                
+                {/* Member details */}
+                <div className="space-y-1 text-sm text-gray-600">
+                  <div className="font-medium">
+                    Member ID: {loyaltyCard.memberId || loyaltyCard.cardNumber}
+                  </div>
+                  {loyaltyCard.affiliateCode && (
+                    <div className="text-blue-600">
+                      Affiliate: {loyaltyCard.affiliateCode}
+                    </div>
+                  )}
+                  {loyaltyCard.discountPercentage && (
+                    <div className="text-green-600 font-medium">
+                      Member Discount: {loyaltyCard.discountPercentage}% off
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Instructions */}
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-start gap-2">
+                  <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center mt-0.5">
+                    <Check className="h-3 w-3 text-white" />
+                  </div>
+                  <div className="text-sm text-blue-800">
+                    <div className="font-medium mb-1">Checkout Instructions:</div>
+                    <ul className="space-y-1 text-xs">
+                      <li>• Show this screen to the cashier</li>
+                      <li>• They can scan the barcode or enter the number manually</li>
+                      <li>• Make sure to apply discounts before payment</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="mt-6 space-y-3">
+                <Button 
+                  onClick={proceedAfterLoyaltyCard}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
+                >
+                  <Check className="h-5 w-5" />
+                  Card Scanned - Continue Checkout
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={() => setLoyaltyBarcodeDialogOpen(false)}
+                  className="w-full border-gray-300 text-gray-700 font-medium py-3 rounded-lg"
+                >
+                  Keep Shopping
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
