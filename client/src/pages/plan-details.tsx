@@ -881,7 +881,6 @@ const PlanDetails: React.FC = () => {
               className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold shadow-lg"
               size="lg"
               onClick={handleOrderOnline}
-            ```python
             >
               <MapPin className="h-4 w-4 mr-2" />
               Order Online
