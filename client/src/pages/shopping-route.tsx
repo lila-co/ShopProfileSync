@@ -457,12 +457,10 @@ const ShoppingRoute: React.FC = () => {
                            (sessionData.currentStoreIndex && sessionData.currentStoreIndex > 0);
         
         if (!hasProgress) {
-          console.log('Cleaning up session without meaningful progress');
           localStorage.removeItem(persistentSessionKey);
           localStorage.removeItem(`interruptedSession-${listId}`);
         }
       } catch (error) {
-        console.warn('Error checking existing session, removing it:', error);
         localStorage.removeItem(persistentSessionKey);
         localStorage.removeItem(`interruptedSession-${listId}`);
       }
