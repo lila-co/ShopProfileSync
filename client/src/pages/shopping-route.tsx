@@ -1929,19 +1929,30 @@ const ShoppingRoute: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Out-of-stock option button */}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="ml-2 bg-white border-gray-300 hover:bg-gray-50"
-                        onClick={() => {
-                          setOutOfStockItem(item);
-                          setOutOfStockDialogOpen(true);
-                        }}
-                      >
-                        <AlertCircle className="h-4 w-4 mr-1" />
-                        Out of Stock
-                      </Button>
+                      {/* Item options menu */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="ml-2 bg-white border-gray-300 hover:bg-gray-50 px-2"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setOutOfStockItem(item);
+                              setOutOfStockDialogOpen(true);
+                            }}
+                            className="flex items-center gap-2"
+                          >
+                            <AlertCircle className="h-4 w-4 text-orange-600" />
+                            Can't find item
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   );
                 })}
@@ -2221,7 +2232,7 @@ const ShoppingRoute: React.FC = () => {
               <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
                 <AlertCircle className="h-5 w-5 text-orange-600" />
               </div>
-              Item Not Available
+              Can't Find This Item?
             </AlertDialogTitle>
             <AlertDialogDescription className="text-gray-600 mt-2">
               <strong>{outOfStockItem?.productName}</strong> is not available at this location.
