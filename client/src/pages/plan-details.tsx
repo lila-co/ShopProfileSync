@@ -77,7 +77,7 @@ const PlanDetails: React.FC = () => {
         // Find the most common retailer
         const retailerCounts = items.reduce((acc, item) => {
           if (item.suggestedRetailer?.id) {
-            const retailerId = item.suggestedRetailer.id;
+            const retailerId = Number(item.suggestedRetailer.id);
             acc[retailerId] = (acc[retailerId] || 0) + 1;
           }
           return acc;
@@ -96,17 +96,28 @@ const PlanDetails: React.FC = () => {
           item.suggestedRetailer?.id === Number(mostCommonRetailerId)
         )?.suggestedRetailer;
 
+        if (!primaryRetailer || !primaryRetailer.name) {
+          console.warn('No valid primary retailer found');
+          return { totalCost: 0, estimatedTime: '0 min', stores: [] };
+        }
+
         if (!primaryRetailer) {
           return { totalCost: 0, estimatedTime: '0 min', stores: [] };
         }
 
+        const totalCost = items.reduce((sum, item) => {
+          const price = Number(item.suggestedPrice) || 0;
+          const quantity = Number(item.quantity) || 0;
+          return sum + (price * quantity);
+        }, 0);
+
         return {
-          totalCost: items.reduce((sum, item) => sum + (item.suggestedPrice || 0) * item.quantity, 0),
+          totalCost: totalCost,
           estimatedTime: '25-35 min',
           stores: [{
-            retailer: primaryRetailer!,
+            retailer: primaryRetailer,
             items: items,
-            subtotal: items.reduce((sum, item) => sum + (item.suggestedPrice || 0) * item.quantity, 0)
+            subtotal: totalCost
           }]
         };
 
@@ -114,7 +125,7 @@ const PlanDetails: React.FC = () => {
         // Group by retailer for best prices
         const storeGroups = items.reduce((acc, item) => {
           if (item.suggestedRetailer?.id) {
-            const retailerId = item.suggestedRetailer.id;
+            const retailerId = Number(item.suggestedRetailer.id);
             if (!acc[retailerId]) {
               acc[retailerId] = {
                 retailer: item.suggestedRetailer,
@@ -123,13 +134,15 @@ const PlanDetails: React.FC = () => {
               };
             }
             acc[retailerId].items.push(item);
-            acc[retailerId].subtotal += (item.suggestedPrice || 0) * item.quantity;
+            const price = Number(item.suggestedPrice) || 0;
+            const quantity = Number(item.quantity) || 0;
+            acc[retailerId].subtotal += price * quantity;
           }
           return acc;
         }, {} as Record<number, any>);
 
         return {
-          totalCost: Object.values(storeGroups).reduce((sum: number, store: any) => sum + store.subtotal, 0),
+          totalCost: Object.values(storeGroups).reduce((sum: number, store: any) => sum + Number(store.subtotal || 0), 0),
           estimatedTime: '45-60 min',
           stores: Object.values(storeGroups)
         };
@@ -138,7 +151,7 @@ const PlanDetails: React.FC = () => {
         // Balance between convenience and savings
         const balancedStores = items.reduce((acc, item) => {
           if (item.suggestedRetailer?.id) {
-            const retailerId = item.suggestedRetailer.id;
+            const retailerId = Number(item.suggestedRetailer.id);
             if (!acc[retailerId]) {
               acc[retailerId] = {
                 retailer: item.suggestedRetailer,
@@ -147,18 +160,20 @@ const PlanDetails: React.FC = () => {
               };
             }
             acc[retailerId].items.push(item);
-            acc[retailerId].subtotal += (item.suggestedPrice || 0) * item.quantity;
+            const price = Number(item.suggestedPrice) || 0;
+            const quantity = Number(item.quantity) || 0;
+            acc[retailerId].subtotal += price * quantity;
           }
           return acc;
         }, {} as Record<number, any>);
 
         // Limit to 2 stores maximum for balance
         const topStores = Object.values(balancedStores)
-          .sort((a: any, b: any) => b.subtotal - a.subtotal)
+          .sort((a: any, b: any) => Number(b.subtotal || 0) - Number(a.subtotal || 0))
           .slice(0, 2);
 
         return {
-          totalCost: topStores.reduce((sum: number, store: any) => sum + store.subtotal, 0),
+          totalCost: topStores.reduce((sum: number, store: any) => sum + Number(store.subtotal || 0), 0),
           estimatedTime: '35-45 min',
           stores: topStores
         };
@@ -173,8 +188,10 @@ const PlanDetails: React.FC = () => {
     selectedPlanType
   );
 
-  const formatPrice = (price: number) => {
-    return `$${(price / 100).toFixed(2)}`;
+  const formatPrice = (price: number | undefined | null) => {
+    if (price === null || price === undefined) return '$0.00';
+    const numericPrice = typeof price === 'number' ? price : parseFloat(String(price)) || 0;
+    return `$${(numericPrice / 100).toFixed(2)}`;
   };
 
   // Fetch deals for price comparison
@@ -208,10 +225,14 @@ const PlanDetails: React.FC = () => {
       availableItems = totalItems;
     } else {
       // For multi-store and balanced plans, check actual availability
-      const planRetailerIds = new Set(planData.stores.map(store => store.retailer.id));
+      const planRetailerIds = new Set(
+        planData.stores
+          .filter(store => store.retailer?.id)
+          .map(store => Number(store.retailer.id))
+      );
 
       shoppingItems.forEach(item => {
-        if (item.suggestedRetailer && planRetailerIds.has(item.suggestedRetailer.id)) {
+        if (item.suggestedRetailer?.id && planRetailerIds.has(Number(item.suggestedRetailer.id))) {
           availableItems++;
         } else {
           missingItems.push(item);
@@ -589,9 +610,9 @@ const PlanDetails: React.FC = () => {
   const hasInterruptedSession = (listId: string): boolean => {
     const interruptedSession = localStorage.getItem(`interruptedSession-${listId}`);
     const persistentSession = localStorage.getItem(`shopping_session_${listId}`);
-    
 
-    
+
+
     // Check if persistent session has meaningful progress
     if (persistentSession) {
       try {
@@ -599,12 +620,12 @@ const PlanDetails: React.FC = () => {
         // Check if session is recent (within last 24 hours)
         const sessionAge = Date.now() - (sessionData.timestamp || 0);
         const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-        
+
         if (sessionAge > maxAge) {
           localStorage.removeItem(`shopping_session_${listId}`);
           return false;
         }
-        
+
         // Only consider it progress if:
         // 1. Items have been completed, OR
         // 2. User has moved to aisle 2+ (not just initial aisle), OR  
@@ -613,14 +634,16 @@ const PlanDetails: React.FC = () => {
         const hasProgress = ((sessionData.completedItems && sessionData.completedItems.length > 0) ||
                            (sessionData.currentAisleIndex && sessionData.currentAisleIndex > 1) ||
                            (sessionData.currentStoreIndex && sessionData.currentStoreIndex > 0)) &&
-                           !sessionData.isCompleted; // Check if session is marked as completed
-        
+                           !sessionData.isCompleted && // Check if session is marked as completed
+                           sessionData.timestamp && // Must have a timestamp
+                           (Date.now() - sessionData.timestamp) > 30000; // Must be older than 30 seconds
+
         if (!hasProgress) {
           localStorage.removeItem(`shopping_session_${listId}`);
           localStorage.removeItem(`interruptedSession-${listId}`);
           return false;
         }
-        
+
         return hasProgress;
       } catch (error) {
         console.warn('Error parsing persistent session:', error);
@@ -629,20 +652,22 @@ const PlanDetails: React.FC = () => {
         return false;
       }
     }
-    
+
     // Also check if interruptedSession has meaningful data
     if (interruptedSession) {
       try {
         const sessionData = JSON.parse(interruptedSession);
         const hasProgress = (sessionData.completedItems && sessionData.completedItems.length > 0) ||
                            (sessionData.currentAisleIndex && sessionData.currentAisleIndex > 1) ||
-                           (sessionData.currentStoreIndex && sessionData.currentStoreIndex > 0);
-        
+                           (sessionData.currentStoreIndex && sessionData.currentStoreIndex > 0) &&
+                           sessionData.timestamp && 
+                           (Date.now() - sessionData.timestamp) > 30000;
+
         if (!hasProgress) {
           localStorage.removeItem(`interruptedSession-${listId}`);
           return false;
         }
-        
+
         return hasProgress;
       } catch (error) {
         console.warn('Error parsing interrupted session:', error);
@@ -650,7 +675,7 @@ const PlanDetails: React.FC = () => {
         return false;
       }
     }
-    
+
     return false;
   };
 
@@ -658,36 +683,87 @@ const PlanDetails: React.FC = () => {
   const InterruptedSessionCard: React.FC<{ listId: string }> = ({ listId }) => {
     const [hasSession, setHasSession] = useState(hasInterruptedSession(listId));
 
-    useEffect(() => {
-      // Clean up any completed sessions first
+    // Check for any interrupted shopping session (both types)
+  useEffect(() => {
+    const checkForInterruptedSession = () => {
+      // Check for both session types
+      const interruptedSession = localStorage.getItem(`interruptedSession-${listId}`);
       const persistentSession = localStorage.getItem(`shopping_session_${listId}`);
+
+      // Check if persistent session is completed
+      let isSessionActive = false;
+
+      if (interruptedSession) {
+        isSessionActive = true;
+      }
+
       if (persistentSession) {
         try {
           const sessionData = JSON.parse(persistentSession);
-          if (sessionData.isCompleted) {
+          // Only consider session active if it's not completed and not expired
+          const sessionAge = Date.now() - sessionData.timestamp;
+          const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+
+          if (!sessionData.isCompleted && sessionAge < maxAge) {
+            isSessionActive = true;
+          } else {
+            // Clean up completed or expired sessions
             localStorage.removeItem(`shopping_session_${listId}`);
-            localStorage.removeItem(`interruptedSession-${listId}`);
           }
         } catch (error) {
-          console.warn('Error checking session completion:', error);
+          // Clean up corrupted session data
+          localStorage.removeItem(`shopping_session_${listId}`);
         }
       }
-      
-      // Update session state when component mounts
-      setHasSession(hasInterruptedSession(listId));
-    }, [listId]);
+
+      setHasSession(isSessionActive);
+    };
+
+    if (listId) {
+      checkForInterruptedSession();
+    }
+  }, [listId]);
 
   // Function to resume interrupted shopping session
   const resumeShopping = () => {
-    const interruptedSession = localStorage.getItem(`interruptedSession-${listId}`);
-    const persistentSession = localStorage.getItem(`shopping_session_${listId}`);
+    // Try to get interrupted session first, then persistent session
+    const interruptedSessionData = localStorage.getItem(`interruptedSession-${listId}`);
+    const persistentSessionData = localStorage.getItem(`shopping_session_${listId}`);
 
-    const sessionToUse = interruptedSession || persistentSession;
+    let sessionDataStr = interruptedSessionData;
 
-    if (sessionToUse) {
+    // If no interrupted session, check persistent session
+    if (!sessionDataStr && persistentSessionData) {
       try {
-        const sessionData = JSON.parse(sessionToUse);
-        console.log('Resuming session with data:', sessionData);
+        const persistentData = JSON.parse(persistentSessionData);
+        // Only use persistent session if it's not completed and not expired
+        const sessionAge = Date.now() - persistentData.timestamp;
+        const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+
+        if (!persistentData.isCompleted && sessionAge < maxAge) {
+          sessionDataStr = persistentSessionData;
+        } else {
+          // Clean up completed or expired session
+          localStorage.removeItem(`shopping_session_${listId}`);
+          setHasSession(false);
+          toast({
+            title: "Session Expired",
+            description: "Your previous shopping session has expired. Starting fresh!",
+            duration: 2000
+          });
+          return;
+        }
+      } catch (error) {
+        localStorage.removeItem(`shopping_session_${listId}`);
+        setHasSession(false);
+        return;
+      }
+    }
+
+    if (sessionDataStr) {
+      try {
+        const sessionData = JSON.parse(sessionDataStr);
+        console.log('Resuming shopping with session data:', sessionData);
 
         // Restore plan data and shopping mode
         sessionStorage.setItem('shoppingPlanData', JSON.stringify(sessionData.planData));
@@ -711,6 +787,11 @@ const PlanDetails: React.FC = () => {
         });
       } catch (error) {
         console.error('Error parsing session data:', error);
+        // Clean up corrupted session data
+        localStorage.removeItem(`interruptedSession-${listId}`);
+        localStorage.removeItem(`shopping_session_${listId}`);
+        setHasSession(false);
+
         toast({
           title: "Oops!",
           description: "We couldn't restore your previous shopping trip. Let's start fresh!",
@@ -718,6 +799,7 @@ const PlanDetails: React.FC = () => {
         });
       }
     } else {
+      setHasSession(false);
       toast({
         title: "All Set!",
         description: "No previous shopping trip found. Ready to start fresh!",
@@ -975,10 +1057,11 @@ const PlanDetails: React.FC = () => {
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div 
-                    className={`w-4 h-4 rounded-full bg-${store.retailer.logoColor}-500`}
+                    className={`w-4 h-4 rounded-full`}
+                    style={{ backgroundColor: typeof store.retailer.logoColor === 'string' ? store.retailer.logoColor : '#6B7280' }}
                   />
-                  <span>{store.retailer.name}</span>
-                  <Badge variant="secondary">{store.items.length} items</Badge>
+                  <span>{store.retailer.name || 'Unknown Store'}</span>
+                  <Badge variant="secondary">{store.items?.length || 0} items</Badge>
                 </div>
                 <div className="text-lg font-bold">{formatPrice(store.subtotal)}</div>
               </CardTitle>
@@ -986,18 +1069,19 @@ const PlanDetails: React.FC = () => {
             <CardContent>
               <div className="space-y-2">
                 {store.items
-                  .sort((a, b) => a.productName.localeCompare(b.productName))
+                  ?.filter(item => item && item.productName)
+                  .sort((a, b) => (a.productName || '').localeCompare(b.productName || ''))
                   .map((item) => (
-                  <div key={item.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
+                  <div key={item.id || Math.random()} className="flex items-center justify-between py-2 border-b last:border-b-0">
                     <div className="flex-1">
-                      <div className="font-medium">{item.productName}</div>
+                      <div className="font-medium">{item.productName || 'Unknown Item'}</div>
                       <div className="text-sm text-gray-500">
-                        {item.quantity} {item.unit.toLowerCase()}
+                        {item.quantity || 0} {(item.unit || '').toLowerCase() || 'unit'}
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-medium">{formatPrice(item.suggestedPrice * item.quantity)}</div>
-                      <div className="text-sm text-gray-500">{formatPrice(item.suggestedPrice)} each</div>
+                      <div className="font-medium">{formatPrice((item.suggestedPrice || 0) * (item.quantity || 0))}</div>
+                      <div className="text-sm text-gray-500">{formatPrice(item.suggestedPrice || 0)} each</div>
                     </div>
                   </div>
                 ))}

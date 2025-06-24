@@ -215,6 +215,11 @@ const ShoppingListComponent: React.FC = () => {
 
         const isNewSession = sessionStorageCleared || browserSessionChanged;
 
+        // Check if user is currently in an active shopping session
+        const activeShoppingSession = localStorage.getItem(`shopping_session_${defaultList?.id}`) || 
+                                     localStorage.getItem(`interruptedSession-${defaultList?.id}`);
+        const isActivelyShoppingSession = !!activeShoppingSession;
+
         // Store session data
         if (isNewSession) {
           sessionStorage.setItem('shoppingListSessionStart', currentBrowserSession);
@@ -223,14 +228,16 @@ const ShoppingListComponent: React.FC = () => {
         }
 
         // Auto-generate for empty lists OR auto-regenerate for truly new sessions with existing items
-        const shouldAutoGenerate = (!hasItems && !userHasClearedList) || (hasItems && isNewSession);
+        // BUT do NOT auto-regenerate if user is actively shopping (to prevent interrupting shopping flow)
+        const shouldAutoGenerate = (!hasItems && !userHasClearedList) || (hasItems && isNewSession && !isActivelyShoppingSession);
 
         console.log('Animation trigger check:', {
           hasItems,
           isNewSession,
           shouldAutoGenerate,
           userHasClearedList,
-          isGeneratingList
+          isGeneratingList,
+          isActivelyShoppingSession
         });
 
         if (shouldAutoGenerate && !isGeneratingList) {
