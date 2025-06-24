@@ -21,6 +21,13 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -374,6 +381,7 @@ const ShoppingRoute: React.FC = () => {
   const [outOfStockItem, setOutOfStockItem] = useState<any>(null);
   const [endStoreDialogOpen, setEndStoreDialogOpen] = useState(false);
   const [uncompletedItems, setUncompletedItems] = useState<any[]>([]);
+  const [loyaltyBarcodeDialogOpen, setLoyaltyBarcodeDialogOpen] = useState(false);
 
   // Get current retailer name for loyalty card fetching
   const getCurrentRetailerName = () => {
@@ -384,13 +392,13 @@ const ShoppingRoute: React.FC = () => {
   };
 
   // Fetch loyalty card info for the current retailer
-  const { data: loyaltyCardData } = useQuery({
+  const { data: loyaltyCardData, refetch: refetchLoyaltyCard } = useQuery({
     queryKey: [`/api/user/loyalty-card/${getCurrentRetailerName()}`],
     enabled: !!getCurrentRetailerName(),
   });
 
   useEffect(() => {
-    console.log('Loyalty card data effect triggered:', loyaltyCardData);
+    console.log('Loyalty card data effect triggered:', loyaltyCardData, 'for retailer:', getCurrentRetailerName());
     if (loyaltyCardData) {
       console.log('Setting loyalty card:', loyaltyCardData);
       setLoyaltyCard(loyaltyCardData);
@@ -398,6 +406,15 @@ const ShoppingRoute: React.FC = () => {
       setLoyaltyCard(null);
     }
   }, [loyaltyCardData, currentStoreIndex]);
+
+  // Refetch loyalty card when store changes
+  useEffect(() => {
+    const retailerName = getCurrentRetailerName();
+    if (retailerName && optimizedRoute?.isMultiStore) {
+      console.log('Store changed, refetching loyalty card for:', retailerName);
+      refetchLoyaltyCard();
+    }
+  }, [currentStoreIndex, optimizedRoute?.isMultiStore, refetchLoyaltyCard]);
 
   // Fetch shopping list and items
   const { data: shoppingList, isLoading } = useQuery({
@@ -428,18 +445,65 @@ const ShoppingRoute: React.FC = () => {
 
     let planDataToUse = null;
 
-    // Try sessionStorage first (more reliable)
-    const storedPlanData = sessionStorage.getItem('shoppingPlanData');
-    if (storedPlanData) {
+    // Check for persistent shopping session first (survives app closure)
+    const persistentSessionKey = `shopping_session_${listId}`;
+    const persistentSession = localStorage.getItem(persistentSessionKey);
+    
+    if (persistentSession) {
       try {
-        planDataToUse = JSON.parse(storedPlanData);
-        console.log('Using stored plan data from sessionStorage:', planDataToUse);
+        const sessionData = JSON.parse(persistentSession);
+        console.log('Found persistent shopping session:', sessionData);
+        
+        // Check if session is still valid (within 24 hours)
+        const sessionAge = Date.now() - sessionData.timestamp;
+        const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+        
+        if (sessionAge < maxAge) {
+          planDataToUse = sessionData.planData;
+          
+          // Restore shopping progress
+          if (sessionData.currentStoreIndex !== undefined) {
+            setCurrentStoreIndex(sessionData.currentStoreIndex);
+          }
+          if (sessionData.currentAisleIndex !== undefined) {
+            setCurrentAisleIndex(sessionData.currentAisleIndex);
+          }
+          if (sessionData.completedItems) {
+            setCompletedItems(new Set(sessionData.completedItems));
+          }
+          
+          console.log('Restored shopping session - Store:', sessionData.currentStoreIndex, 'Aisle:', sessionData.currentAisleIndex);
+          
+          toast({
+            title: "Shopping Session Restored",
+            description: `Continuing from where you left off at ${sessionData.currentStoreName || 'your store'}`,
+            duration: 4000
+          });
+        } else {
+          // Clean up old session
+          localStorage.removeItem(persistentSessionKey);
+          console.log('Cleaned up expired shopping session');
+        }
       } catch (error) {
-        console.error('Error parsing stored plan data:', error);
+        console.error('Error parsing persistent session:', error);
+        localStorage.removeItem(persistentSessionKey);
       }
     }
 
-    // If no sessionStorage data, try URL parameter
+    // Try sessionStorage if no persistent session (for same-session navigation)
+    if (!planDataToUse) {
+      const storedPlanData = sessionStorage.getItem('shoppingPlanData');
+      if (storedPlanData) {
+        try {
+          planDataToUse = JSON.parse(storedPlanData);
+          console.log('Using stored plan data from sessionStorage:', planDataToUse);
+        } catch (error) {
+          console.error('Error parsing stored plan data:', error);
+        }
+      }
+    }
+
+    // If no stored data, try URL parameter
     if (!planDataToUse && planDataParam) {
       try {
         planDataToUse = JSON.parse(decodeURIComponent(planDataParam));
@@ -458,6 +522,9 @@ const ShoppingRoute: React.FC = () => {
       setOptimizedRoute(route);
       setStartTime(new Date());
 
+      // Save initial shopping session to persistent storage
+      savePersistentShoppingSession(planDataToUse, route);
+      
       toast({
         title: "Shopping Route Ready!",
         description: `Your shopping route has been created from your selected plan`,
@@ -1102,6 +1169,15 @@ const ShoppingRoute: React.FC = () => {
   };
 
   const handleEndStore = () => {
+    console.log('handleEndStore called, loyaltyCard:', loyaltyCard, 'retailer:', getCurrentRetailerName());
+    
+    // Show loyalty barcode dialog first if user has a loyalty card for current retailer
+    if (loyaltyCard && loyaltyCard.retailerName === getCurrentRetailerName()) {
+      console.log('Showing loyalty barcode dialog for:', getCurrentRetailerName());
+      setLoyaltyBarcodeDialogOpen(true);
+      return;
+    }
+
     // Check if this is the last store (single store or last store in multi-store)
     const isLastStore = !optimizedRoute?.isMultiStore || 
                         (optimizedRoute?.isMultiStore && currentStoreIndex >= optimizedRoute.stores.length - 1);
@@ -1349,6 +1425,11 @@ const ShoppingRoute: React.FC = () => {
 
     // Clear any temporary shopping data
     sessionStorage.removeItem('shoppingPlanData');
+    
+    // Clear persistent shopping session
+    const persistentSessionKey = `shopping_session_${listId}`;
+    localStorage.removeItem(persistentSessionKey);
+    console.log('Cleared persistent shopping session');
 
     // Navigate back to shopping list after a delay to allow user to see the completion message
     setTimeout(() => {
@@ -1462,6 +1543,15 @@ const ShoppingRoute: React.FC = () => {
   };
 
   const handleFinishStore = () => {
+    console.log('handleFinishStore called, loyaltyCard:', loyaltyCard, 'retailer:', getCurrentRetailerName());
+    
+    // Show loyalty barcode dialog first if user has a loyalty card for current retailer
+    if (loyaltyCard && loyaltyCard.retailerName === getCurrentRetailerName()) {
+      console.log('Showing loyalty barcode dialog for:', getCurrentRetailerName());
+      setLoyaltyBarcodeDialogOpen(true);
+      return;
+    }
+
     // For multi-store plans, check uncompleted items at intermediary stores
     if (optimizedRoute?.isMultiStore && currentStoreIndex < optimizedRoute.stores.length - 1) {
       // Get uncompleted items from current store, excluding temporary/moved items
@@ -1508,6 +1598,100 @@ const ShoppingRoute: React.FC = () => {
     } else {
       // Single store completion - end shopping
       endShopping();
+    }
+  };
+
+  // Save shopping session to localStorage (survives app closure)
+  const savePersistentShoppingSession = (planData: any, route: any) => {
+    try {
+      const sessionKey = `shopping_session_${listId}`;
+      const currentStore = route?.isMultiStore && route.stores 
+        ? route.stores[currentStoreIndex] 
+        : { retailerName: route?.retailerName };
+      
+      const sessionData = {
+        planData,
+        listId,
+        currentStoreIndex,
+        currentAisleIndex,
+        completedItems: Array.from(completedItems),
+        timestamp: Date.now(),
+        currentStoreName: currentStore?.retailerName,
+        isMultiStore: route?.isMultiStore || false,
+        totalStores: route?.stores?.length || 1
+      };
+      
+      localStorage.setItem(sessionKey, JSON.stringify(sessionData));
+      console.log('Saved persistent shopping session for list', listId);
+    } catch (error) {
+      console.warn('Failed to save shopping session:', error);
+    }
+  };
+
+  // Update session whenever progress changes
+  useEffect(() => {
+    if (optimizedRoute && selectedPlanData) {
+      savePersistentShoppingSession(selectedPlanData, optimizedRoute);
+    }
+  }, [currentStoreIndex, currentAisleIndex, completedItems, optimizedRoute, selectedPlanData]);
+
+  const proceedAfterLoyaltyCard = () => {
+    console.log('proceedAfterLoyaltyCard called');
+    setLoyaltyBarcodeDialogOpen(false);
+    
+    // Show success message for loyalty card usage
+    toast({
+      title: "Loyalty Card Applied",
+      description: `Your ${getCurrentRetailerName()} loyalty card has been used successfully!`,
+      duration: 3000
+    });
+    
+    // Check if this is the last store (single store or last store in multi-store)
+    const isLastStore = !optimizedRoute?.isMultiStore || 
+                        (optimizedRoute?.isMultiStore && currentStoreIndex >= optimizedRoute.stores.length - 1);
+
+    if (isLastStore) {
+      // Only show uncompleted items dialog for the final store/end of shopping
+      let allStoreItems: any[] = [];
+
+      if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
+        const currentStore = optimizedRoute.stores[currentStoreIndex];
+        allStoreItems = currentStore?.items || [];
+      } else {
+        // Single store - get all items from all aisles
+        allStoreItems = optimizedRoute?.aisleGroups?.flatMap(aisle => aisle.items) || [];
+      }
+
+      // Find uncompleted items
+      const uncompleted = allStoreItems.filter(item => 
+        !completedItems.has(item.id) && !item.isCompleted
+      );
+
+      if (uncompleted.length === 0) {
+        // No uncompleted items, proceed with completion
+        completeCurrentStore();
+      } else {
+        // Show dialog for uncompleted items only at the end
+        setUncompletedItems(uncompleted);
+        setEndStoreDialogOpen(true);
+      }
+    } else {
+      // For intermediate stores in multi-store plans
+      const currentStore = optimizedRoute.stores[currentStoreIndex];
+      const currentStoreItems = currentStore?.items || [];
+      const uncompleted = currentStoreItems.filter(item => 
+        !completedItems.has(item.id) && 
+        !item.isCompleted &&
+        typeof item.id === 'number' && 
+        item.id < 10000 // Exclude temporary IDs from moved items
+      );
+
+      if (uncompleted.length > 0) {
+        setUncompletedItems(uncompleted);
+        setEndStoreDialogOpen(true);
+      } else {
+        completeCurrentStore();
+      }
     }
   };
 
@@ -1601,81 +1785,37 @@ const ShoppingRoute: React.FC = () => {
           </Card>
         )}
 
-        {/* Loyalty Card Section */}
-        {loyaltyCard && (
+        {/* Loyalty Card Indicator */}
+        {loyaltyCard && loyaltyCard.retailerName === getCurrentRetailerName() && (
           <Card className="mb-4 border-green-200 bg-green-50">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="h-5 w-5 bg-green-600 rounded-full flex items-center justify-center">
+                  <div className="h-4 w-4 bg-green-600 rounded-full flex items-center justify-center">
                     <Check className="h-3 w-3 text-white" />
                   </div>
                   <div>
-                    <div className="font-semibold text-green-800">
+                    <div className="font-medium text-green-800 text-sm">
                       {optimizedRoute?.isMultiStore ? `${getCurrentRetailerName()} ` : ''}Loyalty Card Ready
                     </div>
-                    <div className="text-xs text-green-600">{loyaltyCard.cardNumber}</div>
-                    {optimizedRoute?.isMultiStore && (
-                      <div className="text-xs text-gray-500">
-                        Store {currentStoreIndex + 1} of {optimizedRoute.stores.length}
-                      </div>
-                    )}
+                    <div className="text-xs text-green-600">Card ending in {loyaltyCard.cardNumber?.slice(-4)}</div>
                   </div>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="text-green-700 border-green-300 hover:bg-green-100"
-                  onClick={() => {
-                    const retailerName = getCurrentRetailerName();
-                    toast({
-                      title: `${retailerName} Loyalty Card`,
-                      description: "Show this to the cashier for points/discounts",
-                      duration: 5000
-                    });
-                  }}
+                  className="text-green-700 border-green-300 hover:bg-green-100 text-xs"
+                  onClick={() => setLoyaltyBarcodeDialogOpen(true)}
                 >
                   Show Barcode
                 </Button>
-              </div>
-
-              {/* Barcode Display Area */}
-              <div className="bg-white p-3 rounded border text-center">
-                <div className="text-xs text-gray-500 mb-1">
-                  {getCurrentRetailerName()} Loyalty Card
-                </div>
-                <div className="font-mono text-lg font-bold tracking-wider">
-                  {loyaltyCard.barcodeNumber || loyaltyCard.cardNumber}
-                </div>
-                {/* Simple barcode visualization */}
-                <div className="flex justify-center mt-2 gap-px">
-                  {(loyaltyCard.barcodeNumber || loyaltyCard.cardNumber)?.split('').map((digit: string, index: number) => (
-                    <div
-                      key={index}
-                      className={`w-1 h-8 ${parseInt(digit) % 2 === 0 ? 'bg-black' : 'bg-gray-300'}`}
-                    />
-                  ))}
-                </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Member ID: {loyaltyCard.memberId || loyaltyCard.cardNumber}
-                </div>
-                {loyaltyCard.affiliateCode && (
-                  <div className="text-xs text-blue-600 mt-1">
-                    Affiliate: {loyaltyCard.affiliateCode}
-                  </div>
-                )}
-                {optimizedRoute?.isMultiStore && (
-                  <div className="text-xs text-purple-600 mt-1 font-medium">
-                    🏪 Currently shopping at {getCurrentRetailerName()}
-                  </div>
-                )}
               </div>
             </CardContent>
           </Card>
         )}
 
         {/* No Loyalty Card Notice for Multi-Store */}
-        {!loyaltyCard && optimizedRoute?.isMultiStore && getCurrentRetailerName() && (
+        {(!loyaltyCard || loyaltyCard.retailerName !== getCurrentRetailerName()) && optimizedRoute?.isMultiStore && getCurrentRetailerName() && (
           <Card className="mb-4 border-yellow-200 bg-yellow-50">
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
@@ -1696,153 +1836,9 @@ const ShoppingRoute: React.FC = () => {
           </Card>
         )}
 
-        {/* Progress Header */}
-        <Card className="mb-4">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Store className="h-5 w-5 text-primary" />
-                <div>
-                  <div className="font-semibold">{optimizedRoute.retailerName}</div>
-                  {optimizedRoute.planType && (
-                    <div className="text-xs text-gray-500">{optimizedRoute.planType}</div>
-                  )}
-                </div>
-              </div>
+        
 
-            </div>
-
-            {/* Plan Summary */}
-            {(optimizedRoute.totalCost > 0 || optimizedRoute.savings > 0) && (
-              <div className="mb-3 p-2 bg-green-50 rounded-lg">
-                <div className="flex justify-between items-center text-sm">
-                  {optimizedRoute.totalCost > 0 && (
-                    <span className="font-medium">Total: ${(optimizedRoute.totalCost / 100).toFixed(2)}</span>
-                  )}
-                  {optimizedRoute.savings > 0 && (
-                    <span className="text-green-600">Save: ${(optimizedRoute.savings / 100).toFixed(2)}</span>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Progress</span>
-                <span>{completedItems.size} of {optimizedRoute.totalItems} items</span>
-              </div>
-              <Progress value={getProgressPercentage()} className="h-2" />
-            </div>
-
-            <div className="flex items-center justify-between mt-3 text-sm">
-              <span className="flex items-center gap-1">
-                <Navigation className="h-4 w-4" />
-                {currentAisleIndex + 1} of {optimizedRoute.totalAisles} aisles
-              </span>
-              <span className="flex items-center gap-1">
-                <Clock className="h-4 w-4" />
-                Est. {optimizedRoute.estimatedTime} min total
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Multi-Store Navigation */}
-        {optimizedRoute?.isMultiStore && (
-          <Card className="mb-4">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Store className="h-5 w-5 text-purple-600" />
-                Multi-Store Shopping Plan
-              </CardTitle>
-              <p className="text-sm text-gray-600">Shop at {optimizedRoute.stores.length} stores for best prices</p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {optimizedRoute.stores.map((store: any, index: number) => {
-                  const storeCompletedItems = store.items.filter((item: any) => 
-                    completedItems.has(item.id) || item.isCompleted
-                  ).length;
-                  const isCurrent = index === currentStoreIndex;
-                  const isCompleted = storeCompletedItems === store.items.length;
-
-                  return (
-                    <div
-                      key={index}
-                      className={`p-3 rounded-lg border transition-all cursor-pointer ${
-                        isCurrent 
-                          ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200' 
-                          : isCompleted
-                          ? 'bg-green-50 border-green-200'
-                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                      }`}
-                      onClick={() => setCurrentStoreIndex(index)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium text-sm">{store.retailerName}</div>
-                          <div className="text-xs text-gray-500">
-                            {store.items.length} items • ${((store.subtotal || 0) / 100).toFixed(2)}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="text-xs text-gray-600">
-                            {storeCompletedItems}/{store.items.length}
-                          </div>
-                          {isCurrent && (
-                            <Badge className="bg-blue-600 text-white text-xs">
-                              Current
-                            </Badge>
-                          )}
-                          {isCompleted && !isCurrent && (
-                            <Badge className="bg-green-600 text-white text-xs">
-                              Complete
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Store Navigation Buttons */}
-              <div className="mt-4 pt-3 border-t">
-                <div className="grid grid-cols-2 gap-3">
-                  <Button 
-                    variant="outline"
-                    onClick={() => setCurrentStoreIndex(Math.max(0, currentStoreIndex - 1))}
-                    disabled={currentStoreIndex === 0}
-                    className="w-full"
-                  >
-                    <ArrowRight className="h-4 w-4 mr-2 rotate-180" />
-                    Previous Store
-                  </Button>
-
-                  <Button 
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => {
-                      if (currentStoreIndex < optimizedRoute.stores.length - 1) {
-                        setCurrentStoreIndex(currentStoreIndex + 1);
-                        setCurrentAisleIndex(0); // Reset to first aisle of new store
-                        toast({
-                          title: "Moving to next store",
-                          description: `Now shopping at ${optimizedRoute.stores[currentStoreIndex + 1].retailerName}`,
-                          duration: 3000
-                        });
-                      }
-                    }}
-                    disabled={currentStoreIndex >= optimizedRoute.stores.length - 1}
-                  >
-                    Next Store
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        
 
         {/* Retailer-Specific Deals Section */}
         {optimizedRoute?.retailerName && (
@@ -1992,7 +1988,7 @@ const ShoppingRoute: React.FC = () => {
         )}
 
         {/* All Aisles Overview */}
-        <Card>
+        <Card className="mb-4">
           <CardHeader>
             <CardTitle className="text-base">All Aisles</CardTitle>
           </CardHeader>
@@ -2065,6 +2061,154 @@ const ShoppingRoute: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Progress Header */}
+        <Card className="mb-4">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Store className="h-5 w-5 text-primary" />
+                <div>
+                  <div className="font-semibold">{optimizedRoute.retailerName}</div>
+                  {optimizedRoute.planType && (
+                    <div className="text-xs text-gray-500">{optimizedRoute.planType}</div>
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Plan Summary */}
+            {(optimizedRoute.totalCost > 0 || optimizedRoute.savings > 0) && (
+              <div className="mb-3 p-2 bg-green-50 rounded-lg">
+                <div className="flex justify-between items-center text-sm">
+                  {optimizedRoute.totalCost > 0 && (
+                    <span className="font-medium">Total: ${(optimizedRoute.totalCost / 100).toFixed(2)}</span>
+                  )}
+                  {optimizedRoute.savings > 0 && (
+                    <span className="text-green-600">Save: ${(optimizedRoute.savings / 100).toFixed(2)}</span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Progress</span>
+                <span>{completedItems.size} of {optimizedRoute.totalItems} items</span>
+              </div>
+              <Progress value={getProgressPercentage()} className="h-2" />
+            </div>
+
+            <div className="flex items-center justify-between mt-3 text-sm">
+              <span className="flex items-center gap-1">
+                <Navigation className="h-4 w-4" />
+                {currentAisleIndex + 1} of {optimizedRoute.totalAisles} aisles
+              </span>
+              <span className="flex items-center gap-1">
+                <Clock className="h-4 w-4" />
+                Est. {optimizedRoute.estimatedTime} min total
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Multi-Store Navigation */}
+        {optimizedRoute?.isMultiStore && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Store className="h-5 w-5 text-purple-600" />
+                Multi-Store Shopping Plan
+              </CardTitle>
+              <p className="text-sm text-gray-600">Shop at {optimizedRoute.stores.length} stores for best prices</p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {optimizedRoute.stores.map((store: any, index: number) => {
+                  const storeCompletedItems = store.items.filter((item: any) => 
+                    completedItems.has(item.id) || item.isCompleted
+                  ).length;
+                  const isCurrent = index === currentStoreIndex;
+                  const isCompleted = storeCompletedItems === store.items.length;
+
+                  return (
+                    <div
+                      key={index}
+                      className={`p-3 rounded-lg border transition-all cursor-pointer ${
+                        isCurrent 
+                          ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200' 
+                          : isCompleted
+                          ? 'bg-green-50 border-green-200'
+                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                      }`}
+                      onClick={() => setCurrentStoreIndex(index)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-sm">{store.retailerName}</div>
+                          <div className="text-xs text-gray-500">
+                            {store.items.length} items • ${((store.subtotal || 0) / 100).toFixed(2)}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-xs text-gray-600">
+                            {storeCompletedItems}/{store.items.length}
+                          </div>
+                          {isCurrent && (
+                            <Badge className="bg-blue-600 text-white text-xs">
+                              Current
+                            </Badge>
+                          )}
+                          {isCompleted && !isCurrent && (
+                            <Badge className="bg-green-600 text-white text-xs">
+                              Complete
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Store Navigation Buttons */}
+              <div className="mt-4 pt-3 border-t">
+                <div className="grid grid-cols-2 gap-3">
+                  <Button 
+                    variant="outline"
+                    onClick={() => setCurrentStoreIndex(Math.max(0, currentStoreIndex - 1))}
+                    disabled={currentStoreIndex === 0}
+                    className="w-full"
+                  >
+                    <ArrowRight className="h-4 w-4 mr-2 rotate-180" />
+                    Previous Store
+                  </Button>
+
+                  <Button 
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      if (currentStoreIndex < optimizedRoute.stores.length - 1) {
+                        setCurrentStoreIndex(currentStoreIndex + 1);
+                        setCurrentAisleIndex(0); // Reset to first aisle of new store
+                        toast({
+                          title: "Moving to next store",
+                          description: `Now shopping at ${optimizedRoute.stores[currentStoreIndex + 1].retailerName}`,
+                          duration: 3000
+                        });
+                      }
+                    }}
+                    disabled={currentStoreIndex >= optimizedRoute.stores.length - 1}
+                  >
+                    Next Store
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </main>
 
       <BottomNavigation activeTab="lists" />
@@ -2235,6 +2379,112 @@ const ShoppingRoute: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Loyalty Barcode Dialog */}
+      <Dialog open={loyaltyBarcodeDialogOpen} onOpenChange={setLoyaltyBarcodeDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl font-semibold text-gray-900">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                <Star className="h-5 w-5 text-green-600" />
+              </div>
+              {getCurrentRetailerName()} Loyalty Card
+            </DialogTitle>
+            <DialogDescription className="text-gray-600 mt-2">
+              Show this barcode to the cashier to earn points and apply member discounts.
+              {optimizedRoute?.isMultiStore && (
+                <div className="mt-1 text-sm">
+                  Store {currentStoreIndex + 1} of {optimizedRoute.stores.length}
+                </div>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {loyaltyCard && (
+            <div className="mt-4">
+              {/* Enhanced Barcode Display */}
+              <div className="bg-white p-6 rounded-lg border-2 border-gray-300 text-center">
+                <div className="text-sm text-gray-600 mb-2 font-medium">
+                  {loyaltyCard.retailerName || getCurrentRetailerName()} Member Card
+                </div>
+                
+                {/* Large barcode number */}
+                <div className="font-mono text-2xl font-bold tracking-wider mb-4 text-gray-900">
+                  {loyaltyCard.barcodeNumber || loyaltyCard.cardNumber}
+                </div>
+                
+                {/* Enhanced barcode visualization */}
+                <div className="flex justify-center mb-4 gap-px bg-white p-4 border rounded">
+                  {(loyaltyCard.barcodeNumber || loyaltyCard.cardNumber)?.split('').map((digit: string, index: number) => {
+                    // Create more realistic barcode pattern
+                    const isWideBar = parseInt(digit) % 3 === 0;
+                    const isBlackBar = parseInt(digit) % 2 === 0;
+                    return (
+                      <div
+                        key={index}
+                        className={`${isWideBar ? 'w-2' : 'w-1'} h-16 ${isBlackBar ? 'bg-black' : 'bg-gray-200'}`}
+                      />
+                    );
+                  })}
+                </div>
+                
+                {/* Member details */}
+                <div className="space-y-1 text-sm text-gray-600">
+                  <div className="font-medium">
+                    Member ID: {loyaltyCard.memberId || loyaltyCard.cardNumber}
+                  </div>
+                  {loyaltyCard.affiliateCode && (
+                    <div className="text-blue-600">
+                      Affiliate: {loyaltyCard.affiliateCode}
+                    </div>
+                  )}
+                  {loyaltyCard.discountPercentage && (
+                    <div className="text-green-600 font-medium">
+                      Member Discount: {loyaltyCard.discountPercentage}% off
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Instructions */}
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-start gap-2">
+                  <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center mt-0.5">
+                    <Check className="h-3 w-3 text-white" />
+                  </div>
+                  <div className="text-sm text-blue-800">
+                    <div className="font-medium mb-1">Checkout Instructions:</div>
+                    <ul className="space-y-1 text-xs">
+                      <li>• Show this screen to the cashier</li>
+                      <li>• They can scan the barcode or enter the number manually</li>
+                      <li>• Make sure to apply discounts before payment</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="mt-6 space-y-3">
+                <Button 
+                  onClick={proceedAfterLoyaltyCard}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
+                >
+                  <Check className="h-5 w-5" />
+                  Card Scanned - Continue Checkout
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={() => setLoyaltyBarcodeDialogOpen(false)}
+                  className="w-full border-gray-300 text-gray-700 font-medium py-3 rounded-lg"
+                >
+                  Keep Shopping
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
