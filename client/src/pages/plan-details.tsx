@@ -613,7 +613,9 @@ const PlanDetails: React.FC = () => {
         const hasProgress = ((sessionData.completedItems && sessionData.completedItems.length > 0) ||
                            (sessionData.currentAisleIndex && sessionData.currentAisleIndex > 1) ||
                            (sessionData.currentStoreIndex && sessionData.currentStoreIndex > 0)) &&
-                           !sessionData.isCompleted; // Check if session is marked as completed
+                           !sessionData.isCompleted && // Check if session is marked as completed
+                           sessionData.timestamp && // Must have a timestamp
+                           (Date.now() - sessionData.timestamp) > 30000; // Must be older than 30 seconds
 
         if (!hasProgress) {
           localStorage.removeItem(`shopping_session_${listId}`);
@@ -636,7 +638,9 @@ const PlanDetails: React.FC = () => {
         const sessionData = JSON.parse(interruptedSession);
         const hasProgress = (sessionData.completedItems && sessionData.completedItems.length > 0) ||
                            (sessionData.currentAisleIndex && sessionData.currentAisleIndex > 1) ||
-                           (sessionData.currentStoreIndex && sessionData.currentStoreIndex > 0);
+                           (sessionData.currentStoreIndex && sessionData.currentStoreIndex > 0) &&
+                           sessionData.timestamp && 
+                           (Date.now() - sessionData.timestamp) > 30000;
 
         if (!hasProgress) {
           localStorage.removeItem(`interruptedSession-${listId}`);
@@ -895,7 +899,7 @@ const PlanDetails: React.FC = () => {
               <CardDescription>
                 Get the best prices by shopping at multiple stores
               </CardDescription>
-            </CardHeader```text
+            </CardHeader>
             <CardContent>
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="text-center">
