@@ -588,7 +588,8 @@ const PlanDetails: React.FC = () => {
   // Function to check for an interrupted shopping session in localStorage
   const hasInterruptedSession = (listId: string): boolean => {
     const interruptedSession = localStorage.getItem(`interruptedSession-${listId}`);
-    return !!interruptedSession;
+    const persistentSession = localStorage.getItem(`shopping_session_${listId}`);
+    return !!interruptedSession || !!persistentSession;
   };
 
   // React component to display the interrupted session card
@@ -600,50 +601,54 @@ const PlanDetails: React.FC = () => {
       setHasSession(hasInterruptedSession(listId));
     }, [listId]);
 
-    // Function to resume interrupted shopping session
-    const resumeShopping = () => {
-      const interruptedSession = localStorage.getItem(`interruptedSession-${listId}`);
+  // Function to resume interrupted shopping session
+  const resumeShopping = () => {
+    const interruptedSession = localStorage.getItem(`interruptedSession-${listId}`);
+    const persistentSession = localStorage.getItem(`shopping_session_${listId}`);
 
-      if (interruptedSession) {
-        try {
-          const sessionData = JSON.parse(interruptedSession);
-          console.log('Resuming interrupted session with data:', sessionData);
+    const sessionToUse = interruptedSession || persistentSession;
 
-          // Restore plan data and shopping mode
-          sessionStorage.setItem('shoppingPlanData', JSON.stringify(sessionData.planData));
-          sessionStorage.setItem('shoppingListId', listId);
-          sessionStorage.setItem('shoppingMode', sessionData.shoppingMode);
+    if (sessionToUse) {
+      try {
+        const sessionData = JSON.parse(sessionToUse);
+        console.log('Resuming session with data:', sessionData);
 
-          // Redirect to the shopping route page
-          const targetUrl = `/shopping-route?listId=${listId}&mode=${sessionData.shoppingMode}&fromPlan=true&resume=true`;
-          console.log('Navigating to:', targetUrl);
-          navigate(targetUrl);
+        // Restore plan data and shopping mode
+        sessionStorage.setItem('shoppingPlanData', JSON.stringify(sessionData.planData));
+        sessionStorage.setItem('shoppingListId', listId);
+        sessionStorage.setItem('shoppingMode', sessionData.shoppingMode || 'instore');
 
-          // Clear interrupted session data
-          localStorage.removeItem(`interruptedSession-${listId}`);
-          setHasSession(false);
+        // Redirect to the shopping route page
+        const targetUrl = `/shopping-route?listId=${listId}&mode=${sessionData.shoppingMode || 'instore'}&fromPlan=true&resume=true`;
+        console.log('Navigating to:', targetUrl);
+        navigate(targetUrl);
 
-          toast({
-            title: "Welcome Back!",
-            description: "Taking you back to where you left off in the store...",
-            duration: 2000
-          });
-        } catch (error) {
-          console.error('Error parsing interrupted session data:', error);
-          toast({
-            title: "Oops!",
-            description: "We couldn't restore your previous shopping trip. Let's start fresh!",
-            variant: "destructive"
-          });
-        }
-      } else {
+        // Clear both session types
+        localStorage.removeItem(`interruptedSession-${listId}`);
+        localStorage.removeItem(`shopping_session_${listId}`);
+        setHasSession(false);
+
         toast({
-          title: "All Set!",
-          description: "No previous shopping trip found. Ready to start fresh!",
-          variant: "default"
+          title: "Welcome Back!",
+          description: "Taking you back to where you left off in the store...",
+          duration: 2000
+        });
+      } catch (error) {
+        console.error('Error parsing session data:', error);
+        toast({
+          title: "Oops!",
+          description: "We couldn't restore your previous shopping trip. Let's start fresh!",
+          variant: "destructive"
         });
       }
-    };
+    } else {
+      toast({
+        title: "All Set!",
+        description: "No previous shopping trip found. Ready to start fresh!",
+        variant: "default"
+      });
+    }
+  };
 
     // Clear interrupted session
     const clearSession = () => {
@@ -702,7 +707,7 @@ const PlanDetails: React.FC = () => {
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto p-4 pb-20 space-y-6">
-      
+
       {/* Check for interrupted shopping session */}
       <InterruptedSessionCard listId={listId} />
 
@@ -876,6 +881,7 @@ const PlanDetails: React.FC = () => {
               className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold shadow-lg"
               size="lg"
               onClick={handleOrderOnline}
+            ```python
             >
               <MapPin className="h-4 w-4 mr-2" />
               Order Online
