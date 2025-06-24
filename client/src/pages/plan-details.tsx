@@ -624,23 +624,23 @@ const PlanDetails: React.FC = () => {
           setHasSession(false);
 
           toast({
-            title: "Resuming Shopping Route",
-            description: "Restoring your previous shopping session...",
+            title: "Welcome Back!",
+            description: "Taking you back to where you left off in the store...",
             duration: 2000
           });
         } catch (error) {
           console.error('Error parsing interrupted session data:', error);
           toast({
-            title: "Session Error",
-            description: "Failed to resume previous shopping session.",
+            title: "Oops!",
+            description: "We couldn't restore your previous shopping trip. Let's start fresh!",
             variant: "destructive"
           });
         }
       } else {
         toast({
-          title: "No Session Found",
-          description: "No interrupted shopping session found.",
-          variant: "destructive"
+          title: "All Set!",
+          description: "No previous shopping trip found. Ready to start fresh!",
+          variant: "default"
         });
       }
     };
@@ -648,10 +648,11 @@ const PlanDetails: React.FC = () => {
     // Clear interrupted session
     const clearSession = () => {
       localStorage.removeItem(`interruptedSession-${listId}`);
+      localStorage.removeItem(`shopping_session_${listId}`); // Also clear persistent shopping session
       setHasSession(false);
       toast({
-        title: "Session Cleared",
-        description: "Interrupted shopping session cleared.",
+        title: "Ready to Go!",
+        description: "Previous shopping trip cleared. Starting fresh!",
         duration: 2000
       });
     };
@@ -664,16 +665,20 @@ const PlanDetails: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Interrupted Shopping Session
+            <Clock className="h-5 w-5 text-blue-600" />
+            Continue Where You Left Off?
           </CardTitle>
           <CardDescription>
-            It appears you have an interrupted shopping session.
+            We found your previous shopping trip in progress. Would you like to pick up where you left off?
           </CardDescription>
         </CardHeader>
         <CardContent className="flex justify-between">
-          <Button onClick={resumeShopping}>Resume Shopping</Button>
-          <Button variant="outline" onClick={clearSession}>Clear Session</Button>
+          <Button onClick={resumeShopping} className="bg-green-600 hover:bg-green-700">
+            Yes, Continue Shopping
+          </Button>
+          <Button variant="outline" onClick={clearSession}>
+            Start Fresh
+          </Button>
         </CardContent>
       </Card>
     );
