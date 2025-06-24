@@ -802,7 +802,7 @@ const ShoppingRoute: React.FC = () => {
       'Pantry & Canned Goods': { aisle: 'Aisle 4-6', category: 'Pantry & Canned Goods', order: 4, color: 'bg-yellow-100 text-yellow-800' },
       'Frozen Foods': { aisle: 'Aisle 7', category: 'Frozen Foods', order: 5, color: 'bg-cyan-100 text-cyan-800' },
       'Bakery': { aisle: 'Aisle 8', category: 'Bakery', order: 6, color: 'bg-orange-100 text-orange-800' },
-      'Personal Care': { aisle: 'Aisle 9', category: 'Personal Care', order: 7, color: 'bg-purple-100 text-purple-100 text-purple-100 text-purple-800' },
+      'Personal Care': { aisle: 'Aisle 9', category: 'Personal Care', order: 7, color: 'bg-purple-100 text-purple-100 text-purple-800' },
       'Household Items': { aisle: 'Aisle 10', category: 'Household Items', order: 8, color: 'bg-gray-100 text-gray-800' },
       'Generic': { aisle: 'Generic', category: 'Generic Items', order: 9, color: 'bg-slate-100 text-slate-800' }
     };
@@ -1048,38 +1048,22 @@ const ShoppingRoute: React.FC = () => {
         // Delete the item from the shopping list entirely
         await apiRequest('DELETE', `/api/shopping-list/items/${outOfStockItem.id}`);
 
-        // Create a new optimized route with the item removed
-        setOptimizedRoute((prevRoute: any) => {
-          if (!prevRoute) return prevRoute;
-
-          const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
-            ...aisle,
-            items: aisle.items.filter((routeItem: any) => routeItem.id !== outOfStockItem.id)
-          })).filter((aisle: any) => aisle.items.length > 0); // Remove empty aisles
-
-          return {
-            ...prevRoute,
-            aisleGroups: newAisleGroups,
-            totalItems: prevRoute.totalItems - 1
-          };
-        });
-
-        // For multi-store plans, also remove from current store's items
-        if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
-          const updatedStores = [...optimizedRoute.stores];
-          const currentStore = updatedStores[currentStoreIndex];
-          if (currentStore) {
-            currentStore.items = currentStore.items.filter((storeItem: any) => storeItem.id !== outOfStockItem.id);
-          }
-          setOptimizedRoute((prevRoute: any) => ({
-            ...prevRoute,
-            stores: updatedStores
-          }));
+        // Remove item from current shopping route display
+        if (optimizedRoute?.aisleGroups) {
+          optimizedRoute.aisleGroups.forEach((aisle: any) => {
+            const itemIndex = aisle.items.findIndex((item: any) => item.id === outOfStockItem.id);
+            if (itemIndex > -1) {
+              aisle.items.splice(itemIndex, 1);
+            }
+          });
         }
 
         // Invalidate queries to refresh the shopping list
         queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
         queryClient.invalidateQueries({ queryKey: [`/api/shopping-lists/${listId}`] });
+
+        // Force a re-render by updating the route state
+        setOptimizedRoute({...optimizedRoute});
 
         toast({
           title: "Item Removed",
@@ -1667,8 +1651,7 @@ const ShoppingRoute: React.FC = () => {
       // Single store - create reminder for alternative store
       uncompletedItems.forEach(item => {
         updateItemMutation.mutate({
-          itemId: item<replit_final_file>
-.id,
+          itemId: item.id,
           updates: {
             notes: `Try alternative store - not found at ${optimizedRoute?.retailerName || 'current store'}`,
             isCompleted: false
@@ -2174,21 +2157,18 @@ const ShoppingRoute: React.FC = () => {
                                     }
                                   });
 
-                                  // Create a new optimized route with the item removed from current shopping session
-                                  setOptimizedRoute((prevRoute: any) => {
-                                    if (!prevRoute) return prevRoute;
+                                  // Remove item from current shopping route display
+                                  if (optimizedRoute?.aisleGroups) {
+                                    optimizedRoute.aisleGroups.forEach((aisle: any) => {
+                                      const itemIndex = aisle.items.findIndex((routeItem: any) => routeItem.id === item.id);
+                                      if (itemIndex > -1) {
+                                        aisle.items.splice(itemIndex, 1);
+                                      }
+                                    });
+                                  }
 
-                                    const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
-                                      ...aisle,
-                                      items: aisle.items.filter((routeItem: any) => routeItem.id !== item.id)
-                                    })).filter((aisle: any) => aisle.items.length > 0); // Remove empty aisles
-
-                                    return {
-                                      ...prevRoute,
-                                      aisleGroups: newAisleGroups,
-                                      totalItems: prevRoute.totalItems - 1
-                                    };
-                                  });
+                                  // Force a re-render by updating the route state
+                                  setOptimizedRoute({...optimizedRoute});
 
                                   toast({
                                     title: "Item Saved for Later",
@@ -2212,31 +2192,33 @@ const ShoppingRoute: React.FC = () => {
                                     // Delete the item from the shopping list entirely
                                     await apiRequest('DELETE', `/api/shopping-list/items/${item.id}`);
 
-                                    // Create a new optimized route with the item removed
-                                    setOptimizedRoute((prevRoute: any) => {
-                                      if (!prevRoute) return prevRoute;
-
-                                      const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
-                                        ...aisle,
-                                        items: aisle.items.filter((routeItem: any) => routeItem.id !== item.id)
-                                      })).filter((aisle: any) => aisle.items.length > 0); // Remove empty aisles
-
-                                      return {
-                                        ...prevRoute,
-                                        aisleGroups: newAisleGroups,
-                                        totalItems: prevRoute.totalItems - 1
-                                      };
-                                    });
+                                    // Remove item from current shopping route display
+                                    if (optimizedRoute?.aisleGroups) {
+                                      optimizedRoute.aisleGroups.forEach((aisle: any) => {
+                                        const itemIndex = aisle.items.findIndex((routeItem: any) => routeItem.id === item.id);
+                                        if (itemIndex > -1) {
+                                          aisle.items.splice(itemIndex, 1);
+                                        }
+                                      });
+                                    }
 
                                     // Invalidate queries to refresh the shopping list
                                     queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
                                     queryClient.invalidateQueries({ queryKey: [`/api/shopping-lists/${listId}`] });
+
+                                    // Force a re-render by updating the route state
+                                    setOptimizedRoute({...optimizedRoute});
 
                                     toast({
                                       title: "Item Removed",
                                       description: `${item.productName} has been removed from your list`,
                                       duration: 3000
                                     });
+
+                                    // Check if aisle is now empty after a brief delay
+                                    setTimeout(() => {
+                                      checkAndHandleEmptyAisle();
+                                    }, 100);
                                   } catch (error) {
                                     console.error('Failed to remove item:', error);
                                     toast({
@@ -2266,37 +2248,29 @@ const ShoppingRoute: React.FC = () => {
                                     }
                                   });
 
-                                  // Create a new optimized route with the item removed from current shopping session
-                                  setOptimizedRoute((prevRoute: any) => {
-                                    if (!prevRoute) return prevRoute;
+                                  // Remove item from current shopping route display
+                                  if (optimizedRoute?.aisleGroups) {
+                                    optimizedRoute.aisleGroups.forEach((aisle: any) => {
+                                      const itemIndex = aisle.items.findIndex((routeItem: any) => routeItem.id === item.id);
+                                      if (itemIndex > -1) {
+                                        aisle.items.splice(itemIndex, 1);
+                                      }
+                                    });
+                                  }
 
-                                    const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
-                                      ...aisle,
-                                      items: aisle.items.filter((routeItem: any) => routeItem.id !== item.id)
-                                    })).filter((aisle: any) => aisle.items.length > 0); // Remove empty aisles
-
-                                    let updatedRoute = {
-                                      ...prevRoute,
-                                      aisleGroups: newAisleGroups,
-                                      totalItems: prevRoute.totalItems - 1
-                                    };
-
-                                    // For multi-store plans, also remove from current store's items
-                                    if (prevRoute.isMultiStore && prevRoute.stores) {
-                                      const updatedStores = prevRoute.stores.map((store: any, index: number) => {
-                                        if (index === currentStoreIndex) {
-                                          return {
-                                            ...store,
-                                            items: store.items.filter((storeItem: any) => storeItem.id !== item.id)
-                                          };
-                                        }
-                                        return store;
-                                      });
-                                      updatedRoute.stores = updatedStores;
+                                  // For multi-store plans, also remove from current store's items
+                                  if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
+                                    const currentStore = optimizedRoute.stores[currentStoreIndex];
+                                    if (currentStore) {
+                                      const itemIndex = currentStore.items.findIndex((storeItem: any) => storeItem.id === item.id);
+                                      if (itemIndex > -1) {
+                                        currentStore.items.splice(itemIndex, 1);
+                                      }
                                     }
+                                  }
 
-                                    return updatedRoute;
-                                  });
+                                  // Force a re-render by updating the route state
+                                  setOptimizedRoute({...optimizedRoute});
 
                                   toast({
                                     title: "Item Saved for Later",
@@ -2449,44 +2423,44 @@ const ShoppingRoute: React.FC = () => {
                                     // Delete the item from the shopping list entirely
                                     await apiRequest('DELETE', `/api/shopping-list/items/${item.id}`);
 
-                                    // Create a new optimized route with the item removed
-                                    setOptimizedRoute((prevRoute: any) => {
-                                      if (!prevRoute) return prevRoute;
-
-                                      const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
-                                        ...aisle,
-                                        items: aisle.items.filter((routeItem: any) => routeItem.id !== item.id)
-                                      })).filter((aisle: any) => aisle.items.length > 0); // Remove empty aisles
-
-                                      return {
-                                        ...prevRoute,
-                                        aisleGroups: newAisleGroups,
-                                        totalItems: prevRoute.totalItems - 1
-                                      };
-                                    });
+                                    // Remove item from current shopping route display
+                                    if (optimizedRoute?.aisleGroups) {
+                                      optimizedRoute.aisleGroups.forEach((aisle: any) => {
+                                        const itemIndex = aisle.items.findIndex((routeItem: any) => routeItem.id === item.id);
+                                        if (itemIndex > -1) {
+                                          aisle.items.splice(itemIndex, 1);
+                                        }
+                                      });
+                                    }
 
                                     // For multi-store plans, also remove from current store's items
                                     if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
-                                      const updatedStores = [...optimizedRoute.stores];
-                                      const currentStore = updatedStores[currentStoreIndex];
+                                      const currentStore = optimizedRoute.stores[currentStoreIndex];
                                       if (currentStore) {
-                                        currentStore.items = currentStore.items.filter((storeItem: any) => storeItem.id !== item.id);
+                                        const itemIndex = currentStore.items.findIndex((storeItem: any) => storeItem.id === item.id);
+                                        if (itemIndex > -1) {
+                                          currentStore.items.splice(itemIndex, 1);
+                                        }
                                       }
-                                      setOptimizedRoute((prevRoute: any) => ({
-                                        ...prevRoute,
-                                        stores: updatedStores
-                                      }));
                                     }
 
                                     // Invalidate queries to refresh the shopping list
                                     queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
                                     queryClient.invalidateQueries({ queryKey: [`/api/shopping-lists/${listId}`] });
 
+                                    // Force a re-render by updating the route state
+                                    setOptimizedRoute({...optimizedRoute});
+
                                     toast({
                                       title: "Item Removed",
                                       description: `${item.productName} has been removed from your list`,
                                       duration: 3000
                                     });
+
+                                    // Check if aisle is now empty after a brief delay
+                                    setTimeout(() => {
+                                      checkAndHandleEmptyAisle();
+                                    }, 100);
                                   } catch (error) {
                                     console.error('Failed to remove item:', error);
                                     toast({
@@ -2520,7 +2494,8 @@ const ShoppingRoute: React.FC = () => {
                     disabled={currentAisleIndex === 0}
                     className="w-full"
                   >
-                    <ArrowRight className="h-4 w-4 mr-2 rotate-180" />                    Previous
+                    <ArrowRight className="h-4 w-4 mr-2 rotate-180" />
+                    Previous
                   </Button>
 
                   {isLastAisle ? (
