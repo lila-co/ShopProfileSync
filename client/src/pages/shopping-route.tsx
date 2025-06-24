@@ -1950,18 +1950,7 @@ const ShoppingRoute: React.FC = () => {
       </header>
 
       <main className="flex-1 overflow-y-auto p-4 pb-20">
-        {/* Debug Info - Only show in development */}
-        {import.meta.env.DEV && (
-          <Card className="mb-4 border-yellow-200 bg-yellow-50">
-            <CardContent className="p-4">
-              <div className="text-xs">
-                <div>Retailer: {optimizedRoute?.retailerName || 'Not set'}</div>
-                <div>Loyalty Card Data: {loyaltyCardData ? 'Found' : 'Not found'}</div>
-                <div>Loyalty Card State: {loyaltyCard ? 'Set' : 'Not set'}</div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        
 
         {/* Loyalty Card Indicator */}
         {loyaltyCard && loyaltyCard.retailerName === getCurrentRetailerName() && (
