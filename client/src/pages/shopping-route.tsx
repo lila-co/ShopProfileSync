@@ -2035,7 +2035,7 @@ const ShoppingRoute: React.FC = () => {
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuContent align="end" className="w-48 bg-white border border-gray-200 shadow-lg backdrop-blur-none")
                           {/* For single-store routes, show simplified options directly */}
                           {!optimizedRoute?.isMultiStore ? (
                             <>
