@@ -392,13 +392,13 @@ const ShoppingRoute: React.FC = () => {
   };
 
   // Fetch loyalty card info for the current retailer
-  const { data: loyaltyCardData } = useQuery({
+  const { data: loyaltyCardData, refetch: refetchLoyaltyCard } = useQuery({
     queryKey: [`/api/user/loyalty-card/${getCurrentRetailerName()}`],
     enabled: !!getCurrentRetailerName(),
   });
 
   useEffect(() => {
-    console.log('Loyalty card data effect triggered:', loyaltyCardData);
+    console.log('Loyalty card data effect triggered:', loyaltyCardData, 'for retailer:', getCurrentRetailerName());
     if (loyaltyCardData) {
       console.log('Setting loyalty card:', loyaltyCardData);
       setLoyaltyCard(loyaltyCardData);
@@ -406,6 +406,15 @@ const ShoppingRoute: React.FC = () => {
       setLoyaltyCard(null);
     }
   }, [loyaltyCardData, currentStoreIndex]);
+
+  // Refetch loyalty card when store changes
+  useEffect(() => {
+    const retailerName = getCurrentRetailerName();
+    if (retailerName && optimizedRoute?.isMultiStore) {
+      console.log('Store changed, refetching loyalty card for:', retailerName);
+      refetchLoyaltyCard();
+    }
+  }, [currentStoreIndex, optimizedRoute?.isMultiStore, refetchLoyaltyCard]);
 
   // Fetch shopping list and items
   const { data: shoppingList, isLoading } = useQuery({
@@ -1160,8 +1169,11 @@ const ShoppingRoute: React.FC = () => {
   };
 
   const handleEndStore = () => {
-    // Show loyalty barcode dialog first if user has a loyalty card
-    if (loyaltyCard) {
+    console.log('handleEndStore called, loyaltyCard:', loyaltyCard, 'retailer:', getCurrentRetailerName());
+    
+    // Show loyalty barcode dialog first if user has a loyalty card for current retailer
+    if (loyaltyCard && loyaltyCard.retailerName === getCurrentRetailerName()) {
+      console.log('Showing loyalty barcode dialog for:', getCurrentRetailerName());
       setLoyaltyBarcodeDialogOpen(true);
       return;
     }
@@ -1531,8 +1543,11 @@ const ShoppingRoute: React.FC = () => {
   };
 
   const handleFinishStore = () => {
-    // Show loyalty barcode dialog first if user has a loyalty card
-    if (loyaltyCard) {
+    console.log('handleFinishStore called, loyaltyCard:', loyaltyCard, 'retailer:', getCurrentRetailerName());
+    
+    // Show loyalty barcode dialog first if user has a loyalty card for current retailer
+    if (loyaltyCard && loyaltyCard.retailerName === getCurrentRetailerName()) {
+      console.log('Showing loyalty barcode dialog for:', getCurrentRetailerName());
       setLoyaltyBarcodeDialogOpen(true);
       return;
     }
@@ -1621,7 +1636,15 @@ const ShoppingRoute: React.FC = () => {
   }, [currentStoreIndex, currentAisleIndex, completedItems, optimizedRoute, selectedPlanData]);
 
   const proceedAfterLoyaltyCard = () => {
+    console.log('proceedAfterLoyaltyCard called');
     setLoyaltyBarcodeDialogOpen(false);
+    
+    // Show success message for loyalty card usage
+    toast({
+      title: "Loyalty Card Applied",
+      description: `Your ${getCurrentRetailerName()} loyalty card has been used successfully!`,
+      duration: 3000
+    });
     
     // Check if this is the last store (single store or last store in multi-store)
     const isLastStore = !optimizedRoute?.isMultiStore || 
@@ -1763,7 +1786,7 @@ const ShoppingRoute: React.FC = () => {
         )}
 
         {/* Loyalty Card Indicator */}
-        {loyaltyCard && (
+        {loyaltyCard && loyaltyCard.retailerName === getCurrentRetailerName() && (
           <Card className="mb-4 border-green-200 bg-green-50">
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
@@ -1792,7 +1815,7 @@ const ShoppingRoute: React.FC = () => {
         )}
 
         {/* No Loyalty Card Notice for Multi-Store */}
-        {!loyaltyCard && optimizedRoute?.isMultiStore && getCurrentRetailerName() && (
+        {(!loyaltyCard || loyaltyCard.retailerName !== getCurrentRetailerName()) && optimizedRoute?.isMultiStore && getCurrentRetailerName() && (
           <Card className="mb-4 border-yellow-200 bg-yellow-50">
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
@@ -2382,7 +2405,7 @@ const ShoppingRoute: React.FC = () => {
               {/* Enhanced Barcode Display */}
               <div className="bg-white p-6 rounded-lg border-2 border-gray-300 text-center">
                 <div className="text-sm text-gray-600 mb-2 font-medium">
-                  {getCurrentRetailerName()} Member Card
+                  {loyaltyCard.retailerName || getCurrentRetailerName()} Member Card
                 </div>
                 
                 {/* Large barcode number */}
