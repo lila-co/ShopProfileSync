@@ -2509,43 +2509,7 @@ const ShoppingRoute: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Progress Header */}
-        <Card className="mb-4">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Store className="h-5 w-5 text-primary" />
-                <div>
-                  <div className="font-semibold">{optimizedRoute.retailerName}</div>
-                  {optimizedRoute.planType && (
-                    <div className="text-xs text-gray-500">{optimizedRoute.planType}</div>
-                  )}
-                </div>
-              </div>
-
-            </div>
-
-
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Progress</span>
-                <span>{completedItems.size} of {optimizedRoute.totalItems} items</span>
-              </div>
-              <Progress value={getProgressPercentage()} className="h-2" />
-            </div>
-
-            <div className="flex items-center justify-between mt-3 text-sm">
-              <span className="flex items-center gap-1">
-                <Navigation className="h-4 w-4" />
-                {currentAisleIndex + 1} of {optimizedRoute.totalAisles} aisles
-              </span>
-              <span className="flex items-center gap-1">
-                <Clock className="h-4 w-4" />
-                Est. {optimizedRoute.estimatedTime} min total
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+        
 
         {/* Multi-Store Navigation */}
         {optimizedRoute?.isMultiStore && (
