@@ -501,7 +501,7 @@ const ShoppingRoute: React.FC = () => {
       if (currentStore && currentStore.items.length > 0) {
         // Regenerate aisles for current store including any moved items
         const storeRoute = generateOptimizedShoppingRoute(currentStore.items, currentStore.retailerName);
-        
+
         // Update the optimized route with new aisles for current store
         setOptimizedRoute(prevRoute => ({
           ...prevRoute,
@@ -509,7 +509,7 @@ const ShoppingRoute: React.FC = () => {
           totalAisles: storeRoute.totalAisles,
           estimatedTime: storeRoute.estimatedTime
         }));
-        
+
         console.log(`Regenerated aisles for ${currentStore.retailerName} with ${currentStore.items.length} items`);
       }
     }
@@ -831,7 +831,7 @@ const ShoppingRoute: React.FC = () => {
     });
 
     // Allow AI categorization to complete in background without blocking UI
-    Promise.all(itemPromises).then(() => {
+    Promise.all(itemPromises).then(() =>{
       // Optionally trigger a re-render with improved categorization
       // This would require state management to update the route
     }).catch(error => {
@@ -1665,11 +1665,11 @@ const ShoppingRoute: React.FC = () => {
         // Don't reset completed items completely - keep items completed in previous stores
 
         const nextStore = optimizedRoute.stores[currentStoreIndex + 1];
-        toast({
-          title: "Moving to Next Store",
-          description: `Now shopping at ${nextStore.retailerName}`,
-          duration: 3000
-        });
+        // toast({
+        //   title: "Moving to next store",
+        //   description: `Now shopping at ${nextStore.retailerName}`,
+        //   duration: 3000
+        // });
       } else {
         // All stores completed - end shopping
         endShopping();
@@ -1718,7 +1718,7 @@ const ShoppingRoute: React.FC = () => {
 
   // Save session before app closes or page unloads
   useEffect(() => {
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+        const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       if (optimizedRoute && selectedPlanData) {
         savePersistentShoppingSession(selectedPlanData, optimizedRoute);
       }
@@ -2722,16 +2722,12 @@ const ShoppingRoute: React.FC = () => {
                     variant="outline"
                     className="w-full"
                     onClick={() => {
-                      if (currentStoreIndex < optimizedRoute.stores.length - 1) {
-                        setCurrentStoreIndex(currentStoreIndex + 1);
-                        setCurrentAisleIndex(0); // Reset to first aisle of new store
-                        toast({
-                          title: "Moving to next store",
-                          description: `Now shopping at ${optimizedRoute.stores[currentStoreIndex + 1].retailerName}`,
-                          duration: 3000
-                        });
-                      }
-                    }}
+                    if (currentStoreIndex < optimizedRoute.stores.length - 1) {
+                      setCurrentStoreIndex(currentStoreIndex + 1);
+                      setCurrentAisleIndex(0); // Reset to first aisle of new store
+                      // Removed toast notification for store navigation
+                    }
+                  }}
                     disabled={currentStoreIndex >= optimizedRoute.stores.length - 1}
                   >
                     Next Store
