@@ -226,6 +226,71 @@ const PlanDetails: React.FC = () => {
     };
   }, [shoppingItems, planData.stores, selectedPlanType]);
 
+  // Auto-resume shopping session if one exists - must be called before any early returns
+  useEffect(() => {
+    const checkAndAutoResumeSession = () => {
+      // Check for both session types
+      const interruptedSession = localStorage.getItem(`interruptedSession-${listId}`);
+      const persistentSession = localStorage.getItem(`shopping_session_${listId}`);
+
+      let sessionDataStr = interruptedSession;
+
+      // If no interrupted session, check persistent session
+      if (!sessionDataStr && persistentSession) {
+        try {
+          const persistentData = JSON.parse(persistentSession);
+          // Only use persistent session if it's not completed and not expired
+          const sessionAge = Date.now() - persistentData.timestamp;
+          const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+
+          if (!persistentData.isCompleted && sessionAge < maxAge) {
+            sessionDataStr = persistentSession;
+          } else {
+            // Clean up completed or expired session
+            localStorage.removeItem(`shopping_session_${listId}`);
+            return;
+          }
+        } catch (error) {
+          localStorage.removeItem(`shopping_session_${listId}`);
+          return;
+        }
+      }
+
+      // Auto-resume if session exists
+      if (sessionDataStr) {
+        try {
+          const sessionData = JSON.parse(sessionDataStr);
+          console.log('Auto-resuming shopping with session data:', sessionData);
+
+          // Restore plan data and shopping mode
+          sessionStorage.setItem('shoppingPlanData', JSON.stringify(sessionData.planData));
+          sessionStorage.setItem('shoppingListId', listId);
+          sessionStorage.setItem('shoppingMode', sessionData.shoppingMode || 'instore');
+
+          // Redirect to the shopping route page
+          const targetUrl = `/shopping-route?listId=${listId}&mode=${sessionData.shoppingMode || 'instore'}&fromPlan=true&resume=true`;
+          console.log('Auto-navigating to:', targetUrl);
+          navigate(targetUrl);
+
+          toast({
+            title: "Resuming Shopping Trip",
+            description: "Continuing where you left off...",
+            duration: 2000
+          });
+        } catch (error) {
+          console.error('Error parsing session data:', error);
+          // Clean up corrupted session data
+          localStorage.removeItem(`interruptedSession-${listId}`);
+          localStorage.removeItem(`shopping_session_${listId}`);
+        }
+      }
+    };
+
+    if (listId) {
+      checkAndAutoResumeSession();
+    }
+  }, [listId, navigate, toast]);
+
   // All hooks must be called before any early returns
   if (isLoading) {
     return (
@@ -659,70 +724,7 @@ const PlanDetails: React.FC = () => {
     return false;
   };
 
-  // Auto-resume shopping session if one exists
-  useEffect(() => {
-    const checkAndAutoResumeSession = () => {
-      // Check for both session types
-      const interruptedSession = localStorage.getItem(`interruptedSession-${listId}`);
-      const persistentSession = localStorage.getItem(`shopping_session_${listId}`);
-
-      let sessionDataStr = interruptedSession;
-
-      // If no interrupted session, check persistent session
-      if (!sessionDataStr && persistentSession) {
-        try {
-          const persistentData = JSON.parse(persistentSession);
-          // Only use persistent session if it's not completed and not expired
-          const sessionAge = Date.now() - persistentData.timestamp;
-          const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-
-          if (!persistentData.isCompleted && sessionAge < maxAge) {
-            sessionDataStr = persistentSession;
-          } else {
-            // Clean up completed or expired session
-            localStorage.removeItem(`shopping_session_${listId}`);
-            return;
-          }
-        } catch (error) {
-          localStorage.removeItem(`shopping_session_${listId}`);
-          return;
-        }
-      }
-
-      // Auto-resume if session exists
-      if (sessionDataStr) {
-        try {
-          const sessionData = JSON.parse(sessionDataStr);
-          console.log('Auto-resuming shopping with session data:', sessionData);
-
-          // Restore plan data and shopping mode
-          sessionStorage.setItem('shoppingPlanData', JSON.stringify(sessionData.planData));
-          sessionStorage.setItem('shoppingListId', listId);
-          sessionStorage.setItem('shoppingMode', sessionData.shoppingMode || 'instore');
-
-          // Redirect to the shopping route page
-          const targetUrl = `/shopping-route?listId=${listId}&mode=${sessionData.shoppingMode || 'instore'}&fromPlan=true&resume=true`;
-          console.log('Auto-navigating to:', targetUrl);
-          navigate(targetUrl);
-
-          toast({
-            title: "Resuming Shopping Trip",
-            description: "Continuing where you left off...",
-            duration: 2000
-          });
-        } catch (error) {
-          console.error('Error parsing session data:', error);
-          // Clean up corrupted session data
-          localStorage.removeItem(`interruptedSession-${listId}`);
-          localStorage.removeItem(`shopping_session_${listId}`);
-        }
-      }
-    };
-
-    if (listId) {
-      checkAndAutoResumeSession();
-    }
-  }, [listId, navigate, toast]);
+  
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
