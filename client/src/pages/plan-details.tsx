@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
@@ -6,11 +5,10 @@ import { apiRequest } from '@/lib/queryClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Clock, DollarSign, ShoppingCart, MapPin, ArrowRight, Store, Users, Zap } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, MapPin, DollarSign, Clock, ShoppingCart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import BottomNavigation from '@/components/layout/BottomNavigation';
-import Header from '@/components/layout/Header';
 
 interface ShoppingItem {
   id: number;
@@ -39,314 +37,1022 @@ interface PlanData {
   }>;
 }
 
-type PlanType = 'single-store' | 'multi-store' | 'balanced';
-
-function generatePlanData(shoppingList: { items: ShoppingItem[] } | null, planType: PlanType = 'single-store'): PlanData | null {
-  console.log('generatePlanData called with:', { items: shoppingList?.items || [], planType, itemsLength: shoppingList?.items?.length || 0 });
-  
-  if (!shoppingList || !shoppingList.items || shoppingList.items.length === 0) {
-    console.log('generatePlanData received invalid items:', shoppingList?.items || []);
-    return null;
-  }
-
-  const items = shoppingList.items;
-  
-  // Group items by retailer
-  const storeGroups = new Map<number, { retailer: any; items: ShoppingItem[]; subtotal: number }>();
-  
-  items.forEach(item => {
-    if (!item.suggestedRetailer) return;
-    
-    const retailerId = item.suggestedRetailer.id;
-    if (!storeGroups.has(retailerId)) {
-      storeGroups.set(retailerId, {
-        retailer: item.suggestedRetailer,
-        items: [],
-        subtotal: 0
-      });
-    }
-    
-    const group = storeGroups.get(retailerId)!;
-    group.items.push(item);
-    group.subtotal += (item.suggestedPrice || 0) * item.quantity;
-  });
-
-  const stores = Array.from(storeGroups.values());
-  
-  // Apply plan type logic
-  let finalStores = stores;
-  if (planType === 'single-store' && stores.length > 1) {
-    // Find store with most items or lowest total cost
-    finalStores = [stores.reduce((best, current) => {
-      return current.items.length > best.items.length ? current : best;
-    })];
-  } else if (planType === 'balanced') {
-    // Keep all stores but optimize for convenience
-    finalStores = stores.sort((a, b) => b.items.length - a.items.length);
-  }
-
-  const totalCost = finalStores.reduce((sum, store) => sum + store.subtotal, 0);
-  const estimatedTime = `${Math.max(15, finalStores.length * 20 + finalStores.reduce((sum, store) => sum + store.items.length * 2, 0))} minutes`;
-
-  return {
-    totalCost,
-    estimatedTime,
-    stores: finalStores
-  };
-}
-
-export default function PlanDetails() {
-  const [, navigate] = useLocation();
-  const [selectedPlan, setSelectedPlan] = useState<PlanType>('single-store');
-  const [planData, setPlanData] = useState<PlanData | null>(null);
+const PlanDetails: React.FC = () => {
+  const [location, navigate] = useLocation();
   const { toast } = useToast();
+  const searchParams = new URLSearchParams(location.split('?')[1] || '');
+  const [selectedPlanType, setSelectedPlanType] = useState(
+    searchParams.get('planType') || 'single-store'
+  );
 
-  // Get listId from URL params
-  const urlParams = new URLSearchParams(window.location.search);
-  const listId = urlParams.get('listId') || '1';
+  const listId = searchParams.get('listId') || '1';
 
-  // Fetch shopping list data
-  const { data: shoppingList, isLoading, error } = useQuery({
+  // Fetch shopping list items
+  const { data: shoppingListData, isLoading, error } = useQuery({
     queryKey: [`/api/shopping-lists/${listId}`],
     enabled: !!listId,
+    retry: (failureCount, error) => {
+      // Don't retry on 404 errors
+      if (error?.message?.includes('404')) return false;
+      return failureCount < 2;
+    }
   });
 
-  console.log('Shopping list data structure:', shoppingList);
+  // Extract items from the shopping list data
+  const shoppingItems = shoppingListData?.items || [];
 
-  // Generate plan data when shopping list changes
-  useEffect(() => {
-    if (shoppingList && shoppingList.items) {
-      const generated = generatePlanData(shoppingList, selectedPlan);
-      setPlanData(generated);
+  // Generate plan data based on shopping items and plan type
+  const generatePlanData = (items: ShoppingItem[], planType: string): PlanData => {
+    console.log('generatePlanData called with:', { items, planType, itemsLength: items?.length });
+
+    // Ensure items is a valid array
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      console.warn('generatePlanData received invalid items:', items);
+      console.log('Shopping list data structure:', shoppingListData);
+      return { totalCost: 0, estimatedTime: '0 min', stores: [] };
     }
-  }, [shoppingList, selectedPlan]);
 
-  const handlePlanTypeChange = (newPlanType: PlanType) => {
-    setSelectedPlan(newPlanType);
+    switch (planType) {
+      case 'single-store':
+        // Find the most common retailer
+        const retailerCounts = items.reduce((acc, item) => {
+          if (item.suggestedRetailer?.id) {
+            const retailerId = item.suggestedRetailer.id;
+            acc[retailerId] = (acc[retailerId] || 0) + 1;
+          }
+          return acc;
+        }, {} as Record<number, number>);
+
+        const retailerKeys = Object.keys(retailerCounts);
+        if (retailerKeys.length === 0) {
+          return { totalCost: 0, estimatedTime: '0 min', stores: [] };
+        }
+
+        const mostCommonRetailerId = retailerKeys.reduce((a, b) =>
+          retailerCounts[Number(a)] > retailerCounts[Number(b)] ? a : b
+        );
+
+        const primaryRetailer = items.find(item => 
+          item.suggestedRetailer?.id === Number(mostCommonRetailerId)
+        )?.suggestedRetailer;
+
+        if (!primaryRetailer) {
+          return { totalCost: 0, estimatedTime: '0 min', stores: [] };
+        }
+
+        return {
+          totalCost: items.reduce((sum, item) => sum + (item.suggestedPrice || 0) * item.quantity, 0),
+          estimatedTime: '25-35 min',
+          stores: [{
+            retailer: primaryRetailer!,
+            items: items,
+            subtotal: items.reduce((sum, item) => sum + (item.suggestedPrice || 0) * item.quantity, 0)
+          }]
+        };
+
+      case 'multi-store':
+        // Group by retailer for best prices
+        const storeGroups = items.reduce((acc, item) => {
+          if (item.suggestedRetailer?.id) {
+            const retailerId = item.suggestedRetailer.id;
+            if (!acc[retailerId]) {
+              acc[retailerId] = {
+                retailer: item.suggestedRetailer,
+                items: [],
+                subtotal: 0
+              };
+            }
+            acc[retailerId].items.push(item);
+            acc[retailerId].subtotal += (item.suggestedPrice || 0) * item.quantity;
+          }
+          return acc;
+        }, {} as Record<number, any>);
+
+        return {
+          totalCost: Object.values(storeGroups).reduce((sum: number, store: any) => sum + store.subtotal, 0),
+          estimatedTime: '45-60 min',
+          stores: Object.values(storeGroups)
+        };
+
+      case 'balanced':
+        // Balance between convenience and savings
+        const balancedStores = items.reduce((acc, item) => {
+          if (item.suggestedRetailer?.id) {
+            const retailerId = item.suggestedRetailer.id;
+            if (!acc[retailerId]) {
+              acc[retailerId] = {
+                retailer: item.suggestedRetailer,
+                items: [],
+                subtotal: 0
+              };
+            }
+            acc[retailerId].items.push(item);
+            acc[retailerId].subtotal += (item.suggestedPrice || 0) * item.quantity;
+          }
+          return acc;
+        }, {} as Record<number, any>);
+
+        // Limit to 2 stores maximum for balance
+        const topStores = Object.values(balancedStores)
+          .sort((a: any, b: any) => b.subtotal - a.subtotal)
+          .slice(0, 2);
+
+        return {
+          totalCost: topStores.reduce((sum: number, store: any) => sum + store.subtotal, 0),
+          estimatedTime: '35-45 min',
+          stores: topStores
+        };
+
+      default:
+        return { totalCost: 0, estimatedTime: '0 min', stores: [] };
+    }
   };
 
-  const handleBeginShopping = () => {
-    if (!planData) {
-      toast({
-        title: "No Plan Available",
-        description: "Please generate a shopping plan first.",
-        variant: "destructive"
+  const planData = generatePlanData(
+    Array.isArray(shoppingItems) ? shoppingItems : [], 
+    selectedPlanType
+  );
+
+  const formatPrice = (price: number) => {
+    return `$${(price / 100).toFixed(2)}`;
+  };
+
+  // Fetch deals for price comparison
+  const { data: deals } = useQuery({
+    queryKey: ['/api/deals'],
+    staleTime: 20 * 60 * 1000, // 20 minutes - deals don't change frequently
+    refetchOnWindowFocus: false, // Don't refetch when window gains focus
+  });
+
+  // Filter deals by retailer for current plan
+  const getDealsForRetailer = (retailerId: number) => {
+    return deals?.filter((deal: any) => deal.retailerId === retailerId) || [];
+  };
+
+  // Calculate availability of items based on plan type and stores
+  const availability = React.useMemo(() => {
+    if (!shoppingItems || !Array.isArray(shoppingItems) || shoppingItems.length === 0) {
+      return {
+        totalItems: 0,
+        availableItems: 0,
+        missingItems: []
+      };
+    }
+
+    const totalItems = shoppingItems.length;
+    let availableItems = 0;
+    const missingItems: any[] = [];
+
+    // For single-store plans, all items are considered available since we put them all in one store
+    if (selectedPlanType === 'single-store') {
+      availableItems = totalItems;
+    } else {
+      // For multi-store and balanced plans, check actual availability
+      const planRetailerIds = new Set(planData.stores.map(store => store.retailer.id));
+
+      shoppingItems.forEach(item => {
+        if (item.suggestedRetailer && planRetailerIds.has(item.suggestedRetailer.id)) {
+          availableItems++;
+        } else {
+          missingItems.push(item);
+        }
       });
-      return;
     }
 
-    // Store plan data for the shopping route
-    sessionStorage.setItem('shoppingPlanData', JSON.stringify(planData));
-    
-    // Navigate to shopping route
-    navigate(`/shopping-route?listId=${listId}&planData=${encodeURIComponent(JSON.stringify(planData))}`);
-  };
-
-  const handleOrderOnline = () => {
-    if (!planData) {
-      toast({
-        title: "No Plan Available",
-        description: "Please generate a shopping plan first.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    navigate(`/order-online?listId=${listId}&planData=${encodeURIComponent(JSON.stringify(planData))}`);
-  };
+    return {
+      totalItems,
+      availableItems,
+      missingItems
+    };
+  }, [shoppingItems, planData.stores, selectedPlanType]);
 
   if (isLoading) {
     return (
-      <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
-        <Header title="Plan Details" />
-        <main className="flex-1 overflow-y-auto p-4">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-lg">Loading your shopping plan...</div>
-          </div>
-        </main>
-        <BottomNavigation activeTab="lists" />
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg">Loading your shopping plan...</div>
       </div>
     );
   }
 
-  if (error || !shoppingList) {
+  if (error) {
     return (
       <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
-        <Header title="Plan Details" />
-        <main className="flex-1 overflow-y-auto p-4">
+        <div className="flex items-center gap-4 mb-6 p-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/shopping-list')}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Shopping List
+          </Button>
+          <h1 className="text-2xl font-bold">Shopping Plans</h1>
+        </div>
+        <main className="flex-1 flex items-center justify-center p-4">
           <Card>
             <CardContent className="p-6 text-center">
-              <p className="text-gray-500 mb-4">Unable to load shopping list</p>
-              <Button onClick={() => navigate('/shopping-list')}>
-                Back to Shopping Lists
-              </Button>
+              <div className="text-red-600 mb-4">
+                <h3 className="text-lg font-semibold">Error Loading Shopping List</h3>
+              </div>
+              <p className="text-gray-600 mb-4">
+                {error?.message?.includes('JSON') 
+                  ? 'There was a server error. Please try again.'
+                  : error.message || 'Failed to load shopping list data.'
+                }
+              </p>
+              <div className="space-y-2">
+                <Button onClick={() => window.location.reload()}>
+                  Try Again
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/shopping-list')}>
+                  Go to Shopping List
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </main>
-        <BottomNavigation activeTab="lists" />
+        <BottomNavigation activeTab="plan-details" />
       </div>
     );
   }
 
-  if (!planData) {
+  if (!shoppingItems || !Array.isArray(shoppingItems) || shoppingItems.length === 0) {
     return (
-      <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
-        <Header title="Plan Details" />
-        <main className="flex-1 overflow-y-auto p-4">
-          <Card>
-            <CardContent className="p-6 text-center">
-              <p className="text-gray-500 mb-4">No items in your shopping list</p>
-              <Button onClick={() => navigate('/shopping-list')}>
-                Add Items to List
-              </Button>
-            </CardContent>
-          </Card>
-        </main>
-        <BottomNavigation activeTab="lists" />
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg">No items found in shopping list</div>
       </div>
     );
   }
+
+  const handleOrderOnline = async () => {
+    if (!selectedPlanType) {
+      toast({
+        title: "Please select a plan type first",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const enhancedPlanData = {
+      ...planData,
+      planType: selectedPlanType === 'single-store' ? 'Single Store' :
+               selectedPlanType === 'multi-store' ? 'Multi-Store Best Value' :
+               selectedPlanType === 'balanced' ? 'Balanced Plan' : 'Shopping Plan',
+      selectedPlanType: selectedPlanType,
+      listId: listId
+    };
+
+    // Store plan data for the order page
+    sessionStorage.setItem('shoppingPlanData', JSON.stringify(enhancedPlanData));
+    sessionStorage.setItem('shoppingListId', listId);
+
+    console.log('Order Online clicked with planData:', planData);
+
+    // For multi-store plans, handle mobile differently
+    if (planData.stores && planData.stores.length > 1) {
+      // Check if user is on mobile device
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+
+      if (isMobile) {
+        // On mobile, process stores one by one with user confirmation
+        let currentStoreIndex = 0;
+
+        const processNextStore = async () => {
+          if (currentStoreIndex >= planData.stores.length) {
+            toast({
+              title: "All Stores Processed",
+              description: `Successfully set up ${planData.stores.length} retailer carts`,
+              duration: 4000
+            });
+            return;
+          }
+
+          const store = planData.stores[currentStoreIndex];
+          currentStoreIndex++;
+
+          try {
+            const affiliateData = {
+              source: 'smartcart',
+              planId: `${listId}-${Date.now()}`,
+              affiliateId: 'smartcart-affiliate-001',
+              trackingParams: {
+                listId,
+                planType: selectedPlanType,
+                totalItems: store.items.length,
+                estimatedValue: store.subtotal,
+                retailerId: store.retailer.id
+              }
+            };
+
+            const response = await fetch('/api/retailers/add-to-cart', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                retailerId: store.retailer.id,
+                items: store.items.map(item => ({
+                  productName: item.productName,
+                  quantity: item.quantity,
+                  unit: item.unit,
+                  estimatedPrice: item.suggestedPrice
+                })),
+                affiliateData,
+                userInfo: {
+                  userId: 1,
+                  listId: listId
+                }
+              })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+              const urlParams = new URLSearchParams(result.cartUrl.split('?')[1] || '');
+              const demoCartUrl = `/retailer-cart-demo?${urlParams.toString()}&retailer=${encodeURIComponent(store.retailer.name.toLowerCase().replace(/\s+/g, ''))}`;
+
+              toast({
+                title: `${store.retailer.name} Cart Ready`,
+                description: `${store.items.length} items added. Tap to open cart.`,
+                action: {
+                  label: "Open Cart",
+                  onClick: () => {
+                    window.location.href = demoCartUrl;
+                  }
+                },
+                duration: 8000
+              });
+
+              // Auto-process next store if user doesn't interact
+              setTimeout(processNextStore, 8000);
+            } else {
+              toast({
+                title: "Cart Error",
+                description: `Failed to add items to ${store.retailer.name}`,
+                variant: "destructive"
+              });
+              setTimeout(processNextStore, 2000);
+            }
+          } catch (error) {
+            console.error(`Error with ${store.retailer.name}:`, error);
+            toast({
+              title: "Integration Error",
+              description: `Error connecting to ${store.retailer.name}`,
+              variant: "destructive"
+            });
+            setTimeout(processNextStore, 2000);
+          }
+        };
+
+        // Start processing stores
+        processNextStore();
+      } else {
+        // Desktop: open multiple tabs as before
+        let successCount = 0;
+
+        for (let i = 0; i < planData.stores.length; i++) {
+          const store = planData.stores[i];
+
+          // Add a small delay between opening tabs to prevent browser blocking
+          setTimeout(async () => {
+            try {
+              const affiliateData = {
+                source: 'smartcart',
+                planId: `${listId}-${Date.now()}`,
+                affiliateId: 'smartcart-affiliate-001',
+                trackingParams: {
+                  listId,
+                  planType: selectedPlanType,
+                  totalItems: store.items.length,
+                  estimatedValue: store.subtotal,
+                  retailerId: store.retailer.id
+                }
+              };
+
+              const response = await fetch('/api/retailers/add-to-cart', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  retailerId: store.retailer.id,
+                  items: store.items.map(item => ({
+                    productName: item.productName,
+                    quantity: item.quantity,
+                    unit: item.unit,
+                    estimatedPrice: item.suggestedPrice
+                  })),
+                  affiliateData,
+                  userInfo: {
+                    userId: 1, // This would come from auth context in production
+                    listId: listId
+                  }
+                })
+              });
+
+              const result = await response.json();
+
+              if (response.ok) {
+                console.log(`Cart prepared for ${store.retailer.name}:`, result.cartUrl);
+
+                // Extract URL parameters and create demo cart URL
+                const urlParams = new URLSearchParams(result.cartUrl.split('?')[1] || '');
+                const demoCartUrl = `/retailer-cart-demo?${urlParams.toString()}&retailer=${encodeURIComponent(store.retailer.name.toLowerCase().replace(/\s+/g, ''))}`;
+
+                // Use window.location.href instead of popup to avoid blocking
+                setTimeout(() => {
+                  window.location.href = demoCartUrl;
+                }, i * 2000); // Stagger the redirects for multi-store
+
+                successCount++;
+
+                toast({
+                  title: `${store.retailer.name} Cart Ready`,
+                  description: `Redirecting to ${store.retailer.name} cart...`,
+                  duration: 3000
+                });
+              } else {
+                console.error(`Failed to add items to ${store.retailer.name} cart`);
+                toast({
+                  title: "Cart Error",
+                  description: `Failed to add items to ${store.retailer.name} cart`,
+                  variant: "destructive"
+                });
+              }
+            } catch (error) {
+              console.error(`Error with ${store.retailer.name}:`, error);
+              toast({
+                title: "Integration Error",
+                description: `Error connecting to ${store.retailer.name}`,
+                variant: "destructive"
+              });
+            }
+          }, i * 1500); // 1.5 second delay between each store
+        }
+
+        // Show summary after all stores are processed
+        setTimeout(() => {
+          if (successCount > 0) {
+            toast({
+              title: "Multi-Store Cart Integration Complete",
+              description: `Successfully prepared ${successCount} retailer cart${successCount > 1 ? 's' : ''} with your items. Check your browser tabs.`,
+              duration: 6000
+            });
+          }
+        }, planData.stores.length * 1500 + 1000);
+      }
+    } else {
+      // Single store: direct cart integration
+      const store = planData.stores?.[0];
+      if (!store) {
+        toast({
+          title: "Error",
+          description: "No store information available",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      try {
+        const affiliateData = {
+          source: 'smartcart',
+          planId: `${listId}-${Date.now()}`,
+          affiliateId: 'smartcart-affiliate-001',
+          trackingParams: {
+            listId,
+            planType: selectedPlanType,
+            totalItems: store.items.length,
+            estimatedValue: store.subtotal,
+            retailerId: store.retailer.id
+          }
+        };
+
+        const response = await fetch('/api/retailers/add-to-cart', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            retailerId: store.retailer.id,
+            items: store.items.map(item => ({
+              productName: item.productName,
+              quantity: item.quantity,
+              unit: item.unit,
+              estimatedPrice: item.suggestedPrice
+            })),
+            affiliateData,
+            userInfo: {
+              userId: 1, // This would come from auth context in production
+              listId: listId
+            }
+          })
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log(`Cart prepared for ${store.retailer.name}:`, result.cartUrl);
+
+          // Extract URL parameters and create demo cart URL
+          const urlParams = new URLSearchParams(result.cartUrl.split('?')[1] || '');
+          const demoCartUrl = `/retailer-cart-demo?${urlParams.toString()}&retailer=${encodeURIComponent(store.retailer.name.toLowerCase().replace(/\s+/g, ''))}`;
+
+          toast({
+            title: "Cart Ready!",
+            description: `Your items have been added to ${store.retailer.name} cart. Redirecting to cart...`,
+            duration: 2000
+          });
+
+          // Redirect to demo cart page instead of popup
+          setTimeout(() => {
+            window.location.href = demoCartUrl;
+          }, 1500);
+        } else {
+          toast({
+            title: "Cart Error",
+            description: `Failed to add items to ${store.retailer.name} cart`,
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
+        console.error(`Error with ${store.retailer.name}:`, error);
+        toast({
+          title: "Integration Error",
+          description: `Error connecting to ${store.retailer.name}`,
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
+  // Function to check for an interrupted shopping session in localStorage
+  const hasInterruptedSession = (listId: string): boolean => {
+    const interruptedSession = localStorage.getItem(`interruptedSession-${listId}`);
+    const persistentSession = localStorage.getItem(`shopping_session_${listId}`);
+
+
+
+    // Check if persistent session has meaningful progress
+    if (persistentSession) {
+      try {
+        const sessionData = JSON.parse(persistentSession);
+        // Check if session is recent (within last 24 hours)
+        const sessionAge = Date.now() - (sessionData.timestamp || 0);
+        const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+
+        if (sessionAge > maxAge) {
+          localStorage.removeItem(`shopping_session_${listId}`);
+          return false;
+        }
+
+        // Only consider it progress if:
+        // 1. Items have been completed, OR
+        // 2. User has moved to aisle 2+ (not just initial aisle), OR  
+        // 3. User has moved to store 2+ (not just initial store)
+        // AND the session isn't marked as completed
+        const hasProgress = ((sessionData.completedItems && sessionData.completedItems.length > 0) ||
+                           (sessionData.currentAisleIndex && sessionData.currentAisleIndex > 1) ||
+                           (sessionData.currentStoreIndex && sessionData.currentStoreIndex > 0)) &&
+                           !sessionData.isCompleted && // Check if session is marked as completed
+                           sessionData.timestamp && // Must have a timestamp
+                           (Date.now() - sessionData.timestamp) > 30000; // Must be older than 30 seconds
+
+        if (!hasProgress) {
+          localStorage.removeItem(`shopping_session_${listId}`);
+          localStorage.removeItem(`interruptedSession-${listId}`);
+          return false;
+        }
+
+        return hasProgress;
+      } catch (error) {
+        console.warn('Error parsing persistent session:', error);
+        localStorage.removeItem(`shopping_session_${listId}`);
+        localStorage.removeItem(`interruptedSession-${listId}`);
+        return false;
+      }
+    }
+
+    // Also check if interruptedSession has meaningful data
+    if (interruptedSession) {
+      try {
+        const sessionData = JSON.parse(interruptedSession);
+        const hasProgress = (sessionData.completedItems && sessionData.completedItems.length > 0) ||
+                           (sessionData.currentAisleIndex && sessionData.currentAisleIndex > 1) ||
+                           (sessionData.currentStoreIndex && sessionData.currentStoreIndex > 0) &&
+                           sessionData.timestamp && 
+                           (Date.now() - sessionData.timestamp) > 30000;
+
+        if (!hasProgress) {
+          localStorage.removeItem(`interruptedSession-${listId}`);
+          return false;
+        }
+
+        return hasProgress;
+      } catch (error) {
+        console.warn('Error parsing interrupted session:', error);
+        localStorage.removeItem(`interruptedSession-${listId}`);
+        return false;
+      }
+    }
+
+    return false;
+  };
+
+  // React component to display the interrupted session card
+  const InterruptedSessionCard: React.FC<{ listId: string }> = ({ listId }) => {
+    const [hasSession, setHasSession] = useState(hasInterruptedSession(listId));
+
+    // Check for any interrupted shopping session (both types)
+  useEffect(() => {
+    const checkForInterruptedSession = () => {
+      // Check for both session types
+      const interruptedSession = localStorage.getItem(`interruptedSession-${listId}`);
+      const persistentSession = localStorage.getItem(`shopping_session_${listId}`);
+
+      // Check if persistent session is completed
+      let isSessionActive = false;
+
+      if (interruptedSession) {
+        isSessionActive = true;
+      }
+
+      if (persistentSession) {
+        try {
+          const sessionData = JSON.parse(persistentSession);
+          // Only consider session active if it's not completed and not expired
+          const sessionAge = Date.now() - sessionData.timestamp;
+          const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+
+          if (!sessionData.isCompleted && sessionAge < maxAge) {
+            isSessionActive = true;
+          } else {
+            // Clean up completed or expired sessions
+            localStorage.removeItem(`shopping_session_${listId}`);
+          }
+        } catch (error) {
+          // Clean up corrupted session data
+          localStorage.removeItem(`shopping_session_${listId}`);
+        }
+      }
+
+      setHasSession(isSessionActive);
+    };
+
+    if (listId) {
+      checkForInterruptedSession();
+    }
+  }, [listId]);
+
+  // Function to resume interrupted shopping session
+  const resumeShopping = () => {
+    // Try to get interrupted session first, then persistent session
+    const interruptedSessionData = localStorage.getItem(`interruptedSession-${listId}`);
+    const persistentSessionData = localStorage.getItem(`shopping_session_${listId}`);
+
+    let sessionDataStr = interruptedSessionData;
+
+    // If no interrupted session, check persistent session
+    if (!sessionDataStr && persistentSessionData) {
+      try {
+        const persistentData = JSON.parse(persistentSessionData);
+        // Only use persistent session if it's not completed and not expired
+        const sessionAge = Date.now() - persistentData.timestamp;
+        const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+
+        if (!persistentData.isCompleted && sessionAge < maxAge) {
+          sessionDataStr = persistentSessionData;
+        } else {
+          // Clean up completed or expired session
+          localStorage.removeItem(`shopping_session_${listId}`);
+          setHasSession(false);
+          toast({
+            title: "Session Expired",
+            description: "Your previous shopping session has expired. Starting fresh!",
+            duration: 2000
+          });
+          return;
+        }
+      } catch (error) {
+        localStorage.removeItem(`shopping_session_${listId}`);
+        setHasSession(false);
+        return;
+      }
+    }
+
+    if (sessionDataStr) {
+      try {
+        const sessionData = JSON.parse(sessionDataStr);
+        console.log('Resuming shopping with session data:', sessionData);
+
+        // Restore plan data and shopping mode
+        sessionStorage.setItem('shoppingPlanData', JSON.stringify(sessionData.planData));
+        sessionStorage.setItem('shoppingListId', listId);
+        sessionStorage.setItem('shoppingMode', sessionData.shoppingMode || 'instore');
+
+        // Redirect to the shopping route page
+        const targetUrl = `/shopping-route?listId=${listId}&mode=${sessionData.shoppingMode || 'instore'}&fromPlan=true&resume=true`;
+        console.log('Navigating to:', targetUrl);
+        navigate(targetUrl);
+
+        // Clear both session types
+        localStorage.removeItem(`interruptedSession-${listId}`);
+        localStorage.removeItem(`shopping_session_${listId}`);
+        setHasSession(false);
+
+        toast({
+          title: "Welcome Back!",
+          description: "Taking you back to where you left off in the store...",
+          duration: 2000
+        });
+      } catch (error) {
+        console.error('Error parsing session data:', error);
+        // Clean up corrupted session data
+        localStorage.removeItem(`interruptedSession-${listId}`);
+        localStorage.removeItem(`shopping_session_${listId}`);
+        setHasSession(false);
+
+        toast({
+          title: "Oops!",
+          description: "We couldn't restore your previous shopping trip. Let's start fresh!",
+          variant: "destructive"
+        });
+      }
+    } else {
+      setHasSession(false);
+      toast({
+        title: "All Set!",
+        description: "No previous shopping trip found. Ready to start fresh!",
+        variant: "default"
+      });
+    }
+  };
+
+    // Clear interrupted session
+    const clearSession = () => {
+      localStorage.removeItem(`interruptedSession-${listId}`);
+      localStorage.removeItem(`shopping_session_${listId}`); // Also clear persistent shopping session
+      setHasSession(false);
+      toast({
+        title: "Ready to Go!",
+        description: "Previous shopping trip cleared. Starting fresh!",
+        duration: 2000
+      });
+    };
+
+    if (!hasSession) {
+      return null;
+    }
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5 text-blue-600" />
+            Continue Where You Left Off?
+          </CardTitle>
+          <CardDescription>
+            We found your previous shopping trip in progress. Would you like to pick up where you left off?
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex justify-between">
+          <Button onClick={resumeShopping} className="bg-green-600 hover:bg-green-700">
+            Yes, Continue Shopping
+          </Button>
+          <Button variant="outline" onClick={clearSession}>
+            Start Fresh
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
-      <Header title="Shopping Plan" />
-      
-      <main className="flex-1 overflow-y-auto p-4 space-y-6">
-        {/* Plan Type Selection */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Choose Your Plan</CardTitle>
-            <CardDescription>Select how you'd like to shop</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { id: 'single-store', label: 'Single Store', icon: Store },
-                { id: 'multi-store', label: 'Multi-Store', icon: Users },
-                { id: 'balanced', label: 'Balanced', icon: Zap }
-              ].map(({ id, label, icon: Icon }) => (
-                <Button
-                  key={id}
-                  variant={selectedPlan === id ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => handlePlanTypeChange(id as PlanType)}
-                  className="flex flex-col gap-1 h-auto py-3"
-                >
-                  <Icon className="h-4 w-4" />
-                  <span className="text-xs">{label}</span>
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-6 p-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/shopping-list')}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Shopping List
+        </Button>
+        <h1 className="text-2xl font-bold">Shopping Plans</h1>
+      </div>
 
-        {/* Plan Summary */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5" />
-              Plan Summary
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-green-600" />
-                <span className="font-medium">Total Cost</span>
-              </div>
-              <span className="text-lg font-bold text-green-600">
-                ${(planData.totalCost / 100).toFixed(2)}
-              </span>
-            </div>
-            
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-blue-600" />
-                <span className="font-medium">Estimated Time</span>
-              </div>
-              <span className="text-sm text-gray-600">{planData.estimatedTime}</span>
-            </div>
-            
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-purple-600" />
-                <span className="font-medium">Stores</span>
-              </div>
-              <span className="text-sm text-gray-600">{planData.stores.length}</span>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Main Content */}
+      <main className="flex-1 overflow-y-auto p-4 pb-20 space-y-6">
 
-        {/* Store Breakdown */}
-        <div className="space-y-3">
-          <h3 className="text-lg font-semibold">Store Breakdown</h3>
-          {planData.stores.map((store, index) => (
-            <Card key={store.retailer.id}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div 
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                      style={{ backgroundColor: store.retailer.logoColor }}
-                    >
-                      {store.retailer.name.charAt(0)}
+      {/* Check for interrupted shopping session */}
+      <InterruptedSessionCard listId={listId} />
+
+      {/* Plan Type Selector */}
+      <Tabs value={selectedPlanType} onValueChange={setSelectedPlanType} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="single-store">Single Store</TabsTrigger>
+          <TabsTrigger value="multi-store">Multi-Store</TabsTrigger>
+          <TabsTrigger value="balanced">Balanced</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="single-store" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShoppingCart className="h-5 w-5" />
+                Single Store Plan
+              </CardTitle>
+              <CardDescription>
+                Shop everything at one store for maximum convenience
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="text-center">
+                  <div className="text-xl font-bold text-purple-600">{planData.stores.length}</div>
+                  <div className="text-xs text-gray-500">Store(s)</div>
+                </div>
+                <div className="text-center">
+                  <div className={`text-xl font-bold ${availability.missingItems.length > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                    {availability.availableItems}/{availability.totalItems}
+                  </div>
+                  <div className="text-xs text-gray-500">Available</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="multi-store" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                Multi-Store Plan
+              </CardTitle>
+              <CardDescription>
+                Get the best prices by shopping at multiple stores
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="text-center">
+                  <div className="text-xl font-bold text-purple-600">{planData.stores.length}</div>
+                  <div className="text-xs text-gray-500">Store(s)</div>
+                </div>
+                <div className="text-center">
+                  <div className={`text-xl font-bold ${availability.missingItems.length > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                    {availability.availableItems}/{availability.totalItems}
+                  </div>
+                  <div className="text-xs text-gray-500">Available</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="balanced" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                Balanced Plan
+              </CardTitle>
+              <CardDescription>
+                Balance between savings and convenience
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="text-center">
+                  <div className="text-xl font-bold text-purple-600">{planData.stores.length}</div>
+                  <div className="text-xs text-gray-500">Store(s)</div>
+                </div>
+                <div className="text-center">
+                  <div className={`text-xl font-bold ${availability.missingItems.length > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                    {availability.availableItems}/{availability.totalItems}
+                  </div>
+                  <div className="text-xs text-gray-500">Available</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Action Buttons */}
+      <div className="flex gap-4 mb-6">
+        <div className="space-y-2 w-full">
+          <div className="flex gap-3">
+            <Button 
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold shadow-lg"
+              size="lg"
+              onClick={() => {
+                console.log('Start Shopping Route clicked with planData:', planData);
+
+                if (!planData || !planData.stores || planData.stores.length === 0) {
+                  toast({
+                    title: "No Plan Data",
+                    description: "Please select a plan type first",
+                    variant: "destructive"
+                  });
+                  return;
+                }
+
+                const enhancedPlanData = {
+                  ...planData,
+                  planType: selectedPlanType === 'single-store' ? 'Single Store' :
+                           selectedPlanType === 'multi-store' ? 'Multi-Store Best Value' :
+                           selectedPlanType === 'balanced' ? 'Balanced Plan' : 'Shopping Plan',
+                  selectedPlanType: selectedPlanType,
+                  listId: listId
+                };
+
+                console.log('Enhanced plan data for navigation:', enhancedPlanData);
+
+                // Store in sessionStorage as primary method
+                sessionStorage.setItem('shoppingPlanData', JSON.stringify(enhancedPlanData));
+                sessionStorage.setItem('shoppingListId', listId);
+                sessionStorage.setItem('shoppingMode', 'instore');
+
+                // Store current session data in localStorage for recovery
+                localStorage.setItem(`interruptedSession-${listId}`, JSON.stringify({
+                  planData: enhancedPlanData,
+                  shoppingMode: 'instore'
+                }));
+
+                // Navigate with simple parameters to avoid URL corruption
+                const targetUrl = `/shopping-route?listId=${listId}&mode=instore&fromPlan=true`;
+                console.log('Navigating to:', targetUrl);
+
+                // Use the navigate function instead of window.location for better routing
+                navigate(targetUrl);
+
+                // No toast needed - shopping route page will handle feedback
+              }}
+            >
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              Begin Shopping
+            </Button>
+            <Button 
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-lg"
+              size="lg"
+              onClick={handleOrderOnline}
+            >
+              <MapPin className="h-4 w-4 mr-2" />
+              Order Online
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Store Details */}
+      <div className="space-y-4">
+        {planData.stores
+          .sort((a, b) => a.retailer.name.localeCompare(b.retailer.name))
+          .map((store, index) => (
+          <Card key={store.retailer.id}>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div 
+                    className={`w-4 h-4 rounded-full bg-${store.retailer.logoColor}-500`}
+                  />
+                  <span>{store.retailer.name}</span>
+                  <Badge variant="secondary">{store.items.length} items</Badge>
+                </div>
+                <div className="text-lg font-bold">{formatPrice(store.subtotal)}</div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {store.items
+                  .sort((a, b) => a.productName.localeCompare(b.productName))
+                  .map((item) => (
+                  <div key={item.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
+                    <div className="flex-1">
+                      <div className="font-medium">{item.productName}</div>
+                      <div className="text-sm text-gray-500">
+                        {item.quantity} {item.unit.toLowerCase()}
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-medium">{store.retailer.name}</h4>
-                      <p className="text-sm text-gray-500">{store.items.length} items</p>
+                    <div className="text-right">
+                      <div className="font-medium">{formatPrice(item.suggestedPrice * item.quantity)}</div>
+                      <div className="text-sm text-gray-500">{formatPrice(item.suggestedPrice)} each</div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-medium text-green-600">
-                      ${(store.subtotal / 100).toFixed(2)}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  {store.items.slice(0, 3).map((item) => (
-                    <div key={item.id} className="flex justify-between text-sm">
-                      <span>{item.productName} (×{item.quantity})</span>
-                      <span className="text-gray-500">
-                        ${((item.suggestedPrice * item.quantity) / 100).toFixed(2)}
-                      </span>
-                    </div>
-                  ))}
-                  {store.items.length > 3 && (
-                    <div className="text-sm text-gray-500 text-center">
-                      +{store.items.length - 3} more items
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Action Buttons */}
-        <div className="space-y-3 pb-6">
-          <Button 
-            onClick={handleBeginShopping} 
-            className="w-full bg-green-600 hover:bg-green-700"
-            size="lg"
-          >
-            <ShoppingCart className="w-4 h-4 mr-2" />
-            Begin Shopping
-            <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
-          
-          <Button 
-            onClick={handleOrderOnline} 
-            variant="outline" 
-            className="w-full"
-            size="lg"
-          >
-            Order Online Instead
-          </Button>
-        </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
       </main>
 
-      <BottomNavigation activeTab="lists" />
+      <BottomNavigation activeTab="plan-details" />
     </div>
   );
-}
+};
+
+export default PlanDetails;
