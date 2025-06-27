@@ -86,15 +86,12 @@ const ProfilePage: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/user/notification-preferences'] });
-      toast({
-        title: "Notification Settings Updated",
-        description: "Your notification preferences have been saved.",
-      });
+      // Settings saved silently - no toast needed for every toggle
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to update notification settings. Please try again.",
+        title: "Settings Error",
+        description: "Failed to save notification preferences. Please try again.",
         variant: "destructive",
       });
     }
