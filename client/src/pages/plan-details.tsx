@@ -107,8 +107,7 @@ export default function PlanDetails() {
 
   // Fetch shopping list data
   const { data: shoppingList, isLoading, error } = useQuery({
-    queryKey: ['shopping-list', listId],
-    queryFn: () => apiRequest(`/api/shopping-lists/${listId}`),
+    queryKey: [`/api/shopping-lists/${listId}`],
     enabled: !!listId,
   });
 
