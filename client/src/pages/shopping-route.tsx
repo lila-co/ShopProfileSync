@@ -1067,11 +1067,7 @@ const ShoppingRoute: React.FC = () => {
       // Force a re-render by updating the route state
       setOptimizedRoute({...optimizedRoute});
 
-      toast({
-        title: "Item Moved to Next Store",
-        description: `${outOfStockItem.productName} will be available at ${nextStore.retailerName}`,
-        duration: 3000
-      });
+      // Items moved to next store - reduced notification noise
     } else {
       // For single-store plans, create a reminder or alternative suggestion
       updateItemMutation.mutate({
@@ -1517,11 +1513,7 @@ const ShoppingRoute: React.FC = () => {
     setCompletedItems(newCompletedItems);
     setEndStoreDialogOpen(false);
 
-    toast({
-      title: "Items Marked as Found",
-      description: `Marked ${uncompletedItems.length} items as found`,
-      duration: 3000
-    });
+    // Items marked as found - proceeding without notification
 
     completeCurrentStore();
   };
@@ -1560,11 +1552,7 @@ const ShoppingRoute: React.FC = () => {
 
       setEndStoreDialogOpen(false);
 
-      toast({
-        title: "Items Moved to Next Store",
-        description: `${uncompletedItems.length} items will be available at ${nextStore.retailerName}`,
-        duration: 4000
-      });
+      // Items moved to next store - reduced notification noise
 
       completeCurrentStore();
     } else {
@@ -2573,7 +2561,7 @@ const ShoppingRoute: React.FC = () => {
                 const isVisited = index < currentAisleIndex;
 
                 return (
-                  <button
+<button
                     key={aisle.aisleName}
                     onClick={() => jumpToAisle(index)}
                     className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all${
