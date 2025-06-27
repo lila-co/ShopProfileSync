@@ -146,11 +146,12 @@ The application is deployed on Replit with the following configuration:
 ## Recent Changes
 
 **June 27, 2025**
-- Fixed multi-store item transfer functionality in shopping-route.tsx
-- Resolved issue where unchecked items transferred to next store weren't appearing
-- Updated handleTryNextStore to maintain original item IDs instead of creating temporary ones
-- Enhanced route regeneration logic to properly include transferred items when moving between stores
-- Items now successfully transfer and display in subsequent stores during multi-store shopping
+- Fixed critical item transfer bug in multi-store shopping plans
+- Items left unchecked now automatically transfer to next store instead of being marked "not found"
+- Updated completeCurrentStore function to handle multi-store vs single-store logic properly
+- Implemented automatic page refresh system to show transferred items without manual refresh
+- Added proper retailer ID updates and transfer notifications for seamless store transitions
+- Eliminated need to manually refresh page or re-check items after store transfers
 
 **June 24, 2025**
 - Fixed critical JavaScript syntax error in shopping-route.tsx causing "Failed to fetch dynamically imported module" crash

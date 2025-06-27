@@ -1429,17 +1429,87 @@ const ShoppingRoute: React.FC = () => {
 
         console.log(`Moving to next store: ${nextStore.retailerName}`);
         
-        // The store transition will be handled by the useEffect that watches currentStoreIndex
-        // This ensures the route is regenerated with the most current store data including moved items
-
-        // Show transition message with delay to ensure it's visible
-        setTimeout(() => {
-          toast({
-            title: "🏪 Moving to Next Store",
-            description: `Now shopping at ${nextStore.retailerName} (Store ${nextStoreIndex + 1} of ${optimizedRoute.stores.length})`,
-            duration: 4000
-          });
-        }, 500);
+        // Force refresh of shopping list data to get updated items with proper retailer assignments
+        setTimeout(async () => {
+          try {
+            console.log('Refreshing shopping list data for next store...');
+            
+            // Invalidate and refetch shopping list data
+            await queryClient.invalidateQueries({ queryKey: [`/api/shopping-lists/${listId}`] });
+            
+            // Get fresh shopping list data
+            const freshListResponse = await fetch(`/api/shopping-lists/${listId}`, {
+              credentials: 'include'
+            });
+            
+            if (!freshListResponse.ok) {
+              throw new Error('Failed to fetch updated shopping list');
+            }
+            
+            const freshShoppingList = await freshListResponse.json();
+            console.log('Fresh shopping list data:', freshShoppingList);
+            
+            // Filter items for the next store based on updated retailer assignments
+            const nextStoreItems = freshShoppingList.items?.filter(item => 
+              item.suggestedRetailerId === (nextStore.retailer?.id || nextStore.suggestedRetailerId) &&
+              !item.isCompleted
+            ) || [];
+            
+            console.log(`Found ${nextStoreItems.length} items for next store ${nextStore.retailerName}:`, 
+              nextStoreItems.map(item => item.productName));
+            
+            if (nextStoreItems.length > 0) {
+              // Generate new optimized route for the next store
+              const newRoute = generateOptimizedShoppingRoute(nextStoreItems, nextStore.retailerName);
+              
+              // Update the optimized route with fresh data
+              setOptimizedRoute(prevRoute => ({
+                ...prevRoute,
+                aisleGroups: newRoute.aisleGroups,
+                totalAisles: newRoute.totalAisles,
+                estimatedTime: newRoute.estimatedTime,
+                retailerName: nextStore.retailerName,
+                totalItems: nextStoreItems.length,
+                stores: prevRoute.stores?.map((store, index) => 
+                  index === nextStoreIndex ? { ...store, items: nextStoreItems } : store
+                ) || prevRoute.stores
+              }));
+              
+              // Force a small delay to ensure state updates are applied
+              setTimeout(() => {
+                // Show success message with transferred item count
+                const transferredCount = nextStoreItems.filter(item => 
+                  item.notes && item.notes.includes('Moved from')
+                ).length;
+                
+                toast({
+                  title: "Items Transferred Successfully",
+                  description: `${transferredCount} items moved to ${nextStore.retailerName}. Ready to shop!`,
+                  duration: 4000
+                });
+              }, 200);
+              
+              console.log(`Successfully updated route for ${nextStore.retailerName} with ${nextStoreItems.length} items`);
+            } else {
+              console.log(`No items found for ${nextStore.retailerName}, skipping to next store or ending`);
+              // If no items, move to next store or end shopping
+              if (nextStoreIndex < optimizedRoute.stores.length - 1) {
+                setTimeout(() => handleStoreComplete(), 500);
+              } else {
+                setTimeout(() => endShopping(), 500);
+              }
+            }
+          } catch (error) {
+            console.error('Failed to refresh shopping list for next store:', error);
+            
+            // Fallback: show transition message anyway
+            toast({
+              title: "Moving to Next Store",
+              description: `Now shopping at ${nextStore.retailerName} (Store ${nextStoreIndex + 1} of ${optimizedRoute.stores.length})`,
+              duration: 4000
+            });
+          }
+        }, 100);
       } else {
         // All stores completed - show completion message before ending
         setTimeout(() => {
