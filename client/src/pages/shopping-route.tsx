@@ -494,21 +494,13 @@ const ShoppingRoute: React.FC = () => {
   useEffect(() => {
     if (optimizedRoute?.isMultiStore && optimizedRoute.stores && currentStoreIndex >= 0) {
       const currentStore = optimizedRoute.stores[currentStoreIndex];
-      if (currentStore) {
-        // Get items moved to this store
-        const itemsMovedToThisStore = getItemsMovedToStore(currentStoreIndex);
-        
-        // Combine original store items with moved items
-        const allStoreItems = [
-          ...currentStore.items,
-          ...itemsMovedToThisStore.filter(movedItem => 
-            !currentStore.items.some(storeItem => storeItem.id === movedItem.id)
-          )
-        ];
+      if (currentStore && currentStore.items) {
+        // Use the items already in the store (which includes moved items)
+        const storeItems = currentStore.items;
 
-        if (allStoreItems.length > 0) {
-          // Regenerate aisles for current store including moved items
-          const storeRoute = generateOptimizedShoppingRoute(allStoreItems, currentStore.retailerName);
+        if (storeItems.length > 0) {
+          // Regenerate aisles for current store with all items
+          const storeRoute = generateOptimizedShoppingRoute(storeItems, currentStore.retailerName);
 
           // Update the optimized route with new aisles for current store
           setOptimizedRoute(prevRoute => ({
@@ -518,9 +510,10 @@ const ShoppingRoute: React.FC = () => {
             estimatedTime: storeRoute.estimatedTime
           }));
 
-          console.log(`Regenerated aisles for ${currentStore.retailerName} with ${allStoreItems.length} items (${itemsMovedToThisStore.length} moved items)`);
+          console.log(`Regenerated aisles for ${currentStore.retailerName} with ${storeItems.length} items`);
           
-          // Show toast if items were moved to this store
+          // Check for items that were moved to this store
+          const itemsMovedToThisStore = storeItems.filter(item => item.movedFrom);
           if (itemsMovedToThisStore.length > 0) {
             toast({
               title: "Items Available",
@@ -531,7 +524,7 @@ const ShoppingRoute: React.FC = () => {
         }
       }
     }
-  }, [currentStoreIndex, optimizedRoute?.stores, movedItems]);
+  }, [currentStoreIndex, optimizedRoute?.stores]);
 
 
 
@@ -1791,12 +1784,17 @@ const ShoppingRoute: React.FC = () => {
     
     setMovedItems(prev => [...prev, movedItem]);
     
-    // Update the target store's items
+    // Update the optimized route to remove item from current store and add to target store
     setOptimizedRoute(prevRoute => {
       const updatedStores = [...prevRoute.stores];
-      const updatedTargetStore = { ...updatedStores[targetStoreIndex] };
+      
+      // Remove item from current store
+      const currentStore = { ...updatedStores[currentStoreIndex] };
+      currentStore.items = currentStore.items.filter((storeItem: any) => storeItem.id !== item.id);
+      updatedStores[currentStoreIndex] = currentStore;
       
       // Add item to target store if not already there
+      const updatedTargetStore = { ...updatedStores[targetStoreIndex] };
       const itemExists = updatedTargetStore.items.some((storeItem: any) => 
         storeItem.id === item.id || storeItem.productName.toLowerCase() === item.productName.toLowerCase()
       );
@@ -1811,9 +1809,16 @@ const ShoppingRoute: React.FC = () => {
       
       updatedStores[targetStoreIndex] = updatedTargetStore;
       
+      // Also remove from current aisles display
+      const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
+        ...aisle,
+        items: aisle.items.filter((aisleItem: any) => aisleItem.id !== item.id)
+      })).filter((aisle: any) => aisle.items.length > 0);
+      
       return {
         ...prevRoute,
-        stores: updatedStores
+        stores: updatedStores,
+        aisleGroups: newAisleGroups
       };
     });
     
@@ -1822,6 +1827,11 @@ const ShoppingRoute: React.FC = () => {
       description: `${item.productName} moved to ${targetStore.retailerName}`,
       duration: 3000
     });
+    
+    // Check if current aisle is now empty and handle accordingly
+    setTimeout(() => {
+      checkAndHandleEmptyAisle();
+    }, 100);
   };
 
   // Check if user has started shopping based on progress
