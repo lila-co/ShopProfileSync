@@ -858,7 +858,7 @@ export class MemStorage implements IStorage {
     return item;
   }
 
-  async addShoppingListItem(itemData: Partial<ShoppingListItem>): Promise<ShoppingListItem> {
+  async createShoppingListItem(itemData: Partial<ShoppingListItem>): Promise<ShoppingListItem> {
     // For demo, get the default list if not specified
     let shoppingListId = itemData.shoppingListId;
     if (!shoppingListId) {
@@ -887,6 +887,12 @@ export class MemStorage implements IStorage {
     };
 
     this.shoppingListItems.set(id, newItem);
+    console.log(`Created shopping list item ${id}:`, newItem);
+    return newItem;
+  }
+
+  async addShoppingListItem(itemData: Partial<ShoppingListItem>): Promise<ShoppingListItem> {
+    return this.createShoppingListItem(itemData);
 
     // Add retailer data if available
     if (newItem.suggestedRetailerId) {

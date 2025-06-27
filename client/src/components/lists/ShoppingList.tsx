@@ -337,6 +337,12 @@ const ShoppingListComponent: React.FC = () => {
         quantity: quantity,
         unit: unit
       });
+      
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Failed to add item: ${response.status} ${errorData}`);
+      }
+      
       return response.json();
     },
     onMutate: async ({ itemName, quantity, unit }: { itemName: string; quantity: number; unit: string }) => {

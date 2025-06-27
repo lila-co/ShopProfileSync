@@ -515,6 +515,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add shopping list item
+  app.post('/api/shopping-list/items', sanitizeInput, async (req: Request, res: Response) => {
+    try {
+      const { shoppingListId, productName, quantity, unit } = req.body;
+      
+      if (!shoppingListId || !productName) {
+        return res.status(400).json({ message: 'Shopping list ID and product name are required' });
+      }
+      
+      const validQuantity = parseInt(quantity) || 1;
+      const validUnit = unit || 'COUNT';
+      
+      console.log(`Adding item to shopping list ${shoppingListId}:`, { productName, quantity: validQuantity, unit: validUnit });
+      
+      const newItem = await storage.createShoppingListItem({
+        shoppingListId,
+        productName: productName.trim(),
+        quantity: validQuantity,
+        unit: validUnit,
+        isCompleted: false
+      });
+      
+      console.log(`Successfully added item:`, newItem);
+      res.json(newItem);
+    } catch (error) {
+      console.error('Error adding shopping list item:', error);
+      handleError(res, error);
+    }
+  });
+
   // Delete shopping list item
   app.delete('/api/shopping-list/items/:id', async (req: Request, res: Response) => {
     try {
