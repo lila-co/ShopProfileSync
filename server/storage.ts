@@ -882,7 +882,7 @@ export class MemStorage implements IStorage {
   }
 
   // Update shopping list item
-  async updateShoppingListItem(itemId: number, updates: Partial<ShoppingListItem>): Promise<ShoppingListItem | null> {
+  async updateShoppingListItem(itemId: number, updates: Partial<ShoppingListItem>): Promise<ShoppingListItem> {
     const item = this.shoppingListItems.get(itemId);
     if (!item) {
       console.log(`Shopping list item ${itemId} not found for update`);
@@ -891,7 +891,7 @@ export class MemStorage implements IStorage {
 
     const updatedItem = { ...item, ...updates };
     this.shoppingListItems.set(itemId, updatedItem);
-    
+
     console.log(`Successfully updated shopping list item ${itemId}:`, {
       productName: updatedItem.productName,
       isCompleted: updatedItem.isCompleted,
@@ -1461,6 +1461,35 @@ export class MemStorage implements IStorage {
 
     this.purchaseItems.set(purchaseItem.id, purchaseItem);
     return purchaseItem;
+  }
+
+  async updateShoppingListItem(itemId: number, updates: Partial<ShoppingListItem>): Promise<ShoppingListItem | null> {
+    const item = this.shoppingListItems.get(itemId);
+    if (!item) {
+      console.log(`Shopping list item ${itemId} not found for update`);
+      return null;
+    }
+
+    const updatedItem = { ...item, ...updates };
+    this.shoppingListItems.set(itemId, updatedItem);
+
+    console.log(`Successfully updated shopping list item ${itemId}:`, {
+      productName: updatedItem.productName,
+      isCompleted: updatedItem.isCompleted,
+      notes: updatedItem.notes
+    });
+
+    // If category was updated, learn from this user correction
+    if (updates.category && updates.category !== item.category) {
+      try {
+        const { productCategorizer } = await import('./services/productCategorizer');
+        productCategorizer.learnFromUserCorrection(updatedItem.productName, updates.category);
+      } catch (error) {
+        console.warn('Failed to update product categorizer learning:', error);
+      }
+    }
+
+    return updatedItem;
   }
 }
 

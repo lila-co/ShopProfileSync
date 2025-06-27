@@ -989,11 +989,7 @@ const PlanDetails: React.FC = () => {
                 // Use the navigate function instead of window.location for better routing
                 navigate(targetUrl);
 
-                toast({
-                  title: "Loading Shopping Route",
-                  description: "Preparing your optimized shopping route...",
-                  duration: 2000
-                });
+                // No toast needed - shopping route page will handle feedback
               }}
             >
               <ShoppingCart className="h-4 w-4 mr-2" />

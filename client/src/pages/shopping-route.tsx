@@ -48,7 +48,9 @@ import {
   Package,
   Star,
   AlertCircle,
-  MoreVertical
+  MoreVertical,
+  Plus,
+  Minus
 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
@@ -273,7 +275,7 @@ const ShoppingRoute: React.FC = () => {
   const [endStoreDialogOpen, setEndStoreDialogOpen] = useState(false);
   const [uncompletedItems, setUncompletedItems] = useState<any[]>([]);
   const [loyaltyBarcodeDialogOpen, setLoyaltyBarcodeDialogOpen] = useState(false);
-  const [isShoppingComplete, setIsShoppingComplete] = useState(false);
+  const [isShoppingComplete, setIsShoppingComplete] = useState(isShoppingComplete);
 
   // Get current retailer name for loyalty card fetching
   const getCurrentRetailerName = () => {
@@ -386,13 +388,15 @@ const ShoppingRoute: React.FC = () => {
             setCompletedItems(new Set(sessionData.completedItems));
           }
 
-          // Check if the session had actual progress to set hasStartedShopping correctly
-          const sessionHadProgress = (sessionData.completedItems && sessionData.completedItems.length > 0) ||
-                                    sessionData.currentAisleIndex > 0 ||
-                                    sessionData.currentStoreIndex > 0;
-
-          if (sessionHadProgress) {
-            setHasStartedShopping(true);
+          // Restore hasStartedShopping state from session
+          if (sessionData.hasStartedShopping !== undefined) {
+            setHasStartedShopping(sessionData.hasStartedShopping);
+          } else {
+            // Fallback: Check if the session had actual progress
+            const sessionHadProgress = (sessionData.completedItems && sessionData.completedItems.length > 0) ||
+                                      sessionData.currentAisleIndex > 0 ||
+                                      sessionData.currentStoreIndex > 0;
+            setHasStartedShopping(sessionHadProgress);
           }
 
           // Clear restoration flag after a brief delay
@@ -400,11 +404,7 @@ const ShoppingRoute: React.FC = () => {
 
           console.log('Restored shopping session - Store:', sessionData.currentStoreIndex, 'Aisle:', sessionData.currentAisleIndex);
 
-          toast({
-            title: "Shopping Session Restored",
-            description: `Continuing from where you left off at ${sessionData.currentStoreName || 'your store'}`,
-            duration: 4000
-          });
+          // Resume shopping silently - the UI will show the current state
         } else {
           // Clean up old session
           localStorage.removeItem(persistentSessionKey);
@@ -1583,7 +1583,8 @@ const ShoppingRoute: React.FC = () => {
       updateItemMutation.mutate({
         itemId: item.id,
         updates: {
-          notes: 'Saved for future trip - not needed this time',          isCompleted: false
+          notes: 'Saved for future trip - not needed this time',
+          isCompleted: false
         }
       });
     });
@@ -1660,8 +1661,8 @@ const ShoppingRoute: React.FC = () => {
 
   // Save shopping session to localStorage (survives app closure)
   const savePersistentShoppingSession = (planData: any, route: any) => {
-    // Only save if user has actually started shopping (made meaningful progress)
-    if (!hasStartedShopping || completedItems.size === 0) {
+    // Always save session once shopping route is loaded, regardless of progress
+    if (!planData || !route) {
       return;
     }
 
@@ -1680,11 +1681,12 @@ const ShoppingRoute: React.FC = () => {
         timestamp: Date.now(),
         currentStoreName: currentStore?.retailerName,
         isMultiStore: route?.isMultiStore || false,
-        totalStores: route?.stores?.length || 1
+        totalStores: route?.stores?.length || 1,
+        hasStartedShopping: hasStartedShopping
       };
 
-      localStorage.setItem(sessionKey, JSON.stringify(sessionData));
       console.log('Saved persistent shopping session for list', listId);
+    // Session saved silently - no need to notify user
     } catch (error) {
       console.warn('Failed to save shopping session:', error);
     }
@@ -1693,12 +1695,42 @@ const ShoppingRoute: React.FC = () => {
   // Track if user has actually started shopping (moved aisles or completed items)
   const [hasStartedShopping, setHasStartedShopping] = useState(false);
 
-  // Update session whenever progress changes (only if user has started shopping)
+  // Save session before app closes or page unloads
   useEffect(() => {
-    if (optimizedRoute && selectedPlanData && hasStartedShopping) {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (optimizedRoute && selectedPlanData) {
+        savePersistentShoppingSession(selectedPlanData, optimizedRoute);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && optimizedRoute && selectedPlanData) {
+        savePersistentShoppingSession(selectedPlanData, optimizedRoute);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [optimizedRoute, selectedPlanData, currentStoreIndex, currentAisleIndex, completedItems, hasStartedShopping]);
+
+  // Save session immediately when route is created and on any state change
+  useEffect(() => {
+    if (optimizedRoute && selectedPlanData) {
       savePersistentShoppingSession(selectedPlanData, optimizedRoute);
     }
   }, [currentStoreIndex, currentAisleIndex, completedItems, optimizedRoute, selectedPlanData, hasStartedShopping]);
+
+  // Save session when the route is initially created
+  useEffect(() => {
+    if (optimizedRoute && selectedPlanData) {
+      savePersistentShoppingSession(selectedPlanData, optimizedRoute);
+    }
+  }, [optimizedRoute, selectedPlanData]);
 
   // Check if user has started shopping based on progress
   useEffect(() => {
@@ -2021,7 +2053,89 @@ const ShoppingRoute: React.FC = () => {
                           </div>
                           <div className="text-sm text-gray-500 flex items-center gap-2">
                             <Package className="h-3 w-3" />
-                            <span>Qty: {item.quantity}</span>
+                            <div className="flex items-center gap-2">
+                              <span>Qty:</span>
+                              {!isCompleted ? (
+                                <div className="flex items-center gap-1 bg-gray-100 rounded-lg px-2 py-1">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (item.quantity > 1) {
+                                        const newQuantity = item.quantity - 1;
+                                        updateItemMutation.mutate({
+                                          itemId: item.id,
+                                          updates: { quantity: newQuantity }
+                                        });
+
+                                        // Update the item in the current route state
+                                        setOptimizedRoute((prevRoute: any) => {
+                                          if (!prevRoute) return prevRoute;
+
+                                          const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
+                                            ...aisle,
+                                            items: aisle.items.map((routeItem: any) => 
+                                              routeItem.id === item.id 
+                                                ? { ...routeItem, quantity: newQuantity }
+                                                : routeItem
+                                            )
+                                          }));
+
+                                          return { ...prevRoute, aisleGroups: newAisleGroups };
+                                        });
+
+                                        toast({
+                                          title: "Quantity Updated",
+                                          description: `${item.productName} quantity changed to ${newQuantity}`,
+                                          duration: 2000
+                                        });
+                                      }
+                                    }}
+                                    className="w-6 h-6 rounded-full bg-white border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-sm font-medium"
+                                    disabled={item.quantity <= 1}
+                                  >
+                                    −
+                                  </button>
+                                  <span className="w-8 text-center font-medium text-gray-800">{item.quantity}</span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const newQuantity = item.quantity + 1;
+                                      updateItemMutation.mutate({
+                                        itemId: item.id,
+                                        updates: { quantity: newQuantity }
+                                      });
+
+                                      // Update the item in the current route state
+                                      setOptimizedRoute((prevRoute: any) => {
+                                        if (!prevRoute) return prevRoute;
+
+                                        const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
+                                          ...aisle,
+                                          items: aisle.items.map((routeItem: any) => 
+                                            routeItem.id === item.id 
+                                              ? { ...routeItem, quantity: newQuantity }
+                                              : routeItem
+                                          )
+                                        }));
+
+                                        return { ...prevRoute, aisleGroups: newAisleGroups };
+                                      });
+
+                                      toast({
+                                        title: "Quantity Updated",
+                                        description: `${item.productName} quantity changed to ${newQuantity}`,
+                                        duration: 2000
+                                      });
+                                    }}
+                                    className="w-6 h-6 rounded-full bg-white border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-sm font-medium"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              ) : (
+                                <span>{item.quantity}</span>
+                              )}
+                            </div>
                             {item.shelfLocation && (
                               <>
                                 <span>•</span>
@@ -2450,7 +2564,7 @@ const ShoppingRoute: React.FC = () => {
                   <button
                     key={aisle.aisleName}
                     onClick={() => jumpToAisle(index)}
-                    className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
+                    className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all${
                       isCurrent 
                         ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200' 
                         : completionStatus.isComplete 
@@ -2509,43 +2623,7 @@ const ShoppingRoute: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Progress Header */}
-        <Card className="mb-4">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Store className="h-5 w-5 text-primary" />
-                <div>
-                  <div className="font-semibold">{optimizedRoute.retailerName}</div>
-                  {optimizedRoute.planType && (
-                    <div className="text-xs text-gray-500">{optimizedRoute.planType}</div>
-                  )}
-                </div>
-              </div>
 
-            </div>
-
-
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Progress</span>
-                <span>{completedItems.size} of {optimizedRoute.totalItems} items</span>
-              </div>
-              <Progress value={getProgressPercentage()} className="h-2" />
-            </div>
-
-            <div className="flex items-center justify-between mt-3 text-sm">
-              <span className="flex items-center gap-1">
-                <Navigation className="h-4 w-4" />
-                {currentAisleIndex + 1} of {optimizedRoute.totalAisles} aisles
-              </span>
-              <span className="flex items-center gap-1">
-                <Clock className="h-4 w-4" />
-                Est. {optimizedRoute.estimatedTime} min total
-              </span>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Multi-Store Navigation */}
         {optimizedRoute?.isMultiStore && (
