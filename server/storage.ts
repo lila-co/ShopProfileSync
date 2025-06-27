@@ -444,7 +444,9 @@ export class MemStorage implements IStorage {
     // Last month's purchases
     this.createSamplePurchase(defaultUser.id, 1, now.getFullYear(), now.getMonth() - 1, 15);
     this.createSamplePurchase(defaultUser.id, 2, now.getFullYear(), now.getMonth() - 1, 5);
-    this.createSamplePurchase(defaultUser.id, 4, now.getFullYear(), now.getMonth() - 1, 22);
+    this.createSample```text
+
+Purchase(defaultUser.id, 4, now.getFullYear(), now.getMonth() - 1, 22);
 
     // This month's purchases 
     this.createSamplePurchase(defaultUser.id, 1, now.getFullYear(), now.getMonth(), 2);
@@ -882,7 +884,7 @@ export class MemStorage implements IStorage {
   }
 
   // Update shopping list item
-  async updateShoppingListItem(itemId: number, updates: Partial<ShoppingListItem>): Promise<ShoppingListItem | null> {
+  async updateShoppingListItem(itemId: number, updates: Partial<ShoppingListItem>): Promise<ShoppingListItem> {
     const item = this.shoppingListItems.get(itemId);
     if (!item) {
       console.log(`Shopping list item ${itemId} not found for update`);
@@ -891,7 +893,7 @@ export class MemStorage implements IStorage {
 
     const updatedItem = { ...item, ...updates };
     this.shoppingListItems.set(itemId, updatedItem);
-    
+
     console.log(`Successfully updated shopping list item ${itemId}:`, {
       productName: updatedItem.productName,
       isCompleted: updatedItem.isCompleted,
@@ -1461,6 +1463,35 @@ export class MemStorage implements IStorage {
 
     this.purchaseItems.set(purchaseItem.id, purchaseItem);
     return purchaseItem;
+  }
+
+  async updateShoppingListItem(itemId: number, updates: Partial<ShoppingListItem>): Promise<ShoppingListItem | null> {
+    const item = this.shoppingListItems.get(itemId);
+    if (!item) {
+      console.log(`Shopping list item ${itemId} not found for update`);
+      return null;
+    }
+
+    const updatedItem = { ...item, ...updates };
+    this.shoppingListItems.set(itemId, updatedItem);
+
+    console.log(`Successfully updated shopping list item ${itemId}:`, {
+      productName: updatedItem.productName,
+      isCompleted: updatedItem.isCompleted,
+      notes: updatedItem.notes
+    });
+
+    // If category was updated, learn from this user correction
+    if (updates.category && updates.category !== item.category) {
+      try {
+        const { productCategorizer } = await import('./services/productCategorizer');
+        productCategorizer.learnFromUserCorrection(updatedItem.productName, updates.category);
+      } catch (error) {
+        console.warn('Failed to update product categorizer learning:', error);
+      }
+    }
+
+    return updatedItem;
   }
 }
 

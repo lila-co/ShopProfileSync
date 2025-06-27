@@ -565,7 +565,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Only generate items if the list is empty or if we need intelligent additions
       let itemsAdded = 0;
       let itemsSkipped = 0;
-      
+
       if (isEmptyList) {
         // Sample generated items for empty lists - in production this would use AI
         const generatedItems = [
@@ -593,11 +593,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         // For non-empty lists, only add complementary items occasionally (every 3rd regeneration)
         const regenerationCount = parseInt(req.headers['x-regeneration-count'] as string) || 0;
-        
+
         if (regenerationCount % 3 === 0) {
           // Smart complementary items based on what's already in the list
           const complementaryItems = [];
-          
+
           // Analyze existing items and suggest complements
           const hasProteins = currentItems.some(item => 
             item.productName.toLowerCase().includes('chicken') || 
@@ -605,13 +605,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             item.productName.toLowerCase().includes('beef') ||
             item.productName.toLowerCase().includes('eggs')
           );
-          
+
           const hasDairy = currentItems.some(item => 
             item.productName.toLowerCase().includes('milk') || 
             item.productName.toLowerCase().includes('cheese') ||
             item.productName.toLowerCase().includes('yogurt')
           );
-          
+
           const hasVegetables = currentItems.some(item => 
             item.productName.toLowerCase().includes('spinach') || 
             item.productName.toLowerCase().includes('tomato') ||
@@ -1716,12 +1716,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Delete completed items from shopping list - these should be permanently removed
       if (completedItems && completedItems.length > 0) {
         console.log(`Processing deletion of ${completedItems.length} completed items`);
-        
+
         for (const itemId of completedItems) {
           try {
             console.log(`Attempting to delete completed item ${itemId}`);
             const success = await storage.deleteShoppingListItem(itemId);
-            
+
             if (success) {
               deletedCount++;
               console.log(`Successfully deleted completed item ${itemId}`);
@@ -1732,28 +1732,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.error(`Exception while deleting item ${itemId}:`, error);
           }
         }
-        
+
         console.log(`Completed items deletion: ${deletedCount}/${completedItems.length} successful`);
       }
 
       // Update uncompleted items with notes (but keep them on the list for future shopping)
       if (uncompletedItems && uncompletedItems.length > 0) {
         console.log(`Processing ${uncompletedItems.length} uncompleted items`);
-        
+
         for (const item of uncompletedItems) {
           try {
             const notes = item.reason === 'out_of_stock' 
               ? `Out of stock at ${retailerName} on ${new Date().toLocaleDateString()}`
               : `Not found at ${retailerName} on ${new Date().toLocaleDateString()}`;
-            
+
             console.log(`Updating uncompleted item ${item.id || item} with notes`);
-            
+
             const itemId = typeof item === 'object' ? item.id : item;
             const success = await storage.updateShoppingListItem(itemId, {
               isCompleted: false,
               notes: notes
             });
-            
+
             if (success) {
               updatedCount++;
               console.log(`Successfully updated uncompleted item ${itemId}`);
@@ -1822,14 +1822,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const itemId = parseInt(req.params.itemId);
       const updates = req.body;
+      console.log(`Attempting to update shopping list item ${itemId}:`, updates);
 
-      const updatedItem = await storage.updateShoppingListItem(itemId, updates);
-
-      if (!updatedItem) {
-        return res.status(404).json({ message: 'Item not found' });
+      // Validate quantity if it's being updated
+      if (updates.quantity !== undefined) {
+        const quantity = parseInt(updates.quantity);
+        if (isNaN(quantity) || quantity < 1) {
+          return res.status(400).json({ error: 'Quantity must be a positive number' });
+        }
+        updates.quantity = quantity;
       }
 
-      res.json(updatedItem);
+      const success = await storage.updateShoppingListItem(itemId, updates);
+
+      if (success) {
+        const updatedItem = await storage.getShoppingListItem(itemId);
+        console.log(`Successfully updated shopping list item ${itemId}:`, updatedItem);
+        res.json(updatedItem);
+      } else {
+        console.error(`Failed to update shopping list item ${itemId} - item not found`);
+        res.status(404).json({ error: 'Shopping list item not found' });
+      }
     } catch (error) {
       console.error('Error updating shopping list item:', error);
       res.status(500).json({ message: 'Failed to update item' });

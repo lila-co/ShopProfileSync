@@ -48,7 +48,9 @@ import {
   Package,
   Star,
   AlertCircle,
-  MoreVertical
+  MoreVertical,
+  Plus,
+  Minus
 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
@@ -2054,7 +2056,89 @@ const ShoppingRoute: React.FC = () => {
                           </div>
                           <div className="text-sm text-gray-500 flex items-center gap-2">
                             <Package className="h-3 w-3" />
-                            <span>Qty: {item.quantity}</span>
+                            <div className="flex items-center gap-2">
+                              <span>Qty:</span>
+                              {!isCompleted ? (
+                                <div className="flex items-center gap-1 bg-gray-100 rounded-lg px-2 py-1">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (item.quantity > 1) {
+                                        const newQuantity = item.quantity - 1;
+                                        updateItemMutation.mutate({
+                                          itemId: item.id,
+                                          updates: { quantity: newQuantity }
+                                        });
+                                        
+                                        // Update the item in the current route state
+                                        setOptimizedRoute((prevRoute: any) => {
+                                          if (!prevRoute) return prevRoute;
+                                          
+                                          const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
+                                            ...aisle,
+                                            items: aisle.items.map((routeItem: any) => 
+                                              routeItem.id === item.id 
+                                                ? { ...routeItem, quantity: newQuantity }
+                                                : routeItem
+                                            )
+                                          }));
+                                          
+                                          return { ...prevRoute, aisleGroups: newAisleGroups };
+                                        });
+                                        
+                                        toast({
+                                          title: "Quantity Updated",
+                                          description: `${item.productName} quantity changed to ${newQuantity}`,
+                                          duration: 2000
+                                        });
+                                      }
+                                    }}
+                                    className="w-6 h-6 rounded-full bg-white border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-sm font-medium"
+                                    disabled={item.quantity <= 1}
+                                  >
+                                    −
+                                  </button>
+                                  <span className="w-8 text-center font-medium text-gray-800">{item.quantity}</span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const newQuantity = item.quantity + 1;
+                                      updateItemMutation.mutate({
+                                        itemId: item.id,
+                                        updates: { quantity: newQuantity }
+                                      });
+                                      
+                                      // Update the item in the current route state
+                                      setOptimizedRoute((prevRoute: any) => {
+                                        if (!prevRoute) return prevRoute;
+                                        
+                                        const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
+                                          ...aisle,
+                                          items: aisle.items.map((routeItem: any) => 
+                                            routeItem.id === item.id 
+                                              ? { ...routeItem, quantity: newQuantity }
+                                              : routeItem
+                                          )
+                                        }));
+                                        
+                                        return { ...prevRoute, aisleGroups: newAisleGroups };
+                                      });
+                                      
+                                      toast({
+                                        title: "Quantity Updated",
+                                        description: `${item.productName} quantity changed to ${newQuantity}`,
+                                        duration: 2000
+                                      });
+                                    }}
+                                    className="w-6 h-6 rounded-full bg-white border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-sm font-medium"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              ) : (
+                                <span>{item.quantity}</span>
+                              )}
+                            </div>
                             {item.shelfLocation && (
                               <>
                                 <span>•</span>
