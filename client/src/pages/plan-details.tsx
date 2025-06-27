@@ -226,6 +226,7 @@ const PlanDetails: React.FC = () => {
     };
   }, [shoppingItems, planData.stores, selectedPlanType]);
 
+  // All hooks must be called before any early returns
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
