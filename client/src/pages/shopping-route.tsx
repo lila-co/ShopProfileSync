@@ -494,38 +494,44 @@ const ShoppingRoute: React.FC = () => {
   useEffect(() => {
     if (optimizedRoute?.isMultiStore && optimizedRoute.stores && currentStoreIndex >= 0) {
       const currentStore = optimizedRoute.stores[currentStoreIndex];
-      if (currentStore && currentStore.items && currentStore.items.length > 0) {
-        // Regenerate aisles for current store with all items (including moved items)
-        const storeRoute = generateOptimizedShoppingRoute(currentStore.items, currentStore.retailerName);
-
-        // Update the optimized route with new aisles for current store
-        setOptimizedRoute(prevRoute => ({
-          ...prevRoute,
-          aisleGroups: storeRoute.aisleGroups,
-          totalAisles: storeRoute.totalAisles,
-          estimatedTime: storeRoute.estimatedTime
-        }));
-
-        console.log(`Regenerated aisles for ${currentStore.retailerName} with ${currentStore.items.length} items`);
+      if (currentStore) {
+        console.log(`Store ${currentStoreIndex} (${currentStore.retailerName}) has ${currentStore.items?.length || 0} items`);
         
-        // Check for items that were moved to this store
-        const itemsMovedToThisStore = currentStore.items.filter(item => item.movedFrom);
-        if (itemsMovedToThisStore.length > 0) {
-          console.log(`Found ${itemsMovedToThisStore.length} moved items in ${currentStore.retailerName}`);
-          toast({
-            title: "Items Available",
-            description: `${itemsMovedToThisStore.length} item(s) moved from previous stores are now available`,
-            duration: 4000
-          });
+        if (currentStore.items && currentStore.items.length > 0) {
+          // Regenerate aisles for current store with all items (including moved items)
+          const storeRoute = generateOptimizedShoppingRoute(currentStore.items, currentStore.retailerName);
+
+          // Update the optimized route with new aisles for current store
+          setOptimizedRoute(prevRoute => ({
+            ...prevRoute,
+            aisleGroups: storeRoute.aisleGroups,
+            totalAisles: storeRoute.totalAisles,
+            estimatedTime: storeRoute.estimatedTime
+          }));
+
+          console.log(`Regenerated aisles for ${currentStore.retailerName} with ${currentStore.items.length} items`);
+          console.log('New aisles:', storeRoute.aisleGroups.map(a => `${a.aisleName} (${a.items.length} items)`));
+          
+          // Check for items that were moved to this store
+          const itemsMovedToThisStore = currentStore.items.filter(item => item.movedFrom);
+          if (itemsMovedToThisStore.length > 0) {
+            console.log(`Found ${itemsMovedToThisStore.length} moved items in ${currentStore.retailerName}:`, itemsMovedToThisStore.map(i => i.productName));
+            toast({
+              title: "Items Available",
+              description: `${itemsMovedToThisStore.length} item(s) moved from previous stores are now available`,
+              duration: 4000
+            });
+          }
+        } else {
+          // Store has no items, clear aisles
+          setOptimizedRoute(prevRoute => ({
+            ...prevRoute,
+            aisleGroups: [],
+            totalAisles: 0,
+            estimatedTime: 0
+          }));
+          console.log(`Store ${currentStore.retailerName} has no items, cleared aisles`);
         }
-      } else if (currentStore && currentStore.items.length === 0) {
-        // Store has no items, clear aisles
-        setOptimizedRoute(prevRoute => ({
-          ...prevRoute,
-          aisleGroups: [],
-          totalAisles: 0,
-          estimatedTime: 0
-        }));
       }
     }
   }, [currentStoreIndex, optimizedRoute?.stores, toast]);
@@ -1810,6 +1816,7 @@ const ShoppingRoute: React.FC = () => {
       const currentStore = { ...updatedStores[currentStoreIndex] };
       currentStore.items = currentStore.items.filter((storeItem: any) => storeItem.id !== item.id);
       updatedStores[currentStoreIndex] = currentStore;
+      console.log(`After removal, current store (${currentStore.retailerName}) has ${currentStore.items.length} items`);
       
       // Add item to target store if not already there
       const updatedTargetStore = { ...updatedStores[targetStoreIndex] };
@@ -1827,6 +1834,7 @@ const ShoppingRoute: React.FC = () => {
         };
         updatedTargetStore.items = [...updatedTargetStore.items, itemToAdd];
         console.log(`Added item ${item.productName} to ${targetStore.retailerName}. Store now has ${updatedTargetStore.items.length} items`);
+        console.log(`Target store items:`, updatedTargetStore.items.map(i => i.productName));
       } else {
         console.log(`Item ${item.productName} already exists in ${targetStore.retailerName}`);
       }
@@ -1839,11 +1847,15 @@ const ShoppingRoute: React.FC = () => {
         items: aisle.items.filter((aisleItem: any) => aisleItem.id !== item.id)
       })).filter((aisle: any) => aisle.items.length > 0);
       
-      return {
+      const updatedRoute = {
         ...prevRoute,
         stores: updatedStores,
         aisleGroups: newAisleGroups
       };
+      
+      console.log(`Updated route with moved item. Target store ${targetStoreIndex} now has ${updatedStores[targetStoreIndex].items.length} items`);
+      
+      return updatedRoute;
     });
     
     toast({
@@ -2760,7 +2772,11 @@ const ShoppingRoute: React.FC = () => {
                           ? 'bg-green-50 border-green-200'
                           : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
                       }`}
-                      onClick={() => setCurrentStoreIndex(index)}
+                      onClick={() => {
+                        console.log(`Switching to store ${index}: ${store.retailerName} via click`);
+                        setCurrentStoreIndex(index);
+                        setCurrentAisleIndex(0);
+                      }}
                     >
                       <div className="flex items-center justify-between">
                         <div>
@@ -2795,7 +2811,12 @@ const ShoppingRoute: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <Button 
                     variant="outline"
-                    onClick={() => setCurrentStoreIndex(Math.max(0, currentStoreIndex - 1))}
+                    onClick={() => {
+                      const prevStoreIndex = Math.max(0, currentStoreIndex - 1);
+                      setCurrentStoreIndex(prevStoreIndex);
+                      setCurrentAisleIndex(0);
+                      console.log(`Navigating to previous store ${prevStoreIndex}`);
+                    }}
                     disabled={currentStoreIndex === 0}
                     className="w-full"
                   >
@@ -2807,30 +2828,16 @@ const ShoppingRoute: React.FC = () => {
                     variant="outline"
                     className="w-full"
                     onClick={() => {
-                    if (currentStoreIndex < optimizedRoute.stores.length - 1) {
-                      const nextStoreIndex = currentStoreIndex + 1;
-                      const nextStore = optimizedRoute.stores[nextStoreIndex];
-                      
-                      setCurrentStoreIndex(nextStoreIndex);
-                      setCurrentAisleIndex(0); // Reset to first aisle of new store
-                      
-                      console.log(`Navigating to store ${nextStoreIndex}: ${nextStore.retailerName} with ${nextStore.items.length} items`);
-                      
-                      // Force route regeneration for the new store
-                      setTimeout(() => {
-                        if (nextStore.items.length > 0) {
-                          const storeRoute = generateOptimizedShoppingRoute(nextStore.items, nextStore.retailerName);
-                          setOptimizedRoute(prevRoute => ({
-                            ...prevRoute,
-                            aisleGroups: storeRoute.aisleGroups,
-                            totalAisles: storeRoute.totalAisles,
-                            estimatedTime: storeRoute.estimatedTime
-                          }));
-                          console.log(`Force regenerated aisles for ${nextStore.retailerName} via navigation`);
-                        }
-                      }, 100);
-                    }
-                  }}
+                      if (currentStoreIndex < optimizedRoute.stores.length - 1) {
+                        const nextStoreIndex = currentStoreIndex + 1;
+                        const nextStore = optimizedRoute.stores[nextStoreIndex];
+                        
+                        setCurrentStoreIndex(nextStoreIndex);
+                        setCurrentAisleIndex(0); // Reset to first aisle of new store
+                        
+                        console.log(`Navigating to store ${nextStoreIndex}: ${nextStore.retailerName} with ${nextStore.items?.length || 0} items`);
+                      }
+                    }}
                     disabled={currentStoreIndex >= optimizedRoute.stores.length - 1}
                   >
                     Next Store
