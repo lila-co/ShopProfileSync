@@ -58,6 +58,7 @@ export interface IStorage {
 
   // Shopping List Item methods
   getShoppingListItems(listId: number): Promise<ShoppingListItem[]>;
+  getShoppingListItem(id: number): Promise<ShoppingListItem | undefined>;
   addShoppingListItem(item: Partial<ShoppingListItem>): Promise<ShoppingListItem>;
   updateShoppingListItem(id: number, updates: Partial<ShoppingListItem>): Promise<ShoppingListItem>;
   deleteShoppingListItem(id: number): Promise<boolean>;
@@ -840,6 +841,21 @@ export class MemStorage implements IStorage {
       }
       return item;
     }));
+  }
+
+  async getShoppingListItem(id: number): Promise<ShoppingListItem | undefined> {
+    const item = this.shoppingListItems.get(id);
+    if (!item) {
+      return undefined;
+    }
+
+    // Add retailer data if available
+    if (item.suggestedRetailerId) {
+      const retailer = await this.getRetailer(item.suggestedRetailerId);
+      return { ...item, suggestedRetailer: retailer };
+    }
+
+    return item;
   }
 
   async addShoppingListItem(itemData: Partial<ShoppingListItem>): Promise<ShoppingListItem> {
