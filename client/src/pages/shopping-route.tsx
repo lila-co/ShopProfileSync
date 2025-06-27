@@ -1315,31 +1315,79 @@ const ShoppingRoute: React.FC = () => {
       }
     }
 
-    // Update uncompleted items with notes (but don't delete them)
+    // Handle uncompleted items: transfer to next store in multi-store plans, or mark as not found in single store
     if (uncompletedItemIds.length > 0) {
-      console.log(`Updating ${uncompletedItemIds.length} uncompleted items with notes`);
+      // Check if this is a multi-store plan and we're not at the last store
+      const isMultiStoreWithNextStore = optimizedRoute?.isMultiStore && 
+                                       optimizedRoute.stores && 
+                                       currentStoreIndex < optimizedRoute.stores.length - 1;
 
-      const updatePromises = uncompletedItemIds.map(async (itemId) => {
-        try {
-          const item = itemsToProcess.find(i => i.id === itemId);
-          const notes = `Not purchased during shopping trip on ${new Date().toLocaleDateString()} at ${currentRetailerName}`;
+      if (isMultiStoreWithNextStore) {
+        // Transfer items to next store
+        const nextStore = optimizedRoute.stores[currentStoreIndex + 1];
+        const nextStoreRetailerId = nextStore.retailer?.id || nextStore.suggestedRetailerId;
+        
+        console.log(`Transferring ${uncompletedItemIds.length} uncompleted items to next store: ${nextStore.retailerName}`);
 
-          await updateItemMutation.mutateAsync({
-            itemId,
-            updates: {
-              isCompleted: false,
-              notes: notes
-            }
+        const transferPromises = uncompletedItemIds.map(async (itemId) => {
+          try {
+            const item = itemsToProcess.find(i => i.id === itemId);
+            
+            await updateItemMutation.mutateAsync({
+              itemId,
+              updates: {
+                suggestedRetailerId: nextStoreRetailerId,
+                notes: `Moved from ${currentRetailerName} - not available. Trying at ${nextStore.retailerName}`,
+                isCompleted: false
+              }
+            });
+
+            console.log(`Successfully transferred item ${itemId} (${item?.productName}) to ${nextStore.retailerName}`);
+            return { success: true, itemId, transferred: true };
+          } catch (error) {
+            console.error(`Failed to transfer item ${itemId}:`, error);
+            return { success: false, itemId, transferred: false };
+          }
+        });
+
+        const transferResults = await Promise.allSettled(transferPromises);
+        const successfulTransfers = transferResults.filter(result => 
+          result.status === 'fulfilled' && result.value?.success
+        ).length;
+
+        if (successfulTransfers > 0) {
+          toast({
+            title: "Items Transferred",
+            description: `${successfulTransfers} items moved to ${nextStore.retailerName}`,
+            duration: 3000
           });
-
-          return { success: true, itemId };
-        } catch (error) {
-          console.error(`Failed to update uncompleted item ${itemId}:`, error);
-          return { success: false, itemId };
         }
-      });
+      } else {
+        // Single store or last store: mark items as not found
+        console.log(`Updating ${uncompletedItemIds.length} uncompleted items with notes (last store)`);
 
-      await Promise.allSettled(updatePromises);
+        const updatePromises = uncompletedItemIds.map(async (itemId) => {
+          try {
+            const item = itemsToProcess.find(i => i.id === itemId);
+            const notes = `Not purchased during shopping trip on ${new Date().toLocaleDateString()} at ${currentRetailerName}`;
+
+            await updateItemMutation.mutateAsync({
+              itemId,
+              updates: {
+                isCompleted: false,
+                notes: notes
+              }
+            });
+
+            return { success: true, itemId };
+          } catch (error) {
+            console.error(`Failed to update uncompleted item ${itemId}:`, error);
+            return { success: false, itemId };
+          }
+        });
+
+        await Promise.allSettled(updatePromises);
+      }
     }
 
     // Invalidate queries to refresh the shopping list
