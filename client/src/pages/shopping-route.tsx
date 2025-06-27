@@ -450,11 +450,7 @@ const ShoppingRoute: React.FC = () => {
 
       // Don't save session immediately - only save when user actually starts shopping
 
-      toast({
-        title: "Shopping Route Ready!",
-        description: `Your shopping route has been created from your selected plan`,
-        duration: 3000
-      });
+      // Route ready - no toast needed as user can see the interface
     } else if (shoppingList?.items && shoppingList.items.length > 0) {
       console.log('Using shopping list items as fallback, listId:', listId);
 
@@ -478,11 +474,7 @@ const ShoppingRoute: React.FC = () => {
       setSelectedPlanData(fallbackPlanData);
       setStartTime(new Date());
 
-      toast({
-        title: "Shopping Route Created",
-        description: "Using your shopping list items",
-        duration: 3000
-      });
+      // Route created from shopping list - no toast needed
     } else {
       console.log('No data available for shopping route, listId:', listId, 'shoppingList:', shoppingList);
       toast({
@@ -1706,8 +1698,7 @@ const ShoppingRoute: React.FC = () => {
         hasStartedShopping: hasStartedShopping
       };
 
-      console.log('Saved persistent shopping session for list', listId);
-    // Session saved silently - no need to notify user
+      // Session saved silently - no user notification needed
     } catch (error) {
       console.warn('Failed to save shopping session:', error);
     }
