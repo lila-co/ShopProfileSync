@@ -533,9 +533,9 @@ const ShoppingRoute: React.FC = () => {
       }
 
       if (allStoreItems.length > 0) {
-        // Filter out completed items for aisle generation, but include moved items even if they were completed in previous store
-        const uncompletedStoreItems = allStoreItems.filter(item => {
-          // If item was moved to this store, always include it (reset completion status)
+        // Include all items for aisle generation - completed items will be visually distinguished in the UI
+        const allStoreItemsForAisles = allStoreItems.map(item => {
+          // If item was moved to this store, reset completion status
           const wasMovedHere = item.movedFrom || itemsMovedToThisStore.some(moved => moved.id === item.id);
           if (wasMovedHere) {
             // Remove from completed items set to ensure it shows as uncompleted
@@ -544,15 +544,14 @@ const ShoppingRoute: React.FC = () => {
               newSet.delete(item.id);
               return newSet;
             });
-            return true;
+            return { ...item, isCompleted: false };
           }
-          // Otherwise, only include if not completed
-          return !completedItems.has(item.id) && !item.isCompleted;
+          return item;
         });
         
-        if (uncompletedStoreItems.length > 0) {
-          // Regenerate aisles for current store with uncompleted items
-          const storeRoute = generateOptimizedShoppingRoute(uncompletedStoreItems, currentStore.retailerName);
+        if (allStoreItemsForAisles.length > 0) {
+          // Regenerate aisles for current store with all items (completed items will be visually distinguished)
+          const storeRoute = generateOptimizedShoppingRoute(allStoreItemsForAisles, currentStore.retailerName);
 
           // Update the optimized route with new aisles for current store
           setOptimizedRoute(prevRoute => ({
@@ -563,11 +562,11 @@ const ShoppingRoute: React.FC = () => {
             retailerName: currentStore.retailerName
           }));
 
-          console.log(`Regenerated aisles for ${currentStore.retailerName} with ${uncompletedStoreItems.length} uncompleted items`);
+          console.log(`Regenerated aisles for ${currentStore.retailerName} with ${allStoreItemsForAisles.length} items`);
           console.log('New aisles:', storeRoute.aisleGroups.map(a => `${a.aisleName} (${a.items.length} items)`));
 
           // Check for items that were moved to this store
-          const itemsMovedToThisStoreFiltered = uncompletedStoreItems.filter(item => item.movedFrom);
+          const itemsMovedToThisStoreFiltered = allStoreItemsForAisles.filter(item => item.movedFrom);
           if (itemsMovedToThisStoreFiltered.length > 0) {
             console.log(`Found ${itemsMovedToThisStoreFiltered.length} moved items in ${currentStore.retailerName}:`, itemsMovedToThisStoreFiltered.map(i => i.productName));
             toast({
@@ -577,7 +576,7 @@ const ShoppingRoute: React.FC = () => {
             });
           }
         } else {
-          // Store has no uncompleted items, clear aisles
+          // Store has no items, clear aisles
           setOptimizedRoute(prevRoute => ({
             ...prevRoute,
             aisleGroups: [],
@@ -585,7 +584,7 @@ const ShoppingRoute: React.FC = () => {
             estimatedTime: 0,
             retailerName: currentStore.retailerName
           }));
-          console.log(`Store ${currentStore.retailerName} has no uncompleted items, cleared aisles`);
+          console.log(`Store ${currentStore.retailerName} has no items, cleared aisles`);
         }
       } else {
         // Store has no items, clear aisles
