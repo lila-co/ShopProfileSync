@@ -1366,6 +1366,22 @@ const ShoppingRoute: React.FC = () => {
         setCurrentAisleIndex(0);
         setCompletedItems(new Set()); // Reset completed items for new store
 
+        // Regenerate route for next store to include any transferred items
+        setTimeout(() => {
+          if (nextStore.items.length > 0) {
+            console.log(`Regenerating route for ${nextStore.retailerName} with ${nextStore.items.length} items`);
+            const storeRoute = generateOptimizedShoppingRoute(nextStore.items, nextStore.retailerName);
+            setOptimizedRoute(prevRoute => ({
+              ...prevRoute,
+              ...storeRoute,
+              isMultiStore: true,
+              stores: prevRoute.stores,
+              retailerName: nextStore.retailerName
+            }));
+            console.log(`Route regenerated for ${nextStore.retailerName}`);
+          }
+        }, 100);
+
         // Show transition message with delay to ensure it's visible
         setTimeout(() => {
           toast({
@@ -1556,15 +1572,17 @@ const ShoppingRoute: React.FC = () => {
       uncompletedItems.forEach(item => {
         // Add item to next store's items if not already there
         const itemExistsInNextStore = nextStore.items.some((storeItem: any) => 
-          storeItem.productName.toLowerCase() === item.productName.toLowerCase()
+          storeItem.id === item.id || storeItem.productName.toLowerCase() === item.productName.toLowerCase()
         );
 
         if (!itemExistsInNextStore) {
+          // Keep the original item ID to maintain consistency
           nextStore.items.push({
             ...item,
             storeName: nextStore.retailerName,
             suggestedRetailerId: nextStore.retailer?.id || nextStore.suggestedRetailerId,
-            id: item.id + 10000
+            id: item.id, // Keep original ID instead of creating temporary one
+            isCompleted: false
           });
         }
 
