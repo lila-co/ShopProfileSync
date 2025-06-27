@@ -2547,7 +2547,102 @@ const ShoppingRoute: React.FC = () => {
           </CardContent>
         </Card>
 
-        
+        {/* Multi-Store Navigation */}
+        {optimizedRoute?.isMultiStore && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Store className="h-5 w-5 text-purple-600" />
+                Multi-Store Shopping Plan
+              </CardTitle>
+              <p className="text-sm text-gray-600">Shop at {optimizedRoute.stores.length} stores for best prices</p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {optimizedRoute.stores.map((store: any, index: number) => {
+                  const storeCompletedItems = store.items.filter((item: any) => 
+                    completedItems.has(item.id) || item.isCompleted
+                  ).length;
+                  const isCurrent = index === currentStoreIndex;
+                  const isCompleted = storeCompletedItems === store.items.length;
+
+                  return (
+                    <div
+                      key={index}
+                      className={`p-3 rounded-lg border transition-all cursor-pointer ${
+                        isCurrent 
+                          ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200' 
+                          : isCompleted
+                          ? 'bg-green-50 border-green-200'
+                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                      }`}
+                      onClick={() => setCurrentStoreIndex(index)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-sm">{store.retailerName}</div>
+                          <div className="text-xs text-gray-500">
+                            {store.items.length} items 
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-xs text-gray-600">
+                            {storeCompletedItems}/{store.items.length}
+                          </div>
+                          {isCurrent && (
+                            <Badge className="bg-blue-600 text-white text-xs">
+                              Current
+                            </Badge>
+                          )}
+                          {isCompleted && !isCurrent && (
+                            <Badge className="bg-green-600 text-white text-xs">
+                              Complete
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Store Navigation Buttons */}
+              <div className="mt-4 pt-3 border-t">
+                <div className="grid grid-cols-2 gap-3">
+                  <Button 
+                    variant="outline"
+                    onClick={() => setCurrentStoreIndex(Math.max(0, currentStoreIndex - 1))}
+                    disabled={currentStoreIndex === 0}
+                    className="w-full"
+                  >
+                    <ArrowRight className="h-4 w-4 mr-2 rotate-180" />
+                    Previous Store
+                  </Button>
+
+                  <Button 
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      if (currentStoreIndex < optimizedRoute.stores.length - 1) {
+                        setCurrentStoreIndex(currentStoreIndex + 1);
+                        setCurrentAisleIndex(0); // Reset to first aisle of new store
+                        toast({
+                          title: "Moving to next store",
+                          description: `Now shopping at ${optimizedRoute.stores[currentStoreIndex + 1].retailerName}`,
+                          duration: 3000
+                        });
+                      }
+                    }}
+                    disabled={currentStoreIndex >= optimizedRoute.stores.length - 1}
+                  >
+                    Next Store
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </main>
 
       <BottomNavigation activeTab="lists" />
