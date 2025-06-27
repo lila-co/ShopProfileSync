@@ -497,7 +497,7 @@ const ShoppingRoute: React.FC = () => {
       console.log(`Store ${currentStoreIndex} (${currentStore.retailerName}) has ${currentStore.items?.length || 0} items`);
 
       // Get all items for this store including moved items
-      let allStoreItems = currentStore.items || [];
+      let allStoreItems = [...(currentStore.items || [])];
       
       // Add any items that were moved to this store from movedItems tracking
       const itemsMovedToThisStore = movedItems.filter(item => 
@@ -518,6 +518,16 @@ const ShoppingRoute: React.FC = () => {
               movedFrom: movedItem.originalStoreName,
               isCompleted: false // Ensure moved items are not marked as completed
             });
+          } else {
+            // Update existing item to ensure it's not marked as completed
+            const existingIndex = allStoreItems.findIndex(item => item.id === movedItem.id);
+            if (existingIndex > -1) {
+              allStoreItems[existingIndex] = {
+                ...allStoreItems[existingIndex],
+                isCompleted: false,
+                movedFrom: movedItem.originalStoreName
+              };
+            }
           }
         });
       }
@@ -526,11 +536,18 @@ const ShoppingRoute: React.FC = () => {
         // Filter out completed items for aisle generation, but include moved items even if they were completed in previous store
         const uncompletedStoreItems = allStoreItems.filter(item => {
           // If item was moved to this store, always include it (reset completion status)
-          if (item.movedFrom || itemsMovedToThisStore.some(moved => moved.id === item.id)) {
+          const wasMovedHere = item.movedFrom || itemsMovedToThisStore.some(moved => moved.id === item.id);
+          if (wasMovedHere) {
+            // Remove from completed items set to ensure it shows as uncompleted
+            setCompletedItems(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(item.id);
+              return newSet;
+            });
             return true;
           }
           // Otherwise, only include if not completed
-          return !completedItems.has(item.id);
+          return !completedItems.has(item.id) && !item.isCompleted;
         });
         
         if (uncompletedStoreItems.length > 0) {
@@ -550,12 +567,12 @@ const ShoppingRoute: React.FC = () => {
           console.log('New aisles:', storeRoute.aisleGroups.map(a => `${a.aisleName} (${a.items.length} items)`));
 
           // Check for items that were moved to this store
-          const itemsMovedToThisStore = uncompletedStoreItems.filter(item => item.movedFrom);
-          if (itemsMovedToThisStore.length > 0) {
-            console.log(`Found ${itemsMovedToThisStore.length} moved items in ${currentStore.retailerName}:`, itemsMovedToThisStore.map(i => i.productName));
+          const itemsMovedToThisStoreFiltered = uncompletedStoreItems.filter(item => item.movedFrom);
+          if (itemsMovedToThisStoreFiltered.length > 0) {
+            console.log(`Found ${itemsMovedToThisStoreFiltered.length} moved items in ${currentStore.retailerName}:`, itemsMovedToThisStoreFiltered.map(i => i.productName));
             toast({
               title: "Items Available",
-              description: `${itemsMovedToThisStore.length} item(s) moved from previous stores are now available`,
+              description: `${itemsMovedToThisStoreFiltered.length} item(s) moved from previous stores are now available`,
               duration: 4000
             });
           }
@@ -1180,16 +1197,10 @@ const ShoppingRoute: React.FC = () => {
   const getCurrentAisle = () => {
     if (!optimizedRoute?.aisleGroups) return null;
 
-    // For multi-store plans, generate aisles from current store's items
+    // For multi-store plans, use the current aisleGroups which should already include moved items
     if (optimizedRoute.isMultiStore && optimizedRoute.stores) {
-      const currentStore = optimizedRoute.stores[currentStoreIndex];
-      if (!currentStore) return null;
-
-      // Generate aisles for current store including moved items
-      const storeRoute = generateOptimizedShoppingRoute(currentStore.items, currentStore.retailerName);
-      if (!storeRoute.aisleGroups || !storeRoute.aisleGroups[currentAisleIndex]) return null;
-
-      return storeRoute.aisleGroups[currentAisleIndex];
+      if (!optimizedRoute.aisleGroups[currentAisleIndex]) return null;
+      return optimizedRoute.aisleGroups[currentAisleIndex];
     }
 
     return optimizedRoute.aisleGroups[currentAisleIndex];
@@ -1888,10 +1899,13 @@ const ShoppingRoute: React.FC = () => {
       isCompleted: false // Ensure moved items are not completed
     };
 
+    // Update moved items tracking
     setMovedItems(prev => {
       // Remove any existing entry for this item and add the new one
       const filtered = prev.filter(moved => moved.id !== item.id);
-      return [...filtered, movedItem];
+      const newMovedItems = [...filtered, movedItem];
+      console.log(`Updated movedItems:`, newMovedItems.map(m => `${m.productName} -> ${m.movedToStoreName}`));
+      return newMovedItems;
     });
 
     // Remove the item from completed items set so it shows as uncompleted in the new store
@@ -2141,7 +2155,7 @@ const ShoppingRoute: React.FC = () => {
   }
 
   const currentAisle = getCurrentAisle();
-  const isLastAisle = currentAisleIndex === optimizedRoute.aisleGroups.length - 1;
+  const isLastAisle = currentAisleIndex === (optimizedRoute?.aisleGroups?.length || 0) - 1;
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
