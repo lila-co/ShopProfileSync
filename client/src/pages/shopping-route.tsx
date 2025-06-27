@@ -386,13 +386,15 @@ const ShoppingRoute: React.FC = () => {
             setCompletedItems(new Set(sessionData.completedItems));
           }
 
-          // Check if the session had actual progress to set hasStartedShopping correctly
-          const sessionHadProgress = (sessionData.completedItems && sessionData.completedItems.length > 0) ||
-                                    sessionData.currentAisleIndex > 0 ||
-                                    sessionData.currentStoreIndex > 0;
-
-          if (sessionHadProgress) {
-            setHasStartedShopping(true);
+          // Restore hasStartedShopping state from session
+          if (sessionData.hasStartedShopping !== undefined) {
+            setHasStartedShopping(sessionData.hasStartedShopping);
+          } else {
+            // Fallback: Check if the session had actual progress
+            const sessionHadProgress = (sessionData.completedItems && sessionData.completedItems.length > 0) ||
+                                      sessionData.currentAisleIndex > 0 ||
+                                      sessionData.currentStoreIndex > 0;
+            setHasStartedShopping(sessionHadProgress);
           }
 
           // Clear restoration flag after a brief delay
@@ -1660,8 +1662,8 @@ const ShoppingRoute: React.FC = () => {
 
   // Save shopping session to localStorage (survives app closure)
   const savePersistentShoppingSession = (planData: any, route: any) => {
-    // Only save if user has actually started shopping (made meaningful progress)
-    if (!hasStartedShopping || completedItems.size === 0) {
+    // Always save session once shopping route is loaded, regardless of progress
+    if (!planData || !route) {
       return;
     }
 
@@ -1680,7 +1682,8 @@ const ShoppingRoute: React.FC = () => {
         timestamp: Date.now(),
         currentStoreName: currentStore?.retailerName,
         isMultiStore: route?.isMultiStore || false,
-        totalStores: route?.stores?.length || 1
+        totalStores: route?.stores?.length || 1,
+        hasStartedShopping: hasStartedShopping
       };
 
       localStorage.setItem(sessionKey, JSON.stringify(sessionData));
@@ -1693,12 +1696,42 @@ const ShoppingRoute: React.FC = () => {
   // Track if user has actually started shopping (moved aisles or completed items)
   const [hasStartedShopping, setHasStartedShopping] = useState(false);
 
-  // Update session whenever progress changes (only if user has started shopping)
+  // Save session before app closes or page unloads
   useEffect(() => {
-    if (optimizedRoute && selectedPlanData && hasStartedShopping) {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (optimizedRoute && selectedPlanData) {
+        savePersistentShoppingSession(selectedPlanData, optimizedRoute);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && optimizedRoute && selectedPlanData) {
+        savePersistentShoppingSession(selectedPlanData, optimizedRoute);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [optimizedRoute, selectedPlanData, currentStoreIndex, currentAisleIndex, completedItems, hasStartedShopping]);
+
+  // Save session immediately when route is created and on any state change
+  useEffect(() => {
+    if (optimizedRoute && selectedPlanData) {
       savePersistentShoppingSession(selectedPlanData, optimizedRoute);
     }
   }, [currentStoreIndex, currentAisleIndex, completedItems, optimizedRoute, selectedPlanData, hasStartedShopping]);
+
+  // Save session when the route is initially created
+  useEffect(() => {
+    if (optimizedRoute && selectedPlanData) {
+      savePersistentShoppingSession(selectedPlanData, optimizedRoute);
+    }
+  }, [optimizedRoute, selectedPlanData]);
 
   // Check if user has started shopping based on progress
   useEffect(() => {
