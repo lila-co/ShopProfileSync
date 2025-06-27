@@ -275,7 +275,7 @@ const ShoppingRoute: React.FC = () => {
   const [endStoreDialogOpen, setEndStoreDialogOpen] = useState(false);
   const [uncompletedItems, setUncompletedItems] = useState<any[]>([]);
   const [loyaltyBarcodeDialogOpen, setLoyaltyBarcodeDialogOpen] = useState(false);
-  const [isShoppingComplete, setIsShoppingComplete] = useState(false);
+  const [isShoppingComplete, setIsShoppingComplete] = useState(isShoppingComplete);
 
   // Get current retailer name for loyalty card fetching
   const getCurrentRetailerName = () => {
@@ -404,11 +404,7 @@ const ShoppingRoute: React.FC = () => {
 
           console.log('Restored shopping session - Store:', sessionData.currentStoreIndex, 'Aisle:', sessionData.currentAisleIndex);
 
-          toast({
-            title: "Shopping Session Restored",
-            description: `Continuing from where you left off at ${sessionData.currentStoreName || 'your store'}`,
-            duration: 4000
-          });
+          // Resume shopping silently - the UI will show the current state
         } else {
           // Clean up old session
           localStorage.removeItem(persistentSessionKey);
@@ -834,7 +830,8 @@ const ShoppingRoute: React.FC = () => {
       return name.includes('organic') || name.includes('specialty') || name.includes('imported');
     }).length;
 
-    const freshItems = items.filter((item: any) => {
+    const freshItems = items.filter```javascript
+((item: any) => {
       const name = item.productName.toLowerCase();
       return name.includes('fresh') || name.includes('produce') || name.includes('meat') || name.includes('seafood');
     }).length;
@@ -1688,8 +1685,8 @@ const ShoppingRoute: React.FC = () => {
         hasStartedShopping: hasStartedShopping
       };
 
-      localStorage.setItem(sessionKey, JSON.stringify(sessionData));
       console.log('Saved persistent shopping session for list', listId);
+    // Session saved silently - no need to notify user
     } catch (error) {
       console.warn('Failed to save shopping session:', error);
     }
@@ -1724,7 +1721,7 @@ const ShoppingRoute: React.FC = () => {
   // Save session immediately when route is created and on any state change
   useEffect(() => {
     if (optimizedRoute && selectedPlanData) {
-      savePersistentShoppingSession(selectedPlanData, optimizedRoute);
+      savePersistentShoppingSession(selectedPlanData, optimizedRoute);```javascript
     }
   }, [currentStoreIndex, currentAisleIndex, completedItems, optimizedRoute, selectedPlanData, hasStartedShopping]);
 
@@ -2069,11 +2066,11 @@ const ShoppingRoute: React.FC = () => {
                                           itemId: item.id,
                                           updates: { quantity: newQuantity }
                                         });
-                                        
+
                                         // Update the item in the current route state
                                         setOptimizedRoute((prevRoute: any) => {
                                           if (!prevRoute) return prevRoute;
-                                          
+
                                           const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
                                             ...aisle,
                                             items: aisle.items.map((routeItem: any) => 
@@ -2082,10 +2079,10 @@ const ShoppingRoute: React.FC = () => {
                                                 : routeItem
                                             )
                                           }));
-                                          
+
                                           return { ...prevRoute, aisleGroups: newAisleGroups };
                                         });
-                                        
+
                                         toast({
                                           title: "Quantity Updated",
                                           description: `${item.productName} quantity changed to ${newQuantity}`,
@@ -2107,11 +2104,11 @@ const ShoppingRoute: React.FC = () => {
                                         itemId: item.id,
                                         updates: { quantity: newQuantity }
                                       });
-                                      
+
                                       // Update the item in the current route state
                                       setOptimizedRoute((prevRoute: any) => {
                                         if (!prevRoute) return prevRoute;
-                                        
+
                                         const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
                                           ...aisle,
                                           items: aisle.items.map((routeItem: any) => 
@@ -2120,10 +2117,10 @@ const ShoppingRoute: React.FC = () => {
                                               : routeItem
                                           )
                                         }));
-                                        
+
                                         return { ...prevRoute, aisleGroups: newAisleGroups };
                                       });
-                                      
+
                                       toast({
                                         title: "Quantity Updated",
                                         description: `${item.productName} quantity changed to ${newQuantity}`,
@@ -2567,7 +2564,7 @@ const ShoppingRoute: React.FC = () => {
                   <button
                     key={aisle.aisleName}
                     onClick={() => jumpToAisle(index)}
-                    className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
+                    className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all${
                       isCurrent 
                         ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200' 
                         : completionStatus.isComplete 
@@ -2626,7 +2623,7 @@ const ShoppingRoute: React.FC = () => {
           </CardContent>
         </Card>
 
-        
+
 
         {/* Multi-Store Navigation */}
         {optimizedRoute?.isMultiStore && (
