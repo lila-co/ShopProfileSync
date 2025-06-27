@@ -1,3 +1,6 @@
+Analysis: The shopping route component needs to be updated to correctly handle item movement between stores in multi-store plans. This includes adding state to track moved items, updating the session loading and saving logic to include moved items, and modifying the `moveItemToNextStore` function to update the optimized route and track moved items.
+</tool_code>
+```replit_final_file
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -276,6 +279,12 @@ const ShoppingRoute: React.FC = () => {
   const [uncompletedItems, setUncompletedItems] = useState<any[]>([]);
   const [loyaltyBarcodeDialogOpen, setLoyaltyBarcodeDialogOpen] = useState(false);
   const [isShoppingComplete, setIsShoppingComplete] = useState(false);
+  const [movedItems, setMovedItems] = useState<Array<{
+    itemId: number;
+    fromStore: string;
+    toStore: string;
+    productName: string;
+  }>>([]);
 
   // Get current retailer name for loyalty card fetching
   const getCurrentRetailerName = () => {
@@ -387,6 +396,7 @@ const ShoppingRoute: React.FC = () => {
           if (sessionData.completedItems) {
             setCompletedItems(new Set(sessionData.completedItems));
           }
+          setMovedItems(sessionData.movedItems || []);
 
           // Restore hasStartedShopping state from session
           if (sessionData.hasStartedShopping !== undefined) {
@@ -1678,6 +1688,7 @@ const ShoppingRoute: React.FC = () => {
         listId,
         currentStoreIndex,
         currentAisleIndex,
+        movedItems,
         completedItems: Array.from(completedItems),
         timestamp: Date.now(),
         currentStoreName: currentStore?.retailerName,
@@ -1716,14 +1727,14 @@ const ShoppingRoute: React.FC = () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [optimizedRoute, selectedPlanData, currentStoreIndex, currentAisleIndex, completedItems, hasStartedShopping]);
+  }, [optimizedRoute, selectedPlanData, currentStoreIndex, currentAisleIndex, completedItems, hasStartedShopping, movedItems]);
 
   // Save session immediately when route is created and on any state change
   useEffect(() => {
     if (optimizedRoute && selectedPlanData) {
       savePersistentShoppingSession(selectedPlanData, optimizedRoute);
     }
-  }, [currentStoreIndex, currentAisleIndex, completedItems, optimizedRoute, selectedPlanData, hasStartedShopping]);
+  }, [currentStoreIndex, currentAisleIndex, completedItems, optimizedRoute, selectedPlanData, hasStartedShopping, movedItems]);
 
   // Save session when the route is initially created
   useEffect(() => {
@@ -1847,6 +1858,85 @@ const ShoppingRoute: React.FC = () => {
     }
   };
 
+  const moveItemToNextStore = (itemId: number) => {
+    if (!optimizedRoute?.isMultiStore || !optimizedRoute.stores) return;
+
+    const currentStore = optimizedRoute.stores[currentStoreIndex];
+    const nextStoreIndex = currentStoreIndex + 1;
+
+    if (nextStoreIndex >= optimizedRoute.stores.length) {
+      toast({
+        title: "No More Stores",
+        description: "This is the last store in your plan",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const nextStore = optimizedRoute.stores[nextStoreIndex];
+    const itemToMove = currentStore.items.find(item => item.id === itemId);
+
+    if (!itemToMove) return;
+
+    // Update the optimized route state
+    setOptimizedRoute(prevRoute => {
+      if (!prevRoute?.stores) return prevRoute;
+
+      const updatedStores = prevRoute.stores.map((store, index) => {
+        if (index === currentStoreIndex) {
+          // Remove item from current store
+          return {
+            ...store,
+            items: store.items.filter(item => item.id !== itemId)
+          };
+        } else if (index === nextStoreIndex) {
+          // Add item to next store with moved flag
+          const movedItem = {
+            ...itemToMove,
+            movedFrom: currentStore.retailerName,
+            storeName: nextStore.retailerName
+          };
+          return {
+            ...store,
+            items: [...store.items, movedItem]
+          };
+        }
+        return store;
+      });
+
+      // If this was the current store, also update the current aisles to reflect the removal
+      if (currentStoreIndex < updatedStores.length) {
+        const currentStoreItems = updatedStores[currentStoreIndex].items;
+        const updatedRoute = generateOptimizedShoppingRoute(currentStoreItems, currentStore.retailerName);
+
+        return {
+          ...prevRoute,
+          stores: updatedStores,
+          aisleGroups: updatedRoute.aisleGroups,
+          totalAisles: updatedRoute.totalAisles,
+          estimatedTime: updatedRoute.estimatedTime
+        };
+      }
+
+      return {
+        ...prevRoute,
+        stores: updatedStores
+      };
+    });
+
+    // Track moved items for shopping completion
+    setMovedItems(prev => [...prev, {
+      itemId,
+      fromStore: currentStore.retailerName,
+      toStore: nextStore.retailerName,
+      productName: itemToMove.productName
+    }]);
+
+    toast({
+      title: "Item Moved",
+      description: `${itemToMove.productName} moved to ${nextStore.retailerName}`,
+    });
+  };
 
   if (isLoading) {
     return (
@@ -2470,534 +2560,3 @@ const ShoppingRoute: React.FC = () => {
                                       if (currentStore) {
                                         currentStore.items = currentStore.items.filter((storeItem: any) => storeItem.id !== item.id);
                                       }
-                                      setOptimizedRoute((prevRoute: any) => ({
-                                        ...prevRoute,
-                                        stores: updatedStores
-                                      }));
-                                    }
-
-                                    // Invalidate queries to refresh the shopping list
-                                    queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-                                    queryClient.invalidateQueries({ queryKey: [`/api/shopping-lists/${listId}`] });
-
-                                    toast({
-                                      title: "Item Removed",
-                                      description: `${item.productName} has been removed from your list`,
-                                      duration: 3000
-                                    });
-                                  } catch (error) {
-                                    console.error('Failed to remove item:', error);
-                                    toast({
-                                      title: "Error",
-                                      description: "Failed to remove item from list",
-                                      variant: "destructive",
-                                      duration: 3000
-                                    });
-                                  }
-                                }}
-                                className="flex items-center gap-2"
-                              >
-                                <Package className="h-4 w-4 text-red-600" />
-                                Remove from List
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Navigation Buttons */}
-              <div className="mt-4 pt-4 border-t space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <Button 
-                    variant="outline"
-                    onClick={moveToPreviousAisle}
-                    disabled={currentAisleIndex === 0}
-                    className="w-full"
-                  >
-                    <ArrowRight className="h-4 w-4 mr-2 rotate-180" />                    Previous
-                  </Button>
-
-                  {isLastAisle ? (
-                    <Button 
-                      className="w-full bg-green-600 hover:bg-green-700"
-                      onClick={() => handleFinishStore()}
-                    >
-                      <Check className="h-4 w-4 mr-2" />
-                      {optimizedRoute?.isMultiStore && currentStoreIndex < optimizedRoute.stores.length - 1 
-                        ? `Finish ${optimizedRoute.stores[currentStoreIndex]?.retailerName}` 
-                        : "End Shopping"
-                      }
-                    </Button>
-                  ) : (
-                    <Button 
-                      variant="outline"
-                      className="w-full"
-                      onClick={moveToNextAisle}
-                    >
-                      Next
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* All Aisles Overview */}
-        <Card className="mb-4">
-          <CardHeader>
-            <CardTitle className="text-base">All Aisles</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {optimizedRoute.aisleGroups.map((aisle: any, index: number) => {
-                const completionStatus = getAisleCompletionStatus(aisle);
-                const isCurrent = index === currentAisleIndex;
-                const isVisited = index < currentAisleIndex;
-
-                return (
-<button
-                    key={aisle.aisleName}
-                    onClick={() => jumpToAisle(index)}
-                    className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all${
-                      isCurrent 
-                        ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200' 
-                        : completionStatus.isComplete 
-                        ? 'bg-green-50 border-green-200 hover:bg-green-100' 
-                        : isVisited
-                        ? 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100'
-                        : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                        isCurrent 
-                          ? 'bg-blue-600 text-white' 
-                          : completionStatus.isComplete 
-                          ? 'bg-green-600 text-white' 
-                          : isVisited
-                          ? 'bg-yellow-500 text-white'
-                          : 'bg-gray-300 text-gray-700'
-                      }`}>
-                        {completionStatus.isComplete ? (
-                          <Check className="h-4 w-4" />
-                        ) : (
-                          index + 1
-                        )}
-                      </div>
-                      <div className="text-left">
-                        <div className="font-medium text-sm">{aisle.aisleName}</div>
-                        <div className="text-xs text-gray-500">{aisle.category}</div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <div className="text-xs text-gray-600">
-                        {completionStatus.completed}/{completionStatus.total}
-                      </div>
-                      {isCurrent && (
-                        <Badge className="bg-blue-600 text-white text-xs">
-                          Current
-                        </Badge>
-                      )}
-                      {completionStatus.isComplete && !isCurrent && (
-                        <Badge className="bg-green-600 text-white text-xs">
-                          Complete
-                        </Badge>
-                      )}
-                      {!completionStatus.isComplete && isVisited && (
-                        <Badge className="bg-yellow-500 text-white text-xs">
-                          Incomplete
-                        </Badge>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-
-
-
-        {/* Multi-Store Navigation */}
-        {optimizedRoute?.isMultiStore && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Store className="h-5 w-5 text-purple-600" />
-                Multi-Store Shopping Plan
-              </CardTitle>
-              <p className="text-sm text-gray-600">Shop at {optimizedRoute.stores.length} stores for best prices</p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {optimizedRoute.stores.map((store: any, index: number) => {
-                  const storeCompletedItems = store.items.filter((item: any) => 
-                    completedItems.has(item.id) || item.isCompleted
-                  ).length;
-                  const isCurrent = index === currentStoreIndex;
-                  const isCompleted = storeCompletedItems === store.items.length;
-
-                  return (
-                    <div
-                      key={index}
-                      className={`p-3 rounded-lg border transition-all cursor-pointer ${
-                        isCurrent 
-                          ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200' 
-                          : isCompleted
-                          ? 'bg-green-50 border-green-200'
-                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                      }`}
-                      onClick={() => setCurrentStoreIndex(index)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium text-sm">{store.retailerName}</div>
-                          <div className="text-xs text-gray-500">
-                            {store.items.length} items 
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="text-xs text-gray-600">
-                            {storeCompletedItems}/{store.items.length}
-                          </div>
-                          {isCurrent && (
-                            <Badge className="bg-blue-600 text-white text-xs">
-                              Current
-                            </Badge>
-                          )}
-                          {isCompleted && !isCurrent && (
-                            <Badge className="bg-green-600 text-white text-xs">
-                              Complete
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Store Navigation Buttons */}
-              <div className="mt-4 pt-3 border-t">
-                <div className="grid grid-cols-2 gap-3">
-                  <Button 
-                    variant="outline"
-                    onClick={() => setCurrentStoreIndex(Math.max(0, currentStoreIndex - 1))}
-                    disabled={currentStoreIndex === 0}
-                    className="w-full"
-                  >
-                    <ArrowRight className="h-4 w-4 mr-2 rotate-180" />
-                    Previous Store
-                  </Button>
-
-                  <Button 
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => {
-                    if (currentStoreIndex < optimizedRoute.stores.length - 1) {
-                      setCurrentStoreIndex(currentStoreIndex + 1);
-                      setCurrentAisleIndex(0); // Reset to first aisle of new store
-                      // Removed toast notification for store navigation
-                    }
-                  }}
-                    disabled={currentStoreIndex >= optimizedRoute.stores.length - 1}
-                  >
-                    Next Store
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </main>
-
-      <BottomNavigation activeTab="lists" />
-
-      {/* Out of Stock Item Dialog */}
-      <AlertDialog open={outOfStockDialogOpen} onOpenChange={setOutOfStockDialogOpen}>
-        <AlertDialogContent className="sm:max-w-md">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-lg font-semibold text-gray-900">
-              <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                <AlertCircle className="h-5 w-5 text-orange-600" />
-              </div>
-              Can't Find This Item?
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-600 mt-2">
-              <strong>{outOfStockItem?.productName}</strong> is not available at this location.
-              {optimizedRoute?.isMultiStore && optimizedRoute.stores && currentStoreIndex < optimizedRoute.stores.length - 1 && (
-                <div className="mt-2 text-sm">
-                  You have {optimizedRoute.stores.length - currentStoreIndex - 1} more store{optimizedRoute.stores.length - currentStoreIndex - 1 !== 1 ? 's' : ''} to visit.
-                </div>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex flex-col gap-3 mt-6">
-            <Button 
-              onClick={handleItemFound}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
-            >
-              <Check className="h-5 w-5" />
-              Actually Found It
-            </Button>
-
-            {/* Multi-store routes show migration options */}
-            {optimizedRoute?.isMultiStore && optimizedRoute.stores && currentStoreIndex < optimizedRoute.stores.length - 1 ? (
-              <Button 
-                onClick={handleMigrateToNextStore}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
-              >
-                <MapPin className="h-5 w-5" />
-                Try at {optimizedRoute.stores[currentStoreIndex + 1]?.retailerName}
-              </Button>
-            ) : null}
-
-            {/* For single-store routes, show simplified options */}
-            {!optimizedRoute?.isMultiStore && (
-              <Button 
-                onClick={handleRemoveFromList}
-                className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
-              >
-                <Package className="h-5 w-5" />
-                Remove from List
-              </Button>
-            )}
-
-            <Button 
-              onClick={handleLeaveForFutureTrip}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
-            >
-              <Clock className="h-5 w-5" />
-              Save for Future Trip
-            </Button>
-
-            <Button 
-              variant="outline" 
-              onClick={() => setOutOfStockDialogOpen(false)}
-              className="w-full border-gray-300 text-gray-700 font-medium py-3 rounded-lg"
-            >
-              Cancel
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* End Store Dialog for Uncompleted Items */}
-      <AlertDialog open={endStoreDialogOpen} onOpenChange={setEndStoreDialogOpen}>
-        <AlertDialogContent className="sm:max-w-lg">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-lg font-semibold text-gray-900">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <ShoppingCart className="h-5 w-5 text-blue-600" />
-              </div>
-              {optimizedRoute?.isMultiStore && currentStoreIndex < optimizedRoute.stores.length - 1 
-                ? "End Store - Uncompleted Items" 
-                : "End Shopping - Uncompleted Items"              }
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-600 mt-2">
-              You have {uncompletedItems.length} uncompleted item{uncompletedItems.length !== 1 ? 's' : ''} 
-              {optimizedRoute?.isMultiStore && currentStoreIndex < optimizedRoute.stores.length - 1 
-                ? ` at ${optimizedRoute.stores[currentStoreIndex]?.retailerName}. You can move them to ${optimizedRoute.stores[currentStoreIndex + 1]?.retailerName} or save them for a future shopping trip.`
-                : " in your shopping trip. What would you like to do with them?"
-              }
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-
-          {/* Show list of uncompleted items */}
-          {uncompletedItems.length > 0 && (
-            <div className="max-h-40 overflow-y-auto border rounded-lg p-3 bg-gray-50">
-              <div className="text-sm font-medium text-gray-700 mb-2">Uncompleted items:</div>
-              <div className="space-y-1">
-                {uncompletedItems.map((item, index) => (
-                  <div key={item.id} className="text-sm text-gray-600">
-                    • {item.productName} ({item.quantity} {item.unit})
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <AlertDialogFooter className="flex flex-col gap-3 mt-6">
-            <Button 
-              onClick={handleMarkAllFound}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
-            >
-              <Check className="h-5 w-5" />
-              Mark as Found
-            </Button>
-
-            {/* For intermediary stores in multi-store plans - only show move to next store and save for future */}
-            {optimizedRoute?.isMultiStore && optimizedRoute.stores && currentStoreIndex < optimizedRoute.stores.length - 1 && (
-              <>
-                <Button 
-                  onClick={handleTryNextStore}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
-                >
-                  <MapPin className="h-5 w-5" />
-                  Move to {optimizedRoute.stores[currentStoreIndex + 1]?.retailerName}
-                </Button>
-
-                <Button 
-                  onClick={handleSaveForNextTrip}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
-                >
-                  <Clock className="h-5 w-5" />
-                  Leave for Future Trip
-                </Button>
-              </>
-            )}
-
-            {/* For single store or last store in multi-store - show all options including end shopping */}
-            {(!optimizedRoute?.isMultiStore || 
-              (optimizedRoute?.isMultiStore && currentStoreIndex >= optimizedRoute.stores.length - 1)) && (
-              <>
-                <Button 
-                  onClick={() => {
-                    setEndStoreDialogOpen(false);
-                    endShopping();
-                  }}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
-                >
-                  <ShoppingCart className="h-5 w-5" />
-                  End Shopping Trip
-                </Button>
-
-                <Button 
-                  onClick={handleSaveForNextTrip}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
-                >
-                  <Clock className="h-5 w-5" />
-                  Save for Next Trip
-                </Button>
-              </>
-            )}
-
-            <Button 
-              variant="outline" 
-              onClick={() => setEndStoreDialogOpen(false)}
-              className="w-full border-gray-300 text-gray-700 font-medium py-3 rounded-lg"
-            >
-              Cancel
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Loyalty Barcode Dialog */}
-      <Dialog open={loyaltyBarcodeDialogOpen} onOpenChange={setLoyaltyBarcodeDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl font-semibold text-gray-900">
-              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                <Star className="h-5 w-5 text-green-600" />
-              </div>
-              {getCurrentRetailerName()} Loyalty Card
-            </DialogTitle>
-            <DialogDescription className="text-gray-600 mt-2">
-              Show this barcode to the cashier to earn points and apply member discounts.
-              {optimizedRoute?.isMultiStore && (
-                <div className="mt-1 text-sm">
-                  Store {currentStoreIndex + 1} of {optimizedRoute.stores.length}
-                </div>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-
-          {loyaltyCard && (
-            <div className="mt-4">
-              {/* Enhanced Barcode Display */}
-              <div className="bg-white p-6 rounded-lg border-2 border-gray-300 text-center">
-                <div className="text-sm text-gray-600 mb-2 font-medium">
-                  {loyaltyCard.retailerName || getCurrentRetailerName()} Member Card
-                </div>
-
-                {/* Large barcode number */}
-                <div className="font-mono text-2xl font-bold tracking-wider mb-4 text-gray-900">
-                  {loyaltyCard.barcodeNumber || loyaltyCard.cardNumber}
-                </div>
-
-                {/* Enhanced barcode visualization */}
-                <div className="flex justify-center mb-4 gap-px bg-white p-4 border rounded">
-                  {(loyaltyCard.barcodeNumber || loyaltyCard.cardNumber)?.split('').map((digit: string, index: number) => {
-                    // Create more realistic barcode pattern
-                    const isWideBar = parseInt(digit) % 3 === 0;
-                    const isBlackBar = parseInt(digit) % 2 === 0;
-                    return (
-                      <div
-                        key={index}
-                        className={`${isWideBar ? 'w-2' : 'w-1'} h-16 ${isBlackBar ? 'bg-black' : 'bg-gray-200'}`}
-                      />
-                    );
-                  })}
-                </div>
-
-                {/* Member details */}
-                <div className="space-y-1 text-sm text-gray-600">
-                  <div className="font-medium">
-                    Member ID: {loyaltyCard.memberId || loyaltyCard.cardNumber}
-                  </div>
-                  {loyaltyCard.affiliateCode && (
-                    <div className="text-blue-600">
-                      Affiliate: {loyaltyCard.affiliateCode}
-                    </div>
-                  )}
-                  {loyaltyCard.discountPercentage && (
-                    <div className="text-green-600 font-medium">
-                      Member Discount: {loyaltyCard.discountPercentage}% off
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Instructions */}
-              <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="flex items-start gap-2">
-                  <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center mt-0.5">
-                    <Check className="h-3 w-3 text-white" />
-                  </div>
-                  <div className="text-sm text-blue-800">
-                    <div className="font-medium mb-1">Checkout Instructions:</div>
-                    <ul className="space-y-1 text-xs">
-                      <li>• Show this screen to the cashier</li>
-                      <li>• They can scan the barcode or enter the number manually</li>
-                      <li>• Make sure to apply discounts before payment</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action buttons */}
-              <div className="mt-6 space-y-3">
-                <Button 
-                  onClick={proceedAfterLoyaltyCard}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-4 rounded-lg flex items-center justify-center gap-3"
-                >
-                  <Check className="h-5 w-5" />
-                  Card Scanned - Continue Checkout
-                </Button>
-
-                <Button 
-                  variant="outline" 
-                  onClick={() => setLoyaltyBarcodeDialogOpen(false)}
-                  className="w-full border-gray-300 text-gray-700 font-medium py-3 rounded-lg"
-                >
-                  Keep Shopping
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-};
-
-export default ShoppingRoute;
