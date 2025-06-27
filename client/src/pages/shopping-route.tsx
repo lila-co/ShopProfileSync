@@ -494,6 +494,27 @@ const ShoppingRoute: React.FC = () => {
     }
   }, [shoppingList, planDataParam, location, toast, listId]);
 
+  // Regenerate aisles when store changes to include moved items
+  useEffect(() => {
+    if (optimizedRoute?.isMultiStore && optimizedRoute.stores && currentStoreIndex >= 0) {
+      const currentStore = optimizedRoute.stores[currentStoreIndex];
+      if (currentStore && currentStore.items.length > 0) {
+        // Regenerate aisles for current store including any moved items
+        const storeRoute = generateOptimizedShoppingRoute(currentStore.items, currentStore.retailerName);
+        
+        // Update the optimized route with new aisles for current store
+        setOptimizedRoute(prevRoute => ({
+          ...prevRoute,
+          aisleGroups: storeRoute.aisleGroups,
+          totalAisles: storeRoute.totalAisles,
+          estimatedTime: storeRoute.estimatedTime
+        }));
+        
+        console.log(`Regenerated aisles for ${currentStore.retailerName} with ${currentStore.items.length} items`);
+      }
+    }
+  }, [currentStoreIndex, optimizedRoute?.stores]);
+
 
 
   // Generate optimized shopping route from selected plan data
@@ -1099,7 +1120,7 @@ const ShoppingRoute: React.FC = () => {
       const currentStore = optimizedRoute.stores[currentStoreIndex];
       if (!currentStore) return null;
 
-      // Generate aisles for current store
+      // Generate aisles for current store including moved items
       const storeRoute = generateOptimizedShoppingRoute(currentStore.items, currentStore.retailerName);
       if (!storeRoute.aisleGroups || !storeRoute.aisleGroups[currentAisleIndex]) return null;
 
