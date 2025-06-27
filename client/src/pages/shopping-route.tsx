@@ -496,9 +496,42 @@ const ShoppingRoute: React.FC = () => {
       const currentStore = optimizedRoute.stores[currentStoreIndex];
       console.log(`Store ${currentStoreIndex} (${currentStore.retailerName}) has ${currentStore.items?.length || 0} items`);
 
-      if (currentStore.items && currentStore.items.length > 0) {
-        // Filter out completed items for aisle generation
-        const uncompletedStoreItems = currentStore.items.filter(item => !completedItems.has(item.id));
+      // Get all items for this store including moved items
+      let allStoreItems = currentStore.items || [];
+      
+      // Add any items that were moved to this store from movedItems tracking
+      const itemsMovedToThisStore = movedItems.filter(item => 
+        item.movedToStoreIndex === currentStoreIndex && 
+        item.movedToStoreName === currentStore.retailerName
+      );
+      
+      if (itemsMovedToThisStore.length > 0) {
+        console.log(`Adding ${itemsMovedToThisStore.length} moved items to ${currentStore.retailerName}:`, itemsMovedToThisStore.map(i => i.productName));
+        
+        // Add moved items to the store's items if not already present
+        itemsMovedToThisStore.forEach(movedItem => {
+          const itemExists = allStoreItems.some(item => item.id === movedItem.id);
+          if (!itemExists) {
+            allStoreItems.push({
+              ...movedItem,
+              storeName: currentStore.retailerName,
+              movedFrom: movedItem.originalStoreName,
+              isCompleted: false // Ensure moved items are not marked as completed
+            });
+          }
+        });
+      }
+
+      if (allStoreItems.length > 0) {
+        // Filter out completed items for aisle generation, but include moved items even if they were completed in previous store
+        const uncompletedStoreItems = allStoreItems.filter(item => {
+          // If item was moved to this store, always include it (reset completion status)
+          if (item.movedFrom || itemsMovedToThisStore.some(moved => moved.id === item.id)) {
+            return true;
+          }
+          // Otherwise, only include if not completed
+          return !completedItems.has(item.id);
+        });
         
         if (uncompletedStoreItems.length > 0) {
           // Regenerate aisles for current store with uncompleted items
@@ -549,7 +582,7 @@ const ShoppingRoute: React.FC = () => {
         console.log(`Store ${currentStore.retailerName} has no items, cleared aisles`);
       }
     }
-  }, [currentStoreIndex, optimizedRoute?.stores, completedItems, toast]);
+  }, [currentStoreIndex, optimizedRoute?.stores, completedItems, movedItems, toast]);
 
 
 
@@ -1851,10 +1884,22 @@ const ShoppingRoute: React.FC = () => {
       originalStoreName: optimizedRoute.stores[currentStoreIndex]?.retailerName,
       movedToStoreIndex: targetStoreIndex,
       movedToStoreName: targetStore.retailerName,
-      movedAt: Date.now()
+      movedAt: Date.now(),
+      isCompleted: false // Ensure moved items are not completed
     };
 
-    setMovedItems(prev => [...prev, movedItem]);
+    setMovedItems(prev => {
+      // Remove any existing entry for this item and add the new one
+      const filtered = prev.filter(moved => moved.id !== item.id);
+      return [...filtered, movedItem];
+    });
+
+    // Remove the item from completed items set so it shows as uncompleted in the new store
+    setCompletedItems(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(item.id);
+      return newSet;
+    });
 
     // Update the optimized route to remove item from current store and add to target store
     setOptimizedRoute(prevRoute => {
@@ -1877,22 +1922,23 @@ const ShoppingRoute: React.FC = () => {
           ...item,
           storeName: targetStore.retailerName,
           movedFrom: optimizedRoute.stores[currentStoreIndex]?.retailerName,
-          // Ensure the item has a unique ID for the target store and is marked as uncompleted
           id: item.id,
-          isCompleted: false
+          isCompleted: false // Reset completion status for moved item
         };
         updatedTargetStore.items = [...updatedTargetStore.items, itemToAdd];
         console.log(`Added item ${item.productName} to ${targetStore.retailerName}. Store now has ${updatedTargetStore.items.length} items`);
         console.log(`Target store items:`, updatedTargetStore.items.map(i => i.productName));
-
-        // Remove the item from completed items set so it shows as uncompleted in the new store
-        setCompletedItems(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(item.id);
-          return newSet;
-        });
       } else {
-        console.log(`Item ${item.productName} already exists in ${targetStore.retailerName}`);
+        console.log(`Item ${item.productName} already exists in ${targetStore.retailerName}, updating completion status`);
+        // Update existing item to ensure it's not completed
+        const existingItemIndex = updatedTargetStore.items.findIndex((storeItem: any) => storeItem.id === item.id);
+        if (existingItemIndex > -1) {
+          updatedTargetStore.items[existingItemIndex] = {
+            ...updatedTargetStore.items[existingItemIndex],
+            isCompleted: false,
+            movedFrom: optimizedRoute.stores[currentStoreIndex]?.retailerName
+          };
+        }
       }
 
       updatedStores[targetStoreIndex] = updatedTargetStore;
