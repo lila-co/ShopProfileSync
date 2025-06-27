@@ -145,6 +145,13 @@ The application is deployed on Replit with the following configuration:
 
 ## Recent Changes
 
+**June 27, 2025**
+- Fixed multi-store item transfer functionality in shopping-route.tsx
+- Resolved issue where unchecked items transferred to next store weren't appearing
+- Updated handleTryNextStore to maintain original item IDs instead of creating temporary ones
+- Enhanced route regeneration logic to properly include transferred items when moving between stores
+- Items now successfully transfer and display in subsequent stores during multi-store shopping
+
 **June 24, 2025**
 - Fixed critical JavaScript syntax error in shopping-route.tsx causing "Failed to fetch dynamically imported module" crash
 - Resolved malformed object property syntax on line 1670 that prevented shopping route from loading
