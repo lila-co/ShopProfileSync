@@ -46,7 +46,6 @@ import {
   Circle,
   Navigation,
   Package,
-  Tag,
   Star,
   AlertCircle,
   MoreVertical
@@ -227,115 +226,7 @@ const DealsForRetailer: React.FC<{ retailerName: string; routeItems: any[]; loya
     return Math.round((1 - sale / regular) * 100);
   };
 
-  return (
-    <Card className="mb-4 border-green-200 bg-green-50">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Tag className="h-5 w-5 text-green-600" />
-          Applied Deals & Savings
-        </CardTitle>
-        <p className="text-sm text-green-600">
-          ${(dealResults.totalSavings / 100).toFixed(2)} total savings applied to your route
-        </p>
-      </CardHeader>
-      <CardContent>
-        {/* Applied Deals */}
-        <div className="space-y-3 mb-4">
-          <h4 className="font-medium text-sm text-gray-900">Item Deals Applied:</h4>
-          {dealResults.appliedDeals.slice(0, 3).map((appliedDeal: AppliedDeal) => (
-            <div key={appliedDeal.dealId} className="flex items-center justify-between p-3 bg-white rounded-lg border border-green-200">
-              <div className="flex-1">
-                <div className="font-medium text-sm text-gray-900">{appliedDeal.dealDescription}</div>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-lg font-bold text-green-700">
-                    ${(appliedDeal.dealPrice / 100).toFixed(2)}
-                  </span>
-                  <span className="text-sm text-gray-500 line-through">
-                    ${(appliedDeal.originalPrice / 100).toFixed(2)}
-                  </span>
-                  <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
-                    Save ${(appliedDeal.savings / 100).toFixed(2)}
-                  </Badge>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-xs text-green-600 font-medium">APPLIED</div>
-                <CheckCircle2 className="h-4 w-4 text-green-600 mx-auto mt-1" />
-              </div>
-            </div>
-          ))}
-          {dealResults.appliedDeals.length > 3 && (
-            <div className="text-center text-sm text-green-600">
-              +{dealResults.appliedDeals.length - 3} more deals applied
-            </div>
-          )}
-        </div>
-
-        {/* Loyalty Card Discount */}
-        {dealResults.loyaltyDiscount && dealResults.loyaltyDiscount > 0 && (
-          <div className="p-3 bg-purple-50 rounded-lg border border-purple-200 mb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center">
-                  <Check className="h-4 w-4 text-white" />
-                </div>
-                <div>
-                  <div className="font-medium text-sm text-purple-900">Loyalty Card Discount</div>
-                  <div className="text-xs text-purple-600">Member savings applied</div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="font-bold text-purple-700">-${(dealResults.loyaltyDiscount / 100).toFixed(2)}</div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Stacked Coupons */}
-        {dealResults.stackedCoupons.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="font-medium text-sm text-gray-900">Store Coupons:</h4>
-            {dealResults.stackedCoupons.map((coupon: any, index: number) => (
-              <div key={index} className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-sm text-blue-900">
-                      {coupon.dealType === 'spend_threshold_percentage' 
-                        ? `Spend $${(coupon.spendThreshold / 100).toFixed(0)}+ Save ${coupon.discountPercentage}%`
-                        : coupon.productName
-                      }
-                    </div>
-                    <div className="text-xs text-blue-600">Automatically applied</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-bold text-blue-700">-${(coupon.appliedSavings / 100).toFixed(2)}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Total Savings Summary */}
-        <div className="mt-4 p-4 bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg border border-green-300">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-bold text-lg text-green-900">Total Savings</div>
-              <div className="text-sm text-green-700">Applied to your route automatically</div>
-            </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-green-800">
-                ${(dealResults.totalSavings / 100).toFixed(2)}
-              </div>
-              <div className="text-sm text-green-600">
-                New total: ${(dealResults.finalTotal / 100).toFixed(2)}
-              </div>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
+  return null;
 };
 
 const ShoppingRoute: React.FC = () => {
@@ -959,8 +850,8 @@ const ShoppingRoute: React.FC = () => {
       retailerName: finalRetailerName,
       totalItems: items.length,
       planType: planData?.planType || 'Shopping Plan',
-      totalCost: planData?.totalCost || 0,
-      savings: planData?.savings || 0
+      totalCost: 0,
+      savings: 0
     };
   };
 
@@ -1153,7 +1044,7 @@ const ShoppingRoute: React.FC = () => {
       // Also remove from current aisle in the optimized route display
       if (optimizedRoute.aisleGroups) {
         optimizedRoute.aisleGroups.forEach((aisle: any) => {
-          const itemIndex = aisle.items.findIndex((item: any) => item.id === outOfStockItem.id);
+          const itemIndex = aisle.items.findIndex((routeItem: any) => routeItem.id === item.id);
           if (itemIndex > -1) {
             aisle.items.splice(itemIndex, 1);
           }
@@ -1825,7 +1716,7 @@ const ShoppingRoute: React.FC = () => {
   // Track if we're currently restoring a session to avoid false "started shopping" detection
   const [isRestoringSession, setIsRestoringSession] = useState(false);
 
-  // Remove this useEffect - session saving is now handled only in the savePersistentShoppingSession function
+  //  // Remove this useEffect - session saving is now handled only in the savePersistentShoppingSession function
   // which is called from the other useEffect that tracks progress changes
 
   const proceedAfterLoyaltyCard = () => {
@@ -2059,13 +1950,7 @@ const ShoppingRoute: React.FC = () => {
 
 
         {/* Retailer-Specific Deals Section */}
-        {optimizedRoute?.retailerName && (
-          <DealsForRetailer 
-            retailerName={optimizedRoute.retailerName}
-            routeItems={optimizedRoute.aisleGroups?.flatMap(aisle => aisle.items) || []}
-            loyaltyCard={loyaltyCard}
-          />
-        )}
+
 
         {/* Current Aisle */}
         {currentAisle && (
@@ -2640,19 +2525,6 @@ const ShoppingRoute: React.FC = () => {
 
             </div>
 
-            {/* Plan Summary */}
-            {(optimizedRoute.totalCost > 0 || optimizedRoute.savings > 0) && (
-              <div className="mb-3 p-2 bg-green-50 rounded-lg">
-                <div className="flex justify-between items-center text-sm">
-                  {optimizedRoute.totalCost > 0 && (
-                    <span className="font-medium">Total: ${(optimizedRoute.totalCost / 100).toFixed(2)}</span>
-                  )}
-                  {optimizedRoute.savings > 0 && (
-                    <span className="text-green-600">Save: ${(optimizedRoute.savings / 100).toFixed(2)}</span>
-                  )}
-                </div>
-              </div>
-            )}
 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
@@ -2710,7 +2582,7 @@ const ShoppingRoute: React.FC = () => {
                         <div>
                           <div className="font-medium text-sm">{store.retailerName}</div>
                           <div className="text-xs text-gray-500">
-                            {store.items.length} items • ${((store.subtotal || 0) / 100).toFixed(2)}
+                            {store.items.length} items 
                           </div>
                         </div>
                         <div className="flex items-center gap-2">

@@ -868,12 +868,7 @@ const PlanDetails: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="text-center">
-                  <div className="text-xl font-bold text-green-600">{formatPrice(planData.totalCost)}</div>
-                  <div className="text-xs text-gray-500">Total Cost</div>
-                </div>
-
+              <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="text-center">
                   <div className="text-xl font-bold text-purple-600">{planData.stores.length}</div>
                   <div className="text-xs text-gray-500">Store(s)</div>
@@ -901,12 +896,7 @@ const PlanDetails: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="text-center">
-                  <div className="text-xl font-bold text-green-600">{formatPrice(planData.totalCost)}</div>
-                  <div className="text-xs text-gray-500">Total Cost</div>
-                </div>
-
+              <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="text-center">
                   <div className="text-xl font-bold text-purple-600">{planData.stores.length}</div>
                   <div className="text-xs text-gray-500">Store(s)</div>
@@ -934,12 +924,7 @@ const PlanDetails: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="text-center">
-                  <div className="text-xl font-bold text-green-600">{formatPrice(planData.totalCost)}</div>
-                  <div className="text-xs text-gray-500">Total Cost</div>
-                </div>
-
+              <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="text-center">
                   <div className="text-xl font-bold text-purple-600">{planData.stores.length}</div>
                   <div className="text-xs text-gray-500">Store(s)</div>
