@@ -828,7 +828,7 @@ const ShoppingRoute: React.FC = () => {
             const betterAisleName = betterAisleInfo.aisle;
 
             // Remove from current aisle if needed
-            if (betterAisleName !== aisleName) {
+            if (betterAisleName !== aisleName !== aisleName) {
               const currentAisleItems = aisleGroups[aisleName]?.items || [];
               const itemIndex = currentAisleItems.findIndex(i => i.id === item.id);
               if (itemIndex > -1) {
@@ -984,11 +984,11 @@ const ShoppingRoute: React.FC = () => {
       // Force a re-render by updating the route state
       setOptimizedRoute({...optimizedRoute});
 
-      toast({
-        title: "Item Saved for Next Trip",
-        description: `${outOfStockItem.productName} will remain on your list for next time`,
-        duration: 3000
-      });
+      //      toast({
+      //        title: "Item Saved for Next Trip",
+      //        description: `${outOfStockItem.productName} will remain on your list for next time`,
+      //        duration: 3000
+      //      });
     }
     setOutOfStockDialogOpen(false);
     setOutOfStockItem(null);
@@ -1033,7 +1033,7 @@ const ShoppingRoute: React.FC = () => {
         queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
         queryClient.invalidateQueries({ queryKey: [`/api/shopping-lists/${listId}`] });
 
-        
+        // No toast - item removal is visually obvious
       } catch (error) {
         console.error('Failed to remove item:', error);
         toast({
@@ -1122,11 +1122,11 @@ const ShoppingRoute: React.FC = () => {
         }
       });
 
-      toast({
-        title: "Item Marked for Alternative Store",
-        description: `${outOfStockItem.productName} saved with note to try alternative store`,
-        duration: 3000
-      });
+//       toast({
+//         title: "Item Marked for Alternative Store",
+//         description: `${outOfStockItem.productName} saved with note to try alternative store`,
+//         duration: 3000
+//       });
     }
     setOutOfStockDialogOpen(false);
     setOutOfStockItem(null);
@@ -1159,33 +1159,33 @@ const ShoppingRoute: React.FC = () => {
   const moveToNextAisle = () => {
     if (currentAisleIndex < optimizedRoute.aisleGroups.length - 1) {
       setCurrentAisleIndex(currentAisleIndex + 1);
-      toast({
-        title: "Moving to next aisle",
-        description: `Now shopping in ${optimizedRoute.aisleGroups[currentAisleIndex + 1].aisleName}`,
-        duration: 3000
-      });
+//       toast({
+//         title: "Moving to next aisle",
+//         description: `Now shopping in ${optimizedRoute.aisleGroups[currentAisleIndex + 1].aisleName}`,
+//         duration: 3000
+//       });
     }
   };
 
   const moveToPreviousAisle = () => {
     if (currentAisleIndex > 0) {
       setCurrentAisleIndex(currentAisleIndex - 1);
-      toast({
-        title: "Going back to previous aisle",
-        description: `Now shopping in ${optimizedRoute.aisleGroups[currentAisleIndex - 1].aisleName}`,
-        duration: 3000
-      });
+//       toast({
+//         title: "Going back to previous aisle",
+//         description: `Now shopping in ${optimizedRoute.aisleGroups[currentAisleIndex - 1].aisleName}`,
+//         duration: 3000
+//       });
     }
   };
 
   const jumpToAisle = (aisleIndex: number) => {
     setCurrentAisleIndex(aisleIndex);
-    const aisle = optimizedRoute.aisleGroups[aisleIndex];
-    toast({
-      title: "Jumped to aisle",
-      description: `Now shopping in ${aisle.aisleName}`,
-      duration: 3000
-    });
+//     const aisle = optimizedRoute.aisleGroups[aisleIndex];
+//     toast({
+//       title: "Jumped to aisle",
+//       description: `Now shopping in ${aisle.aisleName}`,
+//       duration: 3000
+//     });
   };
 
   const getAisleCompletionStatus = (aisle: any) => {
@@ -1302,13 +1302,13 @@ const ShoppingRoute: React.FC = () => {
 
       console.log(`Deletion results: ${successfulDeletes}/${completedItemIds.length} successful, ${failedDeletes} failed`);
 
-      if (successfulDeletes > 0) {
-        toast({
-          title: "Items Completed",
-          description: `${successfulDeletes} items removed from your shopping list`,
-          duration: 3000
-        });
-      }
+//       if (successfulDeletes > 0) {
+//         toast({
+//           title: "Items Completed",
+//           description: `${successfulDeletes} items removed from your shopping list`,
+//           duration: 3000
+//         });
+//       }
     }
 
     // Handle uncompleted items: transfer to next store in multi-store plans, or mark as not found in single store
@@ -1351,13 +1351,13 @@ const ShoppingRoute: React.FC = () => {
           result.status === 'fulfilled' && result.value?.success
         ).length;
 
-        if (successfulTransfers > 0) {
-          toast({
-            title: "Items Transferred",
-            description: `${successfulTransfers} items moved to ${nextStore.retailerName}`,
-            duration: 3000
-          });
-        }
+//         if (successfulTransfers > 0) {
+//           toast({
+//             title: "Items Transferred",
+//             description: `${successfulTransfers} items moved to ${nextStore.retailerName}`,
+//             duration: 3000
+//           });
+//         }
       } else {
         // Single store or last store: mark items as not found
         console.log(`Updating ${uncompletedItemIds.length} uncompleted items with notes (last store)`);
@@ -1472,7 +1472,7 @@ const ShoppingRoute: React.FC = () => {
               }));
 
               // Force a small delay to ensure state updates are applied
-              
+
 
               console.log(`Successfully updated route for ${nextStore.retailerName} with ${nextStoreItems.length} items`);
             } else {
@@ -1498,11 +1498,11 @@ const ShoppingRoute: React.FC = () => {
       } else {
         // All stores completed - show completion message before ending
         setTimeout(() => {
-          toast({
-            title: "🎉 All Stores Complete!",
-            description: "You've finished shopping at all stores. Great job!",
-            duration: 3000
-          });
+//           toast({
+//             title: "🎉 All Stores Complete!",
+//             description: "You've finished shopping at all stores. Great job!",
+//             duration: 3000
+//           });
 
           // End shopping after showing the message
           setTimeout(() => {
@@ -1573,24 +1573,39 @@ const ShoppingRoute: React.FC = () => {
         }
       }
 
-      const storeText = optimizedRoute?.isMultiStore 
-        ? `all ${optimizedRoute.stores.length} stores` 
-        : optimizedRoute?.retailerName || 'the store';
+//       const storeText = optimizedRoute?.isMultiStore 
+//         ? `all ${optimizedRoute.stores.length} stores` 
+//         : optimizedRoute?.retailerName || 'the store';
 
+//       toast({
+//         title: "🛒 Shopping Trip Complete!",
+//         description: `Finished shopping at ${storeText}. ${allUncompletedItems.length} items returned to your list for next time.`,
+//         duration: 6000
+//       });
+    } else {
+//       const storeText = optimizedRoute?.isMultiStore 
+//         ? `all ${optimizedRoute.stores.length} stores` 
+//         : optimizedRoute?.retailerName || 'the store';
+
+//       toast({
+//         title: "🎉 Perfect Shopping Trip!",
+//         description: `Completed all items at ${storeText}. Excellent work!`,
+//         duration: 6000
+//       });
+    }
+
+    // Show completion toast only at the very end
+    if (allUncompletedItems.length > 0) {
       toast({
-        title: "🛒 Shopping Trip Complete!",
-        description: `Finished shopping at ${storeText}. ${allUncompletedItems.length} items returned to your list for next time.`,
-        duration: 6000
+        title: "🛒 Shopping Complete!",
+        description: `${allUncompletedItems.length} items saved for next time.`,
+        duration: 4000
       });
     } else {
-      const storeText = optimizedRoute?.isMultiStore 
-        ? `all ${optimizedRoute.stores.length} stores` 
-        : optimizedRoute?.retailerName || 'the store';
-
       toast({
-        title: "🎉 Perfect Shopping Trip!",
-        description: `Completed all items at ${storeText}. Excellent work!`,
-        duration: 6000
+        title: "🎉 Perfect Trip!",
+        description: "All items completed!",
+        duration: 4000
       });
     }
 
@@ -1612,7 +1627,7 @@ const ShoppingRoute: React.FC = () => {
 
     fetch('/api/shopping-trip/complete', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'json' },
       credentials: 'include',
       body: JSON.stringify(tripAnalytics)
     }).then(() => {
@@ -1669,7 +1684,7 @@ const ShoppingRoute: React.FC = () => {
   };
 
   const handleTryNextStore = useCallback(async () => {
-    if (!optimizedRoute?.stores || currentStoreIndex >= optimizedRoute.stores.length - 1) {
+    if (!optimizedRoute?.stores || currentStoreIndex >= optimizedRoute.stores.length- 1) {
       toast({
         title: "No More Stores",
         description: "This is the last store in your plan",
@@ -1694,7 +1709,7 @@ const ShoppingRoute: React.FC = () => {
     }
 
     try {
-      // Update backend for each moved item<replit_final_file>
+      // Update backend for each moved item
         const updatePromises = uncompletedItems.map(item =>
         updateItemMutation.mutateAsync({
           itemId: item.id,
@@ -1741,11 +1756,11 @@ const ShoppingRoute: React.FC = () => {
         };
       });
 
-      toast({
-        title: "Items Moved Successfully",
-        description: `${uncompletedItems.length} items moved to ${nextStore.retailerName}`,
-        duration: 3000
-      });
+//       toast({
+//         title: "Items Moved Successfully",
+//         description: `${uncompletedItems.length} items moved to ${nextStore.retailerName}`,
+//         duration: 3000
+//       });
 
       setEndStoreDialogOpen(false);
       completeCurrentStore();
@@ -1774,13 +1789,7 @@ const ShoppingRoute: React.FC = () => {
 
     setEndStoreDialogOpen(false);
 
-    toast({
-      title: "Items Saved for Next Trip",
-      description: `${uncompletedItems.length} items will remain on your list for next time`,
-      duration: 4000
-    });
-
-    completeCurrentStore();
+    // Items saved quietly - user made the choice through dialog
   };
 
   const handleFinishStore = () => {
@@ -1992,7 +2001,7 @@ const ShoppingRoute: React.FC = () => {
     }
 
     const nextStoreIndex = currentStoreIndex + 1;
-    if (nextStoreIndex >= optimizedRoute.stores.length) {
+    if (nextStoreIndex >= optimizedRoute.stores.length - 1) {
       toast({
         title: "Cannot Move Item",
         description: "This is the last store in your plan",
@@ -2070,12 +2079,12 @@ const ShoppingRoute: React.FC = () => {
         };
       });
 
-      // Success feedback
-      toast({
-        title: "Item Moved Successfully",
-        description: `${item.productName} moved to ${nextStore.retailerName}`,
-        duration: 3000
-      });
+//       // Success feedback
+//       toast({
+//         title: "Item Moved Successfully",
+//         description: `${item.productName} moved to ${nextStore.retailerName}`,
+//         duration: 3000
+//       });
 
       console.log(`Successfully moved ${item.productName} from store ${currentStoreIndex} to ${nextStoreIndex}`);
 
@@ -2198,11 +2207,11 @@ const ShoppingRoute: React.FC = () => {
     if (nextAisleIndex < optimizedRoute.aisleGroups.length) {
       // Found a non-empty aisle, move to it
       setCurrentAisleIndex(nextAisleIndex);
-      toast({
-        title: "Skipping Empty Aisle",
-        description: `Moving to next aisle: ${optimizedRoute.aisleGroups[nextAisleIndex].aisleName}`,
-        duration: 3000
-      });
+//       toast({
+//         title: "Skipping Empty Aisle",
+//         description: `Moving to next aisle: ${optimizedRoute.aisleGroups[nextAisleIndex].aisleName}`,
+//         duration: 3000
+//       });
     } else {
       // All remaining aisles are empty, end the shopping trip
       handleFinishStore();
@@ -2431,21 +2440,21 @@ const ShoppingRoute: React.FC = () => {
 
                                         // Update the item in the current route state
                                         setOptimizedRoute((prevRoute: any) => {
-                                          if (!prevRoute) return prevRoute;
+                          if (!prevRoute) return prevRoute;
 
-                                          const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
-                                            ...aisle,
-                                            items: aisle.items.map((routeItem: any) => 
-                                              routeItem.id === item.id 
-                                                ? { ...routeItem, quantity: newQuantity }
-                                                : routeItem
-                                            )
-                                          }));
+                          const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
+                            ...aisle,
+                            items: aisle.items.map((routeItem: any) => 
+                              routeItem.id === item.id 
+                                ? { ...routeItem, quantity: newQuantity }
+                                : routeItem
+                            )
+                          }));
 
-                                          return { ...prevRoute, aisleGroups: newAisleGroups };
-                                        });
+                          return { ...prevRoute, aisleGroups: newAisleGroups };
+                        });
 
-                                        
+                        // No toast - quantity changes are frequent and don't need notification
                                       }
                                     }}
                                     className="w-6 h-6 rounded-full bg-white border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-sm font-medium"
@@ -2464,22 +2473,23 @@ const ShoppingRoute: React.FC = () => {
                                       });
 
                                       // Update the item in the current route state
-                                      setOptimizedRoute((prevRoute: any) => {
-                                        if (!prevRoute) return prevRoute;
+                                        setOptimizedRoute((prevRoute: any) => {
+                          if (!prevRoute) return prevRoute;
 
-                                        const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
-                                          ...aisle,
-                                          items: aisle.items.map((routeItem: any) => 
-                                            routeItem.id === item.id 
-                                              ? { ...routeItem, quantity: newQuantity }
-                                              : routeItem
-                                          )
-                                        }));
+                          const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
+                            ...aisle,
+                            items: aisle.items.map((routeItem: any) => 
+                              routeItem.id === item.id 
+                                ? { ...routeItem, quantity: newQuantity }
+                                : routeItem
+                            )
+                          }));
 
-                                        return { ...prevRoute, aisleGroups: newAisleGroups };
-                                      });
+                          return { ...prevRoute, aisleGroups: newAisleGroups };
+                        });
 
-                                      
+                        // No toast - quantity changes are frequent and don't need notification
+
                                     }}
                                     className="w-6 h-6 rounded-full bg-white border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-sm font-medium"
                                   >
@@ -2537,12 +2547,12 @@ const ShoppingRoute: React.FC = () => {
 
                                     return {
                                       ...prevRoute,
-                                      aisleGroups: newAisleGroups,
-                                      totalItems: prevRoute.totalItems - 1
+                                      aisleGroups: newAisleGroups,                                      totalItems: prevRoute.totalItems - 1
                                     };
                                   });
 
-                                  
+                                  // No toast - save for later is a quiet action
+
                                   // Check if aisle is now empty after a brief delay
                                   setTimeout(() => {
                                     checkAndHandleEmptyAisle();
@@ -2579,7 +2589,7 @@ const ShoppingRoute: React.FC = () => {
                                     queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
                                     queryClient.invalidateQueries({ queryKey: [`/api/shopping-lists/${listId}`] });
 
-                                    
+                                    // No toast - item removal is visually obvious
                                   } catch (error) {
                                     console.error('Failed to remove item:', error);
                                     toast({
@@ -2641,7 +2651,8 @@ const ShoppingRoute: React.FC = () => {
                                     return updatedRoute;
                                   });
 
-                                  
+                                  // No toast - save for later is a quiet action
+
                                   // Check if aisle is now empty after a brief delay
                                   setTimeout(() => {
                                     checkAndHandleEmptyAisle();
@@ -2704,7 +2715,7 @@ const ShoppingRoute: React.FC = () => {
                                     queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
                                     queryClient.invalidateQueries({ queryKey: [`/api/shopping-lists/${listId}`] });
 
-                                    
+                                    // No toast - item removal is visually obvious
                                   } catch (error) {
                                     console.error('Failed to remove item:', error);
                                     toast({
@@ -2842,8 +2853,6 @@ const ShoppingRoute: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-
-
 
         {/* Multi-Store Navigation */}
         {optimizedRoute?.isMultiStore && (
