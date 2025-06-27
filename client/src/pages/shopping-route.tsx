@@ -1957,6 +1957,16 @@ const ShoppingRoute: React.FC = () => {
   // Track if user has actually started shopping (moved aisles or completed items)
   const [hasStartedShopping, setHasStartedShopping] = useState(false);
 
+  // Set hasStartedShopping when user makes progress
+  useEffect(() => {
+    if (completedItems.size > 0 || currentAisleIndex > 0 || currentStoreIndex > 0) {
+      if (!hasStartedShopping) {
+        setHasStartedShopping(true);
+        console.log('User has started shopping - will now save session');
+      }
+    }
+  }, [completedItems.size, currentAisleIndex, currentStoreIndex, hasStartedShopping]);
+
   // Save session before app closes or page unloads
   useEffect(() => {
         const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -1980,19 +1990,14 @@ const ShoppingRoute: React.FC = () => {
     };
   }, [optimizedRoute, selectedPlanData, currentStoreIndex, currentAisleIndex, completedItems, hasStartedShopping]);
 
-  // Save session immediately when route is created and on any state change
+  // Save session only when user has started shopping or made progress
   useEffect(() => {
-    if (optimizedRoute && selectedPlanData) {
+    if (optimizedRoute && selectedPlanData && hasStartedShopping) {
       savePersistentShoppingSession(selectedPlanData, optimizedRoute);
     }
   }, [currentStoreIndex, currentAisleIndex, completedItems, optimizedRoute, selectedPlanData, hasStartedShopping]);
 
-  // Save session when the route is initially created
-  useEffect(() => {
-    if (optimizedRoute && selectedPlanData) {
-      savePersistentShoppingSession(selectedPlanData, optimizedRoute);
-    }
-  }, [optimizedRoute, selectedPlanData]);
+  // Don't save session immediately when route is created - only save when user actually starts shopping
 
   // Robust item transfer with proper state management and error handling
   const moveItemToNextStore = useCallback(async (item: any) => {
