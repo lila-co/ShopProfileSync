@@ -1548,61 +1548,37 @@ const ShoppingRoute: React.FC = () => {
 
     const nextStoreIndex = currentStoreIndex + 1;
     const nextStore = optimizedRoute.stores[nextStoreIndex];
-    
-    if (!nextStore) {
-      toast({
-        title: "Error",
-        description: "Invalid store selection",
-        variant: "destructive"
-      });
-      return;
-    }
 
-    console.log(`Moving ${uncompletedItems.length} items from ${optimizedRoute.stores[currentStoreIndex]?.retailerName} to ${nextStore.retailerName}`);
-
-    // Update stores array - single source of truth
+    // Move all uncompleted items to next store
     setOptimizedRoute(prevRoute => {
-      const updatedStores = [...prevRoute.stores];
-
+      const newStores = [...prevRoute.stores];
+      
       // Remove uncompleted items from current store
-      updatedStores[currentStoreIndex] = {
-        ...updatedStores[currentStoreIndex],
-        items: updatedStores[currentStoreIndex].items.filter((storeItem: any) => 
+      newStores[currentStoreIndex] = {
+        ...newStores[currentStoreIndex],
+        items: newStores[currentStoreIndex].items.filter((storeItem: any) => 
           !uncompletedItems.some((uncompletedItem: any) => uncompletedItem.id === storeItem.id)
         )
       };
-
-      // Add uncompleted items to next store (avoid duplicates)
-      const itemsToMove = uncompletedItems.filter(item => 
-        !updatedStores[nextStoreIndex].items.some((existingItem: any) => existingItem.id === item.id)
-      ).map(item => ({
-        ...item,
-        storeName: nextStore.retailerName,
-        movedFrom: optimizedRoute.stores[currentStoreIndex]?.retailerName,
-        isCompleted: false
-      }));
-
-      updatedStores[nextStoreIndex] = {
-        ...updatedStores[nextStoreIndex],
-        items: [...updatedStores[nextStoreIndex].items, ...itemsToMove]
+      
+      // Add to next store
+      newStores[nextStoreIndex] = {
+        ...newStores[nextStoreIndex],
+        items: [...newStores[nextStoreIndex].items, ...uncompletedItems]
       };
-
-      console.log(`After move - ${nextStore.retailerName} now has ${updatedStores[nextStoreIndex].items.length} items:`, 
-        updatedStores[nextStoreIndex].items.map(i => i.productName));
 
       return {
         ...prevRoute,
-        stores: updatedStores
+        stores: newStores
       };
     });
 
     toast({
       title: "Items Moved",
       description: `${uncompletedItems.length} items moved to ${nextStore.retailerName}`,
-      duration: 3000
+      duration: 2000
     });
 
-    // Close the dialog and proceed to complete current store
     setEndStoreDialogOpen(false);
     completeCurrentStore();
   };
@@ -1790,62 +1766,43 @@ const ShoppingRoute: React.FC = () => {
     if (nextStoreIndex >= optimizedRoute.stores.length) return;
 
     const nextStore = optimizedRoute.stores[nextStoreIndex];
-    console.log(`Moving item ${item.productName} to ${nextStore.retailerName}`);
 
-    // Update the stores array directly - this is our single source of truth
+    // Simple direct update - remove from current store, add to next store
     setOptimizedRoute(prevRoute => {
-      const updatedStores = [...prevRoute.stores];
-
+      const newStores = [...prevRoute.stores];
+      
       // Remove from current store
-      updatedStores[currentStoreIndex] = {
-        ...updatedStores[currentStoreIndex],
-        items: updatedStores[currentStoreIndex].items.filter((storeItem: any) => storeItem.id !== item.id)
+      newStores[currentStoreIndex] = {
+        ...newStores[currentStoreIndex],
+        items: newStores[currentStoreIndex].items.filter((i: any) => i.id !== item.id)
+      };
+      
+      // Add to next store
+      newStores[nextStoreIndex] = {
+        ...newStores[nextStoreIndex],
+        items: [...newStores[nextStoreIndex].items, item]
       };
 
-      // Add to next store (keep original ID)
-      const itemToMove = {
-        ...item,
-        storeName: nextStore.retailerName,
-        movedFrom: optimizedRoute.stores[currentStoreIndex]?.retailerName,
-        isCompleted: false
-      };
-
-      // Check if item already exists in next store
-      const existsInNextStore = updatedStores[nextStoreIndex].items.some((existingItem: any) => 
-        existingItem.id === item.id
-      );
-
-      if (!existsInNextStore) {
-        updatedStores[nextStoreIndex] = {
-          ...updatedStores[nextStoreIndex],
-          items: [...updatedStores[nextStoreIndex].items, itemToMove]
-        };
+      // Regenerate aisles for current store
+      const currentStoreItems = newStores[currentStoreIndex].items;
+      let newAisleGroups = [];
+      if (currentStoreItems.length > 0) {
+        const route = generateOptimizedShoppingRoute(currentStoreItems, newStores[currentStoreIndex].retailerName);
+        newAisleGroups = route.aisleGroups;
       }
-
-      // Regenerate current store's aisles immediately
-      const currentStoreItems = updatedStores[currentStoreIndex].items;
-      const storeRoute = generateOptimizedShoppingRoute(currentStoreItems, updatedStores[currentStoreIndex].retailerName);
 
       return {
         ...prevRoute,
-        stores: updatedStores,
-        aisleGroups: storeRoute.aisleGroups,
-        totalAisles: storeRoute.totalAisles,
+        stores: newStores,
+        aisleGroups: newAisleGroups,
         totalItems: currentStoreItems.length
       };
-    });
-
-    // Remove from completed items
-    setCompletedItems(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(item.id);
-      return newSet;
     });
 
     toast({
       title: "Item Moved",
       description: `${item.productName} moved to ${nextStore.retailerName}`,
-      duration: 3000
+      duration: 2000
     });
   };
 
@@ -2434,17 +2391,6 @@ const ShoppingRoute: React.FC = () => {
                                 onClick={() => {
                                   if (optimizedRoute?.isMultiStore && optimizedRoute.stores && currentStoreIndex < optimizedRoute.stores.length - 1) {
                                     moveItemToNextStore(item);
-                                    
-                                    // Update the item in the database
-                                    const nextStore = optimizedRoute.stores[currentStoreIndex + 1];
-                                    updateItemMutation.mutate({
-                                      itemId: item.id,
-                                      updates: {
-                                        suggestedRetailerId: nextStore.retailer?.id || nextStore.suggestedRetailerId,
-                                        notes: `Moved to ${nextStore.retailerName}`,
-                                        isCompleted: false
-                                      }
-                                    });
                                   }
                                 }}
                                 className="flex items-center gap-2"
