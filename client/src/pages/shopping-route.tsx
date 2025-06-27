@@ -817,8 +817,7 @@ const ShoppingRoute: React.FC = () => {
               }
 
               // Add to better aisle
-              if (!```python
-aisleGroups[betterAisleName]) {
+              if (!aisleGroups[betterAisleName]) {
                 aisleGroups[betterAisleName] = {
                   aisleName: betterAisleName,
                   category: betterAisleInfo.category,
