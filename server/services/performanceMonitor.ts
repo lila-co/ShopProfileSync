@@ -232,8 +232,16 @@ class PerformanceMonitor {
     if (memoryUsagePercent > 90) {
       issues.push('High memory usage (>90%)');
       status = 'critical';
+      this.triggerMemoryCleanup();
     } else if (memoryUsagePercent > 80) {
       issues.push('High memory usage (>80%)');
+      if (status === 'healthy') status = 'warning';
+    }
+
+    // Memory leak detection
+    const memoryGrowthRate = this.detectMemoryLeaks();
+    if (memoryGrowthRate > 0.1) { // 10% growth per interval
+      issues.push(`Potential memory leak detected (${(memoryGrowthRate * 100).toFixed(1)}% growth rate)`);
       if (status === 'healthy') status = 'warning';
     }
 
@@ -261,7 +269,74 @@ class PerformanceMonitor {
       if (status === 'healthy') status = 'warning';
     }
 
+    // Check for EventEmitter memory leaks
+    const maxListeners = process.getMaxListeners();
+    if (maxListeners < 50) { // Arbitrary threshold
+      issues.push(`Low max listeners limit: ${maxListeners}`);
+      if (status === 'healthy') status = 'warning';
+    }
+
     return { status, issues };
+  }
+
+  private memorySnapshots: Array<{ timestamp: number; heapUsed: number }> = [];
+  
+  private detectMemoryLeaks(): number {
+    const currentMemory = process.memoryUsage().heapUsed;
+    const now = Date.now();
+    
+    this.memorySnapshots.push({ timestamp: now, heapUsed: currentMemory });
+    
+    // Keep only last 10 snapshots (about 2.5 hours of data)
+    if (this.memorySnapshots.length > 10) {
+      this.memorySnapshots.shift();
+    }
+    
+    if (this.memorySnapshots.length < 3) {
+      return 0; // Not enough data
+    }
+    
+    const oldest = this.memorySnapshots[0];
+    const newest = this.memorySnapshots[this.memorySnapshots.length - 1];
+    const timeDiff = newest.timestamp - oldest.timestamp;
+    const memoryDiff = newest.heapUsed - oldest.heapUsed;
+    
+    if (timeDiff === 0) return 0;
+    
+    // Calculate growth rate per millisecond, then convert to percentage
+    const growthRate = memoryDiff / oldest.heapUsed;
+    
+    return Math.max(0, growthRate);
+  }
+  
+  private triggerMemoryCleanup(): void {
+    logger.warn('Triggering memory cleanup due to high usage');
+    
+    try {
+      // Force garbage collection if available
+      if (global.gc) {
+        global.gc();
+        logger.info('Forced garbage collection completed');
+      }
+      
+      // Clear old request data
+      const cutoff = Date.now() - 300000; // 5 minutes ago
+      this.recentRequests = this.recentRequests.filter(req => req.startTime > cutoff);
+      
+      // Clear memory snapshots older than 1 hour
+      const snapshotCutoff = Date.now() - 3600000;
+      this.memorySnapshots = this.memorySnapshots.filter(snap => snap.timestamp > snapshotCutoff);
+      
+      logger.info('Memory cleanup completed', {
+        remainingRequests: this.recentRequests.length,
+        remainingSnapshots: this.memorySnapshots.length
+      });
+      
+    } catch (error) {
+      logger.error('Memory cleanup failed', { 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
   }
 
   cleanup(): void {

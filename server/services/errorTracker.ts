@@ -12,6 +12,31 @@ interface ErrorContext {
   query?: any;
   body?: any;
   headers?: any;
+  traceId?: string;
+  spanId?: string;
+  sessionId?: string;
+  timestamp?: string;
+  stackTrace?: string[];
+  breadcrumbs?: Array<{
+    timestamp: string;
+    category: string;
+    message: string;
+    level: 'debug' | 'info' | 'warning' | 'error';
+    data?: any;
+  }>;
+  performance?: {
+    memoryUsage: NodeJS.MemoryUsage;
+    cpuUsage: NodeJS.CpuUsage;
+    duration?: number;
+  };
+  database?: {
+    activeConnections?: number;
+    queryCount?: number;
+    slowQueries?: Array<{
+      query: string;
+      duration: number;
+    }>;
+  };
 }
 
 interface ErrorReport {
