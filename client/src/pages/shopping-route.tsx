@@ -2832,6 +2832,34 @@ const ShoppingRoute: React.FC = () => {
                         console.log(`Switching to store ${index}: ${store.retailerName} via click`);
                         setCurrentStoreIndex(index);
                         setCurrentAisleIndex(0);
+                        
+                        // Force route regeneration for the selected store
+                        setTimeout(() => {
+                          if (store.items.length > 0) {
+                            // Filter items to only include uncompleted ones for the store
+                            const uncompletedItems = store.items.filter(item => !completedItems.has(item.id));
+                            console.log(`Regenerating route for ${store.retailerName} with ${uncompletedItems.length} uncompleted items via click`);
+
+                            const storeRoute = generateOptimizedShoppingRoute(uncompletedItems, store.retailerName);
+                            setOptimizedRoute(prevRoute => ({
+                              ...prevRoute,
+                              aisleGroups: storeRoute.aisleGroups,
+                              totalAisles: storeRoute.totalAisles,
+                              estimatedTime: storeRoute.estimatedTime,
+                              retailerName: store.retailerName
+                            }));
+                            console.log(`Route regenerated for ${store.retailerName} with ${storeRoute.aisleGroups.length} aisles via click`);
+                          } else {
+                            // Store has no items, clear aisles
+                            setOptimizedRoute(prevRoute => ({
+                              ...prevRoute,
+                              aisleGroups: [],
+                              totalAisles: 0,
+                              estimatedTime: 0,
+                              retailerName: store.retailerName
+                            }));
+                          }
+                        }, 100);
                       }}
                     >
                       <div className="flex items-center justify-between">
@@ -2869,9 +2897,40 @@ const ShoppingRoute: React.FC = () => {
                     variant="outline"
                     onClick={() => {
                       const prevStoreIndex = Math.max(0, currentStoreIndex - 1);
+                      const prevStore = optimizedRoute.stores[prevStoreIndex];
+                      
                       setCurrentStoreIndex(prevStoreIndex);
                       setCurrentAisleIndex(0);
-                      console.log(`Navigating to previous store ${prevStoreIndex}`);
+                      
+                      console.log(`Navigating to previous store ${prevStoreIndex}: ${prevStore.retailerName}`);
+                      
+                      // Force route regeneration for the previous store
+                      setTimeout(() => {
+                        if (prevStore.items.length > 0) {
+                          // Filter items to only include uncompleted ones for the store
+                          const uncompletedItems = prevStore.items.filter(item => !completedItems.has(item.id));
+                          console.log(`Regenerating route for ${prevStore.retailerName} with ${uncompletedItems.length} uncompleted items`);
+
+                          const storeRoute = generateOptimizedShoppingRoute(uncompletedItems, prevStore.retailerName);
+                          setOptimizedRoute(prevRoute => ({
+                            ...prevRoute,
+                            aisleGroups: storeRoute.aisleGroups,
+                            totalAisles: storeRoute.totalAisles,
+                            estimatedTime: storeRoute.estimatedTime,
+                            retailerName: prevStore.retailerName
+                          }));
+                          console.log(`Route regenerated for ${prevStore.retailerName} with ${storeRoute.aisleGroups.length} aisles`);
+                        } else {
+                          // Store has no items, clear aisles
+                          setOptimizedRoute(prevRoute => ({
+                            ...prevRoute,
+                            aisleGroups: [],
+                            totalAisles: 0,
+                            estimatedTime: 0,
+                            retailerName: prevStore.retailerName
+                          }));
+                        }
+                      }, 100);
                     }}
                     disabled={currentStoreIndex === 0}
                     className="w-full"
@@ -2892,6 +2951,34 @@ const ShoppingRoute: React.FC = () => {
                         setCurrentAisleIndex(0); // Reset to first aisle of new store
 
                         console.log(`Navigating to store ${nextStoreIndex}: ${nextStore.retailerName} with ${nextStore.items?.length || 0} items`);
+                        
+                        // Force route regeneration for the next store
+                        setTimeout(() => {
+                          if (nextStore.items.length > 0) {
+                            // Filter items to only include uncompleted ones for the new store
+                            const uncompletedItems = nextStore.items.filter(item => !completedItems.has(item.id));
+                            console.log(`Regenerating route for ${nextStore.retailerName} with ${uncompletedItems.length} uncompleted items`);
+
+                            const storeRoute = generateOptimizedShoppingRoute(uncompletedItems, nextStore.retailerName);
+                            setOptimizedRoute(prevRoute => ({
+                              ...prevRoute,
+                              aisleGroups: storeRoute.aisleGroups,
+                              totalAisles: storeRoute.totalAisles,
+                              estimatedTime: storeRoute.estimatedTime,
+                              retailerName: nextStore.retailerName
+                            }));
+                            console.log(`Route regenerated for ${nextStore.retailerName} with ${storeRoute.aisleGroups.length} aisles`);
+                          } else {
+                            // Store has no items, clear aisles
+                            setOptimizedRoute(prevRoute => ({
+                              ...prevRoute,
+                              aisleGroups: [],
+                              totalAisles: 0,
+                              estimatedTime: 0,
+                              retailerName: nextStore.retailerName
+                            }));
+                          }
+                        }, 100);
                       }
                     }}
                     disabled={currentStoreIndex >= optimizedRoute.stores.length - 1}
