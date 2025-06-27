@@ -830,8 +830,7 @@ const ShoppingRoute: React.FC = () => {
       return name.includes('organic') || name.includes('specialty') || name.includes('imported');
     }).length;
 
-    const freshItems = items.filter```javascript
-((item: any) => {
+    const freshItems = items.filter((item: any) => {
       const name = item.productName.toLowerCase();
       return name.includes('fresh') || name.includes('produce') || name.includes('meat') || name.includes('seafood');
     }).length;
@@ -1584,7 +1583,8 @@ const ShoppingRoute: React.FC = () => {
       updateItemMutation.mutate({
         itemId: item.id,
         updates: {
-          notes: 'Saved for future trip - not needed this time',          isCompleted: false
+          notes: 'Saved for future trip - not needed this time',
+          isCompleted: false
         }
       });
     });
@@ -1721,7 +1721,7 @@ const ShoppingRoute: React.FC = () => {
   // Save session immediately when route is created and on any state change
   useEffect(() => {
     if (optimizedRoute && selectedPlanData) {
-      savePersistentShoppingSession(selectedPlanData, optimizedRoute);```javascript
+      savePersistentShoppingSession(selectedPlanData, optimizedRoute);
     }
   }, [currentStoreIndex, currentAisleIndex, completedItems, optimizedRoute, selectedPlanData, hasStartedShopping]);
 
