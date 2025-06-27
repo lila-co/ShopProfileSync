@@ -276,8 +276,6 @@ const ShoppingRoute: React.FC = () => {
   const [uncompletedItems, setUncompletedItems] = useState<any[]>([]);
   const [loyaltyBarcodeDialogOpen, setLoyaltyBarcodeDialogOpen] = useState(false);
   const [isShoppingComplete, setIsShoppingComplete] = useState(false);
-  const [movedItems, setMovedItems] = useState<any[]>([]);
-
   // Get current retailer name for loyalty card fetching
   const getCurrentRetailerName = () => {
     if (optimizedRoute?.isMultiStore && optimizedRoute.stores && optimizedRoute.stores[currentStoreIndex]) {
@@ -388,9 +386,7 @@ const ShoppingRoute: React.FC = () => {
           if (sessionData.completedItems) {
             setCompletedItems(new Set(sessionData.completedItems));
           }
-          if (sessionData.movedItems) {
-            setMovedItems(sessionData.movedItems);
-          }
+          
 
           // Restore hasStartedShopping state from session
           if (sessionData.hasStartedShopping !== undefined) {
@@ -490,104 +486,25 @@ const ShoppingRoute: React.FC = () => {
     }
   }, [shoppingList, planDataParam, location, toast, listId]);
 
-  // Regenerate aisles when store changes to include moved items
+  // Regenerate aisles when store changes
   useEffect(() => {
     if (optimizedRoute?.isMultiStore && optimizedRoute.stores && currentStoreIndex >= 0 && optimizedRoute.stores[currentStoreIndex]) {
       const currentStore = optimizedRoute.stores[currentStoreIndex];
       console.log(`Store ${currentStoreIndex} (${currentStore.retailerName}) has ${currentStore.items?.length || 0} items`);
 
-      // Get all items for this store including moved items
-      let allStoreItems = [...(currentStore.items || [])];
-      
-      // Add any items that were moved to this store from movedItems tracking
-      const itemsMovedToThisStore = movedItems.filter(item => 
-        item.movedToStoreIndex === currentStoreIndex && 
-        item.movedToStoreName === currentStore.retailerName
-      );
-      
-      if (itemsMovedToThisStore.length > 0) {
-        console.log(`Adding ${itemsMovedToThisStore.length} moved items to ${currentStore.retailerName}:`, itemsMovedToThisStore.map(i => i.productName));
+      if (currentStore.items?.length > 0) {
+        const storeRoute = generateOptimizedShoppingRoute(currentStore.items, currentStore.retailerName);
         
-        // Add moved items to the store's items if not already present
-        itemsMovedToThisStore.forEach(movedItem => {
-          const itemExists = allStoreItems.some(item => item.id === movedItem.id);
-          if (!itemExists) {
-            allStoreItems.push({
-              ...movedItem,
-              storeName: currentStore.retailerName,
-              movedFrom: movedItem.originalStoreName,
-              isCompleted: false // Ensure moved items are not marked as completed
-            });
-          } else {
-            // Update existing item to ensure it's not marked as completed
-            const existingIndex = allStoreItems.findIndex(item => item.id === movedItem.id);
-            if (existingIndex > -1) {
-              allStoreItems[existingIndex] = {
-                ...allStoreItems[existingIndex],
-                isCompleted: false,
-                movedFrom: movedItem.originalStoreName
-              };
-            }
-          }
-        });
-      }
+        setOptimizedRoute(prevRoute => ({
+          ...prevRoute,
+          aisleGroups: storeRoute.aisleGroups,
+          totalAisles: storeRoute.totalAisles,
+          estimatedTime: storeRoute.estimatedTime,
+          retailerName: currentStore.retailerName
+        }));
 
-      if (allStoreItems.length > 0) {
-        // Include all items for aisle generation - completed items will be visually distinguished in the UI
-        const allStoreItemsForAisles = allStoreItems.map(item => {
-          // If item was moved to this store, reset completion status
-          const wasMovedHere = item.movedFrom || itemsMovedToThisStore.some(moved => moved.id === item.id);
-          if (wasMovedHere) {
-            // Remove from completed items set to ensure it shows as uncompleted
-            setCompletedItems(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(item.id);
-              return newSet;
-            });
-            return { ...item, isCompleted: false };
-          }
-          return item;
-        });
-        
-        if (allStoreItemsForAisles.length > 0) {
-          // Regenerate aisles for current store with all items (completed items will be visually distinguished)
-          const storeRoute = generateOptimizedShoppingRoute(allStoreItemsForAisles, currentStore.retailerName);
-
-          // Update the optimized route with new aisles for current store
-          setOptimizedRoute(prevRoute => ({
-            ...prevRoute,
-            aisleGroups: storeRoute.aisleGroups,
-            totalAisles: storeRoute.totalAisles,
-            estimatedTime: storeRoute.estimatedTime,
-            retailerName: currentStore.retailerName
-          }));
-
-          console.log(`Regenerated aisles for ${currentStore.retailerName} with ${allStoreItemsForAisles.length} items`);
-          console.log('New aisles:', storeRoute.aisleGroups.map(a => `${a.aisleName} (${a.items.length} items)`));
-
-          // Check for items that were moved to this store
-          const itemsMovedToThisStoreFiltered = allStoreItemsForAisles.filter(item => item.movedFrom);
-          if (itemsMovedToThisStoreFiltered.length > 0) {
-            console.log(`Found ${itemsMovedToThisStoreFiltered.length} moved items in ${currentStore.retailerName}:`, itemsMovedToThisStoreFiltered.map(i => i.productName));
-            toast({
-              title: "Items Available",
-              description: `${itemsMovedToThisStoreFiltered.length} item(s) moved from previous stores are now available`,
-              duration: 4000
-            });
-          }
-        } else {
-          // Store has no items, clear aisles
-          setOptimizedRoute(prevRoute => ({
-            ...prevRoute,
-            aisleGroups: [],
-            totalAisles: 0,
-            estimatedTime: 0,
-            retailerName: currentStore.retailerName
-          }));
-          console.log(`Store ${currentStore.retailerName} has no items, cleared aisles`);
-        }
+        console.log(`Regenerated aisles for ${currentStore.retailerName} with ${currentStore.items.length} items`);
       } else {
-        // Store has no items, clear aisles
         setOptimizedRoute(prevRoute => ({
           ...prevRoute,
           aisleGroups: [],
@@ -595,10 +512,9 @@ const ShoppingRoute: React.FC = () => {
           estimatedTime: 0,
           retailerName: currentStore.retailerName
         }));
-        console.log(`Store ${currentStore.retailerName} has no items, cleared aisles`);
       }
     }
-  }, [currentStoreIndex, optimizedRoute?.stores, completedItems, movedItems, toast]);
+  }, [currentStoreIndex, optimizedRoute?.stores]);
 
 
 
@@ -1844,7 +1760,6 @@ const ShoppingRoute: React.FC = () => {
         currentStoreIndex,
         currentAisleIndex,
         completedItems: Array.from(completedItems),
-        movedItems: movedItems,
         timestamp: Date.now(),
         currentStoreName: currentStore?.retailerName,
         isMultiStore: route?.isMultiStore || false,
@@ -1898,83 +1813,47 @@ const ShoppingRoute: React.FC = () => {
     }
   }, [optimizedRoute, selectedPlanData]);
 
-  // Function to get items that have been moved to the current store
-  const getItemsMovedToStore = (storeIndex: number) => {
-    if (!optimizedRoute?.isMultiStore || !optimizedRoute.stores) return [];
-
-    const currentStore = optimizedRoute.stores[storeIndex];
-    if (!currentStore) return [];
-
-    return movedItems.filter(item => 
-      item.movedToStoreIndex === storeIndex && 
-      item.movedToStoreName === currentStore.retailerName
-    );
-  };
-
-  // Function to move item to next store
-  const moveItemToStore = (item: any, targetStoreIndex: number) => {
+  // Simplified function to move item to next store
+  const moveItemToNextStore = (item: any) => {
     if (!optimizedRoute?.isMultiStore || !optimizedRoute.stores) return;
+    
+    const nextStoreIndex = currentStoreIndex + 1;
+    const nextStore = optimizedRoute.stores[nextStoreIndex];
+    if (!nextStore) return;
 
-    const targetStore = optimizedRoute.stores[targetStoreIndex];
-    if (!targetStore) return;
+    console.log(`Moving item ${item.productName} to ${nextStore.retailerName}`);
 
-    console.log(`Moving item ${item.productName} from store ${currentStoreIndex} to store ${targetStoreIndex} (${targetStore.retailerName})`);
-
-    // Create moved item entry
-    const movedItem = {
-      ...item,
-      originalStoreIndex: currentStoreIndex,
-      originalStoreName: optimizedRoute.stores[currentStoreIndex]?.retailerName,
-      movedToStoreIndex: targetStoreIndex,
-      movedToStoreName: targetStore.retailerName,
-      movedAt: Date.now(),
-      isCompleted: false
-    };
-
-    // Update all state atomically to prevent race conditions
     setOptimizedRoute(prevRoute => {
       const updatedStores = [...prevRoute.stores];
 
-      // Remove item from current store
-      const currentStore = { ...updatedStores[currentStoreIndex] };
-      currentStore.items = currentStore.items.filter((storeItem: any) => storeItem.id !== item.id);
-      updatedStores[currentStoreIndex] = currentStore;
+      // Remove from current store
+      updatedStores[currentStoreIndex] = {
+        ...updatedStores[currentStoreIndex],
+        items: updatedStores[currentStoreIndex].items.filter((storeItem: any) => storeItem.id !== item.id)
+      };
 
-      // Add item to target store
-      const updatedTargetStore = { ...updatedStores[targetStoreIndex] };
-      const itemExists = updatedTargetStore.items.some((storeItem: any) => storeItem.id === item.id);
-      
-      if (!itemExists) {
-        const itemToAdd = {
+      // Add to next store
+      updatedStores[nextStoreIndex] = {
+        ...updatedStores[nextStoreIndex],
+        items: [...updatedStores[nextStoreIndex].items, {
           ...item,
-          storeName: targetStore.retailerName,
+          storeName: nextStore.retailerName,
           movedFrom: optimizedRoute.stores[currentStoreIndex]?.retailerName,
           isCompleted: false
-        };
-        updatedTargetStore.items = [...updatedTargetStore.items, itemToAdd];
-      }
+        }]
+      };
 
-      updatedStores[targetStoreIndex] = updatedTargetStore;
-
-      // Remove from current aisles display immediately
+      // Remove from current aisles
       const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
         ...aisle,
         items: aisle.items.filter((aisleItem: any) => aisleItem.id !== item.id)
       })).filter((aisle: any) => aisle.items.length > 0);
-
-      console.log(`Item ${item.productName} moved successfully. Target store now has ${updatedStores[targetStoreIndex].items.length} items`);
 
       return {
         ...prevRoute,
         stores: updatedStores,
         aisleGroups: newAisleGroups
       };
-    });
-
-    // Update moved items tracking
-    setMovedItems(prev => {
-      const filtered = prev.filter(moved => moved.id !== item.id);
-      return [...filtered, movedItem];
     });
 
     // Remove from completed items
@@ -1986,14 +1865,9 @@ const ShoppingRoute: React.FC = () => {
 
     toast({
       title: "Item Moved",
-      description: `${item.productName} moved to ${targetStore.retailerName}`,
+      description: `${item.productName} moved to ${nextStore.retailerName}`,
       duration: 3000
     });
-
-    // Check if current aisle is now empty
-    setTimeout(() => {
-      checkAndHandleEmptyAisle();
-    }, 100);
   };
 
   // Check if user has started shopping based on progress
@@ -2579,103 +2453,18 @@ const ShoppingRoute: React.FC = () => {
 
                               <DropdownMenuItem
                                 onClick={() => {
-                                  // Check if there are more stores to move to
                                   if (optimizedRoute?.isMultiStore && optimizedRoute.stores && currentStoreIndex < optimizedRoute.stores.length - 1) {
-                                    const nextStoreIndex = currentStoreIndex + 1;
-
-                                    // Use the new moveItemToStore function
-                                    moveItemToStore(item, nextStoreIndex);
-
-                                    // Update the item in the database to reflect the new store assignment
-                                    const nextStore = optimizedRoute.stores[nextStoreIndex];
+                                    moveItemToNextStore(item);
+                                    
+                                    // Update the item in the database
+                                    const nextStore = optimizedRoute.stores[currentStoreIndex + 1];
                                     updateItemMutation.mutate({
                                       itemId: item.id,
                                       updates: {
                                         suggestedRetailerId: nextStore.retailer?.id || nextStore.suggestedRetailerId,
-                                        notes: `Moved from ${optimizedRoute.stores[currentStoreIndex]?.retailerName} - try at ${nextStore.retailerName}`,
+                                        notes: `Moved to ${nextStore.retailerName}`,
                                         isCompleted: false
                                       }
-                                    });
-
-                                    // Remove item from current store's route display
-                                    const currentStore = optimizedRoute.stores[currentStoreIndex];
-                                    if (currentStore) {
-                                      const itemIndex = currentStore.items.findIndex((storeItem: any) => storeItem.id === item.id);
-                                      if (itemIndex > -1) {
-                                        currentStore.items.splice(itemIndex, 1);
-                                      }
-                                    }
-
-                                    // Also remove from current aisle in the optimized route display
-                                    if (optimizedRoute.aisleGroups) {
-                                      optimizedRoute.aisleGroups.forEach((aisle: any) => {
-                                        const itemIndex = aisle.items.findIndex((routeItem: any) => routeItem.id === item.id);
-                                        if (itemIndex > -1) {
-                                          aisle.items.splice(itemIndex, 1);
-                                        }
-                                      });
-                                    }
-
-                                    // Force a re-render by updating the route state
-                                    setOptimizedRoute({...optimizedRoute});
-                                  } else if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
-                                    // This is the last store - save for future trip
-                                    updateItemMutation.mutate({
-                                      itemId: item.id,
-                                      updates: {
-                                        notes: 'Saved for future trip - no more stores in current plan',
-                                        isCompleted: false
-                                      }
-                                    });
-
-                                    // Remove item from current shopping route display
-                                    if (optimizedRoute?.aisleGroups) {
-                                      optimizedRoute.aisleGroups.forEach((aisle: any) => {
-                                        const itemIndex = aisle.items.findIndex((routeItem: any) => routeItem.id === item.id);
-                                        if (itemIndex > -1) {
-                                          aisle.items.splice(itemIndex, 1);
-                                        }
-                                      });
-                                    }
-
-                                    // For multi-store plans, also remove from current store's items
-                                    if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
-                                      const currentStore = optimizedRoute.stores[currentStoreIndex];
-                                      if (currentStore) {
-                                        const itemIndex = currentStore.items.findIndex((storeItem: any) => storeItem.id === item.id);
-                                        if (itemIndex > -1) {
-                                          currentStore.items.splice(itemIndex, 1);
-                                        }
-                                      }
-                                    }
-
-                                    // Force a re-render by updating the route state
-                                    setOptimizedRoute({...optimizedRoute});
-
-                                    toast({
-                                      title: "Item Saved for Future Trip",
-                                      description: `${item.productName} will remain on your list for next time`,
-                                      duration: 3000
-                                    });
-
-                                    // Check if aisle is now empty after a brief delay
-                                    setTimeout(() => {
-                                      checkAndHandleEmptyAisle();
-                                    }, 100);
-                                  } else {
-                                    // For single-store plans, create a reminder or alternative suggestion
-                                    updateItemMutation.mutate({
-                                      itemId: item.id,
-                                      updates: {
-                                        notes: `Try alternative store - not available at ${optimizedRoute?.retailerName || 'current store'}`,
-                                        isCompleted: false
-                                      }
-                                    });
-
-                                    toast({
-                                      title: "Item Marked for Alternative Store",
-                                      description: `${item.productName} saved with note to try alternative store`,
-                                      duration: 3000
                                     });
                                   }
                                 }}
