@@ -275,7 +275,7 @@ const ShoppingRoute: React.FC = () => {
   const [endStoreDialogOpen, setEndStoreDialogOpen] = useState(false);
   const [uncompletedItems, setUncompletedItems] = useState<any[]>([]);
   const [loyaltyBarcodeDialogOpen, setLoyaltyBarcodeDialogOpen] = useState(false);
-  const [isShoppingComplete, setIsShoppingComplete] = useState(isShoppingComplete);
+  const [isShoppingComplete, setIsShoppingComplete] = useState(false);
 
   // Get current retailer name for loyalty card fetching
   const getCurrentRetailerName = () => {
