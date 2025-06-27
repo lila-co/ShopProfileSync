@@ -1699,14 +1699,24 @@ const ShoppingRoute: React.FC = () => {
         // Force route regeneration for the new store
         setTimeout(() => {
           if (nextStore.items.length > 0) {
-            const storeRoute = generateOptimizedShoppingRoute(nextStore.items, nextStore.retailerName);
+            // Filter items to only include uncompleted ones for the new store
+            const uncompletedItems = nextStore.items.filter(item => !completedItems.has(item.id));
+            console.log(`Regenerating route for ${nextStore.retailerName} with ${uncompletedItems.length} uncompleted items:`, 
+              uncompletedItems.map(i => `${i.productName} (ID: ${i.id})`));
+            
+            const storeRoute = generateOptimizedShoppingRoute(uncompletedItems, nextStore.retailerName);
             setOptimizedRoute(prevRoute => ({
               ...prevRoute,
               aisleGroups: storeRoute.aisleGroups,
               totalAisles: storeRoute.totalAisles,
-              estimatedTime: storeRoute.estimatedTime
+              estimatedTime: storeRoute.estimatedTime,
+              retailerName: nextStore.retailerName
             }));
-            console.log(`Force regenerated aisles for ${nextStore.retailerName}`);
+            console.log(`Route regenerated for ${nextStore.retailerName} with ${storeRoute.aisleGroups.length} aisles`);
+            console.log('New aisles structure:', storeRoute.aisleGroups.map(aisle => ({
+              aisle: aisle.aisleName,
+              items: aisle.items.map(item => item.productName)
+            })));
           }
         }, 100);
       } else {
@@ -1847,12 +1857,20 @@ const ShoppingRoute: React.FC = () => {
           ...item,
           storeName: targetStore.retailerName,
           movedFrom: optimizedRoute.stores[currentStoreIndex]?.retailerName,
-          // Ensure the item has a unique ID for the target store
-          id: item.id
+          // Ensure the item has a unique ID for the target store and is marked as uncompleted
+          id: item.id,
+          isCompleted: false
         };
         updatedTargetStore.items = [...updatedTargetStore.items, itemToAdd];
         console.log(`Added item ${item.productName} to ${targetStore.retailerName}. Store now has ${updatedTargetStore.items.length} items`);
         console.log(`Target store items:`, updatedTargetStore.items.map(i => i.productName));
+        
+        // Remove the item from completed items set so it shows as uncompleted in the new store
+        setCompletedItems(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(item.id);
+          return newSet;
+        });
       } else {
         console.log(`Item ${item.productName} already exists in ${targetStore.retailerName}`);
       }
