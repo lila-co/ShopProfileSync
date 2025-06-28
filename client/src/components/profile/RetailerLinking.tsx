@@ -81,17 +81,38 @@ const RetailerLinking: React.FC = () => {
   });
 
   // Get user's linked retailer accounts
-  const { data: retailerAccounts, isLoading: accountsLoading } = useQuery({
+  const { data: retailerAccounts, isLoading: accountsLoading, error: accountsError } = useQuery({
     queryKey: ['/api/user/retailer-accounts'],
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log('Retailer accounts data:', {
+      accounts: retailerAccounts,
+      isLoading: accountsLoading,
+      error: accountsError,
+      connectedCount: retailerAccounts?.filter((account: any) => account.isConnected).length || 0
+    });
+  }, [retailerAccounts, accountsLoading, accountsError]);
 
   // Mutation to link a retailer account
   const linkAccountMutation = useMutation({
     mutationFn: async (data: any) => {
+      console.log('Linking account with data:', data);
       const response = await apiRequest('POST', '/api/user/retailer-accounts', data);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to link account');
+      }
+      
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (newAccount) => {
+      console.log('Account linked successfully:', newAccount);
+      
       // Reset form and close dialog
       setUsername('');
       setPassword('');
@@ -100,8 +121,9 @@ const RetailerLinking: React.FC = () => {
       setSelectedAvailableRetailer('');
       setLinkDialogOpen(false);
 
-      // Invalidate queries to refresh the data
+      // Invalidate and refetch queries to refresh the data immediately
       queryClient.invalidateQueries({ queryKey: ['/api/user/retailer-accounts'] });
+      queryClient.refetchQueries({ queryKey: ['/api/user/retailer-accounts'] });
 
       // Show success message
       const message = connectionType === 'circular' 
@@ -114,7 +136,9 @@ const RetailerLinking: React.FC = () => {
       });
     },
     onError: (error: any) => {
-      // Show error message
+      console.error('Failed to link account:', error);
+      
+      // Show error message with more details
       toast({
         title: 'Failed to Link Account',
         description: error.message || 'Please check your credentials and try again.',
@@ -226,7 +250,24 @@ const RetailerLinking: React.FC = () => {
   const handleLinkAccount = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!selectedRetailer) return;
+    if (!selectedRetailer) {
+      toast({
+        title: 'Error',
+        description: 'Please select a retailer to connect.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate form data for account connections
+    if (connectionType === 'account' && (!username.trim() || !password.trim())) {
+      toast({
+        title: 'Missing Information',
+        description: 'Please enter both username and password for account connection.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     const accountData = connectionType === 'circular' ? {
       retailerId: selectedRetailer.id,
@@ -235,12 +276,15 @@ const RetailerLinking: React.FC = () => {
       circularOnly: true
     } : {
       retailerId: selectedRetailer.id,
-      username,
-      password,
+      username: username.trim(),
+      password: password.trim(),
       storeCredentials: rememberMe,
       allowOrdering,
+      isConnected: true,
       connectionType: 'account'
     };
+
+    console.log('Submitting account data:', { ...accountData, password: '[REDACTED]' });
 
     // If loyalty card info is provided, save it separately
     if (loyaltyCardNumber.trim()) {
