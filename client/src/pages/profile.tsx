@@ -22,7 +22,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { User, Settings, Bell, CreditCard, MapPin, Shield, Store, TrendingUp, ShieldAlert, AlertTriangle, Zap, Heart, DollarSign, Users, Globe, Lock, Eye } from 'lucide-react';
+import { User, Settings, Bell, CreditCard, MapPin, Shield, Store, TrendingUp, ShieldAlert, AlertTriangle, Zap, Heart, DollarSign, Users, Globe, Lock, Eye, Mail } from 'lucide-react';
 import { User as UserType } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -194,9 +194,10 @@ const ProfilePage: React.FC = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5 text-xs">
+          <TabsList className="grid w-full grid-cols-6 text-xs">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="retailers">Stores</TabsTrigger>
+            <TabsTrigger value="email">Email</TabsTrigger>
             <TabsTrigger value="insights">Insights</TabsTrigger>
             <TabsTrigger value="privacy">Privacy</TabsTrigger>
             <TabsTrigger value="notifications">Alerts</TabsTrigger>
@@ -396,6 +397,84 @@ const ProfilePage: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <RetailersContent />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="email" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Mail className="w-5 h-5 mr-2 text-blue-600" />
+                  Email Receipt Scanning
+                </CardTitle>
+                <CardDescription>Automatically scan your email for receipts to build shopping history</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h4 className="font-medium text-blue-900 mb-2">Benefits of Email Integration:</h4>
+                  <ul className="text-sm text-blue-700 space-y-1">
+                    <li>✓ Automatic receipt detection and processing</li>
+                    <li>✓ Historical purchase tracking without manual entry</li>
+                    <li>✓ Enhanced personalized recommendations</li>
+                    <li>✓ Better price tracking and deal alerts</li>
+                  </ul>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="font-medium">Connect Email Providers:</h4>
+                  <div className="grid grid-cols-1 gap-3">
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <svg viewBox="0 0 24 24" className="w-6 h-6">
+                          <path fill="currentColor" d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.910 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"/>
+                        </svg>
+                        <div>
+                          <div className="font-medium">Gmail</div>
+                          <div className="text-sm text-gray-500">Scan Gmail for receipts</div>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => window.location.href = `/api/auth/email/gmail?userId=${user?.id}`}
+                        size="sm"
+                      >
+                        Connect
+                      </Button>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <svg viewBox="0 0 24 24" className="w-6 h-6">
+                          <path fill="currentColor" d="M7.462 2.5c-1.35 0-2.462 1.112-2.462 2.462v13.076c0 1.35 1.112 2.462 2.462 2.462h9.076c1.35 0 2.462-1.112 2.462-2.462V7.615L14.385 3H7.462z"/>
+                        </svg>
+                        <div>
+                          <div className="font-medium">Outlook</div>
+                          <div className="text-sm text-gray-500">Scan Outlook for receipts</div>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => window.location.href = `/api/auth/email/outlook?userId=${user?.id}`}
+                        size="sm"
+                      >
+                        Connect
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-medium mb-2">Privacy & Security</h4>
+                  <p className="text-sm text-gray-600 mb-3">
+                    We use industry-standard OAuth 2.0 authentication and encrypt all stored tokens. 
+                    We only access emails that contain receipts and never store email content permanently.
+                  </p>
+                  <div className="text-xs text-gray-500 space-y-1">
+                    <div>• Read-only access to your email</div>
+                    <div>• Encrypted token storage</div>
+                    <div>• Receipt detection only</div>
+                    <div>• Disconnect anytime</div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

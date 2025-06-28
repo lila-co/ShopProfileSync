@@ -73,7 +73,7 @@ const RetailerLinking: React.FC = () => {
   const [allowOrdering, setAllowOrdering] = useState(true);
   const [loyaltyCardNumber, setLoyaltyCardNumber] = useState('');
   const [loyaltyMemberId, setLoyaltyMemberId] = useState('');
-  const [connectionType, setConnectionType] = useState<'account' | 'email'>('account'); // Added connection type state
+  const [connectionType, setConnectionType] = useState<'account' | 'circular'>('account');
 
   // Get all available retailers
   const { data: retailers, isLoading: retailersLoading } = useQuery({
@@ -633,8 +633,13 @@ const RetailerLinking: React.FC = () => {
                       <div>✓ AI-powered deal matching</div>
                       <div>✓ No personal account access needed</div>
                     </div>
+                    <div className="mt-2 p-2 bg-blue-100 rounded text-xs text-blue-700">
+                      <strong>Tip:</strong> For automatic receipt scanning, configure email integration in the Email tab.
+                    </div>
                   </div>
                 )}
+
+                
 
                 {connectionType === 'account' && (
                   <>

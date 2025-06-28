@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ArrowLeft, MapPin, DollarSign, Clock, ShoppingCart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import BottomNavigation from '@/components/layout/BottomNavigation';
@@ -226,9 +227,13 @@ const PlanDetails: React.FC = () => {
     };
   }, [shoppingItems, planData.stores, selectedPlanType]);
 
-  // Auto-resume shopping session if one exists - must be called before any early returns
+  // State for managing session resume dialog
+  const [showResumeDialog, setShowResumeDialog] = useState(false);
+  const [existingSessionData, setExistingSessionData] = useState<any>(null);
+
+  // Check for existing shopping session - show dialog instead of auto-resuming
   useEffect(() => {
-    const checkAndAutoResumeSession = () => {
+    const checkForExistingSession = () => {
       // Check for both session types
       const interruptedSession = localStorage.getItem(`interruptedSession-${listId}`);
       const persistentSession = localStorage.getItem(`shopping_session_${listId}`);
@@ -256,27 +261,13 @@ const PlanDetails: React.FC = () => {
         }
       }
 
-      // Auto-resume if session exists
+      // Show dialog if session exists instead of auto-resuming
       if (sessionDataStr) {
         try {
           const sessionData = JSON.parse(sessionDataStr);
-          console.log('Auto-resuming shopping with session data:', sessionData);
-
-          // Restore plan data and shopping mode
-          sessionStorage.setItem('shoppingPlanData', JSON.stringify(sessionData.planData));
-          sessionStorage.setItem('shoppingListId', listId);
-          sessionStorage.setItem('shoppingMode', sessionData.shoppingMode || 'instore');
-
-          // Redirect to the shopping route page
-          const targetUrl = `/shopping-route?listId=${listId}&mode=${sessionData.shoppingMode || 'instore'}&fromPlan=true&resume=true`;
-          console.log('Auto-navigating to:', targetUrl);
-          navigate(targetUrl);
-
-          toast({
-            title: "Resuming Shopping Trip",
-            description: "Continuing where you left off...",
-            duration: 2000
-          });
+          console.log('Found existing shopping session:', sessionData);
+          setExistingSessionData(sessionData);
+          setShowResumeDialog(true);
         } catch (error) {
           console.error('Error parsing session data:', error);
           // Clean up corrupted session data
@@ -287,9 +278,60 @@ const PlanDetails: React.FC = () => {
     };
 
     if (listId) {
-      checkAndAutoResumeSession();
+      checkForExistingSession();
     }
-  }, [listId, navigate, toast]);
+  }, [listId]);
+
+  // Function to resume existing session
+  const resumeExistingSession = () => {
+    if (!existingSessionData) return;
+
+    try {
+      // Restore plan data and shopping mode
+      sessionStorage.setItem('shoppingPlanData', JSON.stringify(existingSessionData.planData));
+      sessionStorage.setItem('shoppingListId', listId);
+      sessionStorage.setItem('shoppingMode', existingSessionData.shoppingMode || 'instore');
+
+      // Redirect to the shopping route page
+      const targetUrl = `/shopping-route?listId=${listId}&mode=${existingSessionData.shoppingMode || 'instore'}&fromPlan=true&resume=true`;
+      console.log('Resuming shopping session, navigating to:', targetUrl);
+      navigate(targetUrl);
+
+      toast({
+        title: "Resuming Shopping Trip",
+        description: "Continuing where you left off...",
+        duration: 2000
+      });
+    } catch (error) {
+      console.error('Error resuming session:', error);
+      toast({
+        title: "Error",
+        description: "Failed to resume shopping session",
+        variant: "destructive"
+      });
+    }
+
+    setShowResumeDialog(false);
+  };
+
+  // Function to start fresh (clear existing session)
+  const startFreshSession = () => {
+    // Clear all existing session data
+    localStorage.removeItem(`interruptedSession-${listId}`);
+    localStorage.removeItem(`shopping_session_${listId}`);
+    sessionStorage.removeItem('shoppingPlanData');
+    sessionStorage.removeItem('shoppingListId');
+    sessionStorage.removeItem('shoppingMode');
+
+    setShowResumeDialog(false);
+    setExistingSessionData(null);
+
+    toast({
+      title: "Starting Fresh",
+      description: "Previous shopping session cleared",
+      duration: 2000
+    });
+  };
 
   // All hooks must be called before any early returns
   if (isLoading) {
@@ -838,6 +880,38 @@ const PlanDetails: React.FC = () => {
         </TabsContent>
       </Tabs>
 
+      {/* Resume Session Dialog */}
+      <Dialog open={showResumeDialog} onOpenChange={setShowResumeDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Continue Previous Shopping?</DialogTitle>
+            <DialogDescription>
+              You have an existing shopping session for this list. Would you like to continue where you left off or start fresh?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {existingSessionData && (
+              <div className="text-sm text-gray-600">
+                <p><strong>Previous session:</strong></p>
+                <p>Store: {existingSessionData.currentStoreName || 'Unknown'}</p>
+                <p>Progress: {existingSessionData.completedItems?.length || 0} items completed</p>
+                {existingSessionData.timestamp && (
+                  <p>Started: {new Date(existingSessionData.timestamp).toLocaleDateString()}</p>
+                )}
+              </div>
+            )}
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button variant="outline" onClick={startFreshSession}>
+              Start Fresh
+            </Button>
+            <Button onClick={resumeExistingSession}>
+              Continue Shopping
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Action Buttons */}
       <div className="flex gap-4 mb-6">
         <div className="space-y-2 w-full">
@@ -855,6 +929,33 @@ const PlanDetails: React.FC = () => {
                     variant: "destructive"
                   });
                   return;
+                }
+
+                // Check for existing session first
+                const existingSession = localStorage.getItem(`shopping_session_${listId}`) || 
+                                      localStorage.getItem(`interruptedSession-${listId}`);
+                
+                if (existingSession && !showResumeDialog) {
+                  try {
+                    const sessionData = JSON.parse(existingSession);
+                    const sessionAge = Date.now() - (sessionData.timestamp || 0);
+                    const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+
+                    // Check if session has meaningful progress and is not too old
+                    const hasProgress = ((sessionData.completedItems && sessionData.completedItems.length > 0) ||
+                                       (sessionData.currentAisleIndex && sessionData.currentAisleIndex > 1) ||
+                                       (sessionData.currentStoreIndex && sessionData.currentStoreIndex > 0)) &&
+                                       !sessionData.isCompleted &&
+                                       sessionAge < maxAge;
+
+                    if (hasProgress) {
+                      setExistingSessionData(sessionData);
+                      setShowResumeDialog(true);
+                      return;
+                    }
+                  } catch (error) {
+                    console.error('Error checking existing session:', error);
+                  }
                 }
 
                 const enhancedPlanData = {

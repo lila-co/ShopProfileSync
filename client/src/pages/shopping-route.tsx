@@ -386,7 +386,7 @@ const ShoppingRoute: React.FC = () => {
           if (sessionData.completedItems) {
             setCompletedItems(new Set(sessionData.completedItems));
           }
-          
+
 
           // Restore hasStartedShopping state from session
           if (sessionData.hasStartedShopping !== undefined) {
@@ -494,14 +494,14 @@ const ShoppingRoute: React.FC = () => {
 
     const targetStore = optimizedRoute.stores[storeIndex];
     const storeItems = targetStore.items || [];
-    
+
     console.log(`Synchronizing store ${storeIndex} (${targetStore.retailerName}) with ${storeItems.length} items`);
 
     try {
       if (storeItems.length > 0) {
         // Generate route with error handling
         const storeRoute = generateOptimizedShoppingRoute(storeItems, targetStore.retailerName);
-        
+
         // Batch update to prevent multiple re-renders
         setOptimizedRoute(prevRoute => {
           // Verify state hasn't changed during async operation
@@ -828,8 +828,7 @@ const ShoppingRoute: React.FC = () => {
             const betterAisleName = betterAisleInfo.aisle;
 
             // Remove from current aisle if needed
-            if (betterAisleName !== aisleName) {
-              const currentAisleItems = aisleGroups[aisleName]?.items || [];
+            if (betterAisleName !== aisleName) {              const currentAisleItems = aisleGroups[aisleName]?.items || [];
               const itemIndex = currentAisleItems.findIndex(i => i.id === item.id);
               if (itemIndex > -1) {
                 currentAisleItems.splice(itemIndex, 1);
@@ -1033,11 +1032,7 @@ const ShoppingRoute: React.FC = () => {
         queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
         queryClient.invalidateQueries({ queryKey: [`/api/shopping-lists/${listId}`] });
 
-        toast({
-          title: "Item Removed",
-          description: `${outOfStockItem.productName} has been removed from your list`,
-          duration: 3000
-        });
+
       } catch (error) {
         console.error('Failed to remove item:', error);
         toast({
@@ -1326,13 +1321,13 @@ const ShoppingRoute: React.FC = () => {
         // Transfer items to next store
         const nextStore = optimizedRoute.stores[currentStoreIndex + 1];
         const nextStoreRetailerId = nextStore.retailer?.id || nextStore.suggestedRetailerId;
-        
+
         console.log(`Transferring ${uncompletedItemIds.length} uncompleted items to next store: ${nextStore.retailerName}`);
 
         const transferPromises = uncompletedItemIds.map(async (itemId) => {
           try {
             const item = itemsToProcess.find(i => i.id === itemId);
-            
+
             await updateItemMutation.mutateAsync({
               itemId,
               updates: {
@@ -1428,40 +1423,40 @@ const ShoppingRoute: React.FC = () => {
         setCompletedItems(new Set()); // Reset completed items for new store
 
         console.log(`Moving to next store: ${nextStore.retailerName}`);
-        
+
         // Force refresh of shopping list data to get updated items with proper retailer assignments
         setTimeout(async () => {
           try {
             console.log('Refreshing shopping list data for next store...');
-            
+
             // Invalidate and refetch shopping list data
             await queryClient.invalidateQueries({ queryKey: [`/api/shopping-lists/${listId}`] });
-            
+
             // Get fresh shopping list data
             const freshListResponse = await fetch(`/api/shopping-lists/${listId}`, {
               credentials: 'include'
             });
-            
+
             if (!freshListResponse.ok) {
               throw new Error('Failed to fetch updated shopping list');
             }
-            
+
             const freshShoppingList = await freshListResponse.json();
             console.log('Fresh shopping list data:', freshShoppingList);
-            
+
             // Filter items for the next store based on updated retailer assignments
             const nextStoreItems = freshShoppingList.items?.filter(item => 
               item.suggestedRetailerId === (nextStore.retailer?.id || nextStore.suggestedRetailerId) &&
               !item.isCompleted
             ) || [];
-            
+
             console.log(`Found ${nextStoreItems.length} items for next store ${nextStore.retailerName}:`, 
               nextStoreItems.map(item => item.productName));
-            
+
             if (nextStoreItems.length > 0) {
               // Generate new optimized route for the next store
               const newRoute = generateOptimizedShoppingRoute(nextStoreItems, nextStore.retailerName);
-              
+
               // Update the optimized route with fresh data
               setOptimizedRoute(prevRoute => ({
                 ...prevRoute,
@@ -1474,21 +1469,10 @@ const ShoppingRoute: React.FC = () => {
                   index === nextStoreIndex ? { ...store, items: nextStoreItems } : store
                 ) || prevRoute.stores
               }));
-              
+
               // Force a small delay to ensure state updates are applied
-              setTimeout(() => {
-                // Show success message with transferred item count
-                const transferredCount = nextStoreItems.filter(item => 
-                  item.notes && item.notes.includes('Moved from')
-                ).length;
-                
-                toast({
-                  title: "Items Transferred Successfully",
-                  description: `${transferredCount} items moved to ${nextStore.retailerName}. Ready to shop!`,
-                  duration: 4000
-                });
-              }, 200);
-              
+
+
               console.log(`Successfully updated route for ${nextStore.retailerName} with ${nextStoreItems.length} items`);
             } else {
               console.log(`No items found for ${nextStore.retailerName}, skipping to next store or ending`);
@@ -1501,7 +1485,7 @@ const ShoppingRoute: React.FC = () => {
             }
           } catch (error) {
             console.error('Failed to refresh shopping list for next store:', error);
-            
+
             // Fallback: show transition message anyway
             toast({
               title: "Moving to Next Store",
@@ -1738,7 +1722,7 @@ const ShoppingRoute: React.FC = () => {
             // Check for duplicates before adding
             const existingItemIds = new Set(store.items.map(item => item.id));
             const itemsToAdd = uncompletedItems.filter(item => !existingItemIds.has(item.id));
-            
+
             return {
               ...store,
               items: [...store.items, ...itemsToAdd.map(item => ({
@@ -1851,7 +1835,7 @@ const ShoppingRoute: React.FC = () => {
           try {
             console.log('Refetching shopping list to get updated items for next store...');
             await shoppingListQuery.refetch();
-            
+
             // Get fresh shopping list data
             const updatedList = shoppingListQuery.data;
             if (!updatedList?.items) {
@@ -1864,7 +1848,7 @@ const ShoppingRoute: React.FC = () => {
             const storeItems = updatedList.items.filter(item => 
               item.suggestedRetailerId === nextStoreRetailerId && !item.isCompleted
             );
-            
+
             console.log(`Found ${storeItems.length} items for ${nextStore.retailerName} (retailer ID: ${nextStoreRetailerId}):`, 
               storeItems.map(i => `${i.productName} (ID: ${i.id})`));
 
@@ -1957,6 +1941,16 @@ const ShoppingRoute: React.FC = () => {
   // Track if user has actually started shopping (moved aisles or completed items)
   const [hasStartedShopping, setHasStartedShopping] = useState(false);
 
+  // Set hasStartedShopping when user makes progress
+  useEffect(() => {
+    if (completedItems.size > 0 || currentAisleIndex > 0 || currentStoreIndex > 0) {
+      if (!hasStartedShopping) {
+        setHasStartedShopping(true);
+        console.log('User has started shopping - will now save session');
+      }
+    }
+  }, [completedItems.size, currentAisleIndex, currentStoreIndex, hasStartedShopping]);
+
   // Save session before app closes or page unloads
   useEffect(() => {
         const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -1980,19 +1974,14 @@ const ShoppingRoute: React.FC = () => {
     };
   }, [optimizedRoute, selectedPlanData, currentStoreIndex, currentAisleIndex, completedItems, hasStartedShopping]);
 
-  // Save session immediately when route is created and on any state change
+  // Save session only when user has started shopping or made progress
   useEffect(() => {
-    if (optimizedRoute && selectedPlanData) {
+    if (optimizedRoute && selectedPlanData && hasStartedShopping) {
       savePersistentShoppingSession(selectedPlanData, optimizedRoute);
     }
   }, [currentStoreIndex, currentAisleIndex, completedItems, optimizedRoute, selectedPlanData, hasStartedShopping]);
 
-  // Save session when the route is initially created
-  useEffect(() => {
-    if (optimizedRoute && selectedPlanData) {
-      savePersistentShoppingSession(selectedPlanData, optimizedRoute);
-    }
-  }, [optimizedRoute, selectedPlanData]);
+  // Don't save session immediately when route is created - only save when user actually starts shopping
 
   // Robust item transfer with proper state management and error handling
   const moveItemToNextStore = useCallback(async (item: any) => {
@@ -2000,7 +1989,7 @@ const ShoppingRoute: React.FC = () => {
       console.error('Cannot move item: not a multi-store route');
       return;
     }
-    
+
     const nextStoreIndex = currentStoreIndex + 1;
     if (nextStoreIndex >= optimizedRoute.stores.length) {
       toast({
@@ -2012,7 +2001,7 @@ const ShoppingRoute: React.FC = () => {
     }
 
     const nextStore = optimizedRoute.stores[nextStoreIndex];
-    
+
     // Store original state for potential rollback
     const originalRoute = optimizedRoute;
 
@@ -2054,7 +2043,7 @@ const ShoppingRoute: React.FC = () => {
         // Regenerate current store route with error handling
         let newAisleGroups = [];
         const currentStoreItems = newStores[currentStoreIndex]?.items || [];
-        
+
         if (currentStoreItems.length > 0) {
           try {
             const route = generateOptimizedShoppingRoute(
@@ -2091,10 +2080,10 @@ const ShoppingRoute: React.FC = () => {
 
     } catch (error) {
       console.error('Failed to move item:', error);
-      
+
       // Rollback to original state on error
       setOptimizedRoute(originalRoute);
-      
+
       toast({
         title: "Failed to Move Item",
         description: "Please try again or contact support if the issue persists",
@@ -2452,14 +2441,28 @@ const ShoppingRoute: React.FC = () => {
                                             )
                                           }));
 
-                                          return { ...prevRoute, aisleGroups: newAisleGroups };
+                                          // Also update stores array if this is a multi-store plan
+                                          let updatedStores = prevRoute.stores;
+                                          if (prevRoute.isMultiStore && prevRoute.stores) {
+                                            updatedStores = prevRoute.stores.map((store: any, storeIndex: number) => {
+                                              if (storeIndex === currentStoreIndex) {
+                                                return {
+                                                  ...store,
+                                                  items: store.items.map((storeItem: any) => 
+                                                    storeItem.id === item.id 
+                                                      ? { ...storeItem, quantity: newQuantity }
+                                                      : storeItem
+                                                  )
+                                                };
+                                              }
+                                              return store;
+                                            });
+                                          }
+
+                                          return { ...prevRoute, aisleGroups: newAisleGroups, stores: updatedStores };
                                         });
 
-                                        toast({
-                                          title: "Quantity Updated",
-                                          description: `${item.productName} quantity changed to ${newQuantity}`,
-                                          duration: 2000
-                                        });
+
                                       }
                                     }}
                                     className="w-6 h-6 rounded-full bg-white border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-sm font-medium"
@@ -2490,14 +2493,28 @@ const ShoppingRoute: React.FC = () => {
                                           )
                                         }));
 
-                                        return { ...prevRoute, aisleGroups: newAisleGroups };
+                                        // Also update stores array if this is a multi-store plan
+                                        let updatedStores = prevRoute.stores;
+                                        if (prevRoute.isMultiStore && prevRoute.stores) {
+                                          updatedStores = prevRoute.stores.map((store: any, storeIndex: number) => {
+                                            if (storeIndex === currentStoreIndex) {
+                                              return {
+                                                ...store,
+                                                items: store.items.map((storeItem: any) => 
+                                                  storeItem.id === item.id 
+                                                    ? { ...storeItem, quantity: newQuantity }
+                                                    : storeItem
+                                                )
+                                              };
+                                            }
+                                            return store;
+                                          });
+                                        }
+
+                                        return { ...prevRoute, aisleGroups: newAisleGroups, stores: updatedStores };
                                       });
 
-                                      toast({
-                                        title: "Quantity Updated",
-                                        description: `${item.productName} quantity changed to ${newQuantity}`,
-                                        duration: 2000
-                                      });
+
                                     }}
                                     className="w-6 h-6 rounded-full bg-white border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-sm font-medium"
                                   >
@@ -2540,7 +2557,7 @@ const ShoppingRoute: React.FC = () => {
                                     itemId: item.id,
                                     updates: {
                                       notes: 'Saved for future trip',
-                                      isCompleted: false
+                                      isCompletedfalse
                                     }
                                   });
 
@@ -2560,11 +2577,6 @@ const ShoppingRoute: React.FC = () => {
                                     };
                                   });
 
-                                  toast({
-                                    title: "Item Saved for Later",
-                                    description: `${item.productName} will remain on your list for next time`,
-                                    duration: 3000
-                                  });
 
                                   // Check if aisle is now empty after a brief delay
                                   setTimeout(() => {
@@ -2602,11 +2614,7 @@ const ShoppingRoute: React.FC = () => {
                                     queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
                                     queryClient.invalidateQueries({ queryKey: [`/api/shopping-lists/${listId}`] });
 
-                                    toast({
-                                      title: "Item Removed",
-                                      description: `${item.productName} has been removed from your list`,
-                                      duration: 3000
-                                    });
+
                                   } catch (error) {
                                     console.error('Failed to remove item:', error);
                                     toast({
@@ -2668,11 +2676,6 @@ const ShoppingRoute: React.FC = () => {
                                     return updatedRoute;
                                   });
 
-                                  toast({
-                                    title: "Item Saved for Later",
-                                    description: `${item.productName} will remain on your list for next time`,
-                                    duration: 3000
-                                  });
 
                                   // Check if aisle is now empty after a brief delay
                                   setTimeout(() => {
@@ -2736,11 +2739,7 @@ const ShoppingRoute: React.FC = () => {
                                     queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
                                     queryClient.invalidateQueries({ queryKey: [`/api/shopping-lists/${listId}`] });
 
-                                    toast({
-                                      title: "Item Removed",
-                                      description: `${item.productName} has been removed from your list`,
-                                      duration: 3000
-                                    });
+
                                   } catch (error) {
                                     console.error('Failed to remove item:', error);
                                     toast({
@@ -2914,18 +2913,18 @@ const ShoppingRoute: React.FC = () => {
                         console.log(`Switching to store ${index}: ${store.retailerName} via click`);
                         setCurrentStoreIndex(index);
                         setCurrentAisleIndex(0);
-                        
+
                         // Get the current store data and regenerate route
                         setTimeout(() => {
                           // Use the current state of the store from optimizedRoute
                           setOptimizedRoute(prevRoute => {
                             const currentStore = prevRoute.stores[index];
                             console.log(`Switching to store ${index}: ${currentStore.retailerName} with ${currentStore.items.length} total items`);
-                            
+
                             if (currentStore.items.length > 0) {
                               const storeRoute = generateOptimizedShoppingRoute(currentStore.items, currentStore.retailerName);
                               console.log(`Generated route for ${currentStore.retailerName} with ${storeRoute.aisleGroups.length} aisles`);
-                              
+
                               return {
                                 ...prevRoute,
                                 aisleGroups: storeRoute.aisleGroups,
@@ -2982,21 +2981,21 @@ const ShoppingRoute: React.FC = () => {
                     onClick={() => {
                       const prevStoreIndex = Math.max(0, currentStoreIndex - 1);
                       const prevStore = optimizedRoute.stores[prevStoreIndex];
-                      
+
                       setCurrentStoreIndex(prevStoreIndex);
                       setCurrentAisleIndex(0);
-                      
+
                       console.log(`Navigating to previous store ${prevStoreIndex}: ${prevStore.retailerName}`);
-                      
+
                       // Regenerate route for previous store
                       setTimeout(() => {
                         setOptimizedRoute(prevRoute => {
                           const targetStore = prevRoute.stores[prevStoreIndex];
-                          
+
                           if (targetStore.items.length > 0) {
                             const storeRoute = generateOptimizedShoppingRoute(targetStore.items, targetStore.retailerName);
                             console.log(`Regenerated route for previous store ${targetStore.retailerName} with ${storeRoute.aisleGroups.length} aisles`);
-                            
+
                             return {
                               ...prevRoute,
                               aisleGroups: storeRoute.aisleGroups,
@@ -3035,16 +3034,16 @@ const ShoppingRoute: React.FC = () => {
                         setCurrentAisleIndex(0); // Reset to first aisle of new store
 
                         console.log(`Navigating to store ${nextStoreIndex}: ${nextStore.retailerName} with ${nextStore.items?.length || 0} items`);
-                        
+
                         // Regenerate route for next store
                         setTimeout(() => {
                           setOptimizedRoute(prevRoute => {
                             const targetStore = prevRoute.stores[nextStoreIndex];
-                            
+
                             if (targetStore.items.length > 0) {
                               const storeRoute = generateOptimizedShoppingRoute(targetStore.items, targetStore.retailerName);
                               console.log(`Regenerated route for next store ${targetStore.retailerName} with ${storeRoute.aisleGroups.length} aisles`);
-                              
+
                               return {
                                 ...prevRoute,
                                 aisleGroups: storeRoute.aisleGroups,

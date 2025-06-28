@@ -459,6 +459,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Email integration OAuth routes
+  app.get('/api/auth/email/:provider', async (req: Request, res: Response) => {
+    try {
+      const { provider } = req.params;
+      const { userId, redirect } = req.query;
+
+      if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+
+      const { EmailIntegrationService } = await import('./services/emailIntegration');
+      const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/email/${provider}/callback`;
+      
+      const authUrl = EmailIntegrationService.generateAuthUrl(
+        provider,
+        parseInt(userId as string),
+        redirectUri
+      );
+
+      // Store redirect URL in session/state for after OAuth
+      res.redirect(authUrl);
+    } catch (error) {
+      console.error('Email OAuth initiation error:', error);
+      handleError(res, error);
+    }
+  });
+
+  app.get('/api/auth/email/:provider/callback', async (req: Request, res: Response) => {
+    try {
+      const { provider } = req.params;
+      const { code, state, error } = req.query;
+
+      if (error) {
+        return res.redirect(`/profile?error=oauth_error&message=${error}`);
+      }
+
+      if (!code || !state) {
+        return res.redirect('/profile?error=missing_oauth_data');
+      }
+
+      // Extract user ID from state
+      const [userId] = (state as string).split('-');
+      const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/email/${provider}/callback`;
+
+      const { EmailIntegrationService } = await import('./services/emailIntegration');
+      
+      // Exchange code for tokens
+      const tokens = await EmailIntegrationService.exchangeCodeForToken(
+        provider,
+        code as string,
+        redirectUri
+      );
+
+      // Store encrypted tokens
+      await EmailIntegrationService.storeEmailCredentials(
+        parseInt(userId),
+        provider,
+        tokens
+      );
+
+      // Redirect back to profile or onboarding
+      res.redirect('/profile?success=email_connected');
+    } catch (error) {
+      console.error('Email OAuth callback error:', error);
+      res.redirect('/profile?error=oauth_callback_failed');
+    }
+  });
+
   // API Routes
   // Shopping lists endpoints
   app.get('/api/shopping-lists', async (req: Request, res: Response) => {
@@ -511,6 +579,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(suggestions);
     } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Add shopping list item
+  app.post('/api/shopping-list/items', sanitizeInput, async (req: Request, res: Response) => {
+    try {
+      const { shoppingListId, productName, quantity, unit } = req.body;
+      
+      if (!shoppingListId || !productName) {
+        return res.status(400).json({ message: 'Shopping list ID and product name are required' });
+      }
+      
+      const validQuantity = parseInt(quantity) || 1;
+      const validUnit = unit || 'COUNT';
+      
+      console.log(`Adding item to shopping list ${shoppingListId}:`, { productName, quantity: validQuantity, unit: validUnit });
+      
+      const newItem = await storage.createShoppingListItem({
+        shoppingListId,
+        productName: productName.trim(),
+        quantity: validQuantity,
+        unit: validUnit,
+        isCompleted: false
+      });
+      
+      console.log(`Successfully added item:`, newItem);
+      res.json(newItem);
+    } catch (error) {
+      console.error('Error adding shopping list item:', error);
       handleError(res, error);
     }
   });

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
@@ -43,7 +42,8 @@ import {
   Plus,
   MapPin,
   Heart,
-  ShoppingCart
+  ShoppingCart,
+  Mail
 } from 'lucide-react';
 import { getCompanyLogo } from '@/lib/imageUtils';
 
@@ -59,7 +59,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [selectedRetailers, setSelectedRetailers] = useState<number[]>([]);
   const [connectionType, setConnectionType] = useState<'account' | 'circular'>('account');
-  
+
   // Profile setup state
   const [profileData, setProfileData] = useState({
     zipCode: '',
@@ -77,7 +77,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
     storeCredentials: boolean;
   }}>({});
 
-  const totalSteps = 4;
+  const totalSteps = 5;
   const progress = (currentStep / totalSteps) * 100;
 
   // Get all available retailers
@@ -182,7 +182,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
     if (selectedRetailers.length > 0) {
       const connections = selectedRetailers.map(retailerId => {
         const creds = retailerCredentials[retailerId];
-        
+
         if (connectionType === 'circular') {
           return {
             retailerId,
@@ -408,6 +408,69 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
         );
 
       case 4:
+        return (
+          <Card>
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+                <Mail className="h-6 w-6 text-blue-600" />
+              </div>
+              <CardTitle>Email Receipt Scanning (Optional)</CardTitle>
+              <CardDescription>
+                Connect your email to automatically find and process receipts from your shopping
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-medium text-blue-900 mb-2">How it works:</h4>
+                <ul className="text-sm text-blue-700 space-y-1">
+                  <li>✓ Secure OAuth connection to your email</li>
+                  <li>✓ Automatically detects receipt emails</li>
+                  <li>✓ Builds your shopping history automatically</li>
+                  <li>✓ Improves recommendations over time</li>
+                </ul>
+              </div>
+
+              <div className="space-y-3">
+                <h4 className="font-medium">Connect Your Email Provider:</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex items-center space-x-2 h-12"
+                    onClick={() => window.location.href = `/api/auth/email/gmail?userId=${user?.id}&redirect=/onboarding`}
+                  >
+                    <svg viewBox="0 0 24 24" className="w-5 h-5">
+                      <path fill="currentColor" d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.910 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"/>
+                    </svg>
+                    <span>Gmail</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex items-center space-x-2 h-12"
+                    onClick={() => window.location.href = `/api/auth/email/outlook?userId=${user?.id}&redirect=/onboarding`}
+                  >
+                    <svg viewBox="0 0 24 24" className="w-5 h-5">
+                      <path fill="currentColor" d="M7.462 2.5c-1.35 0-2.462 1.112-2.462 2.462v13.076c0 1.35 1.112 2.462 2.462 2.462h9.076c1.35 0 2.462-1.112 2.462-2.462V7.615L14.385 3H7.462z"/>
+                    </svg>
+                    <span>Outlook</span>
+                  </Button>
+                </div>
+
+                <Button
+                  variant="ghost"
+                  className="w-full"
+                  onClick={handleNext}
+                >
+                  Skip for now
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      
+
+      case 5:
         if (selectedRetailers.length === 0) {
           return (
             <Card>
