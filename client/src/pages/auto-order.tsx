@@ -151,14 +151,16 @@ const AutoOrder: React.FC = () => {
 
       return () => {
         clearTimeout(step2Timer);
+        clearTimeout(step3Timer);
+        clearTimeout(step4Timer);
       };
     }, 500); // 500ms debounce
 
-      return () => {
-        clearTimeout(startTimer);
-      };
-    }
-  }, [listId, shoppingList, currentStep]);
+    return () => {
+      clearTimeout(startTimer);
+    };
+  }
+}, [listId, shoppingList, currentStep]);
 
   const handlePlaceOrder = async () => {
     if (!orderResults) return;
