@@ -116,48 +116,47 @@ const AutoOrder: React.FC = () => {
 
     if (listId && shoppingList && currentStep === 0) {
       startTimer = setTimeout(() => {
-      console.log('Starting optimization process...');
+        console.log('Starting optimization process...');
 
-      // Step 1: Start analyzing
-      setCurrentStep(1);
+        // Step 1: Start analyzing
+        setCurrentStep(1);
 
-      // Step 2: Move to price finding after 2 seconds
-      const step2Timer = setTimeout(() => {
-        console.log('Moving to step 2 - Finding best prices');
-        setCurrentStep(2);
+        // Step 2: Move to price finding after 2 seconds
+        const step2Timer = setTimeout(() => {
+          console.log('Moving to step 2 - Finding best prices');
+          setCurrentStep(2);
 
-        // Start the optimization mutations
-        singleStoreMutation.mutate();
-        bestValueMutation.mutate();
-        balancedMutation.mutate();
-      }, 3000);
+          // Start the optimization mutations
+          singleStoreMutation.mutate();
+          bestValueMutation.mutate();
+          balancedMutation.mutate();
+        }, 3000);
 
-      // Step 3: Move to optimization after 4 seconds
-      const step3Timer = setTimeout(() => {
-        console.log('Moving to step 3 - Optimizing plan');
-        setCurrentStep(3);
-      }, 3000);
+        // Step 3: Move to optimization after 4 seconds
+        const step3Timer = setTimeout(() => {
+          console.log('Moving to step 3 - Optimizing plan');
+          setCurrentStep(3);
+        }, 3000);
 
-      // Step 4: Move to final results after another 3 seconds (increased delay)
+        // Step 4: Move to final results after another 3 seconds (increased delay)
         const step4Timer = setTimeout(() => {
           console.log('Moving to step 4 - Completing optimization');
           setCurrentStep(4);
         }, 3000);
 
         return () => {
+          clearTimeout(step2Timer);
+          clearTimeout(step3Timer);
           clearTimeout(step4Timer);
         };
-      }, 3000);
-
-      return () => {
-        clearTimeout(step2Timer);
-      };
       }, 500); // 500ms debounce
-
-      return () => {
-        clearTimeout(startTimer);
-      };
     }
+
+    return () => {
+      if (startTimer) {
+        clearTimeout(startTimer);
+      }
+    };
   }, [listId, shoppingList, currentStep]);
 
   const handlePlaceOrder = async () => {
