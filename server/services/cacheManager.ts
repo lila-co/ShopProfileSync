@@ -1,98 +1,215 @@
+import { logger } from './logger.js';
 
-export class CacheManager {
-  private static instance: CacheManager;
-  private memoryCache: Map<string, { data: any; timestamp: number; ttl: number }> = new Map();
-  private maxCacheSize = 10000;
-  private cleanupInterval: NodeJS.Timeout;
+interface CacheEntry<T> {
+  value: T;
+  timestamp: number;
+  ttl: number;
+  accessCount: number;
+  lastAccessed: number;
+}
 
-  private constructor() {
-    // Auto-cleanup expired entries every 5 minutes
+interface CacheMetrics {
+  hits: number;
+  misses: number;
+  evictions: number;
+  totalMemory: number;
+}
+
+class AdvancedCacheManager {
+  private cache = new Map<string, CacheEntry<any>>();
+  private maxSize = 10000;
+  private metrics: CacheMetrics = { hits: 0, misses: 0, evictions: 0, totalMemory: 0 };
+  private cleanupInterval?: NodeJS.Timeout;
+
+  constructor() {
+    // Cleanup expired entries every 5 minutes
     this.cleanupInterval = setInterval(() => {
-      this.cleanupExpiredEntries();
-    }, 5 * 60 * 1000);
+      this.cleanupExpired();
+    }, 300000);
   }
 
-  static getInstance(): CacheManager {
-    if (!CacheManager.instance) {
-      CacheManager.instance = new CacheManager();
+  set<T>(key: string, value: T, ttl: number = 3600000): void { // Default 1 hour TTL
+    try {
+      const now = Date.now();
+      
+      // Evict if at capacity
+      if (this.cache.size >= this.maxSize) {
+        this.evictLRU();
+      }
+
+      const entry: CacheEntry<T> = {
+        value,
+        timestamp: now,
+        ttl,
+        accessCount: 0,
+        lastAccessed: now
+      };
+
+      this.cache.set(key, entry);
+      this.updateMemoryMetrics();
+    } catch (error) {
+      logger.error('Cache set operation failed', { key, error });
     }
-    return CacheManager.instance;
   }
 
-  set(key: string, data: any, ttlMinutes: number = 30): void {
-    // Maintain cache size
-    if (this.memoryCache.size >= this.maxCacheSize) {
-      this.evictOldestEntries(Math.floor(this.maxCacheSize * 0.8));
-    }
+  get<T>(key: string): T | null {
+    try {
+      const entry = this.cache.get(key) as CacheEntry<T> | undefined;
+      
+      if (!entry) {
+        this.metrics.misses++;
+        return null;
+      }
 
-    this.memoryCache.set(key, {
-      data,
-      timestamp: Date.now(),
-      ttl: ttlMinutes * 60 * 1000
-    });
-  }
+      const now = Date.now();
+      
+      // Check if expired
+      if (now - entry.timestamp > entry.ttl) {
+        this.cache.delete(key);
+        this.metrics.misses++;
+        return null;
+      }
 
-  get(key: string): any | null {
-    const cached = this.memoryCache.get(key);
-    
-    if (!cached) return null;
-    
-    // Check if expired
-    if (Date.now() - cached.timestamp > cached.ttl) {
-      this.memoryCache.delete(key);
+      // Update access statistics
+      entry.accessCount++;
+      entry.lastAccessed = now;
+      this.metrics.hits++;
+
+      return entry.value;
+    } catch (error) {
+      logger.error('Cache get operation failed', { key, error });
+      this.metrics.misses++;
       return null;
     }
-    
-    return cached.data;
   }
 
-  delete(key: string): void {
-    this.memoryCache.delete(key);
+  // High-performance batch operations
+  mget<T>(keys: string[]): Map<string, T> {
+    const results = new Map<string, T>();
+    
+    for (const key of keys) {
+      const value = this.get<T>(key);
+      if (value !== null) {
+        results.set(key, value);
+      }
+    }
+    
+    return results;
+  }
+
+  mset<T>(entries: Array<{ key: string; value: T; ttl?: number }>): void {
+    for (const { key, value, ttl } of entries) {
+      this.set(key, value, ttl);
+    }
+  }
+
+  // Invalidate cache patterns
+  invalidatePattern(pattern: string): number {
+    const regex = new RegExp(pattern.replace(/\*/g, '.*'));
+    let deletedCount = 0;
+    
+    const keysToDelete: string[] = [];
+    this.cache.forEach((_, key) => {
+      if (regex.test(key)) {
+        keysToDelete.push(key);
+      }
+    });
+    
+    keysToDelete.forEach(key => {
+      this.cache.delete(key);
+      deletedCount++;
+    });
+    
+    this.updateMemoryMetrics();
+    return deletedCount;
+  }
+
+  // Cache warming for critical data
+  async warm<T>(key: string, fetchFn: () => Promise<T>, ttl?: number): Promise<T> {
+    const cached = this.get<T>(key);
+    if (cached !== null) {
+      return cached;
+    }
+
+    try {
+      const value = await fetchFn();
+      this.set(key, value, ttl);
+      return value;
+    } catch (error) {
+      logger.error('Cache warming failed', { key, error });
+      throw error;
+    }
+  }
+
+  private evictLRU(): void {
+    let oldestKey = '';
+    let oldestTime = Date.now();
+
+    this.cache.forEach((entry, key) => {
+      if (entry.lastAccessed < oldestTime) {
+        oldestTime = entry.lastAccessed;
+        oldestKey = key;
+      }
+    });
+
+    if (oldestKey) {
+      this.cache.delete(oldestKey);
+      this.metrics.evictions++;
+    }
+  }
+
+  private cleanupExpired(): void {
+    const now = Date.now();
+    let cleanedCount = 0;
+    const expiredKeys: string[] = [];
+
+    this.cache.forEach((entry, key) => {
+      if (now - entry.timestamp > entry.ttl) {
+        expiredKeys.push(key);
+      }
+    });
+
+    expiredKeys.forEach(key => {
+      this.cache.delete(key);
+      cleanedCount++;
+    });
+
+    if (cleanedCount > 0) {
+      logger.info('Cache cleanup completed', { 
+        cleanedEntries: cleanedCount,
+        remainingEntries: this.cache.size 
+      });
+      this.updateMemoryMetrics();
+    }
+  }
+
+  private updateMemoryMetrics(): void {
+    // Rough memory estimation
+    this.metrics.totalMemory = this.cache.size * 1024; // Estimate 1KB per entry
+  }
+
+  getMetrics(): CacheMetrics & { hitRate: number; size: number } {
+    const total = this.metrics.hits + this.metrics.misses;
+    const hitRate = total > 0 ? (this.metrics.hits / total) * 100 : 0;
+    
+    return {
+      ...this.metrics,
+      hitRate,
+      size: this.cache.size
+    };
   }
 
   clear(): void {
-    this.memoryCache.clear();
+    this.cache.clear();
+    this.metrics = { hits: 0, misses: 0, evictions: 0, totalMemory: 0 };
   }
 
-  // Clear cache entries by pattern
-  clearByPattern(pattern: string): void {
-    for (const [key] of this.memoryCache) {
-      if (key.includes(pattern)) {
-        this.memoryCache.delete(key);
-      }
+  destroy(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
     }
-  }
-
-  private cleanupExpiredEntries(): void {
-    const now = Date.now();
-    let expiredCount = 0;
-    
-    for (const [key, value] of this.memoryCache) {
-      if (now - value.timestamp > value.ttl) {
-        this.memoryCache.delete(key);
-        expiredCount++;
-      }
-    }
-    
-    if (expiredCount > 0) {
-      console.log(`Cache cleanup: removed ${expiredCount} expired entries`);
-    }
-  }
-
-  private evictOldestEntries(targetSize: number): void {
-    const entries = Array.from(this.memoryCache.entries());
-    entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
-    
-    const toRemove = entries.slice(0, entries.length - targetSize);
-    toRemove.forEach(([key]) => this.memoryCache.delete(key));
-  }
-
-  getCacheStats(): { size: number; maxSize: number; hitRate?: number } {
-    return {
-      size: this.memoryCache.size,
-      maxSize: this.maxCacheSize
-    };
+    this.clear();
   }
 }
 
-export const cacheManager = CacheManager.getInstance();
+export const cacheManager = new AdvancedCacheManager();

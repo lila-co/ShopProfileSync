@@ -412,13 +412,24 @@ interface ProductPurchasePattern {
   lastPurchaseDate: Date;
 }
 
+import { cacheManager } from './cacheManager.js';
+
 export async function generateRecommendations(
   user: User,
   purchases: Purchase[]
 ): Promise<InsertRecommendation[]> {
   console.log("Generating recommendations for user:", user.id);
 
-  // Step 1: Analyze purchase patterns
+  // Check cache first for performance optimization
+  const cacheKey = `recommendations:${user.id}:${purchases.length}`;
+  const cached = cacheManager.get<InsertRecommendation[]>(cacheKey);
+  
+  if (cached !== null) {
+    console.log("Returning cached recommendations for user:", user.id);
+    return cached;
+  }
+
+  // Step 1: Analyze purchase patterns (optimized for performance)
   const patterns = analyzePurchasePatterns(purchases);
 
   // Step 2: Filter out recently purchased items (within configurable threshold)
@@ -427,6 +438,10 @@ export async function generateRecommendations(
   // Step 3: Find the best deals for products that need to be repurchased soon
   const recommendations = generateProductRecommendations(filteredPatterns, user);
 
+  // Cache recommendations for 30 minutes
+  cacheManager.set(cacheKey, recommendations, 1800000);
+  
+  console.log(`Generated ${recommendations.length} recommendations for user ${user.id}`);
   return recommendations;
 }
 
