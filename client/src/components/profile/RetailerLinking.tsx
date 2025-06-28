@@ -603,6 +603,17 @@ const RetailerLinking: React.FC = () => {
                       />
                       <span className="text-sm">Circular Only</span>
                     </label>
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="connectionType"
+                        value="email"
+                        checked={connectionType === 'email'}
+                        onChange={(e) => setConnectionType('email')}
+                        className="text-primary"
+                      />
+                      <span className="text-sm">Email Scanning</span>
+                    </label>
                   </div>
                 </div>
 
@@ -632,6 +643,52 @@ const RetailerLinking: React.FC = () => {
                       <div>✓ Get weekly deals and promotions</div>
                       <div>✓ AI-powered deal matching</div>
                       <div>✓ No personal account access needed</div>
+                    </div>
+                  </div>
+                )}
+
+                {connectionType === 'email' && (
+                  <div className="bg-green-50 p-3 rounded-md">
+                    <h4 className="font-medium text-green-900 mb-1">Email Receipt Scanning</h4>
+                    <p className="text-sm text-green-700 mb-2">
+                      Connect your email to automatically scan for receipts from {selectedRetailer?.name}. 
+                      We'll build your shopping history automatically.
+                    </p>
+                    <div className="text-xs text-green-600 space-y-0.5">
+                      <div>✓ Automatic receipt detection</div>
+                      <div>✓ Historical purchase tracking</div>
+                      <div>✓ Enhanced recommendations</div>
+                      <div>✓ Secure OAuth authentication</div>
+                    </div>
+                    
+                    <div className="mt-3 space-y-2">
+                      <Label>Email Provider</Label>
+                      <div className="flex space-x-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center space-x-2"
+                          onClick={() => window.location.href = `/api/auth/email/gmail?userId=${1}`}
+                        >
+                          <svg viewBox="0 0 24 24" className="w-4 h-4">
+                            <path fill="currentColor" d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.910 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"/>
+                          </svg>
+                          <span>Gmail</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center space-x-2"
+                          onClick={() => window.location.href = `/api/auth/email/outlook?userId=${1}`}
+                        >
+                          <svg viewBox="0 0 24 24" className="w-4 h-4">
+                            <path fill="currentColor" d="M7.462 2.5c-1.35 0-2.462 1.112-2.462 2.462v13.076c0 1.35 1.112 2.462 2.462 2.462h9.076c1.35 0 2.462-1.112 2.462-2.462V7.615L14.385 3H7.462z"/>
+                          </svg>
+                          <span>Outlook</span>
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 )}
