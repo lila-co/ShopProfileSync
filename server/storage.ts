@@ -33,6 +33,7 @@ export interface IStorage {
   getRetailerAccounts(): Promise<RetailerAccount[]>;
   getRetailerAccount(id: number): Promise<RetailerAccount | undefined>;
   createRetailerAccount(account: InsertRetailerAccount): Promise<RetailerAccount>;
+  updateRetailerAccount(accountId: number, updates: any): Promise<any>;
 
   // Product methods
   getProducts(): Promise<Product[]>;
@@ -617,6 +618,49 @@ export class MemStorage implements IStorage {
     const newAccount: RetailerAccount = { ...account, id, userId };
     this.retailerAccounts.set(id, newAccount);
     return newAccount;
+  }
+
+  async updateRetailerAccount(accountId: number, updates: any): Promise<any> {
+    try {
+      const accountIndex = this.retailerAccounts.findIndex(account => account.id === accountId);
+      if (accountIndex === -1) {
+        return null;
+      }
+
+      // Update the account with new data
+      this.retailerAccounts[accountIndex] = {
+        ...this.retailerAccounts[accountIndex],
+        ...updates,
+        id: accountId // Ensure ID doesn't change
+      };
+
+      // Return the updated account with retailer info
+      const updatedAccount = this.retailerAccounts[accountIndex];
+      const retailer = await this.getRetailer(updatedAccount.retailerId);
+
+      return {
+        ...updatedAccount,
+        retailer
+      };
+    } catch (error) {
+      console.error('Error updating retailer account:', error);
+      return null;
+    }
+  }
+
+  async deleteRetailerAccount(accountId: number): Promise<boolean> {
+    try {
+      const accountIndex = this.retailerAccounts.findIndex(account => account.id === accountId);
+      if (accountIndex === -1) {
+        return false;
+      }
+
+      this.retailerAccounts.splice(accountIndex, 1);
+      return true;
+    } catch (error) {
+      console.error('Error deleting retailer account:', error);
+      return false;
+    }
   }
 
   // Product methods
@@ -1324,7 +1368,8 @@ export class MemStorage implements IStorage {
     return Array.from(this.affiliateProducts.values()).filter(product => product.featured);
   }
 
-  async createAffiliateProduct(product: InsertAffiliateProduct): Promise<AffiliateProduct> {
+  async createAffiliateProduct(product: InsertAffiliateProduct): Promise<AffiliateProduct><replit_final_file>
+{
     const id = this.affiliateProductIdCounter++;
     const newProduct: AffiliateProduct = { ...product, id, createdAt: new Date() };
     this.affiliateProducts.set(id, newProduct);
