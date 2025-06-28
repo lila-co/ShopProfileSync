@@ -828,8 +828,7 @@ const ShoppingRoute: React.FC = () => {
             const betterAisleName = betterAisleInfo.aisle;
 
             // Remove from current aisle if needed
-            if (betterAisleName !== aisleName) {
-              const currentAisleItems = aisleGroups[aisleName]?.items || [];
+            if (betterAisleName !== aisleName) {              const currentAisleItems = aisleGroups[aisleName]?.items || [];
               const itemIndex = currentAisleItems.findIndex(i => i.id === item.id);
               if (itemIndex > -1) {
                 currentAisleItems.splice(itemIndex, 1);
@@ -1033,7 +1032,7 @@ const ShoppingRoute: React.FC = () => {
         queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
         queryClient.invalidateQueries({ queryKey: [`/api/shopping-lists/${listId}`] });
 
-        
+
       } catch (error) {
         console.error('Failed to remove item:', error);
         toast({
@@ -1472,7 +1471,7 @@ const ShoppingRoute: React.FC = () => {
               }));
 
               // Force a small delay to ensure state updates are applied
-              
+
 
               console.log(`Successfully updated route for ${nextStore.retailerName} with ${nextStoreItems.length} items`);
             } else {
@@ -1694,8 +1693,8 @@ const ShoppingRoute: React.FC = () => {
     }
 
     try {
-      // Update backend for each moved item<replit_final_file>
-        const updatePromises = uncompletedItems.map(item =>
+      // Update backend for each moved item
+      const updatePromises = uncompletedItems.map(item =>
         updateItemMutation.mutateAsync({
           itemId: item.id,
           updates: {
@@ -2442,10 +2441,28 @@ const ShoppingRoute: React.FC = () => {
                                             )
                                           }));
 
-                                          return { ...prevRoute, aisleGroups: newAisleGroups };
+                                          // Also update stores array if this is a multi-store plan
+                                          let updatedStores = prevRoute.stores;
+                                          if (prevRoute.isMultiStore && prevRoute.stores) {
+                                            updatedStores = prevRoute.stores.map((store: any, storeIndex: number) => {
+                                              if (storeIndex === currentStoreIndex) {
+                                                return {
+                                                  ...store,
+                                                  items: store.items.map((storeItem: any) => 
+                                                    storeItem.id === item.id 
+                                                      ? { ...storeItem, quantity: newQuantity }
+                                                      : storeItem
+                                                  )
+                                                };
+                                              }
+                                              return store;
+                                            });
+                                          }
+
+                                          return { ...prevRoute, aisleGroups: newAisleGroups, stores: updatedStores };
                                         });
 
-                                        
+
                                       }
                                     }}
                                     className="w-6 h-6 rounded-full bg-white border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-sm font-medium"
@@ -2476,10 +2493,28 @@ const ShoppingRoute: React.FC = () => {
                                           )
                                         }));
 
-                                        return { ...prevRoute, aisleGroups: newAisleGroups };
+                                        // Also update stores array if this is a multi-store plan
+                                        let updatedStores = prevRoute.stores;
+                                        if (prevRoute.isMultiStore && prevRoute.stores) {
+                                          updatedStores = prevRoute.stores.map((store: any, storeIndex: number) => {
+                                            if (storeIndex === currentStoreIndex) {
+                                              return {
+                                                ...store,
+                                                items: store.items.map((storeItem: any) => 
+                                                  storeItem.id === item.id 
+                                                    ? { ...storeItem, quantity: newQuantity }
+                                                    : storeItem
+                                                )
+                                              };
+                                            }
+                                            return store;
+                                          });
+                                        }
+
+                                        return { ...prevRoute, aisleGroups: newAisleGroups, stores: updatedStores };
                                       });
 
-                                      
+
                                     }}
                                     className="w-6 h-6 rounded-full bg-white border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-sm font-medium"
                                   >
@@ -2522,7 +2557,7 @@ const ShoppingRoute: React.FC = () => {
                                     itemId: item.id,
                                     updates: {
                                       notes: 'Saved for future trip',
-                                      isCompleted: false
+                                      isCompletedfalse
                                     }
                                   });
 
@@ -2542,7 +2577,7 @@ const ShoppingRoute: React.FC = () => {
                                     };
                                   });
 
-                                  
+
                                   // Check if aisle is now empty after a brief delay
                                   setTimeout(() => {
                                     checkAndHandleEmptyAisle();
@@ -2579,7 +2614,7 @@ const ShoppingRoute: React.FC = () => {
                                     queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
                                     queryClient.invalidateQueries({ queryKey: [`/api/shopping-lists/${listId}`] });
 
-                                    
+
                                   } catch (error) {
                                     console.error('Failed to remove item:', error);
                                     toast({
@@ -2641,7 +2676,7 @@ const ShoppingRoute: React.FC = () => {
                                     return updatedRoute;
                                   });
 
-                                  
+
                                   // Check if aisle is now empty after a brief delay
                                   setTimeout(() => {
                                     checkAndHandleEmptyAisle();
@@ -2704,7 +2739,7 @@ const ShoppingRoute: React.FC = () => {
                                     queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
                                     queryClient.invalidateQueries({ queryKey: [`/api/shopping-lists/${listId}`] });
 
-                                    
+
                                   } catch (error) {
                                     console.error('Failed to remove item:', error);
                                     toast({
