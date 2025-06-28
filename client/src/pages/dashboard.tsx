@@ -8,6 +8,7 @@ import StoreCard from '@/components/dashboard/StoreCard';
 import WeeklyDeals from '@/components/dashboard/WeeklyDeals';
 import ShoppingInsights from '@/components/dashboard/ShoppingInsights';
 import RecommendationCard from '@/components/dashboard/RecommendationCard';
+import { useDashboardData } from '@/hooks/useBatchApi';
 import { Sparkles, Brain, Target, TrendingUp, Clock, MapPin } from 'lucide-react';
 
 interface AIRecommendation {

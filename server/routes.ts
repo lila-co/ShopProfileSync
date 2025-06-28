@@ -1979,6 +1979,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Batch API endpoint for dashboard optimization
+  app.post('/api/batch', async (req: Request, res: Response) => {
+    try {
+      const userId = getCurrentUserId(req);
+      const { requests } = req.body;
+
+      if (!Array.isArray(requests)) {
+        return res.status(400).json({ error: 'Requests must be an array' });
+      }
+
+      const { batchApiService } = await import('./services/batchApiService.js');
+      const responses = await batchApiService.processBatchRequest(requests, userId);
+
+      res.json({ responses });
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
   // Delete shopping list item
   app.delete('/api/shopping-list/items/:itemId', async (req: Request, res: Response) => {
     try {
