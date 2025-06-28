@@ -41,16 +41,23 @@ export class EmailIntegrationService {
       throw new Error(`Unsupported email provider: ${provider}`);
     }
 
+    const clientId = process.env[`${provider.toUpperCase()}_CLIENT_ID`];
+    if (!clientId) {
+      throw new Error(`Missing ${provider.toUpperCase()}_CLIENT_ID environment variable`);
+    }
+
     const params = new URLSearchParams({
-      client_id: process.env[`${provider.toUpperCase()}_CLIENT_ID`] || '',
+      client_id: clientId,
       redirect_uri: redirectUri,
       scope: providerConfig.scopes.join(' '),
       response_type: 'code',
-      state: `${userId}-${provider}-${Date.now()}`, // Include user ID for security
-      access_type: 'offline', // For refresh tokens
-      prompt: 'consent'
+      state: `${userId}-${provider}-${Date.now()}`,
+      access_type: 'offline',
+      prompt: 'consent',
+      include_granted_scopes: 'true'
     });
 
+    console.log(`Generated OAuth URL for ${provider}:`, `${providerConfig.authUrl}?${params.toString()}`);
     return `${providerConfig.authUrl}?${params.toString()}`;
   }
 
@@ -58,15 +65,31 @@ export class EmailIntegrationService {
   static async exchangeCodeForToken(provider: string, code: string, redirectUri: string) {
     const providerConfig = EMAIL_PROVIDERS[provider];
     
-    const response = await axios.post(providerConfig.tokenUrl, {
-      client_id: process.env[`${provider.toUpperCase()}_CLIENT_ID`],
-      client_secret: process.env[`${provider.toUpperCase()}_CLIENT_SECRET`],
-      code,
-      grant_type: 'authorization_code',
-      redirect_uri: redirectUri
-    });
+    const clientId = process.env[`${provider.toUpperCase()}_CLIENT_ID`];
+    const clientSecret = process.env[`${provider.toUpperCase()}_CLIENT_SECRET`];
 
-    return response.data;
+    if (!clientId || !clientSecret) {
+      throw new Error(`Missing OAuth credentials for ${provider}`);
+    }
+
+    try {
+      const response = await axios.post(providerConfig.tokenUrl, {
+        client_id: clientId,
+        client_secret: clientSecret,
+        code,
+        grant_type: 'authorization_code',
+        redirect_uri: redirectUri
+      }, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      });
+
+      return response.data;
+    } catch (error: any) {
+      console.error(`OAuth token exchange failed for ${provider}:`, error.response?.data || error.message);
+      throw new Error(`Failed to exchange authorization code: ${error.response?.data?.error_description || error.message}`);
+    }
   }
 
   // Store encrypted email credentials

@@ -465,12 +465,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { provider } = req.params;
       const { userId, redirect } = req.query;
 
+      console.log(`OAuth initiation for ${provider}:`, { userId, redirect });
+
       if (!userId) {
         return res.status(400).json({ message: 'User ID is required' });
       }
 
+      // Validate environment variables
+      const clientId = process.env[`${provider.toUpperCase()}_CLIENT_ID`];
+      if (!clientId) {
+        console.error(`Missing ${provider.toUpperCase()}_CLIENT_ID environment variable`);
+        return res.redirect(`/profile?error=oauth_config_missing&provider=${provider}`);
+      }
+
       const { EmailIntegrationService } = await import('./services/emailIntegration');
-      const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/email/${provider}/callback`;
+      
+      // Use HTTPS for redirect URI in production
+      const protocol = req.get('x-forwarded-proto') || req.protocol;
+      const host = req.get('host');
+      const redirectUri = `${protocol}://${host}/api/auth/email/${provider}/callback`;
+      
+      console.log(`Using redirect URI: ${redirectUri}`);
       
       const authUrl = EmailIntegrationService.generateAuthUrl(
         provider,
@@ -478,11 +493,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         redirectUri
       );
 
-      // Store redirect URL in session/state for after OAuth
+      console.log(`Redirecting to OAuth URL: ${authUrl}`);
       res.redirect(authUrl);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Email OAuth initiation error:', error);
-      handleError(res, error);
+      res.redirect(`/profile?error=oauth_init_failed&message=${encodeURIComponent(error.message)}`);
     }
   });
 
@@ -491,17 +506,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { provider } = req.params;
       const { code, state, error } = req.query;
 
+      console.log(`OAuth callback for ${provider}:`, { code: !!code, state, error });
+
       if (error) {
-        return res.redirect(`/profile?error=oauth_error&message=${error}`);
+        console.error(`OAuth error for ${provider}:`, error);
+        return res.redirect(`/profile?error=oauth_error&message=${encodeURIComponent(error as string)}`);
       }
 
       if (!code || !state) {
+        console.error('Missing OAuth data:', { code: !!code, state: !!state });
         return res.redirect('/profile?error=missing_oauth_data');
       }
 
       // Extract user ID from state
       const [userId] = (state as string).split('-');
-      const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/email/${provider}/callback`;
+      if (!userId || isNaN(parseInt(userId))) {
+        console.error('Invalid user ID in state:', state);
+        return res.redirect('/profile?error=invalid_state');
+      }
+
+      // Use HTTPS for redirect URI in production
+      const protocol = req.get('x-forwarded-proto') || req.protocol;
+      const host = req.get('host');
+      const redirectUri = `${protocol}://${host}/api/auth/email/${provider}/callback`;
+
+      console.log(`Using redirect URI: ${redirectUri}`);
 
       const { EmailIntegrationService } = await import('./services/emailIntegration');
       
@@ -519,11 +548,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         tokens
       );
 
+      console.log(`Successfully connected ${provider} for user ${userId}`);
+
       // Redirect back to profile or onboarding
       res.redirect('/profile?success=email_connected');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Email OAuth callback error:', error);
-      res.redirect('/profile?error=oauth_callback_failed');
+      const errorMessage = encodeURIComponent(error.message || 'OAuth callback failed');
+      res.redirect(`/profile?error=oauth_callback_failed&details=${errorMessage}`);
     }
   });
 
