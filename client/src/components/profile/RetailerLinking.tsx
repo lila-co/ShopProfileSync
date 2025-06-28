@@ -665,7 +665,11 @@ const RetailerLinking: React.FC = () => {
                         </Button>
                       </div>
                     </div>
+                  </>
+                )}
 
+                {connectionType === 'account' && (
+                  <>
                     <div className="flex items-center space-x-2">
                       <Switch
                         id="remember-me"
