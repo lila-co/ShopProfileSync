@@ -152,7 +152,7 @@ const AutoOrder: React.FC = () => {
       return () => {
         clearTimeout(step2Timer);
       };
-      }, 500); // 500ms debounce
+    }, 500); // 500ms debounce
 
       return () => {
         clearTimeout(startTimer);
