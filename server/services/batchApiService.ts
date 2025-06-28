@@ -122,7 +122,9 @@ class BatchApiService {
 
     switch (endpoint) {
       case '/api/shopping-lists':
-        return await storage.getShoppingListsByUserId(userId);
+        return await storage.getShoppingLists().then(lists => 
+          lists.filter(list => list.userId === userId)
+        );
         
       case '/api/recommendations':
         return await this.getRecommendations(userId);
@@ -146,13 +148,15 @@ class BatchApiService {
         return await this.getMonthlySavings(userId);
         
       case '/api/user/profile':
-        return await storage.getUserById(userId);
+        return await storage.getUser(userId);
         
       case '/api/user/retailer-accounts':
-        return await storage.getRetailerAccountsByUserId(userId);
+        return await storage.getRetailerAccounts().then(accounts => 
+          accounts.filter(account => account.userId === userId)
+        );
         
       case '/api/retailers':
-        return await storage.getAllRetailers();
+        return await storage.getRetailers();
 
       default:
         throw new Error(`Unsupported endpoint: ${endpoint}`);
@@ -169,7 +173,9 @@ class BatchApiService {
     }
 
     // Simplified recommendation logic for batch operations
-    const purchases = await storage.getPurchasesByUserId(userId);
+    const purchases = await storage.getPurchases().then(allPurchases => 
+      allPurchases.filter(purchase => purchase.userId === userId)
+    );
     const recentPurchases = purchases.slice(-50); // Last 50 purchases for performance
     
     // Generate lightweight recommendations
@@ -241,16 +247,18 @@ class BatchApiService {
     }
 
     // Calculate from recent purchases
-    const purchases = await storage.getPurchasesByUserId(userId);
+    const purchases = await storage.getPurchases().then(allPurchases => 
+      allPurchases.filter(purchase => purchase.userId === userId)
+    );
     const thisMonth = new Date().getMonth();
     const thisYear = new Date().getFullYear();
     
     const monthlySavings = purchases
-      .filter(p => {
+      .filter((p: any) => {
         const date = new Date(p.purchaseDate);
         return date.getMonth() === thisMonth && date.getFullYear() === thisYear;
       })
-      .reduce((total, purchase) => {
+      .reduce((total: number, purchase: any) => {
         // Estimate 5-15% savings
         const estimatedSavings = purchase.totalAmount * 0.1;
         return total + estimatedSavings;
