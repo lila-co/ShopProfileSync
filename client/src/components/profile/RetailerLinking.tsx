@@ -764,6 +764,7 @@ const RetailerLinking: React.FC = () => {
               <Button 
                 type="submit" 
                 disabled={linkAccountMutation.isPending}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 shadow-md hover:shadow-lg transition-all duration-200"
               >
                 {linkAccountMutation.isPending 
                   ? "Connecting..." 
