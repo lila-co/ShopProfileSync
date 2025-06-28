@@ -1368,8 +1368,7 @@ export class MemStorage implements IStorage {
     return Array.from(this.affiliateProducts.values()).filter(product => product.featured);
   }
 
-  async createAffiliateProduct(product: InsertAffiliateProduct): Promise<AffiliateProduct><replit_final_file>
-{
+  async createAffiliateProduct(product: InsertAffiliateProduct): Promise<AffiliateProduct> {
     const id = this.affiliateProductIdCounter++;
     const newProduct: AffiliateProduct = { ...product, id, createdAt: new Date() };
     this.affiliateProducts.set(id, newProduct);
