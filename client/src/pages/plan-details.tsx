@@ -906,79 +906,7 @@ const PlanDetails: React.FC = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Store Override Section */}
-      <Card className="mt-4">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Store className="h-5 w-5" />
-              <span>Store Selection</span>
-            </div>
-            {overrideRetailerId && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => {
-                  setOverrideRetailerId(null);
-                  toast({
-                    title: "Store Reset",
-                    description: "Using original retailer suggestions",
-                    duration: 2000
-                  });
-                }}
-              >
-                Reset to Suggested
-              </Button>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {overrideRetailerId ? (
-            <div className="text-sm text-gray-600 mb-2">
-              <strong>Selected Store:</strong> {availableRetailers?.find((r: any) => r.id === overrideRetailerId)?.name}
-            </div>
-          ) : (
-            <div className="text-sm text-gray-600 mb-2">
-              Using suggested retailers based on your plan type
-            </div>
-          )}
-          <Select
-            value={overrideRetailerId?.toString() || ""}
-            onValueChange={(value) => {
-              if (value) {
-                const retailerId = parseInt(value);
-                setOverrideRetailerId(retailerId);
-                toast({
-                  title: "Store Changed",
-                  description: `All items will be purchased from ${availableRetailers?.find((r: any) => r.id === retailerId)?.name}`,
-                  duration: 3000
-                });
-              }
-            }}
-          >
-            <SelectTrigger className="bg-white border-gray-200 hover:border-gray-300 focus:border-purple-500 focus:ring-purple-200">
-              <SelectValue placeholder="Choose a different store (optional)" />
-            </SelectTrigger>
-            <SelectContent className="bg-white border-gray-200 shadow-lg">
-              {availableRetailers?.map((retailer: any) => (
-                <SelectItem 
-                  key={retailer.id} 
-                  value={retailer.id.toString()}
-                  className="hover:bg-gray-50 focus:bg-purple-50 cursor-pointer"
-                >
-                  <div className="flex items-center gap-3 py-1">
-                    <div 
-                      className={`w-3 h-3 rounded-full`}
-                      style={{ backgroundColor: `var(--${retailer.logoColor}-500, #${retailer.logoColor === 'blue' ? '3b82f6' : retailer.logoColor === 'green' ? '10b981' : retailer.logoColor === 'red' ? 'ef4444' : retailer.logoColor === 'orange' ? 'f97316' : '6b7280'})` }}
-                    />
-                    <span className="text-gray-900 font-medium">{retailer.name}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
+      
 
       {/* Resume Session Dialog */}
       <Dialog open={showResumeDialog} onOpenChange={setShowResumeDialog}>
@@ -1122,6 +1050,68 @@ const PlanDetails: React.FC = () => {
                 </div>
                 <div className="text-lg font-bold">{formatPrice(store.subtotal)}</div>
               </CardTitle>
+              
+              {/* Store Selection within the card */}
+              <div className="mt-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Store className="h-4 w-4" />
+                    <span>Store Selection</span>
+                  </div>
+                  {overrideRetailerId && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setOverrideRetailerId(null);
+                        toast({
+                          title: "Store Reset",
+                          description: "Using original retailer suggestions",
+                          duration: 2000
+                        });
+                      }}
+                    >
+                      Reset to Suggested
+                    </Button>
+                  )}
+                </div>
+                
+                <Select
+                  value={overrideRetailerId?.toString() || ""}
+                  onValueChange={(value) => {
+                    if (value) {
+                      const retailerId = parseInt(value);
+                      setOverrideRetailerId(retailerId);
+                      toast({
+                        title: "Store Changed",
+                        description: `All items will be purchased from ${availableRetailers?.find((r: any) => r.id === retailerId)?.name}`,
+                        duration: 3000
+                      });
+                    }
+                  }}
+                >
+                  <SelectTrigger className="bg-white border-gray-200 hover:border-gray-300 focus:border-purple-500 focus:ring-purple-200">
+                    <SelectValue placeholder="Choose a different store (optional)" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border-gray-200 shadow-lg">
+                    {availableRetailers?.map((retailer: any) => (
+                      <SelectItem 
+                        key={retailer.id} 
+                        value={retailer.id.toString()}
+                        className="hover:bg-gray-50 focus:bg-purple-50 cursor-pointer"
+                      >
+                        <div className="flex items-center gap-3 py-1">
+                          <div 
+                            className={`w-3 h-3 rounded-full`}
+                            style={{ backgroundColor: `var(--${retailer.logoColor}-500, #${retailer.logoColor === 'blue' ? '3b82f6' : retailer.logoColor === 'green' ? '10b981' : retailer.logoColor === 'red' ? 'ef4444' : retailer.logoColor === 'orange' ? 'f97316' : '6b7280'})` }}
+                          />
+                          <span className="text-gray-900 font-medium">{retailer.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
