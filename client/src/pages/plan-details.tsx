@@ -1035,6 +1035,73 @@ const PlanDetails: React.FC = () => {
         </div>
       </div>
 
+      {/* Trip Deals Summary */}
+      {deals && deals.length > 0 && (
+        <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-green-800">
+              <DollarSign className="h-5 w-5" />
+              <span>Deals Applied to This Trip</span>
+            </CardTitle>
+            <CardDescription className="text-green-700">
+              Active deals available at your selected stores
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {planData.stores.map((store) => {
+                const storeDeals = getDealsForRetailer(store.retailer.id);
+                const applicableDeals = storeDeals.filter((deal: any) => 
+                  store.items.some(item => 
+                    item.productName.toLowerCase().includes(deal.productName.toLowerCase()) ||
+                    deal.productName.toLowerCase().includes(item.productName.toLowerCase())
+                  )
+                );
+
+                if (applicableDeals.length === 0) return null;
+
+                return (
+                  <div key={store.retailer.id} className="border-l-4 border-green-400 pl-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div 
+                        className={`w-3 h-3 rounded-full bg-${store.retailer.logoColor}-500`}
+                      />
+                      <span className="font-semibold text-green-800">{store.retailer.name}</span>
+                    </div>
+                    <div className="space-y-2">
+                      {applicableDeals.map((deal: any) => (
+                        <div key={deal.id} className="flex items-center justify-between text-sm">
+                          <span className="text-green-700">{deal.productName}</span>
+                          <Badge variant="secondary" className="bg-green-100 text-green-800">
+                            {deal.dealType === 'spend_threshold_percentage' 
+                              ? `${deal.discountPercentage}% off $${(deal.spendThreshold! / 100).toFixed(0)}+`
+                              : `${Math.round((1 - deal.salePrice / deal.regularPrice) * 100)}% off`
+                            }
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+              {planData.stores.every(store => 
+                getDealsForRetailer(store.retailer.id).filter((deal: any) => 
+                  store.items.some(item => 
+                    item.productName.toLowerCase().includes(deal.productName.toLowerCase()) ||
+                    deal.productName.toLowerCase().includes(item.productName.toLowerCase())
+                  )
+                ).length === 0
+              ) && (
+                <div className="text-center py-4 text-green-600">
+                  <p className="text-sm">No specific product deals found for items in your list.</p>
+                  <p className="text-xs">Check the Deals page for general offers at your selected stores.</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Store Details */}
       <div className="space-y-4">
         {planData.stores
