@@ -55,181 +55,7 @@ import {
 import Header from '@/components/layout/Header';
 import BottomNavigation from '@/components/layout/BottomNavigation';
 
-// Enhanced deal matching and application logic
-interface AppliedDeal {
-  itemId: number;
-  dealId: number;
-  dealType: string;
-  originalPrice: number;
-  dealPrice: number;
-  savings: number;
-  dealDescription: string;
-}
-
-interface CouponStackingResult {
-  appliedDeals: AppliedDeal[];
-  totalSavings: number;
-  finalTotal: number;
-  loyaltyDiscount?: number;
-  stackedCoupons: any[];
-}
-
-// Enhanced deal application engine
-const applyDealsAndCoupons = (routeItems: any[], deals: any[], loyaltyCard: any) => {
-  const appliedDeals: AppliedDeal[] = [];
-  let totalSavings = 0;
-  let finalTotal = 0;
-  const stackedCoupons: any[] = [];
-
-  // Step 1: Match deals to items with enhanced matching
-  const enhancedMatchDeals = (item: any, deals: any[]) => {
-    const itemName = item.productName.toLowerCase();
-    const itemCategory = item.category?.toLowerCase() || '';
-
-    return deals.filter((deal: any) => {
-      const dealName = deal.productName.toLowerCase();
-      const dealCategory = deal.category?.toLowerCase() || '';
-
-      // Exact product match (highest priority)
-      if (itemName === dealName || 
-          itemName.includes(dealName) || 
-          dealName.includes(itemName)) {
-        return true;
-      }
-
-      // Category match (medium priority)
-      if (itemCategory && dealCategory && itemCategory === dealCategory) {
-        return true;
-      }
-
-      // Semantic matching for common products
-      const semanticMatches = [
-        { keywords: ['milk', 'dairy'], category: 'dairy' },
-        { keywords: ['bread', 'loaf'], category: 'bakery' },
-        { keywords: ['chicken', 'poultry'], category: 'meat' },
-        { keywords: ['apple', 'banana', 'fruit'], category: 'produce' }
-      ];
-
-      return semanticMatches.some(match => 
-        match.keywords.some(keyword => 
-          itemName.includes(keyword) && dealName.includes(keyword)
-        )
-      );
-    });
-  };
-
-  // Step 2: Apply best deals per item
-  routeItems.forEach(item => {
-    const itemDeals = enhancedMatchDeals(item, deals);
-    if (itemDeals.length === 0) {
-      finalTotal += (item.suggestedPrice || 0) * item.quantity;
-      return;
-    }
-
-    // Sort deals by savings potential (highest first)
-    const sortedDeals = itemDeals.sort((a, b) => {
-      const savingsA = calculateDealSavings(item, a);
-      const savingsB = calculateDealSavings(item, b);
-      return savingsB - savingsA;
-    });
-
-    const bestDeal = sortedDeals[0];
-    const dealResult = applyDealToItem(item, bestDeal);
-
-    if (dealResult.savings > 0) {
-      appliedDeals.push(dealResult);
-      totalSavings += dealResult.savings;
-      finalTotal += dealResult.dealPrice * item.quantity;
-    } else {
-      finalTotal += (item.suggestedPrice || 0) * item.quantity;
-    }
-  });
-
-  // Step 3: Apply loyalty card discounts
-  let loyaltyDiscount = 0;
-  if (loyaltyCard && loyaltyCard.discountPercentage) {
-    loyaltyDiscount = finalTotal * (loyaltyCard.discountPercentage / 100);
-    finalTotal -= loyaltyDiscount;
-    totalSavings += loyaltyDiscount;
-  }
-
-  // Step 4: Apply store-wide coupons and promotions
-  const storeWideCoupons = deals.filter(deal => 
-    deal.dealType === 'spend_threshold_percentage' ||
-    deal.dealType === 'store_wide_discount'
-  );
-
-  storeWideCoupons.forEach(coupon => {
-    if (coupon.dealType === 'spend_threshold_percentage' && 
-        finalTotal >= (coupon.spendThreshold || 0)) {
-      const couponSavings = finalTotal * (coupon.discountPercentage / 100);
-      finalTotal -= couponSavings;
-      totalSavings += couponSavings;
-      stackedCoupons.push({
-        ...coupon,
-        appliedSavings: couponSavings
-      });
-    }
-  });
-
-  return {
-    appliedDeals,
-    totalSavings,
-    finalTotal,
-    loyaltyDiscount,
-    stackedCoupons
-  };
-};
-
-const calculateDealSavings = (item: any, deal: any) => {
-  const originalPrice = item.suggestedPrice || 0;
-  const dealPrice = deal.salePrice || deal.regularPrice || originalPrice;
-  return Math.max(0, originalPrice - dealPrice);
-};
-
-const applyDealToItem = (item: any, deal: any): AppliedDeal => {
-  const originalPrice = item.suggestedPrice || 0;
-  const dealPrice = deal.salePrice || originalPrice;
-  const savings = Math.max(0, originalPrice - dealPrice);
-
-  return {
-    itemId: item.id,
-    dealId: deal.id,
-    dealType: deal.dealType || 'price_reduction',
-    originalPrice,
-    dealPrice,
-    savings,
-    dealDescription: `${deal.productName} - ${Math.round((1 - dealPrice / originalPrice) * 100)}% off`
-  };
-};
-
-// Component to show retailer-specific deals for route items
-const DealsForRetailer: React.FC<{ retailerName: string; routeItems: any[]; loyaltyCard?: any }> = ({ retailerName, routeItems, loyaltyCard }) => {
-  const { data: retailers } = useQuery({
-    queryKey: ['/api/retailers'],
-  });
-
-  const { data: deals } = useQuery({
-    queryKey: ['/api/deals', { retailerName }],
-    enabled: !!retailers && !!retailerName,
-  });
-
-  // Apply comprehensive deal logic
-  const dealResults = React.useMemo(() => {
-    if (!deals || !routeItems.length) return null;
-    return applyDealsAndCoupons(routeItems, deals, loyaltyCard);
-  }, [deals, routeItems, loyaltyCard]);
-
-  if (!dealResults || dealResults.appliedDeals.length === 0) {
-    return null;
-  }
-
-  const calculateSavings = (regular: number, sale: number) => {
-    return Math.round((1 - sale / regular) * 100);
-  };
-
-  return null;
-};
+// Shopping route component focuses on navigation and organization
 
 const ShoppingRoute: React.FC = () => {
   const [location, navigate] = useLocation();
@@ -909,9 +735,7 @@ const ShoppingRoute: React.FC = () => {
       routeOrder: sortedAisleGroups.map((group: any) => group.aisleName),
       retailerName: finalRetailerName,
       totalItems: items.length,
-      planType: planData?.planType || 'Shopping Plan',
-      totalCost: 0,
-      savings: 0
+      planType: planData?.planType || 'Shopping Plan'
     };
   };
 
@@ -2342,7 +2166,7 @@ const ShoppingRoute: React.FC = () => {
 
 
 
-        {/* Retailer-Specific Deals Section */}
+        
 
 
         {/* Current Aisle */}
@@ -2461,8 +2285,6 @@ const ShoppingRoute: React.FC = () => {
 
                                           return { ...prevRoute, aisleGroups: newAisleGroups, stores: updatedStores };
                                         });
-
-
                                       }
                                     }}
                                     className="w-6 h-6 rounded-full bg-white border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-sm font-medium"
@@ -2513,8 +2335,6 @@ const ShoppingRoute: React.FC = () => {
 
                                         return { ...prevRoute, aisleGroups: newAisleGroups, stores: updatedStores };
                                       });
-
-
                                     }}
                                     className="w-6 h-6 rounded-full bg-white border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-sm font-medium"
                                   >
@@ -2522,7 +2342,7 @@ const ShoppingRoute: React.FC = () => {
                                   </button>
                                 </div>
                               ) : (
-                                <span>{item.quantity}</span>
+                                <span>{item.quantity} {item.unit}</span>
                               )}
                             </div>
                             {item.shelfLocation && (
