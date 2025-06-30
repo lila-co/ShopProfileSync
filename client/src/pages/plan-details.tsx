@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ArrowLeft, MapPin, DollarSign, Clock, ShoppingCart } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ArrowLeft, MapPin, DollarSign, Clock, ShoppingCart, Store } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import BottomNavigation from '@/components/layout/BottomNavigation';
 
@@ -45,6 +46,8 @@ const PlanDetails: React.FC = () => {
   const [selectedPlanType, setSelectedPlanType] = useState(
     searchParams.get('planType') || 'single-store'
   );
+  const [overrideRetailerId, setOverrideRetailerId] = useState<number | null>(null);
+  const [showStoreSelector, setShowStoreSelector] = useState(false);
 
   const listId = searchParams.get('listId') || '1';
 
@@ -64,13 +67,29 @@ const PlanDetails: React.FC = () => {
 
   // Generate plan data based on shopping items and plan type
   const generatePlanData = (items: ShoppingItem[], planType: string): PlanData => {
-    console.log('generatePlanData called with:', { items, planType, itemsLength: items?.length });
+    console.log('generatePlanData called with:', { items, planType, itemsLength: items?.length, overrideRetailerId });
 
     // Ensure items is a valid array
     if (!items || !Array.isArray(items) || items.length === 0) {
       console.warn('generatePlanData received invalid items:', items);
       console.log('Shopping list data structure:', shoppingListData);
       return { totalCost: 0, estimatedTime: '0 min', stores: [] };
+    }
+
+    // If user has overridden the retailer, force single-store plan with selected retailer
+    if (overrideRetailerId && availableRetailers) {
+      const selectedRetailer = availableRetailers.find((r: any) => r.id === overrideRetailerId);
+      if (selectedRetailer) {
+        return {
+          totalCost: items.reduce((sum, item) => sum + (item.suggestedPrice || 0) * item.quantity, 0),
+          estimatedTime: '25-35 min',
+          stores: [{
+            retailer: selectedRetailer,
+            items: items,
+            subtotal: items.reduce((sum, item) => sum + (item.suggestedPrice || 0) * item.quantity, 0)
+          }]
+        };
+      }
     }
 
     switch (planType) {
@@ -171,7 +190,7 @@ const PlanDetails: React.FC = () => {
 
   const planData = generatePlanData(
     Array.isArray(shoppingItems) ? shoppingItems : [], 
-    selectedPlanType
+    overrideRetailerId ? 'single-store' : selectedPlanType
   );
 
   const formatPrice = (price: number) => {
@@ -183,6 +202,13 @@ const PlanDetails: React.FC = () => {
     queryKey: ['/api/deals'],
     staleTime: 20 * 60 * 1000, // 20 minutes - deals don't change frequently
     refetchOnWindowFocus: false, // Don't refetch when window gains focus
+  });
+
+  // Fetch available retailers for store override
+  const { data: availableRetailers } = useQuery({
+    queryKey: ['/api/retailers'],
+    staleTime: 30 * 60 * 1000, // 30 minutes - retailers don't change frequently
+    refetchOnWindowFocus: false,
   });
 
   // Filter deals by retailer for current plan
@@ -879,6 +905,75 @@ const PlanDetails: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Store Override Section */}
+      <Card className="mt-4">
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Store className="h-5 w-5" />
+              <span>Store Selection</span>
+            </div>
+            {overrideRetailerId && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  setOverrideRetailerId(null);
+                  toast({
+                    title: "Store Reset",
+                    description: "Using original retailer suggestions",
+                    duration: 2000
+                  });
+                }}
+              >
+                Reset to Suggested
+              </Button>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {overrideRetailerId ? (
+            <div className="text-sm text-gray-600 mb-2">
+              <strong>Selected Store:</strong> {availableRetailers?.find((r: any) => r.id === overrideRetailerId)?.name}
+            </div>
+          ) : (
+            <div className="text-sm text-gray-600 mb-2">
+              Using suggested retailers based on your plan type
+            </div>
+          )}
+          <Select
+            value={overrideRetailerId?.toString() || ""}
+            onValueChange={(value) => {
+              if (value) {
+                const retailerId = parseInt(value);
+                setOverrideRetailerId(retailerId);
+                toast({
+                  title: "Store Changed",
+                  description: `All items will be purchased from ${availableRetailers?.find((r: any) => r.id === retailerId)?.name}`,
+                  duration: 3000
+                });
+              }
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Choose a different store (optional)" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableRetailers?.map((retailer: any) => (
+                <SelectItem key={retailer.id} value={retailer.id.toString()}>
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className={`w-3 h-3 rounded-full bg-${retailer.logoColor}-500`}
+                    />
+                    {retailer.name}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
 
       {/* Resume Session Dialog */}
       <Dialog open={showResumeDialog} onOpenChange={setShowResumeDialog}>
