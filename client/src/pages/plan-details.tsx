@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowLeft, MapPin, DollarSign, Clock, ShoppingCart, Store } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import BottomNavigation from '@/components/layout/BottomNavigation';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface ShoppingItem {
   id: number;
@@ -48,6 +49,7 @@ const PlanDetails: React.FC = () => {
   );
   const [overrideRetailerId, setOverrideRetailerId] = useState<number | null>(null);
   const [showStoreSelector, setShowStoreSelector] = useState(false);
+  const queryClient = useQueryClient();
 
   const listId = searchParams.get('listId') || '1';
 
@@ -792,7 +794,7 @@ const PlanDetails: React.FC = () => {
     return false;
   };
 
-  
+
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
@@ -868,7 +870,7 @@ const PlanDetails: React.FC = () => {
                 </div>
                 <div className="text-center">
                   <div className={`text-xl font-bold ${availability.missingItems.length > 0 ? 'text-orange-600' : 'text-green-600'}`}>
-                    {availability.availableItems}/{availability.totalItems}
+                    {availability.availableItems                    /{availability.totalItems}
                   </div>
                   <div className="text-xs text-gray-500">Available</div>
                 </div>
@@ -906,7 +908,7 @@ const PlanDetails: React.FC = () => {
         </TabsContent>
       </Tabs>
 
-      
+
 
       {/* Resume Session Dialog */}
       <Dialog open={showResumeDialog} onOpenChange={setShowResumeDialog}>
@@ -962,7 +964,7 @@ const PlanDetails: React.FC = () => {
                 // Check for existing session first
                 const existingSession = localStorage.getItem(`shopping_session_${listId}`) || 
                                       localStorage.getItem(`interruptedSession-${listId}`);
-                
+
                 if (existingSession && !showResumeDialog) {
                   try {
                     const sessionData = JSON.parse(existingSession);
@@ -1050,7 +1052,7 @@ const PlanDetails: React.FC = () => {
                 </div>
                 <div className="text-lg font-bold">{formatPrice(store.subtotal)}</div>
               </CardTitle>
-              
+
               {/* Store Selection within the card */}
               <div className="mt-4 space-y-3">
                 <div className="flex items-center justify-between">
@@ -1064,9 +1066,13 @@ const PlanDetails: React.FC = () => {
                       size="sm"
                       onClick={() => {
                         setOverrideRetailerId(null);
+
+                        // Invalidate deals cache when resetting to suggested retailers
+                        queryClient.invalidateQueries({ queryKey: ['/api/deals'] });
+
                         toast({
                           title: "Store Reset",
-                          description: "Using original retailer suggestions",
+                          description: "Using original retailer suggestions. Refreshing deals...",
                           duration: 2000
                         });
                       }}
@@ -1075,16 +1081,20 @@ const PlanDetails: React.FC = () => {
                     </Button>
                   )}
                 </div>
-                
+
                 <Select
                   value={overrideRetailerId?.toString() || ""}
                   onValueChange={(value) => {
                     if (value) {
                       const retailerId = parseInt(value);
                       setOverrideRetailerId(retailerId);
+
+                      // Invalidate deals cache and refetch for new retailer
+                      queryClient.invalidateQueries({ queryKey: ['/api/deals'] });
+
                       toast({
                         title: "Store Changed",
-                        description: `All items will be purchased from ${availableRetailers?.find((r: any) => r.id === retailerId)?.name}`,
+                        description: `All items will be purchased from ${availableRetailers?.find((r: any) => r.id === retailerId)?.name}. Refreshing deals...`,
                         duration: 3000
                       });
                     }
