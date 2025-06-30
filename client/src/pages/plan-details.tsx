@@ -956,17 +956,22 @@ const PlanDetails: React.FC = () => {
               }
             }}
           >
-            <SelectTrigger>
+            <SelectTrigger className="bg-white border-gray-200 hover:border-gray-300 focus:border-purple-500 focus:ring-purple-200">
               <SelectValue placeholder="Choose a different store (optional)" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white border-gray-200 shadow-lg">
               {availableRetailers?.map((retailer: any) => (
-                <SelectItem key={retailer.id} value={retailer.id.toString()}>
-                  <div className="flex items-center gap-2">
+                <SelectItem 
+                  key={retailer.id} 
+                  value={retailer.id.toString()}
+                  className="hover:bg-gray-50 focus:bg-purple-50 cursor-pointer"
+                >
+                  <div className="flex items-center gap-3 py-1">
                     <div 
-                      className={`w-3 h-3 rounded-full bg-${retailer.logoColor}-500`}
+                      className={`w-3 h-3 rounded-full`}
+                      style={{ backgroundColor: `var(--${retailer.logoColor}-500, #${retailer.logoColor === 'blue' ? '3b82f6' : retailer.logoColor === 'green' ? '10b981' : retailer.logoColor === 'red' ? 'ef4444' : retailer.logoColor === 'orange' ? 'f97316' : '6b7280'})` }}
                     />
-                    {retailer.name}
+                    <span className="text-gray-900 font-medium">{retailer.name}</span>
                   </div>
                 </SelectItem>
               ))}
