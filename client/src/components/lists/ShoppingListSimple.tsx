@@ -180,7 +180,6 @@ const ShoppingListSimple: React.FC = () => {
             <Button 
               onClick={handleGenerateList}
               disabled={isLoading}
-              className="bg-blue-600 hover:bg-blue-700"
             >
               {isLoading ? (
                 <>
@@ -211,8 +210,8 @@ const ShoppingListSimple: React.FC = () => {
             />
             <Button 
               type="submit" 
+              variant="success"
               disabled={!newItemName.trim() || addItemMutation.isPending}
-              className="bg-green-600 hover:bg-green-700"
             >
               {addItemMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

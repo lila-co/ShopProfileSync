@@ -337,12 +337,12 @@ const ShoppingListComponent: React.FC = () => {
         quantity: quantity,
         unit: unit
       });
-      
+
       if (!response.ok) {
         const errorData = await response.text();
         throw new Error(`Failed to add item: ${response.status} ${errorData}`);
       }
-      
+
       return response.json();
     },
     onMutate: async ({ itemName, quantity, unit }: { itemName: string; quantity: number; unit: string }) => {
@@ -944,7 +944,20 @@ const ShoppingListComponent: React.FC = () => {
             .sort(([a], [b]) => {
               // Sort categories by typical shopping order
               const order = ['Produce', 'Dairy & Eggs', 'Meat & Seafood', 'Pantry & Canned Goods', 'Frozen Foods', 'Bakery', 'Personal Care', 'Household Items', 'Generic'];
-              return order.indexOf(a) - order.indexOf(b);
+              const indexA = order.indexOf(a);
+              const indexB = order.indexOf(b);
+              
+              // If both categories are in the predefined order, sort by that order
+              if (indexA !== -1 && indexB !== -1) {
+                return indexA - indexB;
+              }
+              
+              // If only one is in the predefined order, prioritize it
+              if (indexA !== -1) return -1;
+              if (indexB !== -1) return 1;
+              
+              // If neither is in the predefined order, sort alphabetically
+              return a.localeCompare(b);
             })
             .map(([category, categoryItems]) => {
               const config = categoryConfig[category as keyof typeof categoryConfig] || {
@@ -1159,25 +1172,25 @@ const ShoppingListComponent: React.FC = () => {
             <div className="flex flex-col space-y-3">
               <div className="flex space-x-2">
                 <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setRecipeDialogOpen(true)}
-                  className="flex-1 h-11 border-2 border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 text-gray-700 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2"
-                >
-                  <FileText className="h-4 w-4" />
-                  <span className="text-sm font-medium">Import Recipe</span>
-                </Button>
+                type="button"
+                variant="outline"
+                onClick={() => setRecipeDialogOpen(true)}
+                className="flex-1 h-11 flex items-center justify-center space-x-2"
+              >
+                <FileText className="h-4 w-4" />
+                <span className="text-sm font-medium">Import Recipe</span>
+              </Button>
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleRegenerateList}
-                  disabled={regenerateListMutation.isPending}
-                  className="flex-1 h-11 border-2 border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 text-gray-700 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2"
-                >
-                  <Wand2 className="h-4 w-4" />
-                  <span className="text-sm font-medium">Regenerate List</span>
-                </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleRegenerateList}
+                disabled={regenerateListMutation.isPending}
+                className="flex-1 h-11 flex items-center justify-center space-x-2"
+              >
+                <Wand2 className="h-4 w-4" />
+                <span className="text-sm font-medium">Regenerate List</span>
+              </Button>
               </div>
 
               <Button
