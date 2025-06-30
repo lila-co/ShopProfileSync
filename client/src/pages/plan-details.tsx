@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowLeft, MapPin, DollarSign, Clock, ShoppingCart, Store } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import BottomNavigation from '@/components/layout/BottomNavigation';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface ShoppingItem {
   id: number;
@@ -48,6 +49,7 @@ const PlanDetails: React.FC = () => {
   );
   const [overrideRetailerId, setOverrideRetailerId] = useState<number | null>(null);
   const [showStoreSelector, setShowStoreSelector] = useState(false);
+  const queryClient = useQueryClient();
 
   const listId = searchParams.get('listId') || '1';
 
@@ -64,6 +66,20 @@ const PlanDetails: React.FC = () => {
 
   // Extract items from the shopping list data
   const shoppingItems = shoppingListData?.items || [];
+
+  // Fetch deals for price comparison
+  const { data: deals } = useQuery({
+    queryKey: ['/api/deals'],
+    staleTime: 20 * 60 * 1000, // 20 minutes - deals don't change frequently
+    refetchOnWindowFocus: false, // Don't refetch when window gains focus
+  });
+
+  // Fetch available retailers for store override
+  const { data: availableRetailers } = useQuery({
+    queryKey: ['/api/retailers'],
+    staleTime: 30 * 60 * 1000, // 30 minutes - retailers don't change frequently
+    refetchOnWindowFocus: false,
+  });
 
   // Generate plan data based on shopping items and plan type
   const generatePlanData = (items: ShoppingItem[], planType: string): PlanData => {
@@ -196,20 +212,6 @@ const PlanDetails: React.FC = () => {
   const formatPrice = (price: number) => {
     return `$${(price / 100).toFixed(2)}`;
   };
-
-  // Fetch deals for price comparison
-  const { data: deals } = useQuery({
-    queryKey: ['/api/deals'],
-    staleTime: 20 * 60 * 1000, // 20 minutes - deals don't change frequently
-    refetchOnWindowFocus: false, // Don't refetch when window gains focus
-  });
-
-  // Fetch available retailers for store override
-  const { data: availableRetailers } = useQuery({
-    queryKey: ['/api/retailers'],
-    staleTime: 30 * 60 * 1000, // 30 minutes - retailers don't change frequently
-    refetchOnWindowFocus: false,
-  });
 
   // Filter deals by retailer for current plan
   const getDealsForRetailer = (retailerId: number) => {
@@ -792,7 +794,7 @@ const PlanDetails: React.FC = () => {
     return false;
   };
 
-  
+
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
@@ -906,79 +908,7 @@ const PlanDetails: React.FC = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Store Override Section */}
-      <Card className="mt-4">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Store className="h-5 w-5" />
-              <span>Store Selection</span>
-            </div>
-            {overrideRetailerId && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => {
-                  setOverrideRetailerId(null);
-                  toast({
-                    title: "Store Reset",
-                    description: "Using original retailer suggestions",
-                    duration: 2000
-                  });
-                }}
-              >
-                Reset to Suggested
-              </Button>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {overrideRetailerId ? (
-            <div className="text-sm text-gray-600 mb-2">
-              <strong>Selected Store:</strong> {availableRetailers?.find((r: any) => r.id === overrideRetailerId)?.name}
-            </div>
-          ) : (
-            <div className="text-sm text-gray-600 mb-2">
-              Using suggested retailers based on your plan type
-            </div>
-          )}
-          <Select
-            value={overrideRetailerId?.toString() || ""}
-            onValueChange={(value) => {
-              if (value) {
-                const retailerId = parseInt(value);
-                setOverrideRetailerId(retailerId);
-                toast({
-                  title: "Store Changed",
-                  description: `All items will be purchased from ${availableRetailers?.find((r: any) => r.id === retailerId)?.name}`,
-                  duration: 3000
-                });
-              }
-            }}
-          >
-            <SelectTrigger className="bg-white border-gray-200 hover:border-gray-300 focus:border-purple-500 focus:ring-purple-200">
-              <SelectValue placeholder="Choose a different store (optional)" />
-            </SelectTrigger>
-            <SelectContent className="bg-white border-gray-200 shadow-lg">
-              {availableRetailers?.map((retailer: any) => (
-                <SelectItem 
-                  key={retailer.id} 
-                  value={retailer.id.toString()}
-                  className="hover:bg-gray-50 focus:bg-purple-50 cursor-pointer"
-                >
-                  <div className="flex items-center gap-3 py-1">
-                    <div 
-                      className={`w-3 h-3 rounded-full`}
-                      style={{ backgroundColor: `var(--${retailer.logoColor}-500, #${retailer.logoColor === 'blue' ? '3b82f6' : retailer.logoColor === 'green' ? '10b981' : retailer.logoColor === 'red' ? 'ef4444' : retailer.logoColor === 'orange' ? 'f97316' : '6b7280'})` }}
-                    />
-                    <span className="text-gray-900 font-medium">{retailer.name}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
+
 
       {/* Resume Session Dialog */}
       <Dialog open={showResumeDialog} onOpenChange={setShowResumeDialog}>
@@ -1034,7 +964,7 @@ const PlanDetails: React.FC = () => {
                 // Check for existing session first
                 const existingSession = localStorage.getItem(`shopping_session_${listId}`) || 
                                       localStorage.getItem(`interruptedSession-${listId}`);
-                
+
                 if (existingSession && !showResumeDialog) {
                   try {
                     const sessionData = JSON.parse(existingSession);
@@ -1105,6 +1035,73 @@ const PlanDetails: React.FC = () => {
         </div>
       </div>
 
+      {/* Trip Deals Summary */}
+      {deals && deals.length > 0 && (
+        <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-green-800">
+              <DollarSign className="h-5 w-5" />
+              <span>Deals Applied to This Trip</span>
+            </CardTitle>
+            <CardDescription className="text-green-700">
+              Active deals available at your selected stores
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {planData.stores.map((store) => {
+                const storeDeals = getDealsForRetailer(store.retailer.id);
+                const applicableDeals = storeDeals.filter((deal: any) => 
+                  store.items.some(item => 
+                    item.productName.toLowerCase().includes(deal.productName.toLowerCase()) ||
+                    deal.productName.toLowerCase().includes(item.productName.toLowerCase())
+                  )
+                );
+
+                if (applicableDeals.length === 0) return null;
+
+                return (
+                  <div key={store.retailer.id} className="border-l-4 border-green-400 pl-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div 
+                        className={`w-3 h-3 rounded-full bg-${store.retailer.logoColor}-500`}
+                      />
+                      <span className="font-semibold text-green-800">{store.retailer.name}</span>
+                    </div>
+                    <div className="space-y-2">
+                      {applicableDeals.map((deal: any) => (
+                        <div key={deal.id} className="flex items-center justify-between text-sm">
+                          <span className="text-green-700">{deal.productName}</span>
+                          <Badge variant="secondary" className="bg-green-100 text-green-800">
+                            {deal.dealType === 'spend_threshold_percentage' 
+                              ? `${deal.discountPercentage}% off $${(deal.spendThreshold! / 100).toFixed(0)}+`
+                              : `${Math.round((1 - deal.salePrice / deal.regularPrice) * 100)}% off`
+                            }
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+              {planData.stores.every(store => 
+                getDealsForRetailer(store.retailer.id).filter((deal: any) => 
+                  store.items.some(item => 
+                    item.productName.toLowerCase().includes(deal.productName.toLowerCase()) ||
+                    deal.productName.toLowerCase().includes(item.productName.toLowerCase())
+                  )
+                ).length === 0
+              ) && (
+                <div className="text-center py-4 text-green-600">
+                  <p className="text-sm">No specific product deals found for items in your list.</p>
+                  <p className="text-xs">Check the Deals page for general offers at your selected stores.</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Store Details */}
       <div className="space-y-4">
         {planData.stores
@@ -1122,6 +1119,76 @@ const PlanDetails: React.FC = () => {
                 </div>
                 <div className="text-lg font-bold">{formatPrice(store.subtotal)}</div>
               </CardTitle>
+
+              {/* Store Selection within the card */}
+              <div className="mt-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Store className="h-4 w-4" />
+                    <span>Store Selection</span>
+                  </div>
+                  {overrideRetailerId && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setOverrideRetailerId(null);
+
+                        // Invalidate deals cache when resetting to suggested retailers
+                        queryClient.invalidateQueries({ queryKey: ['/api/deals'] });
+
+                        toast({
+                          title: "Store Reset",
+                          description: "Using original retailer suggestions. Refreshing deals...",
+                          duration: 2000
+                        });
+                      }}
+                    >
+                      Reset to Suggested
+                    </Button>
+                  )}
+                </div>
+
+                <Select
+                  value={overrideRetailerId?.toString() || ""}
+                  onValueChange={(value) => {
+                    if (value) {
+                      const retailerId = parseInt(value);
+                      setOverrideRetailerId(retailerId);
+
+                      // Invalidate deals cache and refetch for new retailer
+                      queryClient.invalidateQueries({ queryKey: ['/api/deals'] });
+
+                      toast({
+                        title: "Store Changed",
+                        description: `All items will be purchased from ${availableRetailers?.find((r: any) => r.id === retailerId)?.name}. Refreshing deals...`,
+                        duration: 3000
+                      });
+                    }
+                  }}
+                >
+                  <SelectTrigger className="bg-white border-gray-200 hover:border-gray-300 focus:border-purple-500 focus:ring-purple-200">
+                    <SelectValue placeholder="Choose a different store (optional)" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border-gray-200 shadow-lg">
+                    {availableRetailers?.map((retailer: any) => (
+                      <SelectItem 
+                        key={retailer.id} 
+                        value={retailer.id.toString()}
+                        className="hover:bg-gray-50 focus:bg-purple-50 cursor-pointer"
+                      >
+                        <div className="flex items-center gap-3 py-1">
+                          <div 
+                            className={`w-3 h-3 rounded-full`}
+                            style={{ backgroundColor: `var(--${retailer.logoColor}-500, #${retailer.logoColor === 'blue' ? '3b82f6' : retailer.logoColor === 'green' ? '10b981' : retailer.logoColor === 'red' ? 'ef4444' : retailer.logoColor === 'orange' ? 'f97316' : '6b7280'})` }}
+                          />
+                          <span className="text-gray-900 font-medium">{retailer.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
