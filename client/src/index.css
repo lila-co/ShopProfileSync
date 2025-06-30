@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import url("tailwindcss/base");
 @import url("tailwindcss/components");
 @import url("tailwindcss/utilities");
@@ -24,10 +25,21 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
-    --radius: 0.75rem;
+    --radius: 1rem;
+    
+    /* Enhanced color palette for better semantic meaning */
+    --success: 142 76% 36%;
+    --success-foreground: 138 76% 97%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 48 96% 89%;
+    --info: 199 89% 48%;
+    --info-foreground: 210 40% 98%;
+    
+    /* Improved shadow system */
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   }
 
   .dark {
@@ -60,85 +72,101 @@
 
   html {
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    scroll-behavior: smooth;
   }
 
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
-  /* Better focus indicators for accessibility */
+  /* Enhanced focus indicators for accessibility - WCAG AAA compliant */
   *:focus-visible {
-    @apply outline-none ring-2 ring-offset-2 ring-blue-500;
+    @apply outline-none ring-4 ring-offset-4 ring-blue-500/60;
+    outline-offset: 2px;
   }
 
-  /* Ensure touch targets are at least 44px */
-  button, [role="button"], input, select, textarea {
+  /* Minimum touch target size - 44px for accessibility */
+  button, [role="button"], input[type="checkbox"], input[type="radio"], select {
     min-height: 44px;
     min-width: 44px;
   }
 
-  /* Smooth animations */
-  * {
-    transition-property: color, background-color, border-color, opacity, transform;
-    transition-duration: 150ms;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  /* Ensure text inputs are optimized for mobile */
+  input[type="text"], input[type="email"], input[type="password"], textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+    min-height: 44px;
   }
 }
 
 @layer components {
-  /* Modern Mobile Shopping List */
-  .mobile-shopping-item {
-    @apply relative bg-white border border-gray-200 rounded-2xl p-4 mb-3 cursor-pointer select-none;
-    @apply hover:shadow-md hover:border-gray-300;
-    @apply active:scale-[0.98] active:bg-gray-50;
-    @apply transition-all duration-200 ease-out;
-    min-height: 72px;
-    touch-action: manipulation;
-  }
-
-  .mobile-shopping-item:focus-within {
-    @apply ring-2 ring-blue-500/30 border-blue-400;
-  }
-
-  .mobile-shopping-item.completed {
-    @apply bg-gray-50 border-gray-200 opacity-75;
-  }
-
-  /* Enhanced buttons */
+  /* Modern, accessible button system */
   .btn-primary {
-    @apply bg-blue-600 hover:bg-blue-700 text-white font-medium;
-    @apply rounded-xl px-6 py-3 transition-all duration-200;
-    @apply shadow-sm hover:shadow-md;
-    @apply active:scale-[0.98];
+    @apply inline-flex items-center justify-center rounded-2xl px-8 py-4;
+    @apply bg-blue-600 text-white font-semibold;
+    @apply hover:bg-blue-700 active:bg-blue-800;
+    @apply focus:ring-4 focus:ring-blue-500/50;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply transition-all duration-200 ease-out;
+    @apply shadow-md hover:shadow-lg;
+    min-height: 56px; /* Larger for better mobile UX */
   }
 
   .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-2xl px-8 py-4;
     @apply bg-white border-2 border-gray-200 text-gray-700 font-medium;
-    @apply rounded-xl px-6 py-3 transition-all duration-200;
     @apply hover:border-gray-300 hover:bg-gray-50;
-    @apply active:scale-[0.98];
+    @apply active:bg-gray-100;
+    @apply focus:ring-4 focus:ring-gray-500/30;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply transition-all duration-200 ease-out;
+    min-height: 56px;
   }
 
-  /* Card improvements */
-  .modern-card {
-    @apply bg-white rounded-2xl border-0 shadow-sm;
-    @apply hover:shadow-md transition-shadow duration-200;
+  .btn-success {
+    @apply inline-flex items-center justify-center rounded-2xl px-8 py-4;
+    @apply bg-green-600 text-white font-semibold;
+    @apply hover:bg-green-700 active:bg-green-800;
+    @apply focus:ring-4 focus:ring-green-500/50;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply transition-all duration-200 ease-out;
+    @apply shadow-md hover:shadow-lg;
+    min-height: 56px;
   }
 
-  /* Input improvements */
-  .modern-input {
-    @apply border-2 border-gray-200 rounded-xl px-4 py-3;
-    @apply focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20;
+  /* Card component with improved accessibility */
+  .card-modern {
+    @apply bg-white rounded-2xl border border-gray-100;
+    @apply shadow-sm hover:shadow-md;
+    @apply transition-all duration-200 ease-out;
+    @apply focus-within:ring-2 focus-within:ring-blue-500/30;
+  }
+
+  /* Input component optimized for mobile */
+  .input-modern {
+    @apply w-full rounded-2xl border-2 border-gray-200 px-6 py-4;
+    @apply bg-white text-gray-900 placeholder-gray-500;
+    @apply focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20;
+    @apply disabled:bg-gray-50 disabled:text-gray-500;
     @apply transition-all duration-200;
-    font-size: 16px; /* Prevents zoom on iOS */
+    font-size: 16px; /* Prevents iOS zoom */
+    min-height: 56px;
   }
 
-  /* Typography hierarchy */
+  /* Typography scale with better hierarchy */
+  .text-display-lg {
+    @apply text-4xl font-bold text-gray-900 leading-tight tracking-tight;
+  }
+
+  .text-display-md {
+    @apply text-3xl font-bold text-gray-900 leading-tight tracking-tight;
+  }
+
   .text-heading-lg {
-    @apply text-2xl font-bold text-gray-900 leading-tight;
+    @apply text-2xl font-semibold text-gray-900 leading-snug;
   }
 
   .text-heading-md {
@@ -146,7 +174,11 @@
   }
 
   .text-heading-sm {
-    @apply text-lg font-medium text-gray-900;
+    @apply text-lg font-medium text-gray-900 leading-relaxed;
+  }
+
+  .text-body-lg {
+    @apply text-lg text-gray-700 leading-relaxed;
   }
 
   .text-body {
@@ -154,135 +186,143 @@
   }
 
   .text-body-sm {
-    @apply text-sm text-gray-600;
+    @apply text-sm text-gray-600 leading-relaxed;
   }
 
   .text-caption {
-    @apply text-xs text-gray-500 font-medium uppercase tracking-wide;
+    @apply text-xs text-gray-500 font-medium uppercase tracking-wider;
   }
 
-  /* Status indicators */
+  /* Status indicators with semantic colors */
   .status-success {
-    @apply bg-green-100 text-green-800 border border-green-200;
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+    @apply bg-green-50 text-green-800 border border-green-200;
   }
 
   .status-warning {
-    @apply bg-orange-100 text-orange-800 border border-orange-200;
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+    @apply bg-orange-50 text-orange-800 border border-orange-200;
   }
 
   .status-error {
-    @apply bg-red-100 text-red-800 border border-red-200;
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+    @apply bg-red-50 text-red-800 border border-red-200;
   }
 
   .status-info {
-    @apply bg-blue-100 text-blue-800 border border-blue-200;
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+    @apply bg-blue-50 text-blue-800 border border-blue-200;
   }
 
-  /* Loading states */
-  .loading-shimmer {
-    @apply bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200;
-    @apply animate-pulse;
+  /* Loading states with better UX */
+  .loading-skeleton {
+    @apply bg-gray-200 rounded-2xl animate-pulse;
+    background: linear-gradient(
+      110deg,
+      #f0f0f0 8%,
+      #f8f8f8 18%,
+      #f0f0f0 33%
+    );
     background-size: 200% 100%;
-    animation: shimmer 1.5s ease-in-out infinite;
+    animation: loading-shimmer 1.5s linear infinite;
   }
 
-  @keyframes shimmer {
-    0% {
-      background-position: -200% 0;
-    }
-    100% {
-      background-position: 200% 0;
-    }
+  @keyframes loading-shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
   }
 
-  /* Bottom sheet/modal improvements */
-  .bottom-sheet {
-    @apply fixed bottom-0 left-0 right-0 bg-white;
-    @apply rounded-t-3xl border-t border-gray-200;
-    @apply shadow-2xl;
-    transform: translateY(0);
-    transition: transform 300ms cubic-bezier(0.32, 0.72, 0, 1);
+  /* Improved spacing system */
+  .space-y-section > * + * {
+    margin-top: 3rem;
   }
 
-  .bottom-sheet.hidden {
-    transform: translateY(100%);
+  .space-y-card > * + * {
+    margin-top: 1.5rem;
   }
 
-  /* Floating action button */
-  .fab {
-    @apply fixed bottom-6 right-6 w-14 h-14;
-    @apply bg-blue-600 hover:bg-blue-700 text-white;
-    @apply rounded-full shadow-lg hover:shadow-xl;
-    @apply flex items-center justify-center;
-    @apply transition-all duration-200;
-    @apply active:scale-95;
+  .space-y-item > * + * {
+    margin-top: 1rem;
   }
 
-  /* Safe area handling for mobile */
-  .safe-area-top {
+  /* Safe area support for mobile devices */
+  .safe-top {
     padding-top: env(safe-area-inset-top);
   }
 
-  .safe-area-bottom {
+  .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }
 
-  /* Improved scrolling */
-  .scroll-smooth {
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
   }
 
-  /* Better checkbox styling */
-  .modern-checkbox {
-    @apply w-5 h-5 rounded border-2 border-gray-300;
-    @apply focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500;
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Optimized scrolling for mobile */
+  .scroll-touch {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  /* Improved checkbox styling */
+  .checkbox-modern {
+    @apply w-6 h-6 rounded-lg border-2 border-gray-300;
+    @apply focus:ring-4 focus:ring-blue-500/30 focus:border-blue-500;
     @apply checked:bg-blue-600 checked:border-blue-600;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
     @apply transition-all duration-200;
   }
 
-  /* Progress indicators */
-  .progress-bar {
-    @apply w-full bg-gray-200 rounded-full h-2;
+  /* Progress bar component */
+  .progress-modern {
+    @apply w-full bg-gray-100 rounded-full h-3;
+    overflow: hidden;
   }
 
   .progress-fill {
-    @apply bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out;
+    @apply h-full bg-blue-600 rounded-full transition-all duration-500 ease-out;
   }
 }
 
 /* Mobile-specific optimizations */
 @media (max-width: 768px) {
-  /* Larger touch targets */
-  .mobile-touch-target {
+  /* Optimize touch targets */
+  button, [role="button"] {
     min-height: 48px;
     min-width: 48px;
   }
 
-  /* Prevent horizontal scroll */
+  /* Prevent horizontal scrolling */
   body {
     overflow-x: hidden;
   }
 
-  /* Better spacing for mobile */
-  .mobile-padding {
-    @apply px-4 py-6;
+  /* Better mobile spacing */
+  .mobile-px {
+    @apply px-6;
   }
 
-  /* Optimize font sizes for mobile readability */
-  h1 { font-size: 1.75rem; }
-  h2 { font-size: 1.5rem; }
-  h3 { font-size: 1.25rem; }
+  .mobile-py {
+    @apply py-8;
+  }
 }
 
 /* High contrast mode support */
 @media (prefers-contrast: high) {
-  .mobile-shopping-item {
+  .card-modern {
     @apply border-2 border-gray-900;
   }
 
   .btn-primary {
     @apply border-2 border-blue-800;
+  }
+
+  .input-modern {
+    @apply border-3 border-gray-900;
   }
 }
 
@@ -292,16 +332,22 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
 /* Dark mode optimizations */
 @media (prefers-color-scheme: dark) {
-  .mobile-shopping-item {
-    @apply bg-gray-800 border-gray-700 text-white;
+  :root {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
   }
 
-  .modern-card {
+  .card-modern {
     @apply bg-gray-800 border-gray-700;
+  }
+
+  .input-modern {
+    @apply bg-gray-800 border-gray-600 text-white;
   }
 }

@@ -7,7 +7,7 @@ import { ShoppingList as ShoppingListType, ShoppingListItem } from '@/lib/types'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Check, X, ShoppingBag, Wand2 } from 'lucide-react';
+import { Plus, Check, X, ShoppingBag, Wand2, CheckCircle2 } from 'lucide-react';
 
 const ShoppingListSimple: React.FC = () => {
   const { toast } = useToast();
@@ -90,11 +90,14 @@ const ShoppingListSimple: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="p-4 space-y-4">
-        <div className="space-y-3">
-          {Array(5).fill(0).map((_, index) => (
-            <div key={index} className="h-16 bg-gray-100 rounded-xl animate-pulse"></div>
-          ))}
+      <div className="max-w-md mx-auto bg-gray-50 min-h-screen p-4">
+        <div className="space-y-4">
+          <div className="h-6 bg-gray-200 rounded-lg animate-pulse"></div>
+          <div className="space-y-3">
+            {Array(5).fill(0).map((_, index) => (
+              <div key={index} className="h-16 bg-gray-200 rounded-2xl animate-pulse"></div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -106,83 +109,94 @@ const ShoppingListSimple: React.FC = () => {
   const pendingItems = items.filter(item => !item.completed);
 
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen">
-      {/* Header */}
-      <div className="sticky top-0 bg-white border-b border-gray-100 p-4 z-10">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Shopping List</h1>
-            <p className="text-sm text-gray-500">
-              {pendingItems.length} items to get
-            </p>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-              {completedItems.length} done
+    <div className="max-w-md mx-auto bg-gray-50 min-h-screen">
+      {/* Simplified Header */}
+      <div className="sticky top-0 bg-white shadow-sm border-b border-gray-100 p-6 z-10">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-900">Shopping List</h1>
+          <div className="flex items-center justify-center mt-2 space-x-6">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{pendingItems.length}</div>
+              <div className="text-sm text-gray-500">to get</div>
+            </div>
+            <div className="w-px h-8 bg-gray-200"></div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">{completedItems.length}</div>
+              <div className="text-sm text-gray-500">done</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Quick Add */}
-      <div className="p-4 border-b border-gray-100">
-        <form onSubmit={handleAddItem} className="flex space-x-2">
+      {/* Simplified Add Item */}
+      <div className="p-6 bg-white border-b border-gray-100">
+        <form onSubmit={handleAddItem} className="space-y-3">
           <Input
             type="text"
             placeholder="What do you need?"
             value={newItemName}
             onChange={(e) => setNewItemName(e.target.value)}
-            className="flex-1 h-12 text-base border-2 border-gray-200 focus:border-blue-500 rounded-xl"
+            className="h-14 text-lg border-2 border-gray-200 focus:border-blue-500 rounded-2xl px-6"
             autoFocus={isAddingItem}
           />
           <Button
             type="submit"
             disabled={!newItemName.trim() || addItemMutation.isPending}
-            className="h-12 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
+            className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white text-lg font-semibold rounded-2xl"
           >
-            <Plus className="h-5 w-5" />
+            {addItemMutation.isPending ? (
+              <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <>
+                <Plus className="h-6 w-6 mr-2" />
+                Add Item
+              </>
+            )}
           </Button>
         </form>
       </div>
 
       {/* Shopping Items */}
-      <div className="p-4 space-y-3">
+      <div className="p-6 space-y-4">
         {pendingItems.length === 0 && completedItems.length === 0 ? (
-          <div className="text-center py-12">
-            <ShoppingBag className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Your list is empty</h3>
-            <p className="text-gray-500 mb-6">Add your first item above to get started</p>
+          <div className="text-center py-16">
+            <div className="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
+              <ShoppingBag className="h-12 w-12 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Your list is empty</h3>
+            <p className="text-gray-500 mb-8 max-w-sm mx-auto">Start adding items to create your shopping list</p>
             <Button
               variant="outline"
-              className="mx-auto"
+              size="lg"
+              className="h-12 px-8 border-2 border-gray-200 hover:border-blue-500 hover:text-blue-600"
               onClick={() => setIsAddingItem(true)}
             >
-              <Wand2 className="h-4 w-4 mr-2" />
-              Suggest items for me
+              <Wand2 className="h-5 w-5 mr-2" />
+              Get suggestions
             </Button>
           </div>
         ) : (
           <>
-            {/* Pending Items */}
+            {/* Active Items */}
             {pendingItems.map((item) => (
               <div
                 key={item.id}
-                className="mobile-shopping-item group"
+                className="group bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-200"
                 onClick={() => handleToggleItem(item.id, item.completed)}
               >
                 <div className="flex items-center space-x-4">
                   <div className="flex-shrink-0">
-                    <div className="w-6 h-6 border-2 border-gray-300 rounded-full flex items-center justify-center group-hover:border-green-500 transition-colors">
+                    <div className="w-8 h-8 border-3 border-gray-300 rounded-full flex items-center justify-center group-hover:border-green-500 transition-colors">
                       {toggleItemMutation.isPending ? (
-                        <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
                       ) : null}
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-base font-medium text-gray-900 truncate">
+                    <h3 className="text-lg font-medium text-gray-900 truncate">
                       {item.productName}
                     </h3>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 mt-1">
                       {item.quantity} {item.unit?.toLowerCase() || 'item'}
                     </p>
                   </div>
@@ -194,9 +208,9 @@ const ShoppingListSimple: React.FC = () => {
                         e.stopPropagation();
                         handleDeleteItem(item.id);
                       }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="w-10 h-10 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500"
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-5 w-5" />
                     </Button>
                   </div>
                 </div>
@@ -205,73 +219,79 @@ const ShoppingListSimple: React.FC = () => {
 
             {/* Completed Items */}
             {completedItems.length > 0 && (
-              <div className="mt-8">
-                <div className="flex items-center space-x-2 mb-3">
+              <div className="mt-12">
+                <div className="flex items-center justify-center mb-6">
                   <div className="h-px bg-gray-200 flex-1"></div>
-                  <span className="text-sm text-gray-500 font-medium">
-                    Completed ({completedItems.length})
-                  </span>
+                  <div className="mx-4 px-4 py-2 bg-green-50 rounded-full">
+                    <span className="text-sm font-medium text-green-700">
+                      Completed ({completedItems.length})
+                    </span>
+                  </div>
                   <div className="h-px bg-gray-200 flex-1"></div>
                 </div>
                 
-                {completedItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="mobile-shopping-item opacity-60 group"
-                    onClick={() => handleToggleItem(item.id, item.completed)}
-                  >
-                    <div className="flex items-center space-x-4">
-                      <div className="flex-shrink-0">
-                        <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                          <Check className="h-4 w-4 text-white" />
+                <div className="space-y-3">
+                  {completedItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="group bg-green-50 rounded-2xl p-5 border border-green-100"
+                      onClick={() => handleToggleItem(item.id, item.completed)}
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                            <CheckCircle2 className="h-5 w-5 text-white" />
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-lg font-medium text-green-700 line-through truncate">
+                            {item.productName}
+                          </h3>
+                          <p className="text-sm text-green-600 mt-1">
+                            {item.quantity} {item.unit?.toLowerCase() || 'item'}
+                          </p>
+                        </div>
+                        <div className="flex-shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteItem(item.id);
+                            }}
+                            className="w-10 h-10 opacity-0 group-hover:opacity-100 transition-opacity text-green-400 hover:text-red-500"
+                          >
+                            <X className="h-5 w-5" />
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-base font-medium text-gray-500 line-through truncate">
-                          {item.productName}
-                        </h3>
-                        <p className="text-sm text-gray-400">
-                          {item.quantity} {item.unit?.toLowerCase() || 'item'}
-                        </p>
-                      </div>
-                      <div className="flex-shrink-0">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteItem(item.id);
-                          }}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
           </>
         )}
       </div>
 
-      {/* Bottom Action */}
+      {/* Simplified Bottom Action */}
       {pendingItems.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100">
+        <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-white via-white to-transparent">
           <div className="max-w-md mx-auto">
             <Button
-              className="w-full h-14 bg-green-600 hover:bg-green-700 text-white text-lg font-medium rounded-xl"
+              className="w-full h-16 bg-green-600 hover:bg-green-700 text-white text-xl font-semibold rounded-2xl shadow-lg"
               onClick={() => {
-                // Navigate to shopping route or start shopping
                 window.location.href = `/shopping-route?listId=${defaultList?.id}&mode=instore`;
               }}
             >
-              Start Shopping ({pendingItems.length} items)
+              Start Shopping • {pendingItems.length} items
             </Button>
           </div>
         </div>
       )}
+
+      {/* Safe area for bottom action */}
+      {pendingItems.length > 0 && <div className="h-24"></div>}
     </div>
   );
 };
