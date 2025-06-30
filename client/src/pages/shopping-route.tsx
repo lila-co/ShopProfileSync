@@ -2032,6 +2032,24 @@ const ShoppingRoute: React.FC = () => {
     }
   };
 
+  // Function to start fresh (clear existing session)
+  const startFreshSession = () => {
+    // Clear all existing session data
+    localStorage.removeItem(`interruptedSession-${listId}`);
+    localStorage.removeItem(`shopping_session_${listId}`);
+    sessionStorage.removeItem('shoppingPlanData');
+    sessionStorage.removeItem('shoppingListId');
+    sessionStorage.removeItem('shoppingMode');
+
+    setShowResumeDialog(false);
+    setExistingSessionData(null);
+
+    toast({
+      title: "Starting Fresh",
+      description: "Previous shopping session cleared",
+      duration: 2000
+    });
+  };
 
   if (isLoading) {
     return (
@@ -2166,7 +2184,7 @@ const ShoppingRoute: React.FC = () => {
 
 
 
-        
+
 
 
         {/* Current Aisle */}
@@ -2206,7 +2224,8 @@ const ShoppingRoute: React.FC = () => {
                           : 'bg-white border-gray-200 hover:border-blue-300'
                       }`}
                     >
-                      <div className="flex items-center flex-1">
+                      <div className="flex items-start gap-3 w-full">
+                        {/* Checkbox - Fixed position */}
                         <button
                           onClick={() => {
                             if (isCompleted) {
@@ -2223,80 +2242,30 @@ const ShoppingRoute: React.FC = () => {
                               toggleItemMutation.mutate({ itemId: item.id, completed: true });
                             }
                           }}
-                          className="mr-3 focus:outline-none"
+                          className="mt-1 focus:outline-none flex-shrink-0"
                         >
                           {isCompleted ? (
-                            <CheckCircle2 className="h-6 w-6 text-green-600" />
+                            <CheckCircle2 className="h-5 w-5 text-green-600" />
                           ) : (
-                            <Circle className="h-6 w-6 text-gray-400 hover:text-green-600" />
+                            <Circle className="h-5 w-5 text-gray-400 hover:text-green-600" />
                           )}
                         </button>
 
-                        <div className="flex-1">
-                          <div className={`font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
+                        {/* Main content - Flexible width */}
+                        <div className="flex-1 min-w-0">
+                          <div className={`font-medium text-sm leading-tight mb-1 ${isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
                             {item.productName}
                           </div>
-                          <div className="text-sm text-gray-500 flex items-center gap-2">
-                            <Package className="h-3 w-3" />
-                            <div className="flex items-center gap-2">
-                              <span>Qty:</span>
-                              {!isCompleted ? (
-                                <div className="flex items-center gap-1 bg-gray-100 rounded px-1 py-0.5">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (item.quantity > 1) {
-                                        const newQuantity = item.quantity - 1;
-                                        updateItemMutation.mutate({
-                                          itemId: item.id,
-                                          updates: { quantity: newQuantity }
-                                        });
 
-                                        // Update the item in the current route state
-                                        setOptimizedRoute((prevRoute: any) => {
-                                          if (!prevRoute) return prevRoute;
-
-                                          const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
-                                            ...aisle,
-                                            items: aisle.items.map((routeItem: any) => 
-                                              routeItem.id === item.id 
-                                                ? { ...routeItem, quantity: newQuantity }
-                                                : routeItem
-                                            )
-                                          }));
-
-                                          // Also update stores array if this is a multi-store plan
-                                          let updatedStores = prevRoute.stores;
-                                          if (prevRoute.isMultiStore && prevRoute.stores) {
-                                            updatedStores = prevRoute.stores.map((store: any, storeIndex: number) => {
-                                              if (storeIndex === currentStoreIndex) {
-                                                return {
-                                                  ...store,
-                                                  items: store.items.map((storeItem: any) => 
-                                                    storeItem.id === item.id 
-                                                      ? { ...storeItem, quantity: newQuantity }
-                                                      : storeItem
-                                                  )
-                                                };
-                                              }
-                                              return store;
-                                            });
-                                          }
-
-                                          return { ...prevRoute, aisleGroups: newAisleGroups, stores: updatedStores };
-                                        });
-                                      }
-                                    }}
-                                    className="w-4 h-4 rounded-full bg-white border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-xs font-medium"
-                                    disabled={item.quantity <= 1}
-                                  >
-                                    −
-                                  </button>
-                                  <span className="w-5 text-center font-medium text-gray-800 text-xs">{item.quantity}</span>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      const newQuantity = item.quantity + 1;
+                          {/* Quantity controls - Mobile optimized */}
+                          <div className="flex items-center gap-2 mb-1">
+                            {!isCompleted ? (
+                              <div className="flex items-center gap-1 bg-gray-100 rounded-full px-2 py-1">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (item.quantity > 1) {
+                                      const newQuantity = item.quantity - 1;
                                       updateItemMutation.mutate({
                                         itemId: item.id,
                                         updates: { quantity: newQuantity }
@@ -2335,250 +2304,298 @@ const ShoppingRoute: React.FC = () => {
 
                                         return { ...prevRoute, aisleGroups: newAisleGroups, stores: updatedStores };
                                       });
-                                    }}
-                                    className="w-4 h-4 rounded-full bg-white border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-xs font-medium"
-                                  >
-                                    +
-                                  </button>
-                                </div>
-                              ) : (
-                                <span>{item.quantity} {item.unit}</span>
-                              )}
-                            </div>
-                            {item.shelfLocation && (
-                              <>
-                                <span>•</span>
-                                <span className="text-blue-600">{item.shelfLocation}</span>
-                              </>
+                                    }
+                                  }}
+                                  className="w-6 h-6 rounded-full bg-white border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-sm font-medium"
+                                  disabled={item.quantity <= 1}
+                                >
+                                  −
+                                </button>
+                                <span className="w-8 text-center font-medium text-gray-800 text-sm">{item.quantity}</span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const newQuantity = item.quantity + 1;
+                                    updateItemMutation.mutate({
+                                      itemId: item.id,
+                                      updates: { quantity: newQuantity }
+                                    });
+
+                                    // Update the item in the current route state
+                                    setOptimizedRoute((prevRoute: any) => {
+                                      if (!prevRoute) return prevRoute;
+
+                                      const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
+                                        ...aisle,
+                                        items: aisle.items.map((routeItem: any) => 
+                                          routeItem.id === item.id 
+                                            ? { ...routeItem, quantity: newQuantity }
+                                            : routeItem
+                                        )
+                                      }));
+
+                                      // Also update stores array if this is a multi-store plan
+                                      let updatedStores = prevRoute.stores;
+                                      if (prevRoute.isMultiStore && prevRoute.stores) {
+                                        updatedStores = prevRoute.stores.map((store: any, storeIndex: number) => {
+                                          if (storeIndex === currentStoreIndex) {
+                                            return {
+                                              ...store,
+                                              items: store.items.map((storeItem: any) => 
+                                                storeItem.id === item.id 
+                                                  ? { ...storeItem, quantity: newQuantity }
+                                                  : storeItem
+                                              )
+                                            };
+                                          }
+                                          return store;
+                                        });
+                                      }
+
+                                      return { ...prevRoute, aisleGroups: newAisleGroups, stores: updatedStores };
+                                    });
+                                  }}
+                                  className="w-6 h-6 rounded-full bg-white border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-sm font-medium"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                                {item.quantity} {item.unit}
+                              </span>
                             )}
                           </div>
-                        </div>
-                      </div>
 
-                      {/* Item options menu */}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="ml-1 bg-white border-gray-300 hover:bg-gray-50 px-1 h-6 w-6 min-w-6"
-                          >
-                            <MoreVertical className="h-3 w-3" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48 bg-white border border-gray-200 shadow-lg backdrop-blur-none">
-                          {/* Check if this is a single-store plan */}
-                          {!optimizedRoute?.isMultiStore ? (
-                            <>
-                              {/* Single-store plan options */}
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  updateItemMutation.mutate({
-                                    itemId: item.id,
-                                    updates: {
-                                      notes: 'Saved for future trip',
-                                      isCompletedfalse
-                                    }
-                                  });
-
-                                  // Create a new optimized route with the item removed from current shopping session
-                                  setOptimizedRoute((prevRoute: any) => {
-                                    if (!prevRoute) return prevRoute;
-
-                                    const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
-                                      ...aisle,
-                                      items: aisle.items.filter((routeItem: any) => routeItem.id !== item.id)
-                                    })).filter((aisle: any) => aisle.items.length > 0); // Remove empty aisles
-
-                                    return {
-                                      ...prevRoute,
-                                      aisleGroups: newAisleGroups,
-                                      totalItems: prevRoute.totalItems - 1
-                                    };
-                                  });
-
-
-                                  // Check if aisle is now empty after a brief delay
-                                  setTimeout(() => {
-                                    checkAndHandleEmptyAisle();
-                                  }, 100);
-                                }}
-                                className="flex items-center gap-2"
-                              >
-                                <Clock className="h-4 w-4 text-blue-600" />
-                                Save for Later
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={async () => {
-                                  try {
-                                    // Delete the item from the shopping list entirely
-                                    await apiRequest('DELETE', `/api/shopping-list/items/${item.id}`);
-
-                                    // Create a new optimized route with the item removed
-                                    setOptimizedRoute((prevRoute: any) => {
-                                      if (!prevRoute) return prevRoute;
-
-                                      const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
-                                        ...aisle,
-                                        items: aisle.items.filter((routeItem: any) => routeItem.id !== item.id)
-                                      })).filter((aisle: any) => aisle.items.length > 0); // Remove empty aisles
-
-                                      return {
-                                        ...prevRoute,
-                                        aisleGroups: newAisleGroups,
-                                        totalItems: prevRoute.totalItems - 1
-                                      };
-                                    });
-
-                                    // Invalidate queries to refresh the shopping list
-                                    queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-                                    queryClient.invalidateQueries({ queryKey: [`/api/shopping-lists/${listId}`] });
-
-
-                                  } catch (error) {
-                                    console.error('Failed to remove item:', error);
-                                    toast({
-                                      title: "Error",
-                                      description: "Failed to remove item from list",
-                                      variant: "destructive",
-                                      duration: 3000
-                                    });
-                                  }
-                                }}
-                                className="flex items-center gap-2"
-                              >
-                                <Package className="h-4 w-4 text-red-600" />
-                                Remove from List
-                              </DropdownMenuItem>
-                            </>
-                          ) : (
-                            <>
-                              {/* Multi-store and balanced plan options */}
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  updateItemMutation.mutate({
-                                    itemId: item.id,
-                                    updates: {
-                                      notes: 'Saved for future trip',
-                                      isCompleted: false
-                                    }
-                                  });
-
-                                  // Create a new optimized route with the item removed from current shopping session
-                                  setOptimizedRoute((prevRoute: any) => {
-                                    if (!prevRoute) return prevRoute;
-
-                                    const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
-                                      ...aisle,
-                                      items: aisle.items.filter((routeItem: any) => routeItem.id !== item.id)
-                                    })).filter((aisle: any) => aisle.items.length > 0); // Remove empty aisles
-
-                                    let updatedRoute = {
-                                      ...prevRoute,
-                                      aisleGroups: newAisleGroups,
-                                      totalItems: prevRoute.totalItems - 1
-                                    };
-
-                                    // For multi-store plans, also remove from current store's items
-                                    if (prevRoute.isMultiStore && prevRoute.stores) {
-                                      const updatedStores = prevRoute.stores.map((store: any, index: number) => {
-                                        if (index === currentStoreIndex) {
-                                          return {
-                                            ...store,
-                                            items: store.items.filter((storeItem: any) => storeItem.id !== item.id)
-                                          };
-                                        }
-                                        return store;
-                                      });
-                                      updatedRoute.stores = updatedStores;
-                                    }
-
-                                    return updatedRoute;
-                                  });
-
-
-                                  // Check if aisle is now empty after a brief delay
-                                  setTimeout(() => {
-                                    checkAndHandleEmptyAisle();
-                                  }, 100);
-                                }}
-                                className="flex items-center gap-2"
-                              >
-                                <Clock className="h-4 w-4 text-blue-600" />
-                                Save for Later
-                              </DropdownMenuItem>
-
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  if (optimizedRoute?.isMultiStore && optimizedRoute.stores && currentStoreIndex < optimizedRoute.stores.length - 1) {
-                                    moveItemToNextStore(item);
-                                  }
-                                }}
-                                className="flex items-center gap-2"
-                              >
-                                <MapPin className="h-4 w-4 text-purple-600" />
-                                Move to Next Store
-                              </DropdownMenuItem>
-
-                              <DropdownMenuItem
-                                onClick={async () => {
-                                  try {
-                                    // Delete the item from the shopping list entirely
-                                    await apiRequest('DELETE', `/api/shopping-list/items/${item.id}`);
-
-                                    // Create a new optimized route with the item removed
-                                    setOptimizedRoute((prevRoute: any) => {
-                                      if (!prevRoute) return prevRoute;
-
-                                      const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
-                                        ...aisle,
-                                        items: aisle.items.filter((routeItem: any) => routeItem.id !== item.id)
-                                      })).filter((aisle: any) => aisle.items.length > 0); // Remove empty aisles
-
-                                      return {
-                                        ...prevRoute,
-                                        aisleGroups: newAisleGroups,
-                                        totalItems: prevRoute.totalItems - 1
-                                      };
-                                    });
-
-                                    // For multi-store plans, also remove from current store's items
-                                    if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
-                                      const updatedStores = [...optimizedRoute.stores];
-                                      const currentStore = updatedStores[currentStoreIndex];
-                                      if (currentStore) {
-                                        currentStore.items = currentStore.items.filter((storeItem: any) => storeItem.id !== item.id);
-                                      }
-                                      setOptimizedRoute((prevRoute: any) => ({
-                                        ...prevRoute,
-                                        stores: updatedStores
-                                      }));
-                                    }
-
-                                    // Invalidate queries to refresh the shopping list
-                                    queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-                                    queryClient.invalidateQueries({ queryKey: [`/api/shopping-lists/${listId}`] });
-
-
-                                  } catch (error) {
-                                    console.error('Failed to remove item:', error);
-                                    toast({
-                                      title: "Error",
-                                      description: "Failed to remove item from list",
-                                      variant: "destructive",
-                                      duration: 3000
-                                    });
-                                  }
-                                }}
-                                className="flex items-center gap-2"
-                              >
-                                <Package className="h-4 w-4 text-red-600" />
-                                Remove from List
-                              </DropdownMenuItem>
-                            </>
+                          {/* Location - Condensed */}
+                          {item.shelfLocation && (
+                            <div className="text-xs text-blue-600 truncate">
+                              📍 {item.shelfLocation}
+                            </div>
                           )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                        </div>
+
+                        {/* Options menu - Fixed position */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="p-2 h-8 w-8 flex-shrink-0 hover:bg-gray-100"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48 bg-white border border-gray-200 shadow-lg backdrop-blur-none">
+                            {/* Check if this is a single-store plan */}
+                            {!optimizedRoute?.isMultiStore ? (
+                              <>
+                                {/* Single-store plan options */}
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    updateItemMutation.mutate({
+                                      itemId: item.id,
+                                      updates: {
+                                        notes: 'Saved for future trip',
+                                        isCompleted: false
+                                      }
+                                    });
+
+                                    // Create a new optimized route with the item removed from current shopping session
+                                    setOptimizedRoute((prevRoute: any) => {
+                                      if (!prevRoute) return prevRoute;
+
+                                      const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
+                                        ...aisle,
+                                        items: aisle.items.filter((routeItem: any) => routeItem.id !== item.id)
+                                      })).filter((aisle: any) => aisle.items.length > 0); // Remove empty aisles
+
+                                      return {
+                                        ...prevRoute,
+                                        aisleGroups: newAisleGroups,
+                                        totalItems: prevRoute.totalItems - 1
+                                      };
+                                    });
+
+                                    // Check if aisle is now empty after a brief delay
+                                    setTimeout(() => {
+                                      checkAndHandleEmptyAisle();
+                                    }, 100);
+                                  }}
+                                  className="flex items-center gap-2"
+                                >
+                                  <Clock className="h-4 w-4 text-blue-600" />
+                                  Save for Later
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={async () => {
+                                    try {
+                                      // Delete the item from the shopping list entirely
+                                      await apiRequest('DELETE', `/api/shopping-list/items/${item.id}`);
+
+                                      // Create a new optimized route with the item removed
+                                      setOptimizedRoute((prevRoute: any) => {
+                                        if (!prevRoute) return prevRoute;
+
+                                        const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
+                                          ...aisle,
+                                          items: aisle.items.filter((routeItem: any) => routeItem.id !== item.id)
+                                        })).filter((aisle: any) => aisle.items.length > 0); // Remove empty aisles
+
+                                        return {
+                                          ...prevRoute,
+                                          aisleGroups: newAisleGroups,
+                                          totalItems: prevRoute.totalItems - 1
+                                        };
+                                      });
+
+                                      // Invalidate queries to refresh the shopping list
+                                      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+                                      queryClient.invalidateQueries({ queryKey: [`/api/shopping-lists/${listId}`] });
+
+                                    } catch (error) {
+                                      console.error('Failed to remove item:', error);
+                                      toast({
+                                        title: "Error",
+                                        description: "Failed to remove item from list",
+                                        variant: "destructive",
+                                        duration: 3000
+                                      });
+                                    }
+                                  }}
+                                  className="flex items-center gap-2"
+                                >
+                                  <Package className="h-4 w-4 text-red-600" />
+                                  Remove from List
+                                </DropdownMenuItem>
+                              </>
+                            ) : (
+                              <>
+                                {/* Multi-store and balanced plan options */}
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    updateItemMutation.mutate({
+                                      itemId: item.id,
+                                      updates: {
+                                        notes: 'Saved for future trip',
+                                        isCompleted: false
+                                      }
+                                    });
+
+                                    // Create a new optimized route with the item removed from current shopping session
+                                    setOptimizedRoute((prevRoute: any) => {
+                                      if (!prevRoute) return prevRoute;
+
+                                      const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
+                                        ...aisle,
+                                        items: aisle.items.filter((routeItem: any) => routeItem.id !== item.id)
+                                      })).filter((aisle: any) => aisle.items.length > 0); // Remove empty aisles
+
+                                      let updatedRoute = {
+                                        ...prevRoute,
+                                        aisleGroups: newAisleGroups,
+                                        totalItems: prevRoute.totalItems - 1
+                                      };
+
+                                      // For multi-store plans, also remove from current store's items
+                                      if (prevRoute.isMultiStore && prevRoute.stores) {
+                                        const updatedStores = prevRoute.stores.map((store: any, index: number) => {
+                                          if (index === currentStoreIndex) {
+                                            return {
+                                              ...store,
+                                              items: store.items.filter((storeItem: any) => storeItem.id !== item.id)
+                                            };
+                                          }
+                                          return store;
+                                        });
+                                        updatedRoute.stores = updatedStores;
+                                      }
+
+                                      return updatedRoute;
+                                    });
+
+                                    // Check if aisle is now empty after a brief delay
+                                    setTimeout(() => {
+                                      checkAndHandleEmptyAisle();
+                                    }, 100);
+                                  }}
+                                  className="flex items-center gap-2"
+                                >
+                                  <Clock className="h-4 w-4 text-blue-600" />
+                                  Save for Later
+                                </DropdownMenuItem>
+
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    if (optimizedRoute?.isMultiStore && optimizedRoute.stores && currentStoreIndex < optimizedRoute.stores.length - 1) {
+                                      moveItemToNextStore(item);
+                                    }
+                                  }}
+                                  className="flex items-center gap-2"
+                                >
+                                  <MapPin className="h-4 w-4 text-purple-600" />
+                                  Move to Next Store
+                                </DropdownMenuItem>
+
+                                <DropdownMenuItem
+                                  onClick={async () => {
+                                    try {
+                                      // Delete the item from the shopping list entirely
+                                      await apiRequest('DELETE', `/api/shoppinglist/items/${item.id}`);
+
+                                      // Create a new optimized route with the item removed
+                                      setOptimizedRoute((prevRoute: any) => {
+                                        if (!prevRoute) return prevRoute;
+
+                                        const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
+                                          ...aisle,
+                                          items: aisle.items.filter((routeItem: any) => routeItem.id !== item.id)
+                                        })).filter((aisle: any) => aisle.items.length > 0); // Remove empty aisles
+
+                                        return {
+                                          ...prevRoute,
+                                          aisleGroups: newAisleGroups,
+                                          totalItems: prevRoute.totalItems - 1
+                                        };
+                                      });
+
+                                      // For multi-store plans, also remove from current store's items
+                                      if (optimizedRoute?.isMultiStore && optimizedRoute.stores) {
+                                        const updatedStores = [...optimizedRoute.stores];
+                                        const currentStore = updatedStores[currentStoreIndex];
+                                        if (currentStore) {
+                                          currentStore.items = currentStore.items.filter((storeItem: any) => storeItem.id !== item.id);
+                                        }
+                                        setOptimizedRoute((prevRoute: any) => ({
+                                          ...prevRoute,
+                                          stores: updatedStores
+                                        }));
+                                      }
+
+                                      // Invalidate queries to refresh the shopping list
+                                      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+                                      queryClient.invalidateQueries({ queryKey: [`/api/shopping-lists/${listId}`] });
+
+                                    } catch (error) {
+                                      console.error('Failed to remove item:', error);
+                                      toast({
+                                        title: "Error",
+                                        description: "Failed to remove item from list",
+                                        variant: "destructive",
+                                        duration: 3000
+                                      });
+                                    }
+                                  }}
+                                  className="flex items-center gap-2"
+                                >
+                                  <Package className="h-4 w-4 text-red-600" />
+                                  Remove from List
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
                   );
                 })}
