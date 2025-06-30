@@ -2376,105 +2376,56 @@ const ShoppingRoute: React.FC = () => {
                   return (
                     <div 
                       key={item.id} 
-                      className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
+                      className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${
                         isCompleted 
                           ? 'bg-green-50 border-green-200 opacity-75' 
                           : 'bg-white border-gray-200 hover:border-blue-300'
                       }`}
                     >
-                      <div className="flex items-center flex-1">
-                        <button
-                          onClick={() => {
-                            if (isCompleted) {
-                              // Handle unchecking item
-                              const newCompletedItems = new Set(completedItems);
-                              newCompletedItems.delete(item.id);
-                              setCompletedItems(newCompletedItems);
-                              toggleItemMutation.mutate({ itemId: item.id, completed: false });
-                            } else {
-                              // Handle checking item - mark as complete directly
-                              const newCompletedItems = new Set(completedItems);
-                              newCompletedItems.add(item.id);
-                              setCompletedItems(newCompletedItems);
-                              toggleItemMutation.mutate({ itemId: item.id, completed: true });
-                            }
-                          }}
-                          className="mr-3 focus:outline-none"
-                        >
-                          {isCompleted ? (
-                            <CheckCircle2 className="h-6 w-6 text-green-600" />
-                          ) : (
-                            <Circle className="h-6 w-6 text-gray-400 hover:text-green-600" />
-                          )}
-                        </button>
+                      {/* Checkbox */}
+                      <button
+                        onClick={() => {
+                          if (isCompleted) {
+                            // Handle unchecking item
+                            const newCompletedItems = new Set(completedItems);
+                            newCompletedItems.delete(item.id);
+                            setCompletedItems(newCompletedItems);
+                            toggleItemMutation.mutate({ itemId: item.id, completed: false });
+                          } else {
+                            // Handle checking item - mark as complete directly
+                            const newCompletedItems = new Set(completedItems);
+                            newCompletedItems.add(item.id);
+                            setCompletedItems(newCompletedItems);
+                            toggleItemMutation.mutate({ itemId: item.id, completed: true });
+                          }
+                        }}
+                        className="mt-0.5 focus:outline-none flex-shrink-0"
+                      >
+                        {isCompleted ? (
+                          <CheckCircle2 className="h-6 w-6 text-green-600" />
+                        ) : (
+                          <Circle className="h-6 w-6 text-gray-400 hover:text-green-600" />
+                        )}
+                      </button>
 
-                        <div className="flex-1">
-                          <div className={`font-medium ${isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
-                            {item.productName}
-                          </div>
-                          <div className="text-sm text-gray-500 flex items-center gap-2">
-                            <Package className="h-3 w-3" />
-                            <div className="flex items-center gap-2">
-                              <span>Qty:</span>
-                              {!isCompleted ? (
-                                <div className="flex items-center gap-1 bg-gray-100 rounded-lg px-2 py-1">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (item.quantity > 1) {
-                                        const newQuantity = item.quantity - 1;
-                                        updateItemMutation.mutate({
-                                          itemId: item.id,
-                                          updates: { quantity: newQuantity }
-                                        });
-
-                                        // Update the item in the current route state
-                                        setOptimizedRoute((prevRoute: any) => {
-                                          if (!prevRoute) return prevRoute;
-
-                                          const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
-                                            ...aisle,
-                                            items: aisle.items.map((routeItem: any) => 
-                                              routeItem.id === item.id 
-                                                ? { ...routeItem, quantity: newQuantity }
-                                                : routeItem
-                                            )
-                                          }));
-
-                                          // Also update stores array if this is a multi-store plan
-                                          let updatedStores = prevRoute.stores;
-                                          if (prevRoute.isMultiStore && prevRoute.stores) {
-                                            updatedStores = prevRoute.stores.map((store: any, storeIndex: number) => {
-                                              if (storeIndex === currentStoreIndex) {
-                                                return {
-                                                  ...store,
-                                                  items: store.items.map((storeItem: any) => 
-                                                    storeItem.id === item.id 
-                                                      ? { ...storeItem, quantity: newQuantity }
-                                                      : storeItem
-                                                  )
-                                                };
-                                              }
-                                              return store;
-                                            });
-                                          }
-
-                                          return { ...prevRoute, aisleGroups: newAisleGroups, stores: updatedStores };
-                                        });
-
-
-                                      }
-                                    }}
-                                    className="w-6 h-6 rounded-full bg-white border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-sm font-medium"
-                                    disabled={item.quantity <= 1}
-                                  >
-                                    −
-                                  </button>
-                                  <span className="w-8 text-center font-medium text-gray-800">{item.quantity}</span>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      const newQuantity = item.quantity + 1;
+                      {/* Item content - takes remaining space */}
+                      <div className="flex-1 min-w-0">
+                        <div className={`font-medium text-sm ${isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
+                          {item.productName}
+                        </div>
+                        
+                        {/* Quantity and location info */}
+                        <div className="text-xs text-gray-500 mt-1 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Package className="h-3 w-3 flex-shrink-0" />
+                            <span>Qty:</span>
+                            {!isCompleted ? (
+                              <div className="flex items-center gap-1 bg-gray-100 rounded px-1 py-0.5">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (item.quantity > 1) {
+                                      const newQuantity = item.quantity - 1;
                                       updateItemMutation.mutate({
                                         itemId: item.id,
                                         updates: { quantity: newQuantity }
@@ -2513,39 +2464,89 @@ const ShoppingRoute: React.FC = () => {
 
                                         return { ...prevRoute, aisleGroups: newAisleGroups, stores: updatedStores };
                                       });
+                                    }
+                                  }}
+                                  className="w-5 h-5 rounded-full bg-white border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-xs font-medium"
+                                  disabled={item.quantity <= 1}
+                                >
+                                  −
+                                </button>
+                                <span className="w-6 text-center font-medium text-gray-800 text-xs">{item.quantity}</span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const newQuantity = item.quantity + 1;
+                                    updateItemMutation.mutate({
+                                      itemId: item.id,
+                                      updates: { quantity: newQuantity }
+                                    });
 
+                                    // Update the item in the current route state
+                                    setOptimizedRoute((prevRoute: any) => {
+                                      if (!prevRoute) return prevRoute;
 
-                                    }}
-                                    className="w-6 h-6 rounded-full bg-white border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-sm font-medium"
-                                  >
-                                    +
-                                  </button>
-                                </div>
-                              ) : (
-                                <span>{item.quantity}</span>
-                              )}
-                            </div>
-                            {item.shelfLocation && (
-                              <>
-                                <span>•</span>
-                                <span className="text-blue-600">{item.shelfLocation}</span>
-                              </>
+                                      const newAisleGroups = prevRoute.aisleGroups.map((aisle: any) => ({
+                                        ...aisle,
+                                        items: aisle.items.map((routeItem: any) => 
+                                          routeItem.id === item.id 
+                                            ? { ...routeItem, quantity: newQuantity }
+                                            : routeItem
+                                        )
+                                      }));
+
+                                      // Also update stores array if this is a multi-store plan
+                                      let updatedStores = prevRoute.stores;
+                                      if (prevRoute.isMultiStore && prevRoute.stores) {
+                                        updatedStores = prevRoute.stores.map((store: any, storeIndex: number) => {
+                                          if (storeIndex === currentStoreIndex) {
+                                            return {
+                                              ...store,
+                                              items: store.items.map((storeItem: any) => 
+                                                storeItem.id === item.id 
+                                                  ? { ...storeItem, quantity: newQuantity }
+                                                  : storeItem
+                                              )
+                                            };
+                                          }
+                                          return store;
+                                        });
+                                      }
+
+                                      return { ...prevRoute, aisleGroups: newAisleGroups, stores: updatedStores };
+                                    });
+                                  }}
+                                  className="w-5 h-5 rounded-full bg-white border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-xs font-medium"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-xs">{item.quantity}</span>
                             )}
                           </div>
+                          
+                          {/* Shelf location on new line to save space */}
+                          {item.shelfLocation && (
+                            <div className="text-blue-600 text-xs truncate">
+                              📍 {item.shelfLocation}
+                            </div>
+                          )}
                         </div>
                       </div>
 
-                      {/* Item options menu */}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="ml-2 bg-white border-gray-300 hover:bg-gray-50 px-2"
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
+                      {/* Menu button - fixed width, always visible */}
+                      <div className="flex-shrink-0">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 p-0 bg-white border-gray-300 hover:bg-gray-50"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger></div>
+                    </div>
                         <DropdownMenuContent align="end" className="w-48 bg-white border border-gray-200 shadow-lg backdrop-blur-none">
                           {/* Check if this is a single-store plan */}
                           {!optimizedRoute?.isMultiStore ? (
