@@ -65,6 +65,20 @@ const PlanDetails: React.FC = () => {
   // Extract items from the shopping list data
   const shoppingItems = shoppingListData?.items || [];
 
+  // Fetch deals for price comparison
+  const { data: deals } = useQuery({
+    queryKey: ['/api/deals'],
+    staleTime: 20 * 60 * 1000, // 20 minutes - deals don't change frequently
+    refetchOnWindowFocus: false, // Don't refetch when window gains focus
+  });
+
+  // Fetch available retailers for store override
+  const { data: availableRetailers } = useQuery({
+    queryKey: ['/api/retailers'],
+    staleTime: 30 * 60 * 1000, // 30 minutes - retailers don't change frequently
+    refetchOnWindowFocus: false,
+  });
+
   // Generate plan data based on shopping items and plan type
   const generatePlanData = (items: ShoppingItem[], planType: string): PlanData => {
     console.log('generatePlanData called with:', { items, planType, itemsLength: items?.length, overrideRetailerId });
@@ -196,20 +210,6 @@ const PlanDetails: React.FC = () => {
   const formatPrice = (price: number) => {
     return `$${(price / 100).toFixed(2)}`;
   };
-
-  // Fetch deals for price comparison
-  const { data: deals } = useQuery({
-    queryKey: ['/api/deals'],
-    staleTime: 20 * 60 * 1000, // 20 minutes - deals don't change frequently
-    refetchOnWindowFocus: false, // Don't refetch when window gains focus
-  });
-
-  // Fetch available retailers for store override
-  const { data: availableRetailers } = useQuery({
-    queryKey: ['/api/retailers'],
-    staleTime: 30 * 60 * 1000, // 30 minutes - retailers don't change frequently
-    refetchOnWindowFocus: false,
-  });
 
   // Filter deals by retailer for current plan
   const getDealsForRetailer = (retailerId: number) => {
