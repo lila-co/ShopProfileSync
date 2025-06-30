@@ -7,6 +7,8 @@ import { queryClient } from '@/lib/queryClient';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import AsyncErrorBoundary from '@/components/AsyncErrorBoundary';
+import SimpleDashboard from '@/pages/simple-dashboard';
+import ShoppingListSimple from '@/components/lists/ShoppingListSimple';
 
 // Import lazy-loaded components organized by feature groups
 import { 
@@ -221,6 +223,16 @@ function AppContent() {
               <AdminPages.InternalAnalytics />
             </Suspense>
           </ErrorBoundary>
+        </ProtectedRoute>
+      </Route>
+      <Route path="/simple-dashboard">
+        <ProtectedRoute>
+          <SimpleDashboard />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/simple-list">
+        <ProtectedRoute>
+          <ShoppingListSimple />
         </ProtectedRoute>
       </Route>
 
