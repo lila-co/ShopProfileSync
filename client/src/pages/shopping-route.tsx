@@ -1685,7 +1685,8 @@ const ShoppingRoute: React.FC = () => {
                 estimatedTime: storeRoute.estimatedTime,
                 retailerName: nextStore.retailerName,
                 totalItems: storeItems.length,
-                stores: prevRoute.stores?.map((store, index) => 
+                ```text
+stores: prevRoute.stores?.map((store, index) => 
                   index === nextStoreIndex ? { ...store, items: storeItems } : store
                 ) || prevRoute.stores
               }));
@@ -2032,6 +2033,24 @@ const ShoppingRoute: React.FC = () => {
     }
   };
 
+  // Function to start fresh (clear existing session)
+  const startFreshSession = () => {
+    // Clear all existing session data
+    localStorage.removeItem(`interruptedSession-${listId}`);
+    localStorage.removeItem(`shopping_session_${listId}`);
+    sessionStorage.removeItem('shoppingPlanData');
+    sessionStorage.removeItem('shoppingListId');
+    sessionStorage.removeItem('shoppingMode');
+
+    setShowResumeDialog(false);
+    setExistingSessionData(null);
+
+    toast({
+      title: "Starting Fresh",
+      description: "Previous shopping session cleared",
+      duration: 2000
+    });
+  };
 
   if (isLoading) {
     return (
@@ -2166,7 +2185,7 @@ const ShoppingRoute: React.FC = () => {
 
 
 
-        
+
 
 
         {/* Current Aisle */}
@@ -2238,7 +2257,7 @@ const ShoppingRoute: React.FC = () => {
                           <div className={`font-medium text-sm leading-tight mb-1 ${isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
                             {item.productName}
                           </div>
-                          
+
                           {/* Quantity controls - Mobile optimized */}
                           <div className="flex items-center gap-2 mb-1">
                             {!isCompleted ? (
@@ -2348,7 +2367,7 @@ const ShoppingRoute: React.FC = () => {
                               </span>
                             )}
                           </div>
-                          
+
                           {/* Location - Condensed */}
                           {item.shelfLocation && (
                             <div className="text-xs text-blue-600 truncate">
@@ -2523,7 +2542,7 @@ const ShoppingRoute: React.FC = () => {
                                   onClick={async () => {
                                     try {
                                       // Delete the item from the shopping list entirely
-                                      await apiRequest('DELETE', `/api/shopping-list/items/${item.id}`);
+                                      await apiRequest('DELETE', `/api/shoppinglist/items/${item.id}`);
 
                                       // Create a new optimized route with the item removed
                                       setOptimizedRoute((prevRoute: any) => {
