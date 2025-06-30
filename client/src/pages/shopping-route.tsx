@@ -2108,12 +2108,12 @@ const ShoppingRoute: React.FC = () => {
         )}
       </header>
 
-      <main className="flex-1 overflow-y-auto p-4 pb-20">
+      <main className="flex-1 overflow-y-auto p-2 pb-16">
 
 
         {/* Loyalty Card Indicator */}
         {loyaltyCard && loyaltyCard.retailerName === getCurrentRetailerName() && (
-          <Card className="mb-4 border-green-200 bg-green-50">
+          <Card className="mb-3 border-green-200 bg-green-50">
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -2142,7 +2142,7 @@ const ShoppingRoute: React.FC = () => {
 
         {/* No Loyalty Card Notice for Multi-Store */}
         {(!loyaltyCard || loyaltyCard.retailerName !== getCurrentRetailerName()) && optimizedRoute?.isMultiStore && getCurrentRetailerName() && (
-          <Card className="mb-4 border-yellow-200 bg-yellow-50">
+          <Card className="mb-3 border-yellow-200 bg-yellow-50">
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
                 <div className="h-5 w-5 bg-yellow-500 rounded-full flex items-center justify-center">
@@ -2171,7 +2171,7 @@ const ShoppingRoute: React.FC = () => {
 
         {/* Current Aisle */}
         {currentAisle && (
-          <Card className="mb-4">
+          <Card className="mb-3">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div>
@@ -2200,7 +2200,7 @@ const ShoppingRoute: React.FC = () => {
                   return (
                     <div 
                       key={item.id} 
-                      className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
+                      className={`flex items-center justify-between p-2 rounded-lg border transition-all ${
                         isCompleted 
                           ? 'bg-green-50 border-green-200 opacity-75' 
                           : 'bg-white border-gray-200 hover:border-blue-300'
@@ -2241,7 +2241,7 @@ const ShoppingRoute: React.FC = () => {
                             <div className="flex items-center gap-2">
                               <span>Qty:</span>
                               {!isCompleted ? (
-                                <div className="flex items-center gap-1 bg-gray-100 rounded-lg px-2 py-1">
+                                <div className="flex items-center gap-1 bg-gray-100 rounded px-1 py-0.5">
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -2287,12 +2287,12 @@ const ShoppingRoute: React.FC = () => {
                                         });
                                       }
                                     }}
-                                    className="w-6 h-6 rounded-full bg-white border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-sm font-medium"
+                                    className="w-4 h-4 rounded-full bg-white border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-xs font-medium"
                                     disabled={item.quantity <= 1}
                                   >
                                     −
                                   </button>
-                                  <span className="w-8 text-center font-medium text-gray-800">{item.quantity}</span>
+                                  <span className="w-5 text-center font-medium text-gray-800 text-xs">{item.quantity}</span>
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -2336,7 +2336,7 @@ const ShoppingRoute: React.FC = () => {
                                         return { ...prevRoute, aisleGroups: newAisleGroups, stores: updatedStores };
                                       });
                                     }}
-                                    className="w-6 h-6 rounded-full bg-white border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-sm font-medium"
+                                    className="w-4 h-4 rounded-full bg-white border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-xs font-medium"
                                   >
                                     +
                                   </button>
@@ -2361,9 +2361,9 @@ const ShoppingRoute: React.FC = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="ml-2 bg-white border-gray-300 hover:bg-gray-50 px-2"
+                            className="ml-1 bg-white border-gray-300 hover:bg-gray-50 px-1 h-6 w-6 min-w-6"
                           >
-                            <MoreVertical className="h-4 w-4" />
+                            <MoreVertical className="h-3 w-3" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48 bg-white border border-gray-200 shadow-lg backdrop-blur-none">
@@ -2585,36 +2585,42 @@ const ShoppingRoute: React.FC = () => {
               </div>
 
               {/* Navigation Buttons */}
-              <div className="mt-4 pt-4 border-t space-y-3">
-                <div className="grid grid-cols-2 gap-3">
+              <div className="mt-3 pt-3 border-t">
+                <div className="flex gap-2">
                   <Button 
                     variant="outline"
                     onClick={moveToPreviousAisle}
                     disabled={currentAisleIndex === 0}
-                    className="w-full"
+                    className="flex-1 py-2 text-xs px-2 min-w-0"
+                    size="sm"
                   >
-                    <ArrowRight className="h-4 w-4 mr-2 rotate-180" />                    Previous
+                    <ArrowRight className="h-3 w-3 mr-1 rotate-180" />
+                    <span className="truncate">Previous</span>
                   </Button>
 
                   {isLastAisle ? (
                     <Button 
-                      className="w-full bg-green-600 hover:bg-green-700"
+                      className="flex-1 bg-green-600 hover:bg-green-700 py-2 text-xs px-2 min-w-0"
                       onClick={() => handleFinishStore()}
+                      size="sm"
                     >
-                      <Check className="h-4 w-4 mr-2" />
-                      {optimizedRoute?.isMultiStore && currentStoreIndex < optimizedRoute.stores.length - 1 
-                        ? `Finish ${optimizedRoute.stores[currentStoreIndex]?.retailerName}` 
-                        : "End Shopping"
-                      }
+                      <Check className="h-3 w-3 mr-1" />
+                      <span className="truncate">
+                        {optimizedRoute?.isMultiStore && currentStoreIndex < optimizedRoute.stores.length - 1 
+                          ? "Finish Store" 
+                          : "End Shopping"
+                        }
+                      </span>
                     </Button>
                   ) : (
                     <Button 
                       variant="outline"
-                      className="w-full"
+                      className="flex-1 py-2 text-xs px-2 min-w-0"
                       onClick={moveToNextAisle}
+                      size="sm"
                     >
-                      Next
-                      <ArrowRight className="h-4 w-4 ml-2" />
+                      <span className="truncate">Next</span>
+                      <ArrowRight className="h-3 w-3 ml-1" />
                     </Button>
                   )}
                 </div>
@@ -2624,7 +2630,7 @@ const ShoppingRoute: React.FC = () => {
         )}
 
         {/* All Aisles Overview */}
-        <Card className="mb-4">
+        <Card className="mb-3">
           <CardHeader>
             <CardTitle className="text-base">All Aisles</CardTitle>
           </CardHeader>
@@ -2795,7 +2801,7 @@ const ShoppingRoute: React.FC = () => {
 
               {/* Store Navigation Buttons */}
               <div className="mt-4 pt-3 border-t">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="flex gap-2">
                   <Button 
                     variant="outline"
                     onClick={() => {
@@ -2836,15 +2842,16 @@ const ShoppingRoute: React.FC = () => {
                       }, 50);
                     }}
                     disabled={currentStoreIndex === 0}
-                    className="w-full"
+                    className="flex-1 text-xs px-2 min-w-0"
+                    size="sm"
                   >
-                    <ArrowRight className="h-4 w-4 mr-2 rotate-180" />
-                    Previous Store
+                    <ArrowRight className="h-3 w-3 mr-1 rotate-180" />
+                    <span className="truncate">Previous</span>
                   </Button>
 
                   <Button 
                     variant="outline"
-                    className="w-full"
+                    className="flex-1 text-xs px-2 min-w-0"
                     onClick={() => {
                       if (currentStoreIndex < optimizedRoute.stores.length - 1) {
                         const nextStoreIndex = currentStoreIndex + 1;
@@ -2885,9 +2892,10 @@ const ShoppingRoute: React.FC = () => {
                       }
                     }}
                     disabled={currentStoreIndex >= optimizedRoute.stores.length - 1}
+                    size="sm"
                   >
-                    Next Store
-                    <ArrowRight className="h-4 w-4 ml-2" />
+                    <span className="truncate">Next</span>
+                    <ArrowRight className="h-3 w-3 ml-1" />
                   </Button>
                 </div>
               </div>
