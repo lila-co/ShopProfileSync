@@ -1685,8 +1685,7 @@ const ShoppingRoute: React.FC = () => {
                 estimatedTime: storeRoute.estimatedTime,
                 retailerName: nextStore.retailerName,
                 totalItems: storeItems.length,
-                ```text
-stores: prevRoute.stores?.map((store, index) => 
+                stores: prevRoute.stores?.map((store, index) => 
                   index === nextStoreIndex ? { ...store, items: storeItems } : store
                 ) || prevRoute.stores
               }));
