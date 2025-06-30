@@ -944,7 +944,20 @@ const ShoppingListComponent: React.FC = () => {
             .sort(([a], [b]) => {
               // Sort categories by typical shopping order
               const order = ['Produce', 'Dairy & Eggs', 'Meat & Seafood', 'Pantry & Canned Goods', 'Frozen Foods', 'Bakery', 'Personal Care', 'Household Items', 'Generic'];
-              return order.indexOf(a) - order.indexOf(b);
+              const indexA = order.indexOf(a);
+              const indexB = order.indexOf(b);
+              
+              // If both categories are in the predefined order, sort by that order
+              if (indexA !== -1 && indexB !== -1) {
+                return indexA - indexB;
+              }
+              
+              // If only one is in the predefined order, prioritize it
+              if (indexA !== -1) return -1;
+              if (indexB !== -1) return 1;
+              
+              // If neither is in the predefined order, sort alphabetically
+              return a.localeCompare(b);
             })
             .map(([category, categoryItems]) => {
               const config = categoryConfig[category as keyof typeof categoryConfig] || {
