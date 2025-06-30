@@ -872,7 +872,7 @@ const PlanDetails: React.FC = () => {
                   <div className={`text-xl font-bold ${availability.missingItems.length > 0 ? 'text-orange-600' : 'text-green-600'}`}>
                     {availability.availableItems}/{availability.totalItems}
                   </div>
-                  <div className="text-xs text-gray-500">Available</div>
+                  <div className"text-xs text-gray-500">Available</div>
                 </div>
               </div>
             </CardContent>
