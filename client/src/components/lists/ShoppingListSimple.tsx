@@ -186,7 +186,7 @@ const ShoppingListSimple: React.FC = () => {
               >
                 <div className="flex items-center space-x-4">
                   <div className="flex-shrink-0">
-                    <div className="w-8 h-8 border-3 border-gray-300 rounded-full flex items-center justify-center group-hover:border-green-500 transition-colors">
+                    <div className="w-8 h-8 border-2 border-gray-300 rounded-full flex items-center justify-center group-hover:border-green-500 transition-colors">
                       {toggleItemMutation.isPending ? (
                         <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
                       ) : null}

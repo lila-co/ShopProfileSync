@@ -322,7 +322,7 @@
   }
 
   .input-modern {
-    @apply border-3 border-gray-900;
+    @apply border-2 border-gray-900;
   }
 }
 
