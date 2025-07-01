@@ -879,7 +879,6 @@ const ShoppingListComponent: React.FC = () => {
             // Check if any significant words match
             for (const productWord of productWords) {
               for (const dealWord of dealWords) {
-                ```text
                 if (productWord === dealWord || 
                     productWord.includes(dealWord) || 
                     dealWord.includes(productWord)) {
