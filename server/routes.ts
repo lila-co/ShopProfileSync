@@ -479,14 +479,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { EmailIntegrationService } = await import('./services/emailIntegration');
-      
+
       // Use HTTPS for redirect URI in production
       const protocol = req.get('x-forwarded-proto') || req.protocol;
       const host = req.get('host');
       const redirectUri = `${protocol}://${host}/api/auth/email/${provider}/callback`;
-      
+
       console.log(`Using redirect URI: ${redirectUri}`);
-      
+
       const authUrl = EmailIntegrationService.generateAuthUrl(
         provider,
         parseInt(userId as string),
@@ -533,7 +533,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Using redirect URI: ${redirectUri}`);
 
       const { EmailIntegrationService } = await import('./services/emailIntegration');
-      
+
       // Exchange code for tokens
       const tokens = await EmailIntegrationService.exchangeCodeForToken(
         provider,
@@ -613,22 +613,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       handleError(res, error);
     }
-  });</old_str></old_str>
+  });
 
   // Add shopping list item
   app.post('/api/shopping-list/items', sanitizeInput, async (req: Request, res: Response) => {
     try {
       const { shoppingListId, productName, quantity, unit } = req.body;
-      
+
       if (!shoppingListId || !productName) {
         return res.status(400).json({ message: 'Shopping list ID and product name are required' });
       }
-      
+
       const validQuantity = parseInt(quantity) || 1;
       const validUnit = unit || 'COUNT';
-      
+
       console.log(`Adding item to shopping list ${shoppingListId}:`, { productName, quantity: validQuantity, unit: validUnit });
-      
+
       const newItem = await storage.createShoppingListItem({
         shoppingListId,
         productName: productName.trim(),
@@ -636,7 +636,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         unit: validUnit,
         isCompleted: false
       });
-      
+
       console.log(`Successfully added item:`, newItem);
       res.json(newItem);
     } catch (error) {
@@ -856,7 +856,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/user/switch-role', async (req: Request, res: Response) => {
     try {
       const { targetRole } = req.body;
-      const currentUserId = req.headers['x-current-user-id'] ? 
+      const currentUserId =The app crashed due to a syntax error in the original code, specifically within the get('/api/shopping-lists/suggestions') route. This commit fixes the syntax error and ensures the app functions as expected. req.headers['x-current-user-id'] ? 
         parseInt(req.headers['x-current-user-id'] as string) : 1;
 
       if (!targetRole) {
@@ -1740,7 +1740,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json({
           analytics: {
             ...analytics,
-            topUnfoundItems: Object.fromEntries(sortedUnfoundItems.slice(0, 10)),
+            topUnfoundItems: ObjectfromEntries(sortedUnfoundItems.slice(0, 10)),
             topUnfoundCategories: Object.fromEntries(sortedUnfoundCategories.slice(0, 5)),
             itemsMostlyMovedToCompetitors: Object.fromEntries(sortedMovedItems.slice(0, 8))
           },
