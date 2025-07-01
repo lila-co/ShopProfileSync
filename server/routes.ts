@@ -2095,6 +2095,69 @@ async function detectBrandsWithAI(productName: string): Promise<{
 }> {
   const name = productName.toLowerCase();
 
+  // Brand detection patterns
+  const brandPatterns = [
+    // Cookie/Snack brands
+    { pattern: /\b(oreo|oreos)\b/i, brand: 'Oreo', category: 'snacks' },
+    { pattern: /\b(chips\s*ahoy)\b/i, brand: 'Chips Ahoy', category: 'snacks' },
+    { pattern: /\b(nutter\s*butter)\b/i, brand: 'Nutter Butter', category: 'snacks' },
+    { pattern: /\b(keebler)\b/i, brand: 'Keebler', category: 'snacks' },
+    { pattern: /\b(pepperidge\s*farm)\b/i, brand: 'Pepperidge Farm', category: 'snacks' },
+    { pattern: /\b(nabisco)\b/i, brand: 'Nabisco', category: 'snacks' },
+    
+    // Beverage brands
+    { pattern: /\b(coca\s*cola|coke)\b/i, brand: 'Coca Cola', category: 'beverages' },
+    { pattern: /\b(pepsi)\b/i, brand: 'Pepsi', category: 'beverages' },
+    { pattern: /\b(lacroix)\b/i, brand: 'LaCroix', category: 'beverages' },
+    { pattern: /\b(perrier)\b/i, brand: 'Perrier', category: 'beverages' },
+    
+    // Dairy brands
+    { pattern: /\b(horizon\s*organic)\b/i, brand: 'Horizon Organic', category: 'dairy' },
+    { pattern: /\b(lactaid)\b/i, brand: 'Lactaid', category: 'dairy' },
+    { pattern: /\b(fairlife)\b/i, brand: 'Fairlife', category: 'dairy' },
+    
+    // Meat brands
+    { pattern: /\b(tyson)\b/i, brand: 'Tyson', category: 'meat' },
+    { pattern: /\b(perdue)\b/i, brand: 'Perdue', category: 'meat' },
+    { pattern: /\b(oscar\s*mayer)\b/i, brand: 'Oscar Mayer', category: 'meat' }
+  ];
+
+  // Generic term patterns
+  const genericPatterns = [
+    { pattern: /\b(cookies?)\b/i, term: 'cookies', category: 'snacks' },
+    { pattern: /\b(crackers?)\b/i, term: 'crackers', category: 'snacks' },
+    { pattern: /\b(milk)\b/i, term: 'milk', category: 'dairy' },
+    { pattern: /\b(cheese)\b/i, term: 'cheese', category: 'dairy' },
+    { pattern: /\b(yogurt)\b/i, term: 'yogurt', category: 'dairy' },
+    { pattern: /\b(chicken)\b/i, term: 'chicken', category: 'meat' },
+    { pattern: /\b(beef)\b/i, term: 'beef', category: 'meat' },
+    { pattern: /\b(sparkling\s*water|carbonated\s*water)\b/i, term: 'sparkling water', category: 'beverages' }
+  ];
+
+  const detectedBrands: string[] = [];
+  const genericTerms: string[] = [];
+  let category = 'generic';
+
+  // Detect brands
+  for (const { pattern, brand, category: brandCategory } of brandPatterns) {
+    if (pattern.test(name)) {
+      detectedBrands.push(brand);
+      if (category === 'generic') category = brandCategory;
+    }
+  }
+
+  // Detect generic terms
+  for (const { pattern, term, category: termCategory } of genericPatterns) {
+    if (pattern.test(name)) {
+      genericTerms.push(term);
+      if (category === 'generic') category = termCategory;
+    }
+  }
+
+  console.log(`🤖 AI Brand Detection: "${productName}" -> brands: [${detectedBrands.join(', ')}], generic: [${genericTerms.join(', ')}], category: ${category}`);
+
+  return { detectedBrands, genericTerms, category };
+
   // Enhanced pattern-based detection that simulates AI behavior
   const brandDatabase = {
     cookies: {
