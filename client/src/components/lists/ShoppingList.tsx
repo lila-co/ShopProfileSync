@@ -1000,15 +1000,18 @@ const ShoppingListComponent: React.FC = () => {
                             <CardContent className="p-3">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-3 flex-1">
-                                  <div className="flex-1">
-                                    <span className={`${item.completed ? 'line-through' : ''}`}>
-                                      {item.productName}
-                                    </span>
-                                    <div className="text-sm text-gray-500">
-                                      {item.quantity} {item.unit || 'COUNT'}
+                                    <div className="flex-1">
+                                      <div className="flex items-center space-x-2">
+                                        <span className={`${item.completed ? 'line-through' : ''}`}>
+                                          {item.productName}
+                                        </span>
+                                        <DealIndicator productName={item.productName} />
+                                      </div>
+                                      <div className="text-sm text-gray-500">
+                                        {item.quantity} {item.unit || 'COUNT'}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
                                 <div className="flex space-x-2">
                                   <Button
                                     variant="ghost"
@@ -1047,9 +1050,12 @@ const ShoppingListComponent: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3 flex-1">
                     <div className="flex-1">
-                      <span className={`${item.completed ? 'line-through' : ''}`}>
-                        {item.productName}
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <span className={`${item.completed ? 'line-through' : ''}`}>
+                          {item.productName}
+                        </span>
+                        <DealIndicator productName={item.productName} />
+                      </div>
                       <div className="text-sm text-gray-500">
                         {item.quantity} {item.unit || 'COUNT'}
                       </div>
