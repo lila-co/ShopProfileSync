@@ -9,6 +9,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import AsyncErrorBoundary from '@/components/AsyncErrorBoundary';
 import SimpleDashboard from '@/pages/simple-dashboard';
 import ShoppingListSimple from '@/components/lists/ShoppingListSimple';
+import { useEffect } from 'react';
 
 // Import lazy-loaded components organized by feature groups
 import { 
@@ -252,6 +253,17 @@ function AppContent() {
 }
 
 function App() {
+  // Keep-alive functionality to prevent timeout during reviews
+  useEffect(() => {
+    const keepAlive = setInterval(() => {
+      fetch('/api/shopping-list')
+        .then(() => console.log('Session keep-alive'))
+        .catch(() => console.log('Keep-alive failed'));
+    }, 4 * 60 * 1000); // Every 4 minutes
+
+    return () => clearInterval(keepAlive);
+  }, []);
+
   return (
     <ErrorBoundary level="app">
       <QueryClientProvider client={queryClient}>
