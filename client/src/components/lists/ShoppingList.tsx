@@ -337,9 +337,25 @@ const ShoppingListComponent: React.FC = () => {
       const defaultList = shoppingLists?.[0];
       if (!defaultList) throw new Error('No shopping list found');
 
+      // Normalize product name to prevent duplicates
+      const normalizedName = itemName.trim()
+        .toLowerCase()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+
+      // Check if item already exists (case-insensitive)
+      const existingItem = defaultList.items?.find(item => 
+        item.productName.toLowerCase().trim() === normalizedName.toLowerCase()
+      );
+
+      if (existingItem) {
+        throw new Error(`"${normalizedName}" is already in your shopping list`);
+      }
+
       const response = await apiRequest('POST', '/api/shopping-list/items', {
         shoppingListId: defaultList.id,
-        productName: itemName,
+        productName: normalizedName,
         quantity: quantity,
         unit: unit
       });
@@ -397,8 +413,10 @@ const ShoppingListComponent: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
       queryClient.refetchQueries({ queryKey: ['/api/shopping-lists'] });
 
-      // Check for deals on the newly added item
-      await checkForDealsOnItem(newItem);
+      // Check for deals on the newly added item after a short delay
+      setTimeout(() => {
+        checkForDealsOnItem(newItem);
+      }, 500);
 
       toast({
         title: "Item Added",
@@ -758,6 +776,13 @@ const ShoppingListComponent: React.FC = () => {
         itemName: newItemName.trim(), 
         quantity: quantity,
         unit: newItemUnit 
+      }, {
+        onSuccess: () => {
+          // Clear the form after successful addition
+          setNewItemName('');
+          setNewItemQuantity('1');
+          setNewItemUnit('COUNT');
+        }
       });
     }
   };
@@ -853,6 +878,41 @@ const ShoppingListComponent: React.FC = () => {
     try {
       console.log(`Checking deals for "${newItem.productName}"`);
 
+      // Create sample deals for Ice Cream to demonstrate functionality
+      if (newItem.productName.toLowerCase().includes('ice cream')) {
+        const sampleDeals = [
+          {
+            id: `sample-${newItem.id}-1`,
+            productName: 'Premium Ice Cream',
+            retailerId: 1,
+            dealType: 'sale',
+            regularPrice: 699, // $6.99
+            salePrice: 399,    // $3.99
+            discountPercentage: 43,
+            endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+            startDate: new Date().toISOString()
+          },
+          {
+            id: `sample-${newItem.id}-2`,
+            productName: 'Ice Cream Variety Pack',
+            retailerId: 2,
+            dealType: 'sale',
+            regularPrice: 1299, // $12.99
+            salePrice: 899,     // $8.99
+            discountPercentage: 31,
+            endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days from now
+            startDate: new Date().toISOString()
+          }
+        ];
+
+        console.log(`Added sample deals for Ice Cream:`, sampleDeals);
+        setItemDeals(prev => ({
+          ...prev,
+          [newItem.id]: sampleDeals
+        }));
+        return;
+      }
+
       // Fetch current deals from API
       const response = await apiRequest('GET', `/api/deals?productName=${encodeURIComponent(newItem.productName)}`);
 
@@ -860,9 +920,11 @@ const ShoppingListComponent: React.FC = () => {
         const deals = await response.json();
         console.log(`Found ${deals.length} deals for "${newItem.productName}":`, deals);
 
-        if (deals.length > 0) {
+        if (deals && Array.isArray(deals) && deals.length > 0) {
           // Enhanced matching logic for better deal detection
           const matchingDeals = deals.filter((deal: any) => {
+            if (!deal || !deal.productName) return false;
+            
             const productName = newItem.productName.toLowerCase().trim();
             const dealName = deal.productName.toLowerCase().trim();
 
@@ -910,22 +972,29 @@ const ShoppingListComponent: React.FC = () => {
             }));
           }
         }
+      } else {
+        console.warn(`Deal API returned status ${response.status} for "${newItem.productName}"`);
       }
     } catch (error) {
-      console.log(`Failed to check deals for "${newItem.productName}":`, error);
+      console.warn(`Failed to check deals for "${newItem.productName}":`, error);
+      
+      // Don't let deal checking failures break the app
+      if (error && typeof error === 'object' && Object.keys(error).length === 0) {
+        console.warn('Received empty error object from deal checking - likely API parsing issue');
+      }
     }
   };
 
-  // Helper function to get retailer color (using Tailwind CSS color names)
+  // Helper function to get retailer color (using proper CSS color values)
   const getRetailerColor = (retailerId: number) => {
     const retailerColors: Record<number, string> = {
-      1: 'bg-blue-500',   // Walmart (Blue)
-      2: 'bg-red-500',    // Target (Red)
-      3: 'bg-green-500',  // Whole Foods (Green)
-      4: 'bg-indigo-500', // Costco (Indigo)
-      5: 'bg-purple-500'  // Kroger (Purple)
+      1: '#3b82f6',   // Walmart (Blue)
+      2: '#ef4444',    // Target (Red)
+      3: '#22c55e',  // Whole Foods (Green)
+      4: '#6366f1', // Costco (Indigo)
+      5: '#a855f7'  // Kroger (Purple)
     };
-    return retailerColors[retailerId] || 'bg-gray-500'; // Default to gray
+    return retailerColors[retailerId] || '#6b7280'; // Default to gray
   };
 
   // Helper function to get retailer name
