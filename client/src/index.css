@@ -336,13 +336,8 @@
   }
 }
 
-/* Dark mode optimizations */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-  }
-
+/* Dark mode optimizations - only apply when .dark class is present */
+.dark {
   .card-modern {
     @apply bg-gray-800 border-gray-700;
   }
@@ -350,23 +345,23 @@
   .input-modern {
     @apply bg-gray-800 border-gray-600 text-white;
   }
+}
 
-  /* Force toast notifications to be properly visible */
-  [data-sonner-toast] {
-    background-color: white !important;
-    border: 1px solid #e5e7eb !important;
-    color: #111827 !important;
-  }
-  
-  [data-sonner-toast][data-type="error"] {
-    background-color: #fef2f2 !important;
-    border-color: #fecaca !important;
-    color: #991b1b !important;
-  }
-  
-  [data-sonner-toast][data-type="success"] {
-    background-color: #f0fdf4 !important;
-    border-color: #bbf7d0 !important;
-    color: #166534 !important;
-  }
+/* Force toast notifications to be properly visible in all themes */
+[data-sonner-toast] {
+  background-color: white !important;
+  border: 1px solid #e5e7eb !important;
+  color: #111827 !important;
+}
+
+[data-sonner-toast][data-type="error"] {
+  background-color: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #991b1b !important;
+}
+
+[data-sonner-toast][data-type="success"] {
+  background-color: #f0fdf4 !important;
+  border-color: #bbf7d0 !important;
+  color: #166534 !important;
 }
