@@ -1353,14 +1353,21 @@ const ShoppingListComponent: React.FC = () => {
               return a.localeCompare(b);
             })
             .map(([category, categoryItems]) => {
+              // Sort items within each category alphabetically
+              const sortedCategoryItems = [...categoryItems].sort((a, b) => 
+                a.productName.localeCompare(b.productName, undefined, { numeric: true, sensitivity: 'base' })
+              );
+              return [category, sortedCategoryItems];
+            })
+            .map(([category, sortedCategoryItems]) => {
               const config = categoryConfig[category as keyof typeof categoryConfig] || {
                 icon: '🛒',
                 color: 'bg-gray-100 text-gray-800 border-gray-200',
                 aisle: 'General'
               };
               const isCollapsed = collapsedCategories[category];
-              const completedCount = categoryItems.filter(item => item.completed).length;
-              const totalCount = categoryItems.length;
+              const completedCount = sortedCategoryItems.filter(item => item.completed).length;
+              const totalCount = sortedCategoryItems.length;
 
               return (
                 <Collapsible key={category} open={!isCollapsed} onOpenChange={() => toggleCategory(category)}>
@@ -1388,7 +1395,7 @@ const ShoppingListComponent: React.FC = () => {
 
                     <CollapsibleContent>
                       <div className="px-3 pb-3 space-y-2">
-                        {categoryItems.map((item) => (
+                        {sortedCategoryItems.map((item) => (
                           <Card key={item.id} className={`${item.completed ? 'opacity-60' : ''} border border-gray-200`}>
                             <CardContent className="p-3">
                               <div className="flex items-center justify-between">
@@ -1437,7 +1444,9 @@ const ShoppingListComponent: React.FC = () => {
       {/* Fallback for uncategorized view */}
       {Object.keys(categorizedItems).length === 0 && !isCategorizingItems && shoppingLists?.[0]?.items && shoppingLists[0].items.length > 0 && (
         <div className="space-y-2">
-          {shoppingLists[0].items.map((item) => (
+          {[...shoppingLists[0].items]
+            .sort((a, b) => a.productName.localeCompare(b.productName, undefined, { numeric: true, sensitivity: 'base' }))
+            .map((item) => (
             <Card key={item.id} className={`${item.completed ? 'opacity-60' : ''}`}>
               <CardContent className="p-3">
                 <div className="flex items-center justify-between">
