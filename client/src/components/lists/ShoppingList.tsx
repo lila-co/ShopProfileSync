@@ -941,140 +941,14 @@ const ShoppingListComponent: React.FC = () => {
 
   // DealIndicator Component with real deal detection and popover
   const DealIndicator: React.FC<{ productName: string; itemId: number }> = ({ productName, itemId }) => {
-    // const [dealInfo, setDealInfo] = useState<{hasDeal: boolean; deals?: any[]} | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
-    // useEffect(() => {
-    //   const checkRealDeals = async () => {
-    //     setIsLoading(true);
-    //     try {
-    //       // Query actual deals API
-    //       const response = await fetch(`/api/deals?productName=${encodeURIComponent(productName)}`, {
-    //         credentials: 'include',
-    //       });
+    // Check if there are deals for this item
+    if (!itemDeals[itemId] || itemDeals[itemId].length === 0) {
+      return null;
+    }
 
-    //       if (response.ok) {
-    //         const deals = await response.json();
-    //         const relevantDeals = deals.filter((deal: any) => 
-    //           deal.productName.toLowerCase().includes(productName.toLowerCase()) ||
-    //           productName.toLowerCase().includes(deal.productName.toLowerCase())
-    //         );
-
-    //         if (relevantDeals.length > 0) {
-    //           setDealInfo({
-    //             hasDeal: true,
-    //             deals: relevantDeals
-    //           });
-    //         } else {
-    //           setDealInfo({ hasDeal: false });
-    //         }
-    //       } else {
-    //         setDealInfo({ hasDeal: false });
-    //       }
-    //     } catch (error) {
-    //       console.warn(`Failed to check deals for "${productName}":`, error);
-    //       setDealInfo({ hasDeal: false });
-    //     } finally {
-    //       setIsLoading(false);
-    //     }
-    //   };
-
-    //   // Debounce the API call to avoid too many requests
-    //   const timeoutId = setTimeout(checkRealDeals, 300);
-    //   return () => clearTimeout(timeoutId);
-    // }, [productName]);
-
-    // if (isLoading) {
-    //   return (
-    //     <div className="h-6 w-6 animate-pulse bg-gray-200 rounded-full"></div>
-    //   );
-    // }
-
-    // if (dealInfo?.hasDeal && dealInfo.deals) {
-    //   return (
-    //     <Popover>
-    //       <PopoverTrigger asChild>
-    //         <button className="h-6 w-6 bg-green-500 rounded-full flex items-center justify-center hover:bg-green-600 transition-colors">
-    //           <Tag className="h-3 w-3 text-white" />
-    //         </button>
-    //       </PopoverTrigger>
-    //       <PopoverContent className="w-80 p-4">
-    //         <div className="space-y-3">
-    //           <h4 className="font-semibold text-lg">Available Deals</h4>
-    //           {dealInfo.deals.map((deal: any, index: number) => (
-    //             <div key={index} className="border rounded-lg p-3 space-y-2">
-    //               <div className="flex items-center justify-between">
-    //                 <span className="font-medium text-sm">{deal.productName}</span>
-    //                 <span className="text-xs text-gray-500">{getRetailerName(deal.retailerId)}</span>
-    //               </div>
-
-    //               {deal.dealType === 'spend_threshold_percentage' ? (
-    //                 <div className="space-y-1">
-    //                   <div className="flex items-center gap-2">
-    //                     <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-    //                       Spend & Save
-    //                     </Badge>
-    //                   </div>
-    //                   <p className="text-sm text-gray-700">
-    //                     Spend ${(deal.spendThreshold / 100).toFixed(0)}+ and get {deal.discountPercentage}% off
-    //                   </p>
-    //                 </div>
-    //               ) : deal.dealType === 'buy_x_get_y_free' ? (
-    //                 <div className="space-y-1">
-    //                   <div className="flex items-center gap-2">
-    //                     <Badge variant="secondary" className="bg-purple-100 text-purple-800">
-    //                       BOGO
-    //                     </Badge>
-    //                   </div>
-    //                   <p className="text-sm text-gray-700">
-    //                     Buy {deal.buyQuantity} get {deal.getFreeQuantity} free
-    //                   </p>
-    //                 </div>
-    //               ) : deal.dealType === 'flat_discount' ? (
-    //                 <div className="space-y-1">
-    //                   <div className="flex items-center gap-2">
-    //                     <Badge variant="secondary" className="bg-orange-100 text-orange-800">
-    //                       Flat Discount
-    //                     </Badge>
-    //                   </div>
-    //                   <p className="text-sm text-gray-700">
-    //                     ${(deal.discountAmount / 100).toFixed(2)} off
-    //                   </p>
-    //                 </div>
-    //               ) : (
-    //                 <div className="space-y-1">
-    //                   <div className="flex items-center gap-2">
-    //                     <span className="text-lg font-bold text-green-600">
-    //                       ${(deal.salePrice / 100).toFixed(2)}
-    //                     </span>
-    //                     <span className="text-sm text-gray-500 line-through">
-    //                       ${(deal.regularPrice / 100).toFixed(2)}
-    //                     </span>
-    //                     <Badge variant="secondary" className="bg-green-100 text-green-800">
-    //                       {Math.round((1 - deal.salePrice / deal.regularPrice) * 100)}% off
-    //                     </Badge>
-    //                   </div>
-    //                 </div>
-    //               )}
-
-    //               {deal.endDate && (
-    //                 <div className="flex items-center gap-1 text-xs text-gray-500">
-    //                   <Clock className="h-3 w-3" />
-    //                   <span>Valid until {new Date(deal.endDate).toLocaleDateString()}</span>
-    //                 </div>
-    //               )}
-    //             </div>
-    //           ))}
-    //         </div>
-    //       </PopoverContent>
-    //     </Popover>
-    //   );
-    // }
-
-    // return null;
     return (
-              /* Deal Indicator */
-              {itemDeals[itemId] && itemDeals[itemId].length > 0 && (
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -1175,7 +1049,7 @@ const ShoppingListComponent: React.FC = () => {
                     </div>
                   </PopoverContent>
                 </Popover>
-              )}
+              )
     );
   };
 
