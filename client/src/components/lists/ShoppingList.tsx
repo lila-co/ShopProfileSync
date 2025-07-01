@@ -10,7 +10,7 @@ import { aiCategorizationService } from '@/lib/aiCategorization';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
-import { Plus, ShoppingBag, FileText, Clock, Check, Trash2, AlertTriangle, DollarSign, MapPin, Car, BarChart2, Wand2, Pencil, Image, Star, TrendingDown, Percent, Circle, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, ShoppingBag, FileText, Clock, Check, Trash2, AlertTriangle, DollarSign, MapPin, Car, BarChart2, Wand2, Pencil, Image, Star, TrendingDown, Percent, Circle, CheckCircle2, ChevronDown, ChevronRight, Tag } from 'lucide-react';
 import { getItemImage, getBestProductImage, getCompanyLogo } from '@/lib/imageUtils';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -386,13 +386,17 @@ const ShoppingListComponent: React.FC = () => {
       // Always refetch after error or success
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
     },
-    onSuccess: () => {
-      setNewItemName('');
-      setNewItemQuantity('1');
-      setNewItemUnit('COUNT');
+    onSuccess: async (newItem) => {
+      // Invalidate and refetch shopping lists
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      queryClient.refetchQueries({ queryKey: ['/api/shopping-lists'] });
+
+      // Check for deals on the newly added item
+      await checkForDealsOnItem(newItem);
+
       toast({
-        title: "Item added",
-        description: "Item has been added to your shopping list",
+        title: "Item Added",
+        description: `${newItem.productName} has been added to your list.`
       });
     }
   });
@@ -838,93 +842,89 @@ const ShoppingListComponent: React.FC = () => {
     }
   };
 
+  // Deal criteria detection
+  const checkForDealsOnItem = async (newItem: any) => {
+    // Implement your deal detection logic here
+    // For example, check if the item name matches a specific deal
+    if (newItem.productName.toLowerCase().includes('discount')) {
+      toast({
+        title: "Deal Alert!",
+        description: `The item "${newItem.productName}" has a discount available!`,
+        variant: "success",
+      });
+    } else if (newItem.productName.toLowerCase().includes('bulk')) {
+      toast({
+        title: "Bulk Purchase!",
+        description: `Consider buying "${newItem.productName}" in bulk for better savings!`,
+        variant: "info",
+      });
+    } else {
+      console.log(`No deals found for "${newItem.productName}"`);
+    }
+  };
 
+    // DealIndicator Component
+    const DealIndicator: React.FC<{ productName: string }> = ({ productName }) => {
+      const [hasDeal, setHasDeal] = useState(false);
 
-  // Show AI generation animation
-  if (isGeneratingList) {
-    return (
-      <div className="p-4 pb-20">
-        <div className="max-w-md mx-auto">
-          <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
-            <CardContent className="p-6">
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 mx-auto mb-4 relative">
-                  <div className="absolute inset-0 bg-blue-600 rounded-full animate-pulse"></div>
-                  <div className="absolute inset-2 bg-white rounded-full flex items-center justify-center">
-                    <Wand2 className="h-6 w-6 text-blue-600" />
-                  </div>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  {generationSteps.some(step => step.includes('Scanning')) 
-                    ? 'AI is Updating Your Shopping List'
-                    : 'AI is Creating Your Smart Shopping List'
-                  }
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {generationSteps.some(step => step.includes('Scanning'))
-                    ? 'Checking for new deals and items you might need'
-                    : 'Please wait while we personalize your shopping experience'
-                  }
-                </p>
-              </div>
+      useEffect(() => {
+        // Simulate deal detection logic
+        const checkDeal = async () => {
+          if (productName.toLowerCase().includes('discount')) {
+            setHasDeal(true);
+          } else {
+            setHasDeal(false);
+          }
+        };
+        checkDeal();
+      }, [productName]);
 
-              <div className="space-y-3">
-                {generationSteps.map((step, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    {index < currentStep ? (
-                      <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0" />
-                    ) : index === currentStep ? (
-                      <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
-                    ) : (
-                      <Circle className="h-5 w-5 flex-shrink-0" />
-                    )}
-                    <span className="text-sm font-medium">{step}</span>
-                  </div>
-                ))}
-              </div>
+      if (hasDeal) {
+        return (
+          <Badge variant="secondary">
+            <Tag className="h-3 w-3 mr-1" />
+            Deal
+          </Badge>
+        );
+      }
 
-              <div className="mt-6 bg-white rounded-lg p-4">
-                <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-                  <span>Progress</span>
-                  <span>{Math.round(((currentStep + 1) / generationSteps.length) * 10)}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
-                    style={{ width: `${((currentStep + 1) / generationSteps.length) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      return null;
+    };
+
+    const SpendThresholdTracker: React.FC<{ currentTotal: number }> =  ({ currentTotal }) => {
+    const [thresholdReached, setThresholdReached] = useState(false);
+    const threshold = 50; // Define your spend threshold
+
+    useEffect(() => {
+      if (currentTotal >= threshold) {
+        setThresholdReached(true);
+      } else {
+        setThresholdReached(false);
+      }
+    }, [currentTotal, threshold]);
+
+    if (thresholdReached) {
+      return (
+        <div className="text-green-600 font-semibold">
+          Congratulations! You've reached the spend threshold of ${threshold}.
         </div>
+      );
+    }
+
+    return (
+      <div className="text-gray-600">
+        Spend ${threshold - currentTotal > 0 ? (threshold - currentTotal).toFixed(2) : '0.00'} more to unlock extra benefits!
       </div>
     );
-  }
+  };
 
-  // Show loading state
-  if (isLoading) {
-    return (
-      <div className="p-4 space-y-4">
-        <div className="h-10 bg-gray-200 rounded animate-pulse w-3/4 mb-4"></div>
-        <div className="space-y-2">
-          {Array(5).fill(0).map((_, index) => (
-            <div key={index} className="p-4 border border-gray-200 rounded-lg">
-              <div className="flex justify-between items-center">
-                <div className="w-full">
-                  <div className="h-5 bg-gray-200 roundedanimate-pulse w-1/2 mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded animate-pulse w-1/3"></div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const { data: shoppingList, isLoading: listLoading, refetch: refetchShoppingList } = useQuery({
+    queryKey: ['/api/shopping-list'],
+  });
 
-  const defaultList = shoppingLists?.[0];
-  const items = defaultList?.items || [];
+  const totalCost = shoppingList?.items?.reduce((sum, item) => {
+    return sum + (item.suggestedPrice || 0);
+  }, 0) / 100 || 0;
 
   return (
     <div className="p-4 pb-20">
@@ -946,16 +946,16 @@ const ShoppingListComponent: React.FC = () => {
               const order = ['Produce', 'Dairy & Eggs', 'Meat & Seafood', 'Pantry & Canned Goods', 'Frozen Foods', 'Bakery', 'Personal Care', 'Household Items', 'Generic'];
               const indexA = order.indexOf(a);
               const indexB = order.indexOf(b);
-              
+
               // If both categories are in the predefined order, sort by that order
               if (indexA !== -1 && indexB !== -1) {
                 return indexA - indexB;
               }
-              
+
               // If only one is in the predefined order, prioritize it
               if (indexA !== -1) return -1;
               if (indexB !== -1) return 1;
-              
+
               // If neither is in the predefined order, sort alphabetically
               return a.localeCompare(b);
             })
@@ -1086,8 +1086,6 @@ const ShoppingListComponent: React.FC = () => {
         </div>
       )}
 
-
-
       <form onSubmit={handleAddItem} className="mb-4">
         <Card className="bg-white rounded-lg shadow-md border border-gray-200">
           <CardContent className="p-4 space-y-4">
@@ -1206,7 +1204,25 @@ const ShoppingListComponent: React.FC = () => {
         </Card>
       </form>
 
-
+      {shoppingList && shoppingList.items && shoppingList.items.length > 0 && (
+              <Card className="mb-6">
+                <CardContent className="p-4">
+                  <div className="text-center">
+                    <h3 className="font-semibold text-gray-900 mb-2">Ready to Shop?</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      {shoppingList.items.length} items • Estimated total: ${totalCost.toFixed(2)}
+                    </p>
+                    <SpendThresholdTracker currentTotal={totalCost} />
+                    <Button
+                      onClick={() => window.location.href = '/plan-details'}
+                      className="w-full bg-primary hover:bg-primary/90 mt-2"
+                    >
+                      Create Shopping Plan
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
       {/* Recipe Import Dialog */}
       <Dialog open={recipeDialogOpen} onOpenChange={setRecipeDialogOpen}>
@@ -1366,8 +1382,6 @@ const ShoppingListComponent: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-
 
       {/* Voice AI Agent - Moved to bottom */}
       <div className="mt-6 mb-4">
