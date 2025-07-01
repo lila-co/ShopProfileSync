@@ -16,6 +16,11 @@ import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import VoiceAgent from '@/components/voice/VoiceAgent';
 // Removed next-auth import as it's not being used properly in this context
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 
 const ShoppingListComponent: React.FC = () => {
   const { toast } = useToast();
@@ -847,7 +852,7 @@ const ShoppingListComponent: React.FC = () => {
     try {
       // Check for actual deals from the deals API
       const response = await apiRequest('GET', `/api/deals?productName=${encodeURIComponent(newItem.productName)}`);
-      
+
       if (response.ok) {
         const deals = await response.json();
         const relevantDeals = deals.filter((deal: any) => 
@@ -858,7 +863,7 @@ const ShoppingListComponent: React.FC = () => {
         if (relevantDeals.length > 0) {
           const bestDeal = relevantDeals.sort((a: any, b: any) => a.salePrice - b.salePrice)[0];
           const savings = Math.round((1 - bestDeal.salePrice / bestDeal.regularPrice) * 100);
-          
+
           toast({
             title: "Deal Found!",
             description: `${bestDeal.productName} is ${savings}% off at ${getRetailerName(bestDeal.retailerId)}!`,
@@ -874,6 +879,7 @@ const ShoppingListComponent: React.FC = () => {
   // Helper function to get retailer name
   const getRetailerName = (retailerId: number) => {
     const retailerMap: Record<number, string> = {
+      ```text
       1: 'Walmart',
       2: 'Target', 
       3: 'Whole Foods',
@@ -883,9 +889,9 @@ const ShoppingListComponent: React.FC = () => {
     return retailerMap[retailerId] || 'Store';
   };
 
-  // DealIndicator Component with real deal detection
+  // DealIndicator Component with real deal detection and popover
   const DealIndicator: React.FC<{ productName: string }> = ({ productName }) => {
-    const [dealInfo, setDealInfo] = useState<{hasDeal: boolean; savings?: number; retailer?: string} | null>(null);
+    const [dealInfo, setDealInfo] = useState<{hasDeal: boolean; deals?: any[]} | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
@@ -894,7 +900,7 @@ const ShoppingListComponent: React.FC = () => {
         try {
           // Query actual deals API
           const response = await apiRequest('GET', `/api/deals?productName=${encodeURIComponent(productName)}`);
-          
+
           if (response.ok) {
             const deals = await response.json();
             const relevantDeals = deals.filter((deal: any) => 
@@ -903,13 +909,9 @@ const ShoppingListComponent: React.FC = () => {
             );
 
             if (relevantDeals.length > 0) {
-              const bestDeal = relevantDeals.sort((a: any, b: any) => a.salePrice - b.salePrice)[0];
-              const savings = Math.round((1 - bestDeal.salePrice / bestDeal.regularPrice) * 100);
-              
               setDealInfo({
                 hasDeal: true,
-                savings,
-                retailer: getRetailerName(bestDeal.retailerId)
+                deals: relevantDeals
               });
             } else {
               setDealInfo({ hasDeal: false });
@@ -932,19 +934,88 @@ const ShoppingListComponent: React.FC = () => {
 
     if (isLoading) {
       return (
-        <Badge variant="outline" className="animate-pulse">
-          <div className="h-3 w-3 mr-1 bg-gray-300 rounded-full"></div>
-          Checking...
-        </Badge>
+        <div className="h-6 w-6 animate-pulse bg-gray-200 rounded-full"></div>
       );
     }
 
-    if (dealInfo?.hasDeal) {
+    if (dealInfo?.hasDeal && dealInfo.deals) {
       return (
-        <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-300">
-          <Tag className="h-3 w-3 mr-1" />
-          {dealInfo.savings}% off
-        </Badge>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="h-6 w-6 bg-green-500 rounded-full flex items-center justify-center hover:bg-green-600 transition-colors">
+              <Tag className="h-3 w-3 text-white" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80 p-4">
+            <div className="space-y-3">
+              <h4 className="font-semibold text-lg">Available Deals</h4>
+              {dealInfo.deals.map((deal: any, index: number) => (
+                <div key={index} className="border rounded-lg p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-sm">{deal.productName}</span>
+                    <span className="text-xs text-gray-500">{getRetailerName(deal.retailerId)}</span>
+                  </div>
+
+                  {deal.dealType === 'spend_threshold_percentage' ? (
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                          Spend & Save
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-gray-700">
+                        Spend ${(deal.spendThreshold / 100).toFixed(0)}+ and get {deal.discountPercentage}% off
+                      </p>
+                    </div>
+                  ) : deal.dealType === 'buy_x_get_y_free' ? (
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+                          BOGO
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-gray-700">
+                        Buy {deal.buyQuantity} get {deal.getFreeQuantity} free
+                      </p>
+                    </div>
+                  ) : deal.dealType === 'flat_discount' ? (
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                          Flat Discount
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-gray-700">
+                        ${(deal.discountAmount / 100).toFixed(2)} off
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-bold text-green-600">
+                          ${(deal.salePrice / 100).toFixed(2)}
+                        </span>
+                        <span className="text-sm text-gray-500 line-through">
+                          ${(deal.regularPrice / 100).toFixed(2)}
+                        </span>
+                        <Badge variant="secondary" className="bg-green-100 text-green-800">
+                          {Math.round((1 - deal.salePrice / deal.regularPrice) * 100)}% off
+                        </Badge>
+                      </div>
+                    </div>
+                  )}
+
+                  {deal.endDate && (
+                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                      <Clock className="h-3 w-3" />
+                      <span>Valid until {new Date(deal.endDate).toLocaleDateString()}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
       );
     }
 
@@ -1208,7 +1279,7 @@ const ShoppingListComponent: React.FC = () => {
                   <option value="GRAMS">Grams</option>
                   <option value="HEAD">Head</option>
                   <option value="JAR">Jar</option>
-                  <option value="KG">Kilogram</option>
+                  <option value="KG">Kilogram">
                   <option value="LB">Pound</option>
                   <option value="LITER">Liter</option>
                   <option value="LOAF">Loaf</option>
