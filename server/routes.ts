@@ -865,8 +865,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     });
 
-  app.patch('/api/user/profile', sanitizeInput, validateBody(serverProfileUpdateSchema), async (req: Request, res: Response) =>```tool_code
- {
+  app.patch('/api/user/profile', sanitizeInput, validateBody(serverProfileUpdateSchema), async (req: Request, res: Response) => {
     try {
       // Get the current user ID from headers or use default
       const userId = req.headers['x-current-user-id'] ? 
