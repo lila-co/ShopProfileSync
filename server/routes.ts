@@ -1741,7 +1741,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         recommendations: [
           analytics.summary.averageCompletionRate < 80 ? 
             'Consider expanding inventory - completion rate below 80%' : null,
-          sortedUnfoundItems.length > 10 ? 
+          sortedUnfoundItems.length > 10: 
             'High number of unfound items suggests inventory gaps' : null,
           sortedMovedItems.length > 5 ? 
             'Customers frequently shopping elsewhere for specific items' : null
@@ -2087,24 +2087,7 @@ app.post('/api/ai/brand-detection', async (req, res) => {
   }
 });
 
-// AI Brand Detection endpoint
-server.post('/api/ai/brand-detection', async (req, res) => {
-  try {
-    const { productName } = req.body;
-    
-    if (!productName) {
-      return res.status(400).json({ error: 'Product name is required' });
-    }
-
-    const result = await detectBrandsWithAI(productName);
-    res.json(result);
-  } catch (error) {
-    console.error('AI brand detection error:', error);
-    res.status(500).json({ error: 'Failed to detect brands' });
-  }
-});
-
-// Enhanced AI Brand Detection Service Function with comprehensive brand/generic relationship mapping
+// AI Brand Detection Service Function
 async function detectBrandsWithAI(productName: string): Promise<{
   detectedBrands: string[];
   genericTerms: string[];
@@ -2123,14 +2106,14 @@ async function detectBrandsWithAI(productName: string): Promise<{
     { pattern: /\b(nabisco)\b/i, brand: 'Nabisco', category: 'cookies' },
     { pattern: /\b(famous\s*amos|famousamos)\b/i, brand: 'Famous Amos', category: 'cookies' },
     { pattern: /\b(archway)\b/i, brand: 'Archway', category: 'cookies' },
-    
+
     // Cereal brands
     { pattern: /\b(cheerios|cheerio)\b/i, brand: 'Cheerios', category: 'cereal' },
     { pattern: /\b(frosted\s*flakes|frostedflakes)\b/i, brand: 'Frosted Flakes', category: 'cereal' },
     { pattern: /\b(lucky\s*charms|luckycharms)\b/i, brand: 'Lucky Charms', category: 'cereal' },
     { pattern: /\b(froot\s*loops|frootloops|fruit\s*loops)\b/i, brand: 'Froot Loops', category: 'cereal' },
     { pattern: /\b(special\s*k|specialk)\b/i, brand: 'Special K', category: 'cereal' },
-    
+
     // Beverage brands
     { pattern: /\b(coca\s*cola|cocacola|coke)\b/i, brand: 'Coca Cola', category: 'soda' },
     { pattern: /\b(pepsi)\b/i, brand: 'Pepsi', category: 'soda' },
@@ -2138,21 +2121,21 @@ async function detectBrandsWithAI(productName: string): Promise<{
     { pattern: /\b(dr\s*pepper|drpepper)\b/i, brand: 'Dr Pepper', category: 'soda' },
     { pattern: /\b(mountain\s*dew|mountaindew)\b/i, brand: 'Mountain Dew', category: 'soda' },
     { pattern: /\b(lacroix|la\s*croix)\b/i, brand: 'LaCroix', category: 'sparkling_water' },
-    
+
     // Chip brands
     { pattern: /\b(lay\'?s|lays)\b/i, brand: 'Lays', category: 'chips' },
     { pattern: /\b(doritos)\b/i, brand: 'Doritos', category: 'chips' },
     { pattern: /\b(cheetos)\b/i, brand: 'Cheetos', category: 'chips' },
     { pattern: /\b(pringles)\b/i, brand: 'Pringles', category: 'chips' },
     { pattern: /\b(ruffles)\b/i, brand: 'Ruffles', category: 'chips' },
-    
+
     // Dairy brands
     { pattern: /\b(horizon\s*organic|horizonorganic)\b/i, brand: 'Horizon Organic', category: 'dairy' },
     { pattern: /\b(lactaid)\b/i, brand: 'Lactaid', category: 'dairy' },
     { pattern: /\b(fairlife)\b/i, brand: 'Fairlife', category: 'dairy' },
     { pattern: /\b(kraft)\b/i, brand: 'Kraft', category: 'cheese' },
     { pattern: /\b(sargento)\b/i, brand: 'Sargento', category: 'cheese' },
-    
+
     // Meat brands
     { pattern: /\b(tyson)\b/i, brand: 'Tyson', category: 'meat' },
     { pattern: /\b(perdue)\b/i, brand: 'Perdue', category: 'meat' },
@@ -2165,11 +2148,11 @@ async function detectBrandsWithAI(productName: string): Promise<{
     { pattern: /\b(cookies?|cookie)\b/i, term: 'cookies', category: 'cookies' },
     { pattern: /\b(crackers?|cracker)\b/i, term: 'crackers', category: 'crackers' },
     { pattern: /\b(chips?|chip)\b/i, term: 'chips', category: 'chips' },
-    
+
     // Beverage categories
     { pattern: /\b(soda|soft\s*drink|pop)\b/i, term: 'soda', category: 'soda' },
     { pattern: /\b(sparkling\s*water|carbonated\s*water|seltzer)\b/i, term: 'sparkling water', category: 'sparkling_water' },
-    
+
     // Food categories
     { pattern: /\b(cereal|breakfast\s*cereal)\b/i, term: 'cereal', category: 'cereal' },
     { pattern: /\b(milk)\b/i, term: 'milk', category: 'dairy' },
