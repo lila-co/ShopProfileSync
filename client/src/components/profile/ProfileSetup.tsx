@@ -37,7 +37,7 @@ const ProfileSetup: React.FC = () => {
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
       householdType: user?.householdType || '',
-      householdSize: user?.householdSize?.toString() || '',
+      householdSize: user?.householdSize || 1,
       preferNameBrand: user?.preferNameBrand || false,
       preferOrganic: user?.preferOrganic || false,
       buyInBulk: user?.buyInBulk || false,
@@ -51,7 +51,7 @@ const ProfileSetup: React.FC = () => {
     if (user) {
       form.reset({
         householdType: user?.householdType || '',
-        householdSize: user?.householdSize?.toString() || '',
+        householdSize: user?.householdSize || 1,
         preferNameBrand: user?.preferNameBrand || false,
         preferOrganic: user?.preferOrganic || false,
         buyInBulk: user?.buyInBulk || false,
@@ -64,10 +64,7 @@ const ProfileSetup: React.FC = () => {
   // Handle form submission
   const updateProfileMutation = useMutation({
     mutationFn: async (values: ProfileFormValues) => {
-      const response = await apiRequest('PATCH', '/api/user/profile', {
-        ...values,
-        householdSize: parseInt(values.householdSize, 10)
-      });
+      const response = await apiRequest('PATCH', '/api/user/profile', values);
       return response.json();
     },
     onSuccess: () => {
@@ -89,7 +86,13 @@ const ProfileSetup: React.FC = () => {
   });
 
   const onSubmit = (values: ProfileFormValues) => {
-    updateProfileMutation.mutate(values);
+    // Ensure householdSize is a number
+    const formattedValues = {
+      ...values,
+      householdSize: typeof values.householdSize === 'string' ? 
+        parseInt(values.householdSize, 10) : values.householdSize
+    };
+    updateProfileMutation.mutate(formattedValues);
   };
 
   if (isLoading) {
@@ -146,16 +149,16 @@ const ProfileSetup: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">Number of People</label>
             <select 
               className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-700"
-              {...form.register("householdSize")}
+              {...form.register("householdSize", { valueAsNumber: true })}
               onClick={(e) => e.stopPropagation()}
               onFocus={(e) => e.stopPropagation()}
             >
               <option value="">Select number</option>
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5+</option>
+              <option value={1}>1</option>
+              <option value={2}>2</option>
+              <option value={3}>3</option>
+              <option value={4}>4</option>
+              <option value={5}>5+</option>
             </select>
             {form.formState.errors.householdSize && (
               <p className="text-red-500 text-xs mt-1">{form.formState.errors.householdSize.message}</p>
