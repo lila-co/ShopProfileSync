@@ -49,14 +49,20 @@ const ProfilePage: React.FC = () => {
   });
 
   const updatePrivacyMutation = useMutation({
-    mutationFn: async (preferences: any) => {
+    mutationFn: async (preferences: Record<string, boolean>) => {
       const response = await fetch('/api/user/privacy-preferences', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(preferences),
       });
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        const errorText = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { message: errorText };
+        }
         throw new Error(errorData.message || `HTTP ${response.status}: Failed to update privacy preferences`);
       }
       return response.json();
@@ -79,14 +85,20 @@ const ProfilePage: React.FC = () => {
   });
 
   const updateNotificationMutation = useMutation({
-    mutationFn: async (preferences: any) => {
+    mutationFn: async (preferences: Record<string, boolean>) => {
       const response = await fetch('/api/user/notification-preferences', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(preferences),
       });
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        const errorText = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { message: errorText };
+        }
         throw new Error(errorData.message || `HTTP ${response.status}: Failed to update notification preferences`);
       }
       return response.json();
@@ -108,13 +120,15 @@ const ProfilePage: React.FC = () => {
   const handlePrivacyToggle = (setting: string, value: boolean) => {
     if (updatePrivacyMutation.isPending) return;
     
-    updatePrivacyMutation.mutate({ [setting]: value });
+    const preferences = { [setting]: value };
+    updatePrivacyMutation.mutate(preferences);
   };
 
   const handleNotificationToggle = (setting: string, value: boolean) => {
     if (updateNotificationMutation.isPending) return;
     
-    updateNotificationMutation.mutate({ [setting]: value });
+    const preferences = { [setting]: value };
+    updateNotificationMutation.mutate(preferences);
   };
 
   const form = useForm<z.infer<typeof profileSchema>>({
