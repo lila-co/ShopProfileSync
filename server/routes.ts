@@ -310,6 +310,20 @@ async function createSampleDealsFromURL(retailerId: number, circularId: number, 
 
 import { locationBasedCircularManager } from './services/locationBasedCircularManager';
 import { logger } from './services/logger';
+import { 
+  users, 
+  shoppingLists, 
+  shoppingListItems, 
+  retailers, 
+  deals, 
+  products, 
+  userRetailerAccounts,
+  dataPrivacyPreferences,
+  notificationPreferences,
+  InsertShoppingList,
+  InsertShoppingListItem,
+  InsertUserRetailerAccount
+} from "@/shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create HTTP server
@@ -851,7 +865,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     });
 
-  app.patch('/api/user/profile', sanitizeInput, validateBody(serverProfileUpdateSchema), async (req: Request, res: Response) => {
+  app.patch('/api/user/profile', sanitizeInput, validateBody(serverProfileUpdateSchema), async (req: Request, res: Response) =>```tool_code
+ {
     try {
       // Get the current user ID from headers or use default
       const userId = req.headers['x-current-user-id'] ? 
