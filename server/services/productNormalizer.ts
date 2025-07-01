@@ -262,7 +262,21 @@ export class ProductNormalizationService {
       'oneon': 'onion',
       'onyon': 'onion',
       'carrots': 'carrots',
-      'carot': 'carrot'
+      'carot': 'carrot',
+      // Cereal phonetic spellings
+      'confleis': 'cornflakes',
+      'cornfleis': 'cornflakes',
+      'frosfleiks': 'frosted flakes',
+      'cheerios': 'cheerios',
+      'cherrios': 'cheerios',
+      'cheeios': 'cheerios',
+      // Other breakfast items
+      'otemil': 'oatmeal',
+      'oatmil': 'oatmeal',
+      'avena': 'oatmeal',
+      'pankeiks': 'pancakes',
+      'wafleis': 'waffles',
+      'tost': 'toast'
     };
 
     // Spanish terms commonly preserved in Spanglish context
