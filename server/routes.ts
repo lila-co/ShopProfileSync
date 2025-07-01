@@ -1741,7 +1741,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         recommendations: [
           analytics.summary.averageCompletionRate < 80 ? 
             'Consider expanding inventory - completion rate below 80%' : null,
-          sortedUnfoundItems.length > 10: 
+          sortedUnfoundItems.length > 10? 
             'High number of unfound items suggests inventory gaps' : null,
           sortedMovedItems.length > 5 ? 
             'Customers frequently shopping elsewhere for specific items' : null
