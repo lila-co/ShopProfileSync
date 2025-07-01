@@ -123,7 +123,7 @@ const ProfileSetup: React.FC = () => {
         Help us personalize your shopping recommendations by providing some information about your household.
       </p>
 
-      <div className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Household Type</label>
           <select 
@@ -225,14 +225,13 @@ const ProfileSetup: React.FC = () => {
         </div>
 
         <Button 
-          type="button" 
+          type="submit" 
           className="w-full py-3 bg-primary text-white rounded-lg font-medium mt-6"
           disabled={updateProfileMutation.isPending}
-          onClick={form.handleSubmit(onSubmit)}
         >
           {updateProfileMutation.isPending ? 'Saving...' : 'Save Profile'}
         </Button>
-      </div>
+      </form>
     </div>
   );
 };
