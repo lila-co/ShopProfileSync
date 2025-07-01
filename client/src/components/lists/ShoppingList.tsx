@@ -1508,7 +1508,7 @@ const ShoppingListComponent: React.FC = () => {
                 <option value="SACK">Sack</option>
                 <option value="SHEET">Sheet</option>
                 <option value="SLICE">Slice</option>
-                <STICK</option>
+                <option value="STICK">Stick</option>
                 <option value="TBSP">Tablespoon</option>
                 <option value="TRAY">Tray</option>
                 <option value="TSP">Teaspoon</option>
