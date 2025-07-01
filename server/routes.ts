@@ -2016,5 +2016,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/products/categorization-feedback', async (req, res) => {
+    try {
+      const { productName, originalCategory, correctedCategory, confidence } = req.body;
+
+    if (!productName || !correctedCategory) {
+      return res.status(400).json({ 
+        error: 'Product name and corrected category are required' 
+      });
+    }
+
+    // Store the feedback for machine learning improvements
+    const { mlCategorizer } = await import('./services/mlCategorizer');
+    await mlCategorizer.learnFromCorrection(
+      productName,
+      originalCategory || 'Unknown',
+      correctedCategory,
+      getCurrentUserId(req), // Default user ID
+      confidence || 1.0
+    );
+
+    res.json({ 
+      success: true, 
+      message: 'Feedback received and learning updated' 
+    });
+  } catch (error) {
+    console.error('Error processing categorization feedback:', error);
+    res.status(500).json({ error: 'Failed to process feedback' });
+  }
+});
+
+// AI Brand Detection API
+app.post('/api/ai/brand-detection', async (req, res) => {
+  try {
+    const { productName } = req.body;
+
+    if (!productName) {
+      return res.status(400).json({ error: 'Product name is required' });
+    }
+
+    // Simulate AI brand detection (you can replace this with actual AI service)
+    const result = await detectBrandsWithAI(productName);
+
+    res.json(result);
+  } catch (error) {
+    console.error('AI brand detection error:', error);
+    res.status(500).json({ error: 'Failed to detect brands' });
+  }
+});
+
+// AI Brand Detection Service Function
+async function detectBrandsWithAI(productName: string): Promise<{
+  detectedBrands: string[];
+  genericTerms: string[];
+  category: string;
+}> {
+  const name = productName.toLowerCase();
+
+  // Enhanced pattern-based detection that simulates AI behavior
+  const brandDatabase = {
+    cookies: {
+      brands: ['oreo', 'chips ahoy', 'nutter butter', 'keebler', 'pepperidge farm', 'famous amos', 'archway'],
+      patterns: [/\b(chocolate chip|sugar|oatmeal|sandwich|wafer)\s*cookies?\b/i, /\bcookies?\b/i]
+    },
+    cereal: {
+      brands: ['cheerios', 'frosted flakes', 'lucky charms', 'froot loops', 'special k', 'honey nut'],
+      patterns: [/\bcereal\b/i, /\b(corn|rice|wheat)\s*flakes?\b/i]
+    },
+    chips: {
+      brands: ['lays', 'doritos', 'cheetos', 'pringles', 'ruffles', 'fritos'],
+      patterns: [/\bchips?\b/i, /\b(potato|corn|tortilla)\s*chips?\b/i]
+    },
+    soda: {
+      brands: ['coca cola', 'pepsi', 'sprite', 'dr pepper', 'mountain dew', 'fanta'],
+      patterns: [/\bsoda\b/i, /\bsoft drink\b/i, /\bcola\b/i]
+    },
+    cheese: {
+      brands: ['kraft', 'sargento', 'tillamook', 'philadelphia', 'velveeta'],
+      patterns: [/\bcheese\b/i, /\b(cheddar|mozzarella|swiss|american)\b/i]
+    }
+  };
+
+  const detectedBrands: string[] = [];
+  const genericTerms: string[] = [];
+  let category = 'generic';
+
+  // Detect brands and categories
+  for (const [cat, data] of Object.entries(brandDatabase)) {
+    // Check for brand names
+    for (const brand of data.brands) {
+      if (name.includes(brand)) {
+        detectedBrands.push(brand);
+        category = cat;
+      }
+    }
+
+    // Check for generic patterns
+    for (const pattern of data.patterns) {
+      if (pattern.test(name)) {
+        genericTerms.push(cat);
+        if (category === 'generic') category = cat;
+      }
+    }
+  }
+
+  return {
+    detectedBrands,
+    genericTerms,
+    category
+  };
+}
+
   return server;
 }
