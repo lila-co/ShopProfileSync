@@ -44,6 +44,7 @@ const ShoppingListComponent: React.FC = () => {
   const [isCategorizingItems, setIsCategorizingItems] = useState(false);
   const [userHasClearedList, setUserHasClearedList] = useState(false);
   // Session handling removed - using AuthContext instead
+  const [itemDeals, setItemDeals] = useState<Record<number, any[]>>({});
 
   const importRecipeMutation = useMutation({
     mutationFn: async () => {
@@ -847,33 +848,83 @@ const ShoppingListComponent: React.FC = () => {
     }
   };
 
-  // Deal criteria detection using real deal data
+    // Deal criteria detection using real deal data
   const checkForDealsOnItem = async (newItem: any) => {
     try {
-      // Check for actual deals from the deals API
+      console.log(`Checking deals for "${newItem.productName}"`);
+
       const response = await apiRequest('GET', `/api/deals?productName=${encodeURIComponent(newItem.productName)}`);
 
       if (response.ok) {
         const deals = await response.json();
-        const relevantDeals = deals.filter((deal: any) => 
-          deal.productName.toLowerCase().includes(newItem.productName.toLowerCase()) ||
-          newItem.productName.toLowerCase().includes(deal.productName.toLowerCase())
-        );
+        console.log(`Found ${deals.length} deals for "${newItem.productName}":`, deals);
 
-        if (relevantDeals.length > 0) {
-          const bestDeal = relevantDeals.sort((a: any, b: any) => a.salePrice - b.salePrice)[0];
-          const savings = Math.round((1 - bestDeal.salePrice / bestDeal.regularPrice) * 100);
+        if (deals.length > 0) {
+          // Enhanced matching logic for better deal detection
+          const matchingDeals = deals.filter((deal: any) => {
+            const productName = newItem.productName.toLowerCase().trim();
+            const dealName = deal.productName.toLowerCase().trim();
 
-          toast({
-            title: "Deal Found!",
-            description: `${bestDeal.productName} is ${savings}% off at ${getRetailerName(bestDeal.retailerId)}!`,
-            variant: "default",
+            // Direct match
+            if (productName === dealName) return true;
+
+            // Contains match (either direction)
+            if (dealName.includes(productName) || productName.includes(dealName)) return true;
+
+            // Word-based matching for better results
+            const productWords = productName.split(/\s+/).filter(word => word.length > 2);
+            const dealWords = dealName.split(/\s+/).filter(word => word.length > 2);
+
+            // Check if any significant words match
+            for (const productWord of productWords) {
+              for (const dealWord of dealWords) {
+                if (productWord === dealWord || 
+                    productword.includes(dealWord) || 
+                    dealWord.includes(productWord)) {
+                  return true;
+                }
+              }
+            }
+
+            return false;
           });
+
+          if (matchingDeals.length > 0) {
+            console.log(`Found ${matchingDeals.length} matching deals:`, matchingDeals);
+
+            // Sort deals by best savings first
+            const sortedDeals = matchingDeals.sort((a, b) => {
+              const savingsA = a.dealType === 'spend_threshold_percentage' 
+                ? a.discountPercentage 
+                : ((a.regularPrice - a.salePrice) / a.regularPrice) * 100;
+              const savingsB = b.dealType === 'spend_threshold_percentage' 
+                ? b.discountPercentage 
+                : ((b.regularPrice - b.salePrice) / b.regularPrice) * 100;
+              return savingsB - savingsA;
+            });
+
+            setItemDeals(prev => ({
+              ...prev,
+              [newItem.id]: sortedDeals
+            }));
+          }
         }
       }
     } catch (error) {
-      console.warn(`Failed to check deals for "${newItem.productName}":`, error);
+      console.log(`Failed to check deals for "${newItem.productName}":`, error);
     }
+  };
+
+  // Helper function to get retailer color (using Tailwind CSS color names)
+  const getRetailerColor = (retailerId: number) => {
+    const retailerColors: Record<number, string> = {
+      1: 'bg-blue-500',   // Walmart (Blue)
+      2: 'bg-red-500',    // Target (Red)
+      3: 'bg-green-500',  // Whole Foods (Green)
+      4: 'bg-indigo-500', // Costco (Indigo)
+      5: 'bg-purple-500'  // Kroger (Purple)
+    };
+    return retailerColors[retailerId] || 'bg-gray-500'; // Default to gray
   };
 
   // Helper function to get retailer name
@@ -889,136 +940,243 @@ const ShoppingListComponent: React.FC = () => {
   };
 
   // DealIndicator Component with real deal detection and popover
-  const DealIndicator: React.FC<{ productName: string }> = ({ productName }) => {
-    const [dealInfo, setDealInfo] = useState<{hasDeal: boolean; deals?: any[]} | null>(null);
+  const DealIndicator: React.FC<{ productName: string; itemId: number }> = ({ productName, itemId }) => {
+    // const [dealInfo, setDealInfo] = useState<{hasDeal: boolean; deals?: any[]} | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
-    useEffect(() => {
-      const checkRealDeals = async () => {
-        setIsLoading(true);
-        try {
-          // Query actual deals API
-          const response = await apiRequest('GET', `/api/deals?productName=${encodeURIComponent(productName)}`);
+    // useEffect(() => {
+    //   const checkRealDeals = async () => {
+    //     setIsLoading(true);
+    //     try {
+    //       // Query actual deals API
+    //       const response = await fetch(`/api/deals?productName=${encodeURIComponent(productName)}`, {
+    //         credentials: 'include',
+    //       });
 
-          if (response.ok) {
-            const deals = await response.json();
-            const relevantDeals = deals.filter((deal: any) => 
-              deal.productName.toLowerCase().includes(productName.toLowerCase()) ||
-              productName.toLowerCase().includes(deal.productName.toLowerCase())
-            );
+    //       if (response.ok) {
+    //         const deals = await response.json();
+    //         const relevantDeals = deals.filter((deal: any) => 
+    //           deal.productName.toLowerCase().includes(productName.toLowerCase()) ||
+    //           productName.toLowerCase().includes(deal.productName.toLowerCase())
+    //         );
 
-            if (relevantDeals.length > 0) {
-              setDealInfo({
-                hasDeal: true,
-                deals: relevantDeals
-              });
-            } else {
-              setDealInfo({ hasDeal: false });
-            }
-          } else {
-            setDealInfo({ hasDeal: false });
-          }
-        } catch (error) {
-          console.warn(`Failed to check deals for "${productName}":`, error);
-          setDealInfo({ hasDeal: false });
-        } finally {
-          setIsLoading(false);
-        }
-      };
+    //         if (relevantDeals.length > 0) {
+    //           setDealInfo({
+    //             hasDeal: true,
+    //             deals: relevantDeals
+    //           });
+    //         } else {
+    //           setDealInfo({ hasDeal: false });
+    //         }
+    //       } else {
+    //         setDealInfo({ hasDeal: false });
+    //       }
+    //     } catch (error) {
+    //       console.warn(`Failed to check deals for "${productName}":`, error);
+    //       setDealInfo({ hasDeal: false });
+    //     } finally {
+    //       setIsLoading(false);
+    //     }
+    //   };
 
-      // Debounce the API call to avoid too many requests
-      const timeoutId = setTimeout(checkRealDeals, 300);
-      return () => clearTimeout(timeoutId);
-    }, [productName]);
+    //   // Debounce the API call to avoid too many requests
+    //   const timeoutId = setTimeout(checkRealDeals, 300);
+    //   return () => clearTimeout(timeoutId);
+    // }, [productName]);
 
-    if (isLoading) {
-      return (
-        <div className="h-6 w-6 animate-pulse bg-gray-200 rounded-full"></div>
-      );
-    }
+    // if (isLoading) {
+    //   return (
+    //     <div className="h-6 w-6 animate-pulse bg-gray-200 rounded-full"></div>
+    //   );
+    // }
 
-    if (dealInfo?.hasDeal && dealInfo.deals) {
-      return (
-        <Popover>
-          <PopoverTrigger asChild>
-            <button className="h-6 w-6 bg-green-500 rounded-full flex items-center justify-center hover:bg-green-600 transition-colors">
-              <Tag className="h-3 w-3 text-white" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80 p-4">
-            <div className="space-y-3">
-              <h4 className="font-semibold text-lg">Available Deals</h4>
-              {dealInfo.deals.map((deal: any, index: number) => (
-                <div key={index} className="border rounded-lg p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-sm">{deal.productName}</span>
-                    <span className="text-xs text-gray-500">{getRetailerName(deal.retailerId)}</span>
-                  </div>
+    // if (dealInfo?.hasDeal && dealInfo.deals) {
+    //   return (
+    //     <Popover>
+    //       <PopoverTrigger asChild>
+    //         <button className="h-6 w-6 bg-green-500 rounded-full flex items-center justify-center hover:bg-green-600 transition-colors">
+    //           <Tag className="h-3 w-3 text-white" />
+    //         </button>
+    //       </PopoverTrigger>
+    //       <PopoverContent className="w-80 p-4">
+    //         <div className="space-y-3">
+    //           <h4 className="font-semibold text-lg">Available Deals</h4>
+    //           {dealInfo.deals.map((deal: any, index: number) => (
+    //             <div key={index} className="border rounded-lg p-3 space-y-2">
+    //               <div className="flex items-center justify-between">
+    //                 <span className="font-medium text-sm">{deal.productName}</span>
+    //                 <span className="text-xs text-gray-500">{getRetailerName(deal.retailerId)}</span>
+    //               </div>
 
-                  {deal.dealType === 'spend_threshold_percentage' ? (
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                          Spend & Save
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-gray-700">
-                        Spend ${(deal.spendThreshold / 100).toFixed(0)}+ and get {deal.discountPercentage}% off
-                      </p>
-                    </div>
-                  ) : deal.dealType === 'buy_x_get_y_free' ? (
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="bg-purple-100 text-purple-800">
-                          BOGO
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-gray-700">
-                        Buy {deal.buyQuantity} get {deal.getFreeQuantity} free
-                      </p>
-                    </div>
-                  ) : deal.dealType === 'flat_discount' ? (
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="bg-orange-100 text-orange-800">
-                          Flat Discount
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-gray-700">
-                        ${(deal.discountAmount / 100).toFixed(2)} off
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-bold text-green-600">
-                          ${(deal.salePrice / 100).toFixed(2)}
+    //               {deal.dealType === 'spend_threshold_percentage' ? (
+    //                 <div className="space-y-1">
+    //                   <div className="flex items-center gap-2">
+    //                     <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+    //                       Spend & Save
+    //                     </Badge>
+    //                   </div>
+    //                   <p className="text-sm text-gray-700">
+    //                     Spend ${(deal.spendThreshold / 100).toFixed(0)}+ and get {deal.discountPercentage}% off
+    //                   </p>
+    //                 </div>
+    //               ) : deal.dealType === 'buy_x_get_y_free' ? (
+    //                 <div className="space-y-1">
+    //                   <div className="flex items-center gap-2">
+    //                     <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+    //                       BOGO
+    //                     </Badge>
+    //                   </div>
+    //                   <p className="text-sm text-gray-700">
+    //                     Buy {deal.buyQuantity} get {deal.getFreeQuantity} free
+    //                   </p>
+    //                 </div>
+    //               ) : deal.dealType === 'flat_discount' ? (
+    //                 <div className="space-y-1">
+    //                   <div className="flex items-center gap-2">
+    //                     <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+    //                       Flat Discount
+    //                     </Badge>
+    //                   </div>
+    //                   <p className="text-sm text-gray-700">
+    //                     ${(deal.discountAmount / 100).toFixed(2)} off
+    //                   </p>
+    //                 </div>
+    //               ) : (
+    //                 <div className="space-y-1">
+    //                   <div className="flex items-center gap-2">
+    //                     <span className="text-lg font-bold text-green-600">
+    //                       ${(deal.salePrice / 100).toFixed(2)}
+    //                     </span>
+    //                     <span className="text-sm text-gray-500 line-through">
+    //                       ${(deal.regularPrice / 100).toFixed(2)}
+    //                     </span>
+    //                     <Badge variant="secondary" className="bg-green-100 text-green-800">
+    //                       {Math.round((1 - deal.salePrice / deal.regularPrice) * 100)}% off
+    //                     </Badge>
+    //                   </div>
+    //                 </div>
+    //               )}
+
+    //               {deal.endDate && (
+    //                 <div className="flex items-center gap-1 text-xs text-gray-500">
+    //                   <Clock className="h-3 w-3" />
+    //                   <span>Valid until {new Date(deal.endDate).toLocaleDateString()}</span>
+    //                 </div>
+    //               )}
+    //             </div>
+    //           ))}
+    //         </div>
+    //       </PopoverContent>
+    //     </Popover>
+    //   );
+    // }
+
+    // return null;
+    return (
+              /* Deal Indicator */
+              {itemDeals[itemId] && itemDeals[itemId].length > 0 && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 rounded-full bg-red-100 hover:bg-red-200 text-red-600 relative"
+                    >
+                      <Tag className="h-3 w-3" />
+                      {itemDeals[itemId].length > 1 && (
+                        <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                          {itemDeals[itemId].length}
                         </span>
-                        <span className="text-sm text-gray-500 line-through">
-                          ${(deal.regularPrice / 100).toFixed(2)}
-                        </span>
-                        <Badge variant="secondary" className="bg-green-100 text-green-800">
-                          {Math.round((1 - deal.salePrice / deal.regularPrice) * 100)}% off
-                        </Badge>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 p-0" align="end">
+                    <div className="p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Tag className="h-4 w-4 text-red-600" />
+                        <span className="font-semibold text-sm">Available Deals</span>
+                        {itemDeals[itemId].length > 1 && (
+                          <Badge variant="outline" className="text-xs">
+                            {itemDeals[itemId].length} stores
+                          </Badge>
+                        )}
                       </div>
-                    </div>
-                  )}
 
-                  {deal.endDate && (
-                    <div className="flex items-center gap-1 text-xs text-gray-500">
-                      <Clock className="h-3 w-3" />
-                      <span>Valid until {new Date(deal.endDate).toLocaleDateString()}</span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </PopoverContent>
-        </Popover>
-      );
-    }
+                      <div className="space-y-3">
+                        {itemDeals[itemId].map((deal: any, index: number) => (
+                          <div key={index} className={`border rounded-lg p-3 ${index === 0 ? 'bg-green-50 border-green-200' : 'bg-gray-50'}`}>
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className={`w-3 h-3 rounded-full`}
+                                  style={{ backgroundColor: getRetailerColor(deal.retailerId).replace('bg-', '#') }}
+                                />
+                                <span className="font-medium text-sm">
+                                  {getRetailerName(deal.retailerId)}
+                                </span>
+                                {index === 0 && itemDeals[itemId].length > 1 && (
+                                  <Badge variant="default" className="text-xs bg-green-600">
+                                    Best Deal
+                                  </Badge>
+                                )}
+                              </div>
+                              <Badge variant="secondary" className={index === 0 ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
+                                {deal.dealType === 'spend_threshold_percentage' 
+                                  ? `${deal.discountPercentage}% off`
+                                  : `${Math.round((1 - deal.salePrice / deal.regularPrice) * 100)}% off`
+                                }
+                              </Badge>
+                            </div>
 
-    return null;
+                            <div className="text-sm text-gray-600 mb-2">
+                              <strong>{deal.productName}</strong>
+                            </div>
+
+                            {deal.dealType === 'spend_threshold_percentage' ? (
+                              <div className="text-sm">
+                                <span className="text-gray-700">
+                                  Spend ${(deal.spendThreshold / 100).toFixed(0)}+ 
+                                </span>
+                                <span className="text-green-600 font-medium ml-1">
+                                  Get {deal.discountPercentage}% off
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="font-semibold text-green-600">
+                                  ${(deal.salePrice / 100).toFixed(2)}
+                                </span>
+                                <span className="text-gray-500 line-through">
+                                  ${(deal.regularPrice / 100).toFixed(2)}
+                                </span>
+                                <span className="text-green-600 font-medium">
+                                  Save ${((deal.regularPrice - deal.salePrice) / 100).toFixed(2)}
+                                </span>
+                              </div>
+                            )}
+
+                            <div className="text-xs text-gray-500 mt-1">
+                              Valid until {new Date(deal.endDate).toLocaleDateString()}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {itemDeals[itemId].length > 1 && (
+                        <div className="mt-3 p-2 bg-blue-50 rounded-lg">
+                          <div className="flex items-center gap-1 text-xs text-blue-700">
+                            <MapPin className="h-3 w-3" />
+                            <span>
+                              Compare prices across {itemDeals[itemId].length} retailers to maximize savings
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+    );
   };
 
     const SpendThresholdTracker: React.FC<{ currentTotal: number }> =  ({ currentTotal }) => {
@@ -1135,7 +1293,7 @@ const ShoppingListComponent: React.FC = () => {
                                         <span className={`${item.completed ? 'line-through' : ''}`}>
                                           {item.productName}
                                         </span>
-                                        <DealIndicator productName={item.productName} />
+                                        <DealIndicator productName={item.productName} itemId={item.id} />
                                       </div>
                                       <div className="text-sm text-gray-500">
                                         {item.quantity} {item.unit || 'COUNT'}
@@ -1184,7 +1342,7 @@ const ShoppingListComponent: React.FC = () => {
                         <span className={`${item.completed ? 'line-through' : ''}`}>
                           {item.productName}
                         </span>
-                        <DealIndicator productName={item.productName} />
+                        <DealIndicator productName={item.productName} itemId={item.id}/>
                       </div>
                       <div className="text-sm text-gray-500">
                         {item.quantity} {item.unit || 'COUNT'}
@@ -1477,7 +1635,7 @@ const ShoppingListComponent: React.FC = () => {
                 <option value="SACK">Sack</option>
                 <option value="SHEET">Sheet</option>
                 <option value="SLICE">Slice</option>
-                <option value="STICK">Stick</option>
+                <STICK</option>
                 <option value="TBSP">Tablespoon</option>
                 <option value="TRAY">Tray</option>
                 <option value="TSP">Teaspoon</option>
