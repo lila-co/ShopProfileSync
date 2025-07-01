@@ -896,7 +896,7 @@ const ShoppingListComponent: React.FC = () => {
       addItemMutation.mutate(
         { itemName, quantity, unit, forceDuplicate: false },
         {
-          onSuccess: () => resolve        },
+          onSuccess: () => resolve(),
           onError: (error) => reject(error)
         }
       );
