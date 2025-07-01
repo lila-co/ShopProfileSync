@@ -2087,6 +2087,23 @@ app.post('/api/ai/brand-detection', async (req, res) => {
   }
 });
 
+// AI Brand Detection endpoint
+server.post('/api/ai/brand-detection', async (req, res) => {
+  try {
+    const { productName } = req.body;
+    
+    if (!productName) {
+      return res.status(400).json({ error: 'Product name is required' });
+    }
+
+    const result = await detectBrandsWithAI(productName);
+    res.json(result);
+  } catch (error) {
+    console.error('AI brand detection error:', error);
+    res.status(500).json({ error: 'Failed to detect brands' });
+  }
+});
+
 // AI Brand Detection Service Function
 async function detectBrandsWithAI(productName: string): Promise<{
   detectedBrands: string[];
