@@ -95,15 +95,15 @@ const ShoppingListComponent: React.FC = () => {
 
   // Category definitions with icons and colors
   const categoryConfig = {
-    'Produce': { icon: '🍎', color: 'bg-green-100 text-green-800 border-green-200', aisle: 'Aisle 1' },
-    'Dairy & Eggs': { icon: '🥛', color: 'bg-blue-100 text-blue-800 border-blue-200', aisle: 'Aisle 2' },
-    'Meat & Seafood': { icon: '🥩', color: 'bg-red-100 text-red-800 border-red-200', aisle: 'Aisle 3' },
-    'Pantry & Canned Goods': { icon: '🥫', color: 'bg-yellow-100 text-yellow-800 border-yellow-200', aisle: 'Aisle 4-6' },
-    'Frozen Foods': { icon: '❄️', color: 'bg-cyan-100 text-cyan-800 border-cyan-200', aisle: 'Aisle 7' },
-    'Bakery': { icon: '🍞', color: 'bg-orange-100 text-orange-800 border-orange-200', aisle: 'Aisle 8' },
-    'Personal Care': { icon: '🧼', color: 'bg-purple-100 text-purple-800 border-purple-200', aisle: 'Aisle 9' },
-    'Household Items': { icon: '🏠', color: 'bg-gray-100 text-gray-800 border-gray-200', aisle: 'Aisle 10' },
-    'Generic': { icon: '🛒', color: 'bg-slate-100 text-slate-800 border-slate-200', aisle: 'Generic' },
+    'Produce': { icon: '🍎', color: 'bg-green-100 text-green-800 border-green-200' },
+    'Dairy & Eggs': { icon: '🥛', color: 'bg-blue-100 text-blue-800 border-blue-200' },
+    'Meat & Seafood': { icon: '🥩', color: 'bg-red-100 text-red-800 border-red-200' },
+    'Pantry & Canned Goods': { icon: '🥫', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+    'Frozen Foods': { icon: '❄️', color: 'bg-cyan-100 text-cyan-800 border-cyan-200' },
+    'Bakery': { icon: '🍞', color: 'bg-orange-100 text-orange-800 border-orange-200' },
+    'Personal Care': { icon: '🧼', color: 'bg-purple-100 text-purple-800 border-purple-200' },
+    'Household Items': { icon: '🏠', color: 'bg-gray-100 text-gray-800 border-gray-200' },
+    'Generic': { icon: '🛒', color: 'bg-slate-100 text-slate-800 border-slate-200' },
   };
 
   // Auto-categorize items using AI categorization service
@@ -1362,8 +1362,7 @@ const ShoppingListComponent: React.FC = () => {
             .map(([category, sortedCategoryItems]) => {
               const config = categoryConfig[category as keyof typeof categoryConfig] || {
                 icon: '🛒',
-                color: 'bg-gray-100 text-gray-800 border-gray-200',
-                aisle: 'General'
+                color: 'bg-gray-100 text-gray-800 border-gray-200'
               };
               const isCollapsed = collapsedCategories[category];
               const completedCount = sortedCategoryItems.filter(item => item.completed).length;
@@ -1379,7 +1378,6 @@ const ShoppingListComponent: React.FC = () => {
                             <span className="text-2xl">{config.icon}</span>
                             <div className="text-left">
                               <h3 className="font-semibold text-lg">{category}</h3>
-                              <p className="text-sm text-gray-600">{config.aisle}</p>
                             </div>
                           </div>
                           <div className="flex items-center space-x-3">
