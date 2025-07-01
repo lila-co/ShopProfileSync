@@ -340,22 +340,14 @@ const ShoppingListComponent: React.FC = () => {
       // Normalize product name to prevent duplicates
       const normalizedName = itemName.trim();
 
-      // Check if item already exists using semantic-aware duplicate detection
+      // Check if item already exists using simple duplicate detection
       const existingItem = defaultList.items?.find(item => {
         const existingName = item.productName.toLowerCase().trim();
         const newName = normalizedName.toLowerCase().trim();
         
-        // Exact match
-        if (existingName === newName) return true;
-        
-        // Handle common variations and plurals
-        const normalizedExisting = this.normalizeForComparison(existingName);
-        const normalizedNew = this.normalizeForComparison(newName);
-        
-        if (normalizedExisting === normalizedNew) return true;
-        
-        // Check for semantic similarity but avoid false positives
-        return this.areSemanticallySimilar(existingName, newName);
+        // Exact match or very similar match
+        return existingName === newName || 
+               existingName.replace(/s$/, '') === newName.replace(/s$/, '');
       });
 
       if (existingItem) {
@@ -434,7 +426,7 @@ const ShoppingListComponent: React.FC = () => {
       // If the mutation fails, use the context returned from onMutate to roll back
       queryClient.setQueryData(['/api/shopping-lists'], context?.previousLists);
       
-      console.error('Add item mutation error:', err);
+      console.error('Add item mutation error for item:', variables.itemName, err);
       
       let errorMessage = "Failed to add item";
       if (err instanceof Error) {
@@ -444,8 +436,8 @@ const ShoppingListComponent: React.FC = () => {
       }
       
       toast({
-        title: "Error",
-        description: errorMessage,
+        title: "Error Adding Item",
+        description: `Could not add "${variables.itemName}": ${errorMessage}`,
         variant: "destructive",
       });
     },
@@ -1354,9 +1346,11 @@ const ShoppingListComponent: React.FC = () => {
             })
             .map(([category, categoryItems]) => {
               // Sort items within each category alphabetically
-              const sortedCategoryItems = [...categoryItems].sort((a, b) => 
-                a.productName.localeCompare(b.productName, undefined, { numeric: true, sensitivity: 'base' })
-              );
+              const sortedCategoryItems = [...categoryItems].sort((a, b) => {
+                const nameA = (a.productName || '').toString().toLowerCase();
+                const nameB = (b.productName || '').toString().toLowerCase();
+                return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' });
+              });
               return [category, sortedCategoryItems];
             })
             .map(([category, sortedCategoryItems]) => {
@@ -1443,7 +1437,11 @@ const ShoppingListComponent: React.FC = () => {
       {Object.keys(categorizedItems).length === 0 && !isCategorizingItems && shoppingLists?.[0]?.items && shoppingLists[0].items.length > 0 && (
         <div className="space-y-2">
           {[...shoppingLists[0].items]
-            .sort((a, b) => a.productName.localeCompare(b.productName, undefined, { numeric: true, sensitivity: 'base' }))
+            .sort((a, b) => {
+              const nameA = (a.productName || '').toString().toLowerCase();
+              const nameB = (b.productName || '').toString().toLowerCase();
+              return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' });
+            })
             .map((item) => (
             <Card key={item.id} className={`${item.completed ? 'opacity-60' : ''}`}>
               <CardContent className="p-3">
