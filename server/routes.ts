@@ -2157,9 +2157,7 @@ async function detectBrandsWithAI(productName: string): Promise<{
   console.log(`🤖 AI Brand Detection: "${productName}" -> brands: [${detectedBrands.join(', ')}], generic: [${genericTerms.join(', ')}], category: ${category}`);
 
   return { detectedBrands, genericTerms, category };
-
-  // Enhanced pattern-based detection that simulates AI behavior
-  const brandDatabase = {
+}
     cookies: {
       brands: ['oreo', 'chips ahoy', 'nutter butter', 'keebler', 'pepperidge farm', 'famous amos', 'archway'],
       patterns: [/\b(chocolate chip|sugar|oatmeal|sandwich|wafer)\s*cookies?\b/i, /\bcookies?\b/i]
