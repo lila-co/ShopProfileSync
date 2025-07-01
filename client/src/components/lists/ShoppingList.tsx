@@ -842,54 +842,114 @@ const ShoppingListComponent: React.FC = () => {
     }
   };
 
-  // Deal criteria detection
+  // Deal criteria detection using real deal data
   const checkForDealsOnItem = async (newItem: any) => {
-    // Implement your deal detection logic here
-    // For example, check if the item name matches a specific deal
-    if (newItem.productName.toLowerCase().includes('discount')) {
-      toast({
-        title: "Deal Alert!",
-        description: `The item "${newItem.productName}" has a discount available!`,
-        variant: "success",
-      });
-    } else if (newItem.productName.toLowerCase().includes('bulk')) {
-      toast({
-        title: "Bulk Purchase!",
-        description: `Consider buying "${newItem.productName}" in bulk for better savings!`,
-        variant: "info",
-      });
-    } else {
-      console.log(`No deals found for "${newItem.productName}"`);
+    try {
+      // Check for actual deals from the deals API
+      const response = await apiRequest('GET', `/api/deals?productName=${encodeURIComponent(newItem.productName)}`);
+      
+      if (response.ok) {
+        const deals = await response.json();
+        const relevantDeals = deals.filter((deal: any) => 
+          deal.productName.toLowerCase().includes(newItem.productName.toLowerCase()) ||
+          newItem.productName.toLowerCase().includes(deal.productName.toLowerCase())
+        );
+
+        if (relevantDeals.length > 0) {
+          const bestDeal = relevantDeals.sort((a: any, b: any) => a.salePrice - b.salePrice)[0];
+          const savings = Math.round((1 - bestDeal.salePrice / bestDeal.regularPrice) * 100);
+          
+          toast({
+            title: "Deal Found!",
+            description: `${bestDeal.productName} is ${savings}% off at ${getRetailerName(bestDeal.retailerId)}!`,
+            variant: "default",
+          });
+        }
+      }
+    } catch (error) {
+      console.warn(`Failed to check deals for "${newItem.productName}":`, error);
     }
   };
 
-    // DealIndicator Component
-    const DealIndicator: React.FC<{ productName: string }> = ({ productName }) => {
-      const [hasDeal, setHasDeal] = useState(false);
-
-      useEffect(() => {
-        // Simulate deal detection logic
-        const checkDeal = async () => {
-          if (productName.toLowerCase().includes('discount')) {
-            setHasDeal(true);
-          } else {
-            setHasDeal(false);
-          }
-        };
-        checkDeal();
-      }, [productName]);
-
-      if (hasDeal) {
-        return (
-          <Badge variant="secondary">
-            <Tag className="h-3 w-3 mr-1" />
-            Deal
-          </Badge>
-        );
-      }
-
-      return null;
+  // Helper function to get retailer name
+  const getRetailerName = (retailerId: number) => {
+    const retailerMap: Record<number, string> = {
+      1: 'Walmart',
+      2: 'Target', 
+      3: 'Whole Foods',
+      4: 'Costco',
+      5: 'Kroger'
     };
+    return retailerMap[retailerId] || 'Store';
+  };
+
+  // DealIndicator Component with real deal detection
+  const DealIndicator: React.FC<{ productName: string }> = ({ productName }) => {
+    const [dealInfo, setDealInfo] = useState<{hasDeal: boolean; savings?: number; retailer?: string} | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+      const checkRealDeals = async () => {
+        setIsLoading(true);
+        try {
+          // Query actual deals API
+          const response = await apiRequest('GET', `/api/deals?productName=${encodeURIComponent(productName)}`);
+          
+          if (response.ok) {
+            const deals = await response.json();
+            const relevantDeals = deals.filter((deal: any) => 
+              deal.productName.toLowerCase().includes(productName.toLowerCase()) ||
+              productName.toLowerCase().includes(deal.productName.toLowerCase())
+            );
+
+            if (relevantDeals.length > 0) {
+              const bestDeal = relevantDeals.sort((a: any, b: any) => a.salePrice - b.salePrice)[0];
+              const savings = Math.round((1 - bestDeal.salePrice / bestDeal.regularPrice) * 100);
+              
+              setDealInfo({
+                hasDeal: true,
+                savings,
+                retailer: getRetailerName(bestDeal.retailerId)
+              });
+            } else {
+              setDealInfo({ hasDeal: false });
+            }
+          } else {
+            setDealInfo({ hasDeal: false });
+          }
+        } catch (error) {
+          console.warn(`Failed to check deals for "${productName}":`, error);
+          setDealInfo({ hasDeal: false });
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      // Debounce the API call to avoid too many requests
+      const timeoutId = setTimeout(checkRealDeals, 300);
+      return () => clearTimeout(timeoutId);
+    }, [productName]);
+
+    if (isLoading) {
+      return (
+        <Badge variant="outline" className="animate-pulse">
+          <div className="h-3 w-3 mr-1 bg-gray-300 rounded-full"></div>
+          Checking...
+        </Badge>
+      );
+    }
+
+    if (dealInfo?.hasDeal) {
+      return (
+        <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-300">
+          <Tag className="h-3 w-3 mr-1" />
+          {dealInfo.savings}% off
+        </Badge>
+      );
+    }
+
+    return null;
+  };
 
     const SpendThresholdTracker: React.FC<{ currentTotal: number }> =  ({ currentTotal }) => {
     const [thresholdReached, setThresholdReached] = useState(false);
