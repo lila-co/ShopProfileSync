@@ -1278,7 +1278,7 @@ const ShoppingListComponent: React.FC = () => {
                   <option value="GRAMS">Grams</option>
                   <option value="HEAD">Head</option>
                   <option value="JAR">Jar</option>
-                  <option value="KG">Kilogram">
+                  <option value="KG">Kilogram</option>
                   <option value="LB">Pound</option>
                   <option value="LITER">Liter</option>
                   <option value="LOAF">Loaf</option>
