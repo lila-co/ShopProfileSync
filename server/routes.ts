@@ -2104,76 +2104,137 @@ server.post('/api/ai/brand-detection', async (req, res) => {
   }
 });
 
-// AI Brand Detection Service Function
+// Enhanced AI Brand Detection Service Function with comprehensive brand/generic relationship mapping
 async function detectBrandsWithAI(productName: string): Promise<{
   detectedBrands: string[];
   genericTerms: string[];
   category: string;
 }> {
-  const name = productName.toLowerCase();
+  const name = productName.toLowerCase().trim();
 
-  // Brand detection patterns
+  // Comprehensive brand detection patterns with variations
   const brandPatterns = [
-    // Cookie/Snack brands
-    { pattern: /\b(oreo|oreos)\b/i, brand: 'Oreo', category: 'snacks' },
-    { pattern: /\b(chips\s*ahoy)\b/i, brand: 'Chips Ahoy', category: 'snacks' },
-    { pattern: /\b(nutter\s*butter)\b/i, brand: 'Nutter Butter', category: 'snacks' },
-    { pattern: /\b(keebler)\b/i, brand: 'Keebler', category: 'snacks' },
-    { pattern: /\b(pepperidge\s*farm)\b/i, brand: 'Pepperidge Farm', category: 'snacks' },
-    { pattern: /\b(nabisco)\b/i, brand: 'Nabisco', category: 'snacks' },
+    // Cookie/Snack brands - enhanced patterns
+    { pattern: /\b(oreo|oreos)\b/i, brand: 'Oreo', category: 'cookies' },
+    { pattern: /\b(chips\s*ahoy|chipsahoy)\b/i, brand: 'Chips Ahoy', category: 'cookies' },
+    { pattern: /\b(nutter\s*butter|nutterbutter)\b/i, brand: 'Nutter Butter', category: 'cookies' },
+    { pattern: /\b(keebler)\b/i, brand: 'Keebler', category: 'cookies' },
+    { pattern: /\b(pepperidge\s*farm|pepperidgefarm)\b/i, brand: 'Pepperidge Farm', category: 'cookies' },
+    { pattern: /\b(nabisco)\b/i, brand: 'Nabisco', category: 'cookies' },
+    { pattern: /\b(famous\s*amos|famousamos)\b/i, brand: 'Famous Amos', category: 'cookies' },
+    { pattern: /\b(archway)\b/i, brand: 'Archway', category: 'cookies' },
+    
+    // Cereal brands
+    { pattern: /\b(cheerios|cheerio)\b/i, brand: 'Cheerios', category: 'cereal' },
+    { pattern: /\b(frosted\s*flakes|frostedflakes)\b/i, brand: 'Frosted Flakes', category: 'cereal' },
+    { pattern: /\b(lucky\s*charms|luckycharms)\b/i, brand: 'Lucky Charms', category: 'cereal' },
+    { pattern: /\b(froot\s*loops|frootloops|fruit\s*loops)\b/i, brand: 'Froot Loops', category: 'cereal' },
+    { pattern: /\b(special\s*k|specialk)\b/i, brand: 'Special K', category: 'cereal' },
     
     // Beverage brands
-    { pattern: /\b(coca\s*cola|coke)\b/i, brand: 'Coca Cola', category: 'beverages' },
-    { pattern: /\b(pepsi)\b/i, brand: 'Pepsi', category: 'beverages' },
-    { pattern: /\b(lacroix)\b/i, brand: 'LaCroix', category: 'beverages' },
-    { pattern: /\b(perrier)\b/i, brand: 'Perrier', category: 'beverages' },
+    { pattern: /\b(coca\s*cola|cocacola|coke)\b/i, brand: 'Coca Cola', category: 'soda' },
+    { pattern: /\b(pepsi)\b/i, brand: 'Pepsi', category: 'soda' },
+    { pattern: /\b(sprite)\b/i, brand: 'Sprite', category: 'soda' },
+    { pattern: /\b(dr\s*pepper|drpepper)\b/i, brand: 'Dr Pepper', category: 'soda' },
+    { pattern: /\b(mountain\s*dew|mountaindew)\b/i, brand: 'Mountain Dew', category: 'soda' },
+    { pattern: /\b(lacroix|la\s*croix)\b/i, brand: 'LaCroix', category: 'sparkling_water' },
+    
+    // Chip brands
+    { pattern: /\b(lay\'?s|lays)\b/i, brand: 'Lays', category: 'chips' },
+    { pattern: /\b(doritos)\b/i, brand: 'Doritos', category: 'chips' },
+    { pattern: /\b(cheetos)\b/i, brand: 'Cheetos', category: 'chips' },
+    { pattern: /\b(pringles)\b/i, brand: 'Pringles', category: 'chips' },
+    { pattern: /\b(ruffles)\b/i, brand: 'Ruffles', category: 'chips' },
     
     // Dairy brands
-    { pattern: /\b(horizon\s*organic)\b/i, brand: 'Horizon Organic', category: 'dairy' },
+    { pattern: /\b(horizon\s*organic|horizonorganic)\b/i, brand: 'Horizon Organic', category: 'dairy' },
     { pattern: /\b(lactaid)\b/i, brand: 'Lactaid', category: 'dairy' },
     { pattern: /\b(fairlife)\b/i, brand: 'Fairlife', category: 'dairy' },
+    { pattern: /\b(kraft)\b/i, brand: 'Kraft', category: 'cheese' },
+    { pattern: /\b(sargento)\b/i, brand: 'Sargento', category: 'cheese' },
     
     // Meat brands
     { pattern: /\b(tyson)\b/i, brand: 'Tyson', category: 'meat' },
     { pattern: /\b(perdue)\b/i, brand: 'Perdue', category: 'meat' },
-    { pattern: /\b(oscar\s*mayer)\b/i, brand: 'Oscar Mayer', category: 'meat' }
+    { pattern: /\b(oscar\s*mayer|oscarmayer)\b/i, brand: 'Oscar Mayer', category: 'meat' }
   ];
 
-  // Generic term patterns
+  // Enhanced generic term patterns with better categorization
   const genericPatterns = [
-    { pattern: /\b(cookies?)\b/i, term: 'cookies', category: 'snacks' },
-    { pattern: /\b(crackers?)\b/i, term: 'crackers', category: 'snacks' },
+    // Snack categories
+    { pattern: /\b(cookies?|cookie)\b/i, term: 'cookies', category: 'cookies' },
+    { pattern: /\b(crackers?|cracker)\b/i, term: 'crackers', category: 'crackers' },
+    { pattern: /\b(chips?|chip)\b/i, term: 'chips', category: 'chips' },
+    
+    // Beverage categories
+    { pattern: /\b(soda|soft\s*drink|pop)\b/i, term: 'soda', category: 'soda' },
+    { pattern: /\b(sparkling\s*water|carbonated\s*water|seltzer)\b/i, term: 'sparkling water', category: 'sparkling_water' },
+    
+    // Food categories
+    { pattern: /\b(cereal|breakfast\s*cereal)\b/i, term: 'cereal', category: 'cereal' },
     { pattern: /\b(milk)\b/i, term: 'milk', category: 'dairy' },
-    { pattern: /\b(cheese)\b/i, term: 'cheese', category: 'dairy' },
-    { pattern: /\b(yogurt)\b/i, term: 'yogurt', category: 'dairy' },
+    { pattern: /\b(cheese)\b/i, term: 'cheese', category: 'cheese' },
+    { pattern: /\b(yogurt|yoghurt)\b/i, term: 'yogurt', category: 'dairy' },
     { pattern: /\b(chicken)\b/i, term: 'chicken', category: 'meat' },
-    { pattern: /\b(beef)\b/i, term: 'beef', category: 'meat' },
-    { pattern: /\b(sparkling\s*water|carbonated\s*water)\b/i, term: 'sparkling water', category: 'beverages' }
+    { pattern: /\b(beef)\b/i, term: 'beef', category: 'meat' }
   ];
+
+  // Category relationship mappings for enhanced AI-like reasoning
+  const categoryRelationships = {
+    'cookies': ['snacks', 'bakery', 'dessert'],
+    'crackers': ['snacks', 'pantry'],
+    'chips': ['snacks', 'pantry'],
+    'cereal': ['breakfast', 'pantry'],
+    'soda': ['beverages', 'drinks'],
+    'sparkling_water': ['beverages', 'drinks', 'water'],
+    'dairy': ['refrigerated', 'milk_products'],
+    'cheese': ['dairy', 'refrigerated'],
+    'meat': ['protein', 'refrigerated']
+  };
 
   const detectedBrands: string[] = [];
   const genericTerms: string[] = [];
   let category = 'generic';
+  let confidence = 0.5;
 
-  // Detect brands
+  // Enhanced brand detection with confidence scoring
   for (const { pattern, brand, category: brandCategory } of brandPatterns) {
     if (pattern.test(name)) {
       detectedBrands.push(brand);
-      if (category === 'generic') category = brandCategory;
+      if (category === 'generic') {
+        category = brandCategory;
+        confidence = 0.9; // High confidence for brand matches
+      }
     }
   }
 
-  // Detect generic terms
+  // Enhanced generic term detection
   for (const { pattern, term, category: termCategory } of genericPatterns) {
     if (pattern.test(name)) {
       genericTerms.push(term);
-      if (category === 'generic') category = termCategory;
+      if (category === 'generic') {
+        category = termCategory;
+        confidence = 0.7; // Medium confidence for generic terms
+      }
     }
   }
 
-  console.log(`🤖 AI Brand Detection: "${productName}" -> brands: [${detectedBrands.join(', ')}], generic: [${genericTerms.join(', ')}], category: ${category}`);
+  // AI-like reasoning: if we have both brands and generic terms, enhance category understanding
+  if (detectedBrands.length > 0 && genericTerms.length > 0) {
+    // This simulates AI understanding that "Oreo" and "cookies" are related
+    confidence = 0.95; // Very high confidence when we have both brand and generic matches
+  }
 
-  return { detectedBrands, genericTerms, category };
+  // Enhanced category normalization for better duplicate detection
+  const normalizedCategory = category === 'cookies' || category === 'crackers' || category === 'chips' ? 'snacks' : category;
+
+  console.log(`🤖 Enhanced AI Brand Detection: "${productName}" -> brands: [${detectedBrands.join(', ')}], generic: [${genericTerms.join(', ')}], category: ${category} (normalized: ${normalizedCategory}), confidence: ${confidence}`);
+
+  return { 
+    detectedBrands, 
+    genericTerms, 
+    category: normalizedCategory
+  };
 }
 
   return server;

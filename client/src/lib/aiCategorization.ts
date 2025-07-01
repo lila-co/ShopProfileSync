@@ -449,8 +449,18 @@ class AICategorationService {
 
     // Check for specific high-priority matches first - these should override any other patterns
     const specificMatches = [
+      // Brand-specific snacks that should be in Pantry & Canned Goods
+      { pattern: /\b(oreos?|oreo)\b/i, category: 'Pantry & Canned Goods', confidence: 0.98 },
+      { pattern: /\b(chips\s*ahoy|chipsahoy)\b/i, category: 'Pantry & Canned Goods', confidence: 0.98 },
+      { pattern: /\b(nutter\s*butter|nutterbutter)\b/i, category: 'Pantry & Canned Goods', confidence: 0.98 },
+      { pattern: /\b(famous\s*amos|famousamos)\b/i, category: 'Pantry & Canned Goods', confidence: 0.98 },
+      { pattern: /\b(pepperidge\s*farm|pepperidgefarm)\b/i, category: 'Pantry & Canned Goods', confidence: 0.98 },
+      
+      // Produce items
       { pattern: /\b(avocados?)\b/i, category: 'Produce', confidence: 0.98 },
       { pattern: /\b(red\s*bell\s*peppers?|green\s*bell\s*peppers?|yellow\s*bell\s*peppers?|bell\s*peppers?)\b/i, category: 'Produce', confidence: 0.98 },
+      
+      // Pantry staples
       { pattern: /\b(quinoa)\b/i, category: 'Pantry & Canned Goods', confidence: 0.98 },
       { pattern: /\b(pine\s*nuts?)\b/i, category: 'Pantry & Canned Goods', confidence: 0.98 },
       { pattern: /\b(chia\s*seeds?|flax\s*seeds?|hemp\s*seeds?)\b/i, category: 'Pantry & Canned Goods', confidence: 0.95 }
