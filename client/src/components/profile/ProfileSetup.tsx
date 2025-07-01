@@ -120,13 +120,15 @@ const ProfileSetup: React.FC = () => {
         Help us personalize your shopping recommendations by providing some information about your household.
       </p>
 
-      <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+      <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)} onClick={(e) => e.stopPropagation()}>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Household Type</label>
             <select 
               className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-700"
               {...form.register("householdType")}
+              onClick={(e) => e.stopPropagation()}
+              onFocus={(e) => e.stopPropagation()}
             >
               <option value="">Select household type</option>
               <option value="SINGLE">Single Person</option>
@@ -145,6 +147,8 @@ const ProfileSetup: React.FC = () => {
             <select 
               className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-700"
               {...form.register("householdSize")}
+              onClick={(e) => e.stopPropagation()}
+              onFocus={(e) => e.stopPropagation()}
             >
               <option value="">Select number</option>
               <option value="1">1</option>
