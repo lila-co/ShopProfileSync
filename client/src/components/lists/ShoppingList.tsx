@@ -409,13 +409,13 @@ const ShoppingListComponent: React.FC = () => {
     onError: (err, variables, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
       queryClient.setQueryData(['/api/shopping-lists'], context?.previousLists);
-      
+
       console.error('Add item mutation error for item:', variables.itemName, err);
-      
+
       // Handle duplicate detection specifically
       if (err instanceof Error && (err as any).duplicateDetails) {
         const duplicateInfo = (err as any).duplicateDetails;
-        
+
         if (duplicateInfo.allowForce) {
           // Show option to force add the item
           toast({
@@ -447,14 +447,14 @@ const ShoppingListComponent: React.FC = () => {
         }
         return;
       }
-      
+
       let errorMessage = "Failed to add item";
       if (err instanceof Error) {
         errorMessage = err.message;
       } else if (typeof err === 'string') {
         errorMessage = err;
       }
-      
+
       toast({
         title: "Error Adding Item",
         description: `Could not add "${variables.itemName}": ${errorMessage}`,
@@ -896,7 +896,7 @@ const ShoppingListComponent: React.FC = () => {
       addItemMutation.mutate(
         { itemName, quantity, unit, forceDuplicate: false },
         {
-          onSuccess: () => resolve(),
+          onSuccess: () => resolve        },
           onError: (error) => reject(error)
         }
       );
@@ -980,11 +980,11 @@ const ShoppingListComponent: React.FC = () => {
     for (const [category, variations] of Object.entries(productVariations)) {
       const name1HasCategory = variations.some(variation => norm1.includes(variation));
       const name2HasCategory = variations.some(variation => norm2.includes(variation));
-      
+
       if (name1HasCategory && name2HasCategory) {
         // Both belong to same category, but check if they're different forms
         // e.g., "onions" vs "onion powder" should not match
-        
+
         // Define exclusions - forms that shouldn't match despite same base ingredient
         const exclusionPairs = [
           ['powder', 'whole'], ['powder', 'fresh'], ['powder', 'raw'],
@@ -1094,7 +1094,7 @@ const ShoppingListComponent: React.FC = () => {
               // Enhanced matching logic for better deal detection
               const matchingDeals = deals.filter((deal: any) => {
                 if (!deal || !deal.productName) return false;
-                
+
                 const productName = newItem.productName.toLowerCase().trim();
                 const dealName = deal.productName.toLowerCase().trim();
 
@@ -1678,6 +1678,7 @@ const ShoppingListComponent: React.FC = () => {
             </div>
           </div>
           <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
+            ```
             <Button 
               variant="outline" 
               onClick={() => setRecipeDialogOpen(false)}
@@ -1807,6 +1808,85 @@ const ShoppingListComponent: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+  const addItem = async (itemData: { normalizedName: string; quantity: number; unit: string; forceDuplicate?: boolean }) => {
+    console.log('Adding item:', itemData);
+
+    try {
+      const defaultList = shoppingLists?.[0];
+      if (!defaultList) throw new Error('No shopping list found');
+
+      const response = await apiRequest('POST', '/api/shopping-list/items', {
+        shoppingListId: defaultList.id,
+        productName: itemData.normalizedName,
+        quantity: itemData.quantity,
+        unit: itemData.unit,
+        forceDuplicate: itemData.forceDuplicate
+      });
+
+      console.log('Add item response status:', response.status);
+
+      if (response.ok) {
+        const newItem = await response.json();
+        console.log('Add item success:', newItem);
+
+        // Refresh the shopping list to show the new item
+        queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+        queryClient.refetchQueries({ queryKey: ['/api/shopping-lists'] });
+      } else if (response.status === 409) {
+        // Handle duplicate detection
+        const duplicateData = await response.json();
+        console.log('Duplicate detected:', duplicateData);
+
+        const duplicateInfo = duplicateData;
+
+        if (duplicateInfo.allowForce) {
+          // Show option to force add the item
+          toast({
+            title: "Similar Item Found",
+            description: `${duplicateInfo.reason}. You already have "${duplicateInfo.existingItem?.productName}" in your list.`,
+            action: (
+              <Button 
+                size="sm" 
+                onClick={() => {
+                  addItem({ ...itemData, forceDuplicate: true });
+                }}
+              >
+                Add Anyway
+              </Button>
+            )
+          });
+        } else {
+          // Show duplicate rejection message
+          toast({
+            title: "Duplicate Item",
+            description: `${duplicateInfo.reason}. You already have "${duplicateInfo.existingItem?.productName}" in your list.`,
+            variant: "destructive",
+          });
+        }
+      } else {
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (parseError) {
+          throw new Error(`Failed to add item: ${response.status}`);
+        }
+        console.error('Failed to add item:', errorData);
+        toast({
+          title: "Error adding item",
+          description: errorData.message || "Failed to add item to list",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error adding item:', error);
+      toast({
+        title: "Error adding item",
+        description: "Failed to add item to list",
+        variant: "destructive"
+      });
+    }
+  };
 
       {/* Voice AI Agent - Moved to bottom */}
       <div className="mt-6 mb-4">

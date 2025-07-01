@@ -618,7 +618,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add shopping list item
   app.post('/api/shopping-list/items', sanitizeInput, async (req: Request, res: Response) => {
     try {
-      const { shoppingListId, productName, quantity, unit } = req.body;
+      const { shoppingListId, productName, quantity, unit, forceDuplicate } = req.body;
 
       if (!shoppingListId || !productName) {
         return res.status(400).json({ message: 'Shopping list ID and product name are required' });
@@ -626,12 +626,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const validQuantity = parseInt(quantity) || 1;
       const validUnit = unit || 'COUNT';
+      const trimmedProductName = productName.trim();
 
-      console.log(`Adding item to shopping list ${shoppingListId}:`, { productName, quantity: validQuantity, unit: validUnit });
+      console.log(`Adding item to shopping list ${shoppingListId}:`, { productName: trimmedProductName, quantity: validQuantity, unit: validUnit });
+
+      // Check for duplicates unless forced to allow
+      if (!forceDuplicate) {
+        const existingList = await storage.getShoppingListById(shoppingListId);
+        if (existingList && existingList.items) {
+          const { duplicateDetector } = await import('./services/duplicateDetector');
+          const duplicateCheck = await duplicateDetector.checkForDuplicate(
+            trimmedProductName,
+            existingList.items
+          );
+
+          if (duplicateCheck.isDuplicate) {
+            console.log(`Duplicate detected for "${trimmedProductName}":`, duplicateCheck);
+            return res.status(409).json({
+              isDuplicate: true,
+              duplicateInfo: duplicateCheck,
+              suggestions: duplicateDetector.getSuggestions(duplicateCheck)
+            });
+          }
+        }
+      }
 
       const newItem = await storage.createShoppingListItem({
         shoppingListId,
-        productName: productName.trim(),
+        productName: trimmedProductName,
         quantity: validQuantity,
         unit: validUnit,
         isCompleted: false
