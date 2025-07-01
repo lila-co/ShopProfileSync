@@ -827,7 +827,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       handleError(res, error);
     }
-  });
+    });
 
   app.patch('/api/user/profile', sanitizeInput, validateBody(serverProfileUpdateSchema), async (req: Request, res: Response) => {
     try {
