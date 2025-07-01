@@ -853,6 +853,7 @@ const ShoppingListComponent: React.FC = () => {
     try {
       console.log(`Checking deals for "${newItem.productName}"`);
 
+      // Fetch current deals from API
       const response = await apiRequest('GET', `/api/deals?productName=${encodeURIComponent(newItem.productName)}`);
 
       if (response.ok) {
@@ -878,6 +879,7 @@ const ShoppingListComponent: React.FC = () => {
             // Check if any significant words match
             for (const productWord of productWords) {
               for (const dealWord of dealWords) {
+                ```text
                 if (productWord === dealWord || 
                     productWord.includes(dealWord) || 
                     dealWord.includes(productWord)) {
