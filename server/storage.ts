@@ -1570,6 +1570,63 @@ export class MemStorage implements IStorage {
     return updatedUser;
   }
 
+  // Privacy preferences storage methods
+  private privacyPreferences = new Map<number, any>();
+  private notificationPreferences = new Map<number, any>();
+
+  async getPrivacyPreferences(userId: number): Promise<any> {
+    const existing = this.privacyPreferences.get(userId);
+    if (existing) {
+      return existing;
+    }
+    
+    // Default privacy preferences
+    const defaultPrefs = {
+      allowAnalytics: true,
+      allowLocationTracking: true,
+      allowDataSharing: false,
+      allowPersonalization: true,
+      lastUpdated: new Date()
+    };
+    
+    this.privacyPreferences.set(userId, defaultPrefs);
+    return defaultPrefs;
+  }
+
+  async updatePrivacyPreferences(userId: number, updates: Record<string, any>): Promise<any> {
+    const current = await this.getPrivacyPreferences(userId);
+    const updated = { ...current, ...updates, lastUpdated: new Date() };
+    this.privacyPreferences.set(userId, updated);
+    return updated;
+  }
+
+  async getNotificationPreferences(userId: number): Promise<any> {
+    const existing = this.notificationPreferences.get(userId);
+    if (existing) {
+      return existing;
+    }
+    
+    // Default notification preferences
+    const defaultPrefs = {
+      dealAlerts: true,
+      priceDropAlerts: true,
+      weeklyDigest: false,
+      expirationAlerts: true,
+      recommendationUpdates: true,
+      lastUpdated: new Date()
+    };
+    
+    this.notificationPreferences.set(userId, defaultPrefs);
+    return defaultPrefs;
+  }
+
+  async updateNotificationPreferences(userId: number, updates: Record<string, any>): Promise<any> {
+    const current = await this.getNotificationPreferences(userId);
+    const updated = { ...current, ...updates, lastUpdated: new Date() };
+    this.notificationPreferences.set(userId, updated);
+    return updated;
+  }
+
 }
 
 // Export the storage instance

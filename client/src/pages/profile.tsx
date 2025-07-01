@@ -74,7 +74,9 @@ const ProfilePage: React.FC = () => {
         description: "Your privacy preferences have been saved.",
       });
     },
-    onError: (error: Error) => {
+    onError: (error: Error, variables, context) => {
+      // Revert optimistic update on error
+      queryClient.invalidateQueries({ queryKey: ['/api/user/privacy-preferences'] });
       console.error('Privacy update error:', error);
       toast({
         title: "Privacy Update Failed",
@@ -107,7 +109,9 @@ const ProfilePage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['/api/user/notification-preferences'] });
       // Settings saved silently - no toast needed for every toggle
     },
-    onError: (error: Error) => {
+    onError: (error: Error, variables, context) => {
+      // Revert optimistic update on error
+      queryClient.invalidateQueries({ queryKey: ['/api/user/notification-preferences'] });
       console.error('Notification update error:', error);
       toast({
         title: "Notification Update Failed", 
@@ -120,12 +124,24 @@ const ProfilePage: React.FC = () => {
   const handlePrivacyToggle = (setting: string, value: boolean) => {
     if (updatePrivacyMutation.isPending) return;
     
+    // Optimistically update the UI
+    queryClient.setQueryData(['/api/user/privacy-preferences'], (old: any) => ({
+      ...old,
+      [setting]: value
+    }));
+    
     const preferences = { [setting]: value };
     updatePrivacyMutation.mutate(preferences);
   };
 
   const handleNotificationToggle = (setting: string, value: boolean) => {
     if (updateNotificationMutation.isPending) return;
+    
+    // Optimistically update the UI
+    queryClient.setQueryData(['/api/user/notification-preferences'], (old: any) => ({
+      ...old,
+      [setting]: value
+    }));
     
     const preferences = { [setting]: value };
     updateNotificationMutation.mutate(preferences);
