@@ -338,15 +338,11 @@ const ShoppingListComponent: React.FC = () => {
       if (!defaultList) throw new Error('No shopping list found');
 
       // Normalize product name to prevent duplicates
-      const normalizedName = itemName.trim()
-        .toLowerCase()
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
+      const normalizedName = itemName.trim();
 
       // Check if item already exists (case-insensitive)
       const existingItem = defaultList.items?.find(item => 
-        item.productName.toLowerCase().trim() === normalizedName.toLowerCase()
+        item.productName.toLowerCase().trim() === normalizedName.toLowerCase().trim()
       );
 
       if (existingItem) {
