@@ -879,7 +879,6 @@ const ShoppingListComponent: React.FC = () => {
   // Helper function to get retailer name
   const getRetailerName = (retailerId: number) => {
     const retailerMap: Record<number, string> = {
-      ```text
       1: 'Walmart',
       2: 'Target', 
       3: 'Whole Foods',
