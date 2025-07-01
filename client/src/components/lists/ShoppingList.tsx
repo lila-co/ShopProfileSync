@@ -340,13 +340,36 @@ const ShoppingListComponent: React.FC = () => {
       // Normalize product name to prevent duplicates
       const normalizedName = itemName.trim();
 
-      // Check if item already exists (case-insensitive)
-      const existingItem = defaultList.items?.find(item => 
-        item.productName.toLowerCase().trim() === normalizedName.toLowerCase().trim()
-      );
+      // Check if item already exists (case-insensitive and fuzzy matching)
+      const existingItem = defaultList.items?.find(item => {
+        const existingName = item.productName.toLowerCase().trim();
+        const newName = normalizedName.toLowerCase().trim();
+        
+        // Exact match
+        if (existingName === newName) return true;
+        
+        // Fuzzy matching for similar products
+        const existingWords = existingName.split(/\s+/).filter(word => word.length > 2);
+        const newWords = newName.split(/\s+/).filter(word => word.length > 2);
+        
+        // Check if one name contains all significant words of the other
+        const existingContainsNew = newWords.every(word => 
+          existingWords.some(existingWord => 
+            existingWord.includes(word) || word.includes(existingWord)
+          )
+        );
+        
+        const newContainsExisting = existingWords.every(word => 
+          newWords.some(newWord => 
+            newWord.includes(word) || word.includes(newWord)
+          )
+        );
+        
+        return existingContainsNew || newContainsExisting;
+      });
 
       if (existingItem) {
-        throw new Error(`"${normalizedName}" is already in your shopping list`);
+        throw new Error(`"${normalizedName}" is similar to "${existingItem.productName}" already in your shopping list`);
       }
 
       console.log('Adding item:', { normalizedName, quantity, unit, shoppingListId: defaultList.id });
