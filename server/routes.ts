@@ -1740,7 +1740,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json({
           analytics: {
             ...analytics,
-            topUnfoundItems: ObjectfromEntries(sortedUnfoundItems.slice(0, 10)),
+            topUnfoundItems: Object.fromEntries(sortedUnfoundItems.slice(0, 10)),
             topUnfoundCategories: Object.fromEntries(sortedUnfoundCategories.slice(0, 5)),
             itemsMostlyMovedToCompetitors: Object.fromEntries(sortedMovedItems.slice(0, 8))
           },
