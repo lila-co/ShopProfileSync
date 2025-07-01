@@ -879,7 +879,7 @@ const ShoppingListComponent: React.FC = () => {
             for (const productWord of productWords) {
               for (const dealWord of dealWords) {
                 if (productWord === dealWord || 
-                    productword.includes(dealWord) || 
+                    productWord.includes(dealWord) || 
                     dealWord.includes(productWord)) {
                   return true;
                 }
@@ -949,107 +949,106 @@ const ShoppingListComponent: React.FC = () => {
     }
 
     return (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 rounded-full bg-red-100 hover:bg-red-200 text-red-600 relative"
-                    >
-                      <Tag className="h-3 w-3" />
-                      {itemDeals[itemId].length > 1 && (
-                        <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                          {itemDeals[itemId].length}
-                        </span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80 p-0" align="end">
-                    <div className="p-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Tag className="h-4 w-4 text-red-600" />
-                        <span className="font-semibold text-sm">Available Deals</span>
-                        {itemDeals[itemId].length > 1 && (
-                          <Badge variant="outline" className="text-xs">
-                            {itemDeals[itemId].length} stores
-                          </Badge>
-                        )}
-                      </div>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0 rounded-full bg-red-100 hover:bg-red-200 text-red-600 relative"
+          >
+            <Tag className="h-3 w-3" />
+            {itemDeals[itemId].length > 1 && (
+              <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                {itemDeals[itemId].length}
+              </span>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-80 p-0" align="end">
+          <div className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Tag className="h-4 w-4 text-red-600" />
+              <span className="font-semibold text-sm">Available Deals</span>
+              {itemDeals[itemId].length > 1 && (
+                <Badge variant="outline" className="text-xs">
+                  {itemDeals[itemId].length} stores
+                </Badge>
+              )}
+            </div>
 
-                      <div className="space-y-3">
-                        {itemDeals[itemId].map((deal: any, index: number) => (
-                          <div key={index} className={`border rounded-lg p-3 ${index === 0 ? 'bg-green-50 border-green-200' : 'bg-gray-50'}`}>
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <div 
-                                  className={`w-3 h-3 rounded-full`}
-                                  style={{ backgroundColor: getRetailerColor(deal.retailerId).replace('bg-', '#') }}
-                                />
-                                <span className="font-medium text-sm">
-                                  {getRetailerName(deal.retailerId)}
-                                </span>
-                                {index === 0 && itemDeals[itemId].length > 1 && (
-                                  <Badge variant="default" className="text-xs bg-green-600">
-                                    Best Deal
-                                  </Badge>
-                                )}
-                              </div>
-                              <Badge variant="secondary" className={index === 0 ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
-                                {deal.dealType === 'spend_threshold_percentage' 
-                                  ? `${deal.discountPercentage}% off`
-                                  : `${Math.round((1 - deal.salePrice / deal.regularPrice) * 100)}% off`
-                                }
-                              </Badge>
-                            </div>
-
-                            <div className="text-sm text-gray-600 mb-2">
-                              <strong>{deal.productName}</strong>
-                            </div>
-
-                            {deal.dealType === 'spend_threshold_percentage' ? (
-                              <div className="text-sm">
-                                <span className="text-gray-700">
-                                  Spend ${(deal.spendThreshold / 100).toFixed(0)}+ 
-                                </span>
-                                <span className="text-green-600 font-medium ml-1">
-                                  Get {deal.discountPercentage}% off
-                                </span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2 text-sm">
-                                <span className="font-semibold text-green-600">
-                                  ${(deal.salePrice / 100).toFixed(2)}
-                                </span>
-                                <span className="text-gray-500 line-through">
-                                  ${(deal.regularPrice / 100).toFixed(2)}
-                                </span>
-                                <span className="text-green-600 font-medium">
-                                  Save ${((deal.regularPrice - deal.salePrice) / 100).toFixed(2)}
-                                </span>
-                              </div>
-                            )}
-
-                            <div className="text-xs text-gray-500 mt-1">
-                              Valid until {new Date(deal.endDate).toLocaleDateString()}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      {itemDeals[itemId].length > 1 && (
-                        <div className="mt-3 p-2 bg-blue-50 rounded-lg">
-                          <div className="flex items-center gap-1 text-xs text-blue-700">
-                            <MapPin className="h-3 w-3" />
-                            <span>
-                              Compare prices across {itemDeals[itemId].length} retailers to maximize savings
-                            </span>
-                          </div>
-                        </div>
+            <div className="space-y-3">
+              {itemDeals[itemId].map((deal: any, index: number) => (
+                <div key={index} className={`border rounded-lg p-3 ${index === 0 ? 'bg-green-50 border-green-200' : 'bg-gray-50'}`}>
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className={`w-3 h-3 rounded-full`}
+                        style={{ backgroundColor: getRetailerColor(deal.retailerId).replace('bg-', '#') }}
+                      />
+                      <span className="font-medium text-sm">
+                        {getRetailerName(deal.retailerId)}
+                      </span>
+                      {index === 0 && itemDeals[itemId].length > 1 && (
+                        <Badge variant="default" className="text-xs bg-green-600">
+                          Best Deal
+                        </Badge>
                       )}
                     </div>
-                  </PopoverContent>
-                </Popover>
-              )
+                    <Badge variant="secondary" className={index === 0 ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
+                      {deal.dealType === 'spend_threshold_percentage' 
+                        ? `${deal.discountPercentage}% off`
+                        : `${Math.round((1 - deal.salePrice / deal.regularPrice) * 100)}% off`
+                      }
+                    </Badge>
+                  </div>
+
+                  <div className="text-sm text-gray-600 mb-2">
+                    <strong>{deal.productName}</strong>
+                  </div>
+
+                  {deal.dealType === 'spend_threshold_percentage' ? (
+                    <div className="text-sm">
+                      <span className="text-gray-700">
+                        Spend ${(deal.spendThreshold / 100).toFixed(0)}+ 
+                      </span>
+                      <span className="text-green-600 font-medium ml-1">
+                        Get {deal.discountPercentage}% off
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="font-semibold text-green-600">
+                        ${(deal.salePrice / 100).toFixed(2)}
+                      </span>
+                      <span className="text-gray-500 line-through">
+                        ${(deal.regularPrice / 100).toFixed(2)}
+                      </span>
+                      <span className="text-green-600 font-medium">
+                        Save ${((deal.regularPrice - deal.salePrice) / 100).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="text-xs text-gray-500 mt-1">
+                    Valid until {new Date(deal.endDate).toLocaleDateString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {itemDeals[itemId].length > 1 && (
+              <div className="mt-3 p-2 bg-blue-50 rounded-lg">
+                <div className="flex items-center gap-1 text-xs text-blue-700">
+                  <MapPin className="h-3 w-3" />
+                  <span>
+                    Compare prices across {itemDeals[itemId].length} retailers to maximize savings
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
     );
   };
 
