@@ -871,114 +871,132 @@ const ShoppingListComponent: React.FC = () => {
 
     // Deal criteria detection using real deal data
   const checkForDealsOnItem = async (newItem: any) => {
-    try {
-      console.log(`Checking deals for "${newItem.productName}"`);
+    // Use setTimeout to run deal checking asynchronously without blocking item addition
+    setTimeout(async () => {
+      try {
+        console.log(`Checking deals for "${newItem.productName}"`);
 
-      // Create sample deals for Ice Cream to demonstrate functionality
-      if (newItem.productName.toLowerCase().includes('ice cream')) {
-        const sampleDeals = [
-          {
-            id: `sample-${newItem.id}-1`,
-            productName: 'Premium Ice Cream',
-            retailerId: 1,
-            dealType: 'sale',
-            regularPrice: 699, // $6.99
-            salePrice: 399,    // $3.99
-            discountPercentage: 43,
-            endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
-            startDate: new Date().toISOString()
-          },
-          {
-            id: `sample-${newItem.id}-2`,
-            productName: 'Ice Cream Variety Pack',
-            retailerId: 2,
-            dealType: 'sale',
-            regularPrice: 1299, // $12.99
-            salePrice: 899,     // $8.99
-            discountPercentage: 31,
-            endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days from now
-            startDate: new Date().toISOString()
-          }
-        ];
-
-        console.log(`Added sample deals for Ice Cream:`, sampleDeals);
-        setItemDeals(prev => ({
-          ...prev,
-          [newItem.id]: sampleDeals
-        }));
-        return;
-      }
-
-      // Fetch current deals from API
-      const response = await apiRequest('GET', `/api/deals?productName=${encodeURIComponent(newItem.productName)}`);
-
-      if (response.ok) {
-        const deals = await response.json();
-        console.log(`Found ${deals.length} deals for "${newItem.productName}":`, deals);
-
-        if (deals && Array.isArray(deals) && deals.length > 0) {
-          // Enhanced matching logic for better deal detection
-          const matchingDeals = deals.filter((deal: any) => {
-            if (!deal || !deal.productName) return false;
-            
-            const productName = newItem.productName.toLowerCase().trim();
-            const dealName = deal.productName.toLowerCase().trim();
-
-            // Direct match
-            if (productName === dealName) return true;
-
-            // Contains match (either direction)
-            if (dealName.includes(productName) || productName.includes(dealName)) return true;
-
-            // Word-based matching for better results
-            const productWords = productName.split(/\s+/).filter(word => word.length > 2);
-            const dealWords = dealName.split(/\s+/).filter(word => word.length > 2);
-
-            // Check if any significant words match
-            for (const productWord of productWords) {
-              for (const dealWord of dealWords) {
-                if (productWord === dealWord || 
-                    productWord.includes(dealWord) || 
-                    dealWord.includes(productWord)) {
-                  return true;
-                }
-              }
+        // Create sample deals for Ice Cream to demonstrate functionality
+        if (newItem.productName.toLowerCase().includes('ice cream')) {
+          const sampleDeals = [
+            {
+              id: `sample-${newItem.id}-1`,
+              productName: 'Premium Ice Cream',
+              retailerId: 1,
+              dealType: 'sale',
+              regularPrice: 699, // $6.99
+              salePrice: 399,    // $3.99
+              discountPercentage: 43,
+              endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+              startDate: new Date().toISOString()
+            },
+            {
+              id: `sample-${newItem.id}-2`,
+              productName: 'Ice Cream Variety Pack',
+              retailerId: 2,
+              dealType: 'sale',
+              regularPrice: 1299, // $12.99
+              salePrice: 899,     // $8.99
+              discountPercentage: 31,
+              endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days from now
+              startDate: new Date().toISOString()
             }
+          ];
 
-            return false;
+          console.log(`Added sample deals for Ice Cream:`, sampleDeals);
+          setItemDeals(prev => ({
+            ...prev,
+            [newItem.id]: sampleDeals
+          }));
+          return;
+        }
+
+        // Fetch current deals from API with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+        try {
+          const response = await fetch(`/api/deals?productName=${encodeURIComponent(newItem.productName)}`, {
+            signal: controller.signal,
+            headers: {
+              'Content-Type': 'application/json'
+            }
           });
 
-          if (matchingDeals.length > 0) {
-            console.log(`Found ${matchingDeals.length} matching deals:`, matchingDeals);
+          clearTimeout(timeoutId);
 
-            // Sort deals by best savings first
-            const sortedDeals = matchingDeals.sort((a, b) => {
-              const savingsA = a.dealType === 'spend_threshold_percentage' 
-                ? a.discountPercentage 
-                : ((a.regularPrice - a.salePrice) / a.regularPrice) * 100;
-              const savingsB = b.dealType === 'spend_threshold_percentage' 
-                ? b.discountPercentage 
-                : ((b.regularPrice - b.salePrice) / b.regularPrice) * 100;
-              return savingsB - savingsA;
-            });
+          if (response.ok) {
+            const deals = await response.json();
+            console.log(`Found ${deals.length} deals for "${newItem.productName}":`, deals);
 
-            setItemDeals(prev => ({
-              ...prev,
-              [newItem.id]: sortedDeals
-            }));
+            if (deals && Array.isArray(deals) && deals.length > 0) {
+              // Enhanced matching logic for better deal detection
+              const matchingDeals = deals.filter((deal: any) => {
+                if (!deal || !deal.productName) return false;
+                
+                const productName = newItem.productName.toLowerCase().trim();
+                const dealName = deal.productName.toLowerCase().trim();
+
+                // Direct match
+                if (productName === dealName) return true;
+
+                // Contains match (either direction)
+                if (dealName.includes(productName) || productName.includes(dealName)) return true;
+
+                // Word-based matching for better results
+                const productWords = productName.split(/\s+/).filter(word => word.length > 2);
+                const dealWords = dealName.split(/\s+/).filter(word => word.length > 2);
+
+                // Check if any significant words match
+                for (const productWord of productWords) {
+                  for (const dealWord of dealWords) {
+                    if (productWord === dealWord || 
+                        productWord.includes(dealWord) || 
+                        dealWord.includes(productWord)) {
+                      return true;
+                    }
+                  }
+                }
+
+                return false;
+              });
+
+              if (matchingDeals.length > 0) {
+                console.log(`Found ${matchingDeals.length} matching deals:`, matchingDeals);
+
+                // Sort deals by best savings first
+                const sortedDeals = matchingDeals.sort((a, b) => {
+                  const savingsA = a.dealType === 'spend_threshold_percentage' 
+                    ? a.discountPercentage 
+                    : ((a.regularPrice - a.salePrice) / a.regularPrice) * 100;
+                  const savingsB = b.dealType === 'spend_threshold_percentage' 
+                    ? b.discountPercentage 
+                    : ((b.regularPrice - b.salePrice) / b.regularPrice) * 100;
+                  return savingsB - savingsA;
+                });
+
+                setItemDeals(prev => ({
+                  ...prev,
+                  [newItem.id]: sortedDeals
+                }));
+              }
+            }
+          } else {
+            console.warn(`Deal API returned status ${response.status} for "${newItem.productName}"`);
+          }
+        } catch (apiError) {
+          clearTimeout(timeoutId);
+          if (apiError.name === 'AbortError') {
+            console.warn(`Deal checking timed out for "${newItem.productName}"`);
+          } else {
+            throw apiError;
           }
         }
-      } else {
-        console.warn(`Deal API returned status ${response.status} for "${newItem.productName}"`);
+      } catch (error) {
+        // Silently handle deal checking errors to prevent blocking item addition
+        console.warn(`Deal checking failed for "${newItem.productName}" but item was added successfully`);
       }
-    } catch (error) {
-      console.warn(`Failed to check deals for "${newItem.productName}":`, error);
-      
-      // Don't let deal checking failures break the app
-      if (error && typeof error === 'object' && Object.keys(error).length === 0) {
-        console.warn('Received empty error object from deal checking - likely API parsing issue');
-      }
-    }
+    }, 100); // Small delay to ensure item addition completes first
   };
 
   // Helper function to get retailer color (using proper CSS color values)
