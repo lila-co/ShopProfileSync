@@ -349,19 +349,45 @@ const ShoppingListComponent: React.FC = () => {
         throw new Error(`"${normalizedName}" is already in your shopping list`);
       }
 
-      const response = await apiRequest('POST', '/api/shopping-list/items', {
-        shoppingListId: defaultList.id,
-        productName: normalizedName,
-        quantity: quantity,
-        unit: unit
-      });
+      console.log('Adding item:', { normalizedName, quantity, unit, shoppingListId: defaultList.id });
 
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(`Failed to add item: ${response.status} ${errorData}`);
+      try {
+        const response = await apiRequest('POST', '/api/shopping-list/items', {
+          shoppingListId: defaultList.id,
+          productName: normalizedName,
+          quantity: quantity,
+          unit: unit
+        });
+
+        console.log('Add item response status:', response.status);
+
+        if (!response.ok) {
+          let errorMessage = `Failed to add item: ${response.status}`;
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch (parseError) {
+            try {
+              const errorText = await response.text();
+              errorMessage = errorText || errorMessage;
+            } catch (textError) {
+              console.warn('Could not parse error response');
+            }
+          }
+          console.error('Add item error:', errorMessage);
+          throw new Error(errorMessage);
+        }
+
+        const result = await response.json();
+        console.log('Add item success:', result);
+        return result;
+      } catch (error) {
+        console.error('Add item mutation error:', error);
+        if (error instanceof Error) {
+          throw error;
+        }
+        throw new Error('Failed to add item to shopping list');
       }
-
-      return response.json();
     },
     onMutate: async ({ itemName, quantity, unit }: { itemName: string; quantity: number; unit: string }) => {
       // Cancel any outgoing refetches
@@ -394,9 +420,19 @@ const ShoppingListComponent: React.FC = () => {
     onError: (err, variables, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
       queryClient.setQueryData(['/api/shopping-lists'], context?.previousLists);
+      
+      console.error('Add item mutation error:', err);
+      
+      let errorMessage = "Failed to add item";
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to add item",
+        description: errorMessage,
         variant: "destructive",
       });
     },
