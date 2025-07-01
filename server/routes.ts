@@ -856,7 +856,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/user/switch-role', async (req: Request, res: Response) => {
     try {
       const { targetRole } = req.body;
-      const currentUserId =The app crashed due to a syntax error in the original code, specifically within the get('/api/shopping-lists/suggestions') route. This commit fixes the syntax error and ensures the app functions as expected. req.headers['x-current-user-id'] ? 
+      const currentUserId = req.headers['x-current-user-id'] ? 
         parseInt(req.headers['x-current-user-id'] as string) : 1;
 
       if (!targetRole) {
