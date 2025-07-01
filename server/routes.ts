@@ -863,7 +863,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       handleError(res, error);
     }
-    });
+  });
+
+  // Privacy preferences routes
+  app.get('/api/user/privacy-preferences', async (req: Request, res: Response) => {
+    try {
+      const userId = getCurrentUserId(req);
+      const preferences = await storage.getPrivacyPreferences(userId);
+      res.json(preferences);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  app.patch('/api/user/privacy-preferences', async (req: Request, res: Response) => {
+    try {
+      const userId = getCurrentUserId(req);
+      const updates = req.body;
+      const updatedPreferences = await storage.updatePrivacyPreferences(userId, updates);
+      res.json(updatedPreferences);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Notification preferences routes
+  app.get('/api/user/notification-preferences', async (req: Request, res: Response) => {
+    try {
+      const userId = getCurrentUserId(req);
+      const preferences = await storage.getNotificationPreferences(userId);
+      res.json(preferences);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  app.patch('/api/user/notification-preferences', async (req: Request, res: Response) => {
+    try {
+      const userId = getCurrentUserId(req);
+      const updates = req.body;
+      const updatedPreferences = await storage.updateNotificationPreferences(userId, updates);
+      res.json(updatedPreferences);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
 
   app.patch('/api/user/profile', sanitizeInput, validateBody(serverProfileUpdateSchema), async (req: Request, res: Response) => {
     try {

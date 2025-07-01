@@ -1368,7 +1368,7 @@ export class MemStorage implements IStorage {
     return Array.from(this.affiliateProducts.values()).filter(product => product.featured);
   }
 
-  async createAffiliateProduct(product: InsertAffiliateProduct): Promise<AffiliateProduct> {
+  async createAffiliateProduct(product: InsertAffiliateProduct):Promise<AffiliateProduct> {
     const id = this.affiliateProductIdCounter++;
     const newProduct: AffiliateProduct = { ...product, id, createdAt: new Date() };
     this.affiliateProducts.set(id, newProduct);
@@ -1557,6 +1557,19 @@ export class MemStorage implements IStorage {
 
     return updatedItem;
   }
+
+  async updateUser(userData: Partial<User> ): Promise<User> {
+    const userId = 1; // Use default user for demo
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const updatedUser = { ...user, ...userData };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+
 }
 
 // Export the storage instance
