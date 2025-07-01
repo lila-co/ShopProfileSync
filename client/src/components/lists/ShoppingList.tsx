@@ -340,7 +340,7 @@ const ShoppingListComponent: React.FC = () => {
       // Normalize product name to prevent duplicates
       const normalizedName = itemName.trim();
 
-      // Check if item already exists (case-insensitive and fuzzy matching)
+      // Check if item already exists using semantic-aware duplicate detection
       const existingItem = defaultList.items?.find(item => {
         const existingName = item.productName.toLowerCase().trim();
         const newName = normalizedName.toLowerCase().trim();
@@ -348,24 +348,14 @@ const ShoppingListComponent: React.FC = () => {
         // Exact match
         if (existingName === newName) return true;
         
-        // Fuzzy matching for similar products
-        const existingWords = existingName.split(/\s+/).filter(word => word.length > 2);
-        const newWords = newName.split(/\s+/).filter(word => word.length > 2);
+        // Handle common variations and plurals
+        const normalizedExisting = this.normalizeForComparison(existingName);
+        const normalizedNew = this.normalizeForComparison(newName);
         
-        // Check if one name contains all significant words of the other
-        const existingContainsNew = newWords.every(word => 
-          existingWords.some(existingWord => 
-            existingWord.includes(word) || word.includes(existingWord)
-          )
-        );
+        if (normalizedExisting === normalizedNew) return true;
         
-        const newContainsExisting = existingWords.every(word => 
-          newWords.some(newWord => 
-            newWord.includes(word) || word.includes(newWord)
-          )
-        );
-        
-        return existingContainsNew || newContainsExisting;
+        // Check for semantic similarity but avoid false positives
+        return this.areSemanticallySimilar(existingName, newName);
       });
 
       if (existingItem) {
@@ -926,6 +916,105 @@ const ShoppingListComponent: React.FC = () => {
     if (item) {
       deleteItemMutation.mutate(item.id);
     }
+  };
+
+  // Normalize product names for comparison
+  const normalizeForComparison = (name: string): string => {
+    return name
+      .toLowerCase()
+      .trim()
+      // Handle common plurals
+      .replace(/ies$/, 'y')
+      .replace(/s$/, '')
+      // Remove common modifiers that don't change the core product
+      .replace(/\b(fresh|organic|natural|free[\-\s]range|cage[\-\s]free|grass[\-\s]fed)\b/g, '')
+      // Remove size/quantity indicators
+      .replace(/\b(large|medium|small|extra|xl|lg|md|sm)\b/g, '')
+      .replace(/\([^)]*\)/g, '') // Remove parenthetical content like "(1 gallon)"
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
+  // Check if two product names are semantically similar (same core product)
+  const areSemanticallySimilar = (name1: string, name2: string): boolean => {
+    // Define product categories and their variations
+    const productVariations = {
+      'bread': ['bread', 'loaf'],
+      'milk': ['milk'],
+      'cheese': ['cheese'],
+      'chicken': ['chicken'],
+      'beef': ['beef', 'ground beef'],
+      'turkey': ['turkey', 'ground turkey'],
+      'eggs': ['eggs', 'egg'],
+      'yogurt': ['yogurt'],
+      'butter': ['butter'],
+      'oil': ['oil'],
+      'rice': ['rice'],
+      'pasta': ['pasta'],
+      'tomato': ['tomato', 'tomatoes'],
+      'onion': ['onion', 'onions'],
+      'pepper': ['pepper', 'peppers'],
+      'apple': ['apple', 'apples'],
+      'banana': ['banana', 'bananas'],
+      'orange': ['orange', 'oranges']
+    };
+
+    // Normalize both names
+    const norm1 = normalizeForComparison(name1);
+    const norm2 = normalizeForComparison(name2);
+
+    // Check if they belong to the same product category
+    for (const [category, variations] of Object.entries(productVariations)) {
+      const name1HasCategory = variations.some(variation => norm1.includes(variation));
+      const name2HasCategory = variations.some(variation => norm2.includes(variation));
+      
+      if (name1HasCategory && name2HasCategory) {
+        // Both belong to same category, but check if they're different forms
+        // e.g., "onions" vs "onion powder" should not match
+        
+        // Define exclusions - forms that shouldn't match despite same base ingredient
+        const exclusionPairs = [
+          ['powder', 'whole'], ['powder', 'fresh'], ['powder', 'raw'],
+          ['sauce', 'whole'], ['sauce', 'fresh'], ['sauce', 'raw'],
+          ['juice', 'whole'], ['juice', 'fresh'], ['juice', 'raw'],
+          ['dried', 'fresh'], ['dried', 'whole'], ['dried', 'raw'],
+          ['frozen', 'fresh'], ['canned', 'fresh'],
+          ['paste', 'whole'], ['paste', 'fresh'], ['paste', 'raw'],
+          ['extract', 'whole'], ['extract', 'fresh'], ['extract', 'raw']
+        ];
+
+        // Check if names contain conflicting forms
+        for (const [form1, form2] of exclusionPairs) {
+          const name1HasForm1 = norm1.includes(form1);
+          const name1HasForm2 = norm1.includes(form2);
+          const name2HasForm1 = norm2.includes(form1);
+          const name2HasForm2 = norm2.includes(form2);
+
+          if ((name1HasForm1 && name2HasForm2) || (name1HasForm2 && name2HasForm1)) {
+            return false; // Different forms of same ingredient
+          }
+        }
+
+        // If no conflicting forms, they're likely the same product
+        return true;
+      }
+    }
+
+    // Check for whole word matches with high confidence
+    const words1 = norm1.split(/\s+/).filter(word => word.length > 2);
+    const words2 = norm2.split(/\s+/).filter(word => word.length > 2);
+
+    if (words1.length === 0 || words2.length === 0) return false;
+
+    // Check if one is a subset of the other with high overlap
+    const commonWords = words1.filter(word => words2.includes(word));
+    const overlapRatio1 = commonWords.length / words1.length;
+    const overlapRatio2 = commonWords.length / words2.length;
+
+    // Require high overlap (80%+) and meaningful common words
+    return (overlapRatio1 >= 0.8 || overlapRatio2 >= 0.8) && 
+           commonWords.length >= 1 && 
+           commonWords.some(word => word.length > 3);
   };
 
     // Deal criteria detection using real deal data
