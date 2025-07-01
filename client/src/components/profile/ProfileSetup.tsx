@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useLocation } from 'wouter';
 import { useForm } from 'react-hook-form';
@@ -9,6 +10,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { profileUpdateSchema } from '@/lib/validation';
 import { validateAndSubmit, handleFormError } from '@/lib/formValidation';
+import { Button } from '@/components/ui/button';
 
 const profileFormSchema = profileUpdateSchema.extend({
   householdType: z.enum(['SINGLE', 'COUPLE', 'FAMILY_WITH_CHILDREN', 'SHARED_HOUSING', 'SENIOR_LIVING'], {
@@ -69,12 +71,10 @@ const ProfileSetup: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/user/profile'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/recommendations'] });
       toast({
         title: "Profile Updated",
-        description: "Your profile has been successfully updated."
+        description: "Your household and shopping preferences have been saved."
       });
-      navigate('/');
     },
     onError: (error) => {
       toast({
@@ -123,116 +123,116 @@ const ProfileSetup: React.FC = () => {
         Help us personalize your shopping recommendations by providing some information about your household.
       </p>
 
-      <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Household Type</label>
+          <select 
+            className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-700"
+            {...form.register("householdType")}
+          >
+            <option value="">Select household type</option>
+            <option value="SINGLE">Single Person</option>
+            <option value="COUPLE">Couple</option>
+            <option value="FAMILY_WITH_CHILDREN">Family with Children</option>
+            <option value="SHARED_HOUSING">Shared Housing</option>
+            <option value="SENIOR_LIVING">Senior Living</option>
+          </select>
+          {form.formState.errors.householdType && (
+            <p className="text-red-500 text-xs mt-1">{form.formState.errors.householdType.message}</p>
+          )}
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Household Type</label>
-            <select 
-              className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-700"
-              {...form.register("householdType")}
-            >
-              <option value="">Select household type</option>
-              <option value="SINGLE">Single Person</option>
-              <option value="COUPLE">Couple</option>
-              <option value="FAMILY_WITH_CHILDREN">Family with Children</option>
-              <option value="SHARED_HOUSING">Shared Housing</option>
-              <option value="SENIOR_LIVING">Senior Living</option>
-            </select>
-            {form.formState.errors.householdType && (
-              <p className="text-red-500 text-xs mt-1">{form.formState.errors.householdType.message}</p>
-            )}
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Number of People</label>
+          <select 
+            className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-700"
+            {...form.register("householdSize", { valueAsNumber: true })}
+          >
+            <option value="">Select number</option>
+            <option value={1}>1</option>
+            <option value={2}>2</option>
+            <option value={3}>3</option>
+            <option value={4}>4</option>
+            <option value={5}>5+</option>
+          </select>
+          {form.formState.errors.householdSize && (
+            <p className="text-red-500 text-xs mt-1">{form.formState.errors.householdSize.message}</p>
+          )}
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Number of People</label>
-            <select 
-              className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-700"
-              {...form.register("householdSize", { valueAsNumber: true })}
-            >
-              <option value="">Select number</option>
-              <option value={1}>1</option>
-              <option value={2}>2</option>
-              <option value={3}>3</option>
-              <option value={4}>4</option>
-              <option value={5}>5+</option>
-            </select>
-            {form.formState.errors.householdSize && (
-              <p className="text-red-500 text-xs mt-1">{form.formState.errors.householdSize.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Shopping Preferences</label>
-            <div className="space-y-2">
-              <div className="flex items-center">
-                <input 
-                  type="checkbox" 
-                  id="preferNameBrand" 
-                  className="h-4 w-4 text-primary"
-                  {...form.register("preferNameBrand")}
-                />
-                <label htmlFor="preferNameBrand" className="ml-2 text-sm text-gray-700">I prefer name-brand products</label>
-              </div>
-              <div className="flex items-center">
-                <input 
-                  type="checkbox" 
-                  id="preferOrganic" 
-                  className="h-4 w-4 text-primary"
-                  {...form.register("preferOrganic")}
-                />
-                <label htmlFor="preferOrganic" className="ml-2 text-sm text-gray-700">I prefer organic products</label>
-              </div>
-              <div className="flex items-center">
-                <input 
-                  type="checkbox" 
-                  id="buyInBulk" 
-                  className="h-4 w-4 text-primary"
-                  {...form.register("buyInBulk")}
-                />
-                <label htmlFor="buyInBulk" className="ml-2 text-sm text-gray-700">I buy in bulk when possible</label>
-              </div>
-              <div className="flex items-center">
-                <input 
-                  type="checkbox" 
-                  id="prioritizeCostSavings" 
-                  className="h-4 w-4 text-primary"
-                  {...form.register("prioritizeCostSavings")}
-                />
-                <label htmlFor="prioritizeCostSavings" className="ml-2 text-sm text-gray-700">I prioritize cost savings</label>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Shopping Radius: {form.watch("shoppingRadius") ?? 5} miles
-            </label>
-            <div className="relative">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Shopping Preferences</label>
+          <div className="space-y-2">
+            <div className="flex items-center">
               <input 
-                type="range" 
-                min="1" 
-                max="20" 
-                step="1"
-                className="w-full"
-                {...form.register("shoppingRadius", { valueAsNumber: true })}
+                type="checkbox" 
+                id="preferNameBrand" 
+                className="h-4 w-4 text-primary"
+                {...form.register("preferNameBrand")}
               />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>1 mile</span>
-                <span>5 miles</span>
-                <span>10 miles</span>
-                <span>20 miles</span>
-              </div>
+              <label htmlFor="preferNameBrand" className="ml-2 text-sm text-gray-700">I prefer name-brand products</label>
+            </div>
+            <div className="flex items-center">
+              <input 
+                type="checkbox" 
+                id="preferOrganic" 
+                className="h-4 w-4 text-primary"
+                {...form.register("preferOrganic")}
+              />
+              <label htmlFor="preferOrganic" className="ml-2 text-sm text-gray-700">I prefer organic products</label>
+            </div>
+            <div className="flex items-center">
+              <input 
+                type="checkbox" 
+                id="buyInBulk" 
+                className="h-4 w-4 text-primary"
+                {...form.register("buyInBulk")}
+              />
+              <label htmlFor="buyInBulk" className="ml-2 text-sm text-gray-700">I buy in bulk when possible</label>
+            </div>
+            <div className="flex items-center">
+              <input 
+                type="checkbox" 
+                id="prioritizeCostSavings" 
+                className="h-4 w-4 text-primary"
+                {...form.register("prioritizeCostSavings")}
+              />
+              <label htmlFor="prioritizeCostSavings" className="ml-2 text-sm text-gray-700">I prioritize cost savings</label>
             </div>
           </div>
+        </div>
 
-          <button 
-          type="submit" 
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Shopping Radius: {form.watch("shoppingRadius") ?? 5} miles
+          </label>
+          <div className="relative">
+            <input 
+              type="range" 
+              min="1" 
+              max="20" 
+              step="1"
+              className="w-full"
+              {...form.register("shoppingRadius", { valueAsNumber: true })}
+            />
+            <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <span>1 mile</span>
+              <span>5 miles</span>
+              <span>10 miles</span>
+              <span>20 miles</span>
+            </div>
+          </div>
+        </div>
+
+        <Button 
+          type="button" 
           className="w-full py-3 bg-primary text-white rounded-lg font-medium mt-6"
           disabled={updateProfileMutation.isPending}
+          onClick={form.handleSubmit(onSubmit)}
         >
           {updateProfileMutation.isPending ? 'Saving...' : 'Save Profile'}
-        </button>
-      </form>
+        </Button>
+      </div>
     </div>
   );
 };
