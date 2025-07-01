@@ -1039,9 +1039,9 @@ const ShoppingListComponent: React.FC = () => {
       )}
 
       {/* Fallback for uncategorized view */}
-      {Object.keys(categorizedItems).length === 0 && !isCategorizingItems && items.length > 0 && (
+      {Object.keys(categorizedItems).length === 0 && !isCategorizingItems && shoppingLists?.[0]?.items && shoppingLists[0].items.length > 0 && (
         <div className="space-y-2">
-          {items.map((item) => (
+          {shoppingLists[0].items.map((item) => (
             <Card key={item.id} className={`${item.completed ? 'opacity-60' : ''}`}>
               <CardContent className="p-3">
                 <div className="flex items-center justify-between">
@@ -1078,7 +1078,7 @@ const ShoppingListComponent: React.FC = () => {
         </div>
       )}
 
-      {items.length === 0 && (
+      {(!shoppingLists?.[0]?.items || shoppingLists[0].items.length === 0) && (
         <div className="text-center py-8 text-gray-500">
           <ShoppingBag className="h-12 w-12 mx-auto mb-2 opacity-50" />
           <p>Your shopping list is empty</p>
