@@ -2158,53 +2158,6 @@ async function detectBrandsWithAI(productName: string): Promise<{
 
   return { detectedBrands, genericTerms, category };
 }
-    cereal: {
-      brands: ['cheerios', 'frosted flakes', 'lucky charms', 'froot loops', 'special k', 'honey nut'],
-      patterns: [/\bcereal\b/i, /\b(corn|rice|wheat)\s*flakes?\b/i]
-    },
-    chips: {
-      brands: ['lays', 'doritos', 'cheetos', 'pringles', 'ruffles', 'fritos'],
-      patterns: [/\bchips?\b/i, /\b(potato|corn|tortilla)\s*chips?\b/i]
-    },
-    soda: {
-      brands: ['coca cola', 'pepsi', 'sprite', 'dr pepper', 'mountain dew', 'fanta'],
-      patterns: [/\bsoda\b/i, /\bsoft drink\b/i, /\bcola\b/i]
-    },
-    cheese: {
-      brands: ['kraft', 'sargento', 'tillamook', 'philadelphia', 'velveeta'],
-      patterns: [/\bcheese\b/i, /\b(cheddar|mozzarella|swiss|american)\b/i]
-    }
-  };
-
-  const detectedBrands: string[] = [];
-  const genericTerms: string[] = [];
-  let category = 'generic';
-
-  // Detect brands and categories
-  for (const [cat, data] of Object.entries(brandDatabase)) {
-    // Check for brand names
-    for (const brand of data.brands) {
-      if (name.includes(brand)) {
-        detectedBrands.push(brand);
-        category = cat;
-      }
-    }
-
-    // Check for generic patterns
-    for (const pattern of data.patterns) {
-      if (pattern.test(name)) {
-        genericTerms.push(cat);
-        if (category === 'generic') category = cat;
-      }
-    }
-  }
-
-  return {
-    detectedBrands,
-    genericTerms,
-    category
-  };
-}
 
   return server;
 }
