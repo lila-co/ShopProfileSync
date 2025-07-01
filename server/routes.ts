@@ -602,7 +602,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.headers['x-current-user-id'] ? 
         parseInt(req.headers['x-current-user-id'] as string) : 1;
 
-      // Return sample suggestions for now
+      // Return sample suggestions for now - these are template suggestions, not tied to a specific list
       const suggestions = [
         { id: 1, name: 'Weekly Essentials', count: 12 },
         { id: 2, name: 'Quick Meals', count: 8 },
@@ -613,7 +613,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       handleError(res, error);
     }
-  });
+  });</old_str></old_str>
 
   // Add shopping list item
   app.post('/api/shopping-list/items', sanitizeInput, async (req: Request, res: Response) => {
