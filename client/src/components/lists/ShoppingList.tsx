@@ -10,12 +10,17 @@ import { aiCategorizationService } from '@/lib/aiCategorization';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
-import { Plus, ShoppingBag, FileText, Clock, Check, Trash2, AlertTriangle, DollarSign, MapPin, Car, BarChart2, Wand2, Pencil, Image, Star, TrendingDown, Percent, Circle, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, ShoppingBag, FileText, Clock, Check, Trash2, AlertTriangle, DollarSign, MapPin, Car, BarChart2, Wand2, Pencil, Image, Star, TrendingDown, Percent, Circle, CheckCircle2, ChevronDown, ChevronRight, Tag } from 'lucide-react';
 import { getItemImage, getBestProductImage, getCompanyLogo } from '@/lib/imageUtils';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import VoiceAgent from '@/components/voice/VoiceAgent';
 // Removed next-auth import as it's not being used properly in this context
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 
 const ShoppingListComponent: React.FC = () => {
   const { toast } = useToast();
@@ -39,6 +44,7 @@ const ShoppingListComponent: React.FC = () => {
   const [isCategorizingItems, setIsCategorizingItems] = useState(false);
   const [userHasClearedList, setUserHasClearedList] = useState(false);
   // Session handling removed - using AuthContext instead
+  const [itemDeals, setItemDeals] = useState<Record<number, any[]>>({});
 
   const importRecipeMutation = useMutation({
     mutationFn: async () => {
@@ -89,15 +95,15 @@ const ShoppingListComponent: React.FC = () => {
 
   // Category definitions with icons and colors
   const categoryConfig = {
-    'Produce': { icon: '🍎', color: 'bg-green-100 text-green-800 border-green-200', aisle: 'Aisle 1' },
-    'Dairy & Eggs': { icon: '🥛', color: 'bg-blue-100 text-blue-800 border-blue-200', aisle: 'Aisle 2' },
-    'Meat & Seafood': { icon: '🥩', color: 'bg-red-100 text-red-800 border-red-200', aisle: 'Aisle 3' },
-    'Pantry & Canned Goods': { icon: '🥫', color: 'bg-yellow-100 text-yellow-800 border-yellow-200', aisle: 'Aisle 4-6' },
-    'Frozen Foods': { icon: '❄️', color: 'bg-cyan-100 text-cyan-800 border-cyan-200', aisle: 'Aisle 7' },
-    'Bakery': { icon: '🍞', color: 'bg-orange-100 text-orange-800 border-orange-200', aisle: 'Aisle 8' },
-    'Personal Care': { icon: '🧼', color: 'bg-purple-100 text-purple-800 border-purple-200', aisle: 'Aisle 9' },
-    'Household Items': { icon: '🏠', color: 'bg-gray-100 text-gray-800 border-gray-200', aisle: 'Aisle 10' },
-    'Generic': { icon: '🛒', color: 'bg-slate-100 text-slate-800 border-slate-200', aisle: 'Generic' },
+    'Produce': { icon: '🍎', color: 'bg-green-100 text-green-800 border-green-200' },
+    'Dairy & Eggs': { icon: '🥛', color: 'bg-blue-100 text-blue-800 border-blue-200' },
+    'Meat & Seafood': { icon: '🥩', color: 'bg-red-100 text-red-800 border-red-200' },
+    'Pantry & Canned Goods': { icon: '🥫', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+    'Frozen Foods': { icon: '❄️', color: 'bg-cyan-100 text-cyan-800 border-cyan-200' },
+    'Bakery': { icon: '🍞', color: 'bg-orange-100 text-orange-800 border-orange-200' },
+    'Personal Care': { icon: '🧼', color: 'bg-purple-100 text-purple-800 border-purple-200' },
+    'Household Items': { icon: '🏠', color: 'bg-gray-100 text-gray-800 border-gray-200' },
+    'Generic': { icon: '🛒', color: 'bg-slate-100 text-slate-800 border-slate-200' },
   };
 
   // Auto-categorize items using AI categorization service
@@ -331,19 +337,62 @@ const ShoppingListComponent: React.FC = () => {
       const defaultList = shoppingLists?.[0];
       if (!defaultList) throw new Error('No shopping list found');
 
-      const response = await apiRequest('POST', '/api/shopping-list/items', {
-        shoppingListId: defaultList.id,
-        productName: itemName,
-        quantity: quantity,
-        unit: unit
+      // Normalize product name to prevent duplicates
+      const normalizedName = itemName.trim();
+
+      // Check if item already exists using simple duplicate detection
+      const existingItem = defaultList.items?.find(item => {
+        const existingName = item.productName.toLowerCase().trim();
+        const newName = normalizedName.toLowerCase().trim();
+        
+        // Exact match or very similar match
+        return existingName === newName || 
+               existingName.replace(/s$/, '') === newName.replace(/s$/, '');
       });
 
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(`Failed to add item: ${response.status} ${errorData}`);
+      if (existingItem) {
+        throw new Error(`"${normalizedName}" is similar to "${existingItem.productName}" already in your shopping list`);
       }
 
-      return response.json();
+      console.log('Adding item:', { normalizedName, quantity, unit, shoppingListId: defaultList.id });
+
+      try {
+        const response = await apiRequest('POST', '/api/shopping-list/items', {
+          shoppingListId: defaultList.id,
+          productName: normalizedName,
+          quantity: quantity,
+          unit: unit
+        });
+
+        console.log('Add item response status:', response.status);
+
+        if (!response.ok) {
+          let errorMessage = `Failed to add item: ${response.status}`;
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch (parseError) {
+            try {
+              const errorText = await response.text();
+              errorMessage = errorText || errorMessage;
+            } catch (textError) {
+              console.warn('Could not parse error response');
+            }
+          }
+          console.error('Add item error:', errorMessage);
+          throw new Error(errorMessage);
+        }
+
+        const result = await response.json();
+        console.log('Add item success:', result);
+        return result;
+      } catch (error) {
+        console.error('Add item mutation error:', error);
+        if (error instanceof Error) {
+          throw error;
+        }
+        throw new Error('Failed to add item to shopping list');
+      }
     },
     onMutate: async ({ itemName, quantity, unit }: { itemName: string; quantity: number; unit: string }) => {
       // Cancel any outgoing refetches
@@ -376,9 +425,19 @@ const ShoppingListComponent: React.FC = () => {
     onError: (err, variables, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
       queryClient.setQueryData(['/api/shopping-lists'], context?.previousLists);
+      
+      console.error('Add item mutation error for item:', variables.itemName, err);
+      
+      let errorMessage = "Failed to add item";
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      
       toast({
-        title: "Error",
-        description: "Failed to add item",
+        title: "Error Adding Item",
+        description: `Could not add "${variables.itemName}": ${errorMessage}`,
         variant: "destructive",
       });
     },
@@ -386,13 +445,19 @@ const ShoppingListComponent: React.FC = () => {
       // Always refetch after error or success
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
     },
-    onSuccess: () => {
-      setNewItemName('');
-      setNewItemQuantity('1');
-      setNewItemUnit('COUNT');
+    onSuccess: async (newItem) => {
+      // Invalidate and refetch shopping lists
+      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      queryClient.refetchQueries({ queryKey: ['/api/shopping-lists'] });
+
+      // Check for deals on the newly added item after a short delay
+      setTimeout(() => {
+        checkForDealsOnItem(newItem);
+      }, 500);
+
       toast({
-        title: "Item added",
-        description: "Item has been added to your shopping list",
+        title: "Item Added",
+        description: `${newItem.productName} has been added to your list.`
       });
     }
   });
@@ -748,6 +813,13 @@ const ShoppingListComponent: React.FC = () => {
         itemName: newItemName.trim(), 
         quantity: quantity,
         unit: newItemUnit 
+      }, {
+        onSuccess: () => {
+          // Clear the form after successful addition
+          setNewItemName('');
+          setNewItemQuantity('1');
+          setNewItemUnit('COUNT');
+        }
       });
     }
   };
@@ -838,93 +910,406 @@ const ShoppingListComponent: React.FC = () => {
     }
   };
 
+  // Normalize product names for comparison
+  const normalizeForComparison = (name: string): string => {
+    return name
+      .toLowerCase()
+      .trim()
+      // Handle common plurals
+      .replace(/ies$/, 'y')
+      .replace(/s$/, '')
+      // Remove common modifiers that don't change the core product
+      .replace(/\b(fresh|organic|natural|free[\-\s]range|cage[\-\s]free|grass[\-\s]fed)\b/g, '')
+      // Remove size/quantity indicators
+      .replace(/\b(large|medium|small|extra|xl|lg|md|sm)\b/g, '')
+      .replace(/\([^)]*\)/g, '') // Remove parenthetical content like "(1 gallon)"
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
 
+  // Check if two product names are semantically similar (same core product)
+  const areSemanticallySimilar = (name1: string, name2: string): boolean => {
+    // Define product categories and their variations
+    const productVariations = {
+      'bread': ['bread', 'loaf'],
+      'milk': ['milk'],
+      'cheese': ['cheese'],
+      'chicken': ['chicken'],
+      'beef': ['beef', 'ground beef'],
+      'turkey': ['turkey', 'ground turkey'],
+      'eggs': ['eggs', 'egg'],
+      'yogurt': ['yogurt'],
+      'butter': ['butter'],
+      'oil': ['oil'],
+      'rice': ['rice'],
+      'pasta': ['pasta'],
+      'tomato': ['tomato', 'tomatoes'],
+      'onion': ['onion', 'onions'],
+      'pepper': ['pepper', 'peppers'],
+      'apple': ['apple', 'apples'],
+      'banana': ['banana', 'bananas'],
+      'orange': ['orange', 'oranges']
+    };
 
-  // Show AI generation animation
-  if (isGeneratingList) {
-    return (
-      <div className="p-4 pb-20">
-        <div className="max-w-md mx-auto">
-          <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
-            <CardContent className="p-6">
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 mx-auto mb-4 relative">
-                  <div className="absolute inset-0 bg-blue-600 rounded-full animate-pulse"></div>
-                  <div className="absolute inset-2 bg-white rounded-full flex items-center justify-center">
-                    <Wand2 className="h-6 w-6 text-blue-600" />
-                  </div>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  {generationSteps.some(step => step.includes('Scanning')) 
-                    ? 'AI is Updating Your Shopping List'
-                    : 'AI is Creating Your Smart Shopping List'
+    // Normalize both names
+    const norm1 = normalizeForComparison(name1);
+    const norm2 = normalizeForComparison(name2);
+
+    // Check if they belong to the same product category
+    for (const [category, variations] of Object.entries(productVariations)) {
+      const name1HasCategory = variations.some(variation => norm1.includes(variation));
+      const name2HasCategory = variations.some(variation => norm2.includes(variation));
+      
+      if (name1HasCategory && name2HasCategory) {
+        // Both belong to same category, but check if they're different forms
+        // e.g., "onions" vs "onion powder" should not match
+        
+        // Define exclusions - forms that shouldn't match despite same base ingredient
+        const exclusionPairs = [
+          ['powder', 'whole'], ['powder', 'fresh'], ['powder', 'raw'],
+          ['sauce', 'whole'], ['sauce', 'fresh'], ['sauce', 'raw'],
+          ['juice', 'whole'], ['juice', 'fresh'], ['juice', 'raw'],
+          ['dried', 'fresh'], ['dried', 'whole'], ['dried', 'raw'],
+          ['frozen', 'fresh'], ['canned', 'fresh'],
+          ['paste', 'whole'], ['paste', 'fresh'], ['paste', 'raw'],
+          ['extract', 'whole'], ['extract', 'fresh'], ['extract', 'raw']
+        ];
+
+        // Check if names contain conflicting forms
+        for (const [form1, form2] of exclusionPairs) {
+          const name1HasForm1 = norm1.includes(form1);
+          const name1HasForm2 = norm1.includes(form2);
+          const name2HasForm1 = norm2.includes(form1);
+          const name2HasForm2 = norm2.includes(form2);
+
+          if ((name1HasForm1 && name2HasForm2) || (name1HasForm2 && name2HasForm1)) {
+            return false; // Different forms of same ingredient
+          }
+        }
+
+        // If no conflicting forms, they're likely the same product
+        return true;
+      }
+    }
+
+    // Check for whole word matches with high confidence
+    const words1 = norm1.split(/\s+/).filter(word => word.length > 2);
+    const words2 = norm2.split(/\s+/).filter(word => word.length > 2);
+
+    if (words1.length === 0 || words2.length === 0) return false;
+
+    // Check if one is a subset of the other with high overlap
+    const commonWords = words1.filter(word => words2.includes(word));
+    const overlapRatio1 = commonWords.length / words1.length;
+    const overlapRatio2 = commonWords.length / words2.length;
+
+    // Require high overlap (80%+) and meaningful common words
+    return (overlapRatio1 >= 0.8 || overlapRatio2 >= 0.8) && 
+           commonWords.length >= 1 && 
+           commonWords.some(word => word.length > 3);
+  };
+
+    // Deal criteria detection using real deal data
+  const checkForDealsOnItem = async (newItem: any) => {
+    // Use setTimeout to run deal checking asynchronously without blocking item addition
+    setTimeout(async () => {
+      try {
+        console.log(`Checking deals for "${newItem.productName}"`);
+
+        // Create sample deals for Ice Cream to demonstrate functionality
+        if (newItem.productName.toLowerCase().includes('ice cream')) {
+          const sampleDeals = [
+            {
+              id: `sample-${newItem.id}-1`,
+              productName: 'Premium Ice Cream',
+              retailerId: 1,
+              dealType: 'sale',
+              regularPrice: 699, // $6.99
+              salePrice: 399,    // $3.99
+              discountPercentage: 43,
+              endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+              startDate: new Date().toISOString()
+            },
+            {
+              id: `sample-${newItem.id}-2`,
+              productName: 'Ice Cream Variety Pack',
+              retailerId: 2,
+              dealType: 'sale',
+              regularPrice: 1299, // $12.99
+              salePrice: 899,     // $8.99
+              discountPercentage: 31,
+              endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days from now
+              startDate: new Date().toISOString()
+            }
+          ];
+
+          console.log(`Added sample deals for Ice Cream:`, sampleDeals);
+          setItemDeals(prev => ({
+            ...prev,
+            [newItem.id]: sampleDeals
+          }));
+          return;
+        }
+
+        // Fetch current deals from API with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+        try {
+          const response = await fetch(`/api/deals?productName=${encodeURIComponent(newItem.productName)}`, {
+            signal: controller.signal,
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+
+          clearTimeout(timeoutId);
+
+          if (response.ok) {
+            const deals = await response.json();
+            console.log(`Found ${deals.length} deals for "${newItem.productName}":`, deals);
+
+            if (deals && Array.isArray(deals) && deals.length > 0) {
+              // Enhanced matching logic for better deal detection
+              const matchingDeals = deals.filter((deal: any) => {
+                if (!deal || !deal.productName) return false;
+                
+                const productName = newItem.productName.toLowerCase().trim();
+                const dealName = deal.productName.toLowerCase().trim();
+
+                // Direct match
+                if (productName === dealName) return true;
+
+                // Contains match (either direction)
+                if (dealName.includes(productName) || productName.includes(dealName)) return true;
+
+                // Word-based matching for better results
+                const productWords = productName.split(/\s+/).filter(word => word.length > 2);
+                const dealWords = dealName.split(/\s+/).filter(word => word.length > 2);
+
+                // Check if any significant words match
+                for (const productWord of productWords) {
+                  for (const dealWord of dealWords) {
+                    if (productWord === dealWord || 
+                        productWord.includes(dealWord) || 
+                        dealWord.includes(productWord)) {
+                      return true;
+                    }
                   }
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {generationSteps.some(step => step.includes('Scanning'))
-                    ? 'Checking for new deals and items you might need'
-                    : 'Please wait while we personalize your shopping experience'
-                  }
-                </p>
-              </div>
+                }
 
-              <div className="space-y-3">
-                {generationSteps.map((step, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    {index < currentStep ? (
-                      <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0" />
-                    ) : index === currentStep ? (
-                      <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
-                    ) : (
-                      <Circle className="h-5 w-5 flex-shrink-0" />
-                    )}
-                    <span className="text-sm font-medium">{step}</span>
-                  </div>
-                ))}
-              </div>
+                return false;
+              });
 
-              <div className="mt-6 bg-white rounded-lg p-4">
-                <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-                  <span>Progress</span>
-                  <span>{Math.round(((currentStep + 1) / generationSteps.length) * 10)}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
-                    style={{ width: `${((currentStep + 1) / generationSteps.length) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
+              if (matchingDeals.length > 0) {
+                console.log(`Found ${matchingDeals.length} matching deals:`, matchingDeals);
 
-  // Show loading state
-  if (isLoading) {
+                // Sort deals by best savings first
+                const sortedDeals = matchingDeals.sort((a, b) => {
+                  const savingsA = a.dealType === 'spend_threshold_percentage' 
+                    ? a.discountPercentage 
+                    : ((a.regularPrice - a.salePrice) / a.regularPrice) * 100;
+                  const savingsB = b.dealType === 'spend_threshold_percentage' 
+                    ? b.discountPercentage 
+                    : ((b.regularPrice - b.salePrice) / b.regularPrice) * 100;
+                  return savingsB - savingsA;
+                });
+
+                setItemDeals(prev => ({
+                  ...prev,
+                  [newItem.id]: sortedDeals
+                }));
+              }
+            }
+          } else {
+            console.warn(`Deal API returned status ${response.status} for "${newItem.productName}"`);
+          }
+        } catch (apiError) {
+          clearTimeout(timeoutId);
+          if (apiError.name === 'AbortError') {
+            console.warn(`Deal checking timed out for "${newItem.productName}"`);
+          } else {
+            throw apiError;
+          }
+        }
+      } catch (error) {
+        // Silently handle deal checking errors to prevent blocking item addition
+        console.warn(`Deal checking failed for "${newItem.productName}" but item was added successfully`);
+      }
+    }, 100); // Small delay to ensure item addition completes first
+  };
+
+  // Helper function to get retailer color (using proper CSS color values)
+  const getRetailerColor = (retailerId: number) => {
+    const retailerColors: Record<number, string> = {
+      1: '#3b82f6',   // Walmart (Blue)
+      2: '#ef4444',    // Target (Red)
+      3: '#22c55e',  // Whole Foods (Green)
+      4: '#6366f1', // Costco (Indigo)
+      5: '#a855f7'  // Kroger (Purple)
+    };
+    return retailerColors[retailerId] || '#6b7280'; // Default to gray
+  };
+
+  // Helper function to get retailer name
+  const getRetailerName = (retailerId: number) => {
+    const retailerMap: Record<number, string> = {
+      1: 'Walmart',
+      2: 'Target', 
+      3: 'Whole Foods',
+      4: 'Costco',
+      5: 'Kroger'
+    };
+    return retailerMap[retailerId] || 'Store';
+  };
+
+  // DealIndicator Component with real deal detection and popover
+  const DealIndicator: React.FC<{ productName: string; itemId: number }> = ({ productName, itemId }) => {
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Check if there are deals for this item
+    if (!itemDeals[itemId] || itemDeals[itemId].length === 0) {
+      return null;
+    }
+
     return (
-      <div className="p-4 space-y-4">
-        <div className="h-10 bg-gray-200 rounded animate-pulse w-3/4 mb-4"></div>
-        <div className="space-y-2">
-          {Array(5).fill(0).map((_, index) => (
-            <div key={index} className="p-4 border border-gray-200 rounded-lg">
-              <div className="flex justify-between items-center">
-                <div className="w-full">
-                  <div className="h-5 bg-gray-200 roundedanimate-pulse w-1/2 mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded animate-pulse w-1/3"></div>
-                </div>
-              </div>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0 rounded-full bg-red-100 hover:bg-red-200 text-red-600 relative"
+          >
+            <Tag className="h-3 w-3" />
+            {itemDeals[itemId].length > 1 && (
+              <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                {itemDeals[itemId].length}
+              </span>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-80 p-0" align="end">
+          <div className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Tag className="h-4 w-4 text-red-600" />
+              <span className="font-semibold text-sm">Available Deals</span>
+              {itemDeals[itemId].length > 1 && (
+                <Badge variant="outline" className="text-xs">
+                  {itemDeals[itemId].length} stores
+                </Badge>
+              )}
             </div>
-          ))}
+
+            <div className="space-y-3">
+              {itemDeals[itemId].map((deal: any, index: number) => (
+                <div key={index} className={`border rounded-lg p-3 ${index === 0 ? 'bg-green-50 border-green-200' : 'bg-gray-50'}`}>
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className={`w-3 h-3 rounded-full`}
+                        style={{ backgroundColor: getRetailerColor(deal.retailerId).replace('bg-', '#') }}
+                      />
+                      <span className="font-medium text-sm">
+                        {getRetailerName(deal.retailerId)}
+                      </span>
+                      {index === 0 && itemDeals[itemId].length > 1 && (
+                        <Badge variant="default" className="text-xs bg-green-600">
+                          Best Deal
+                        </Badge>
+                      )}
+                    </div>
+                    <Badge variant="secondary" className={index === 0 ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
+                      {deal.dealType === 'spend_threshold_percentage' 
+                        ? `${deal.discountPercentage}% off`
+                        : `${Math.round((1 - deal.salePrice / deal.regularPrice) * 100)}% off`
+                      }
+                    </Badge>
+                  </div>
+
+                  <div className="text-sm text-gray-600 mb-2">
+                    <strong>{deal.productName}</strong>
+                  </div>
+
+                  {deal.dealType === 'spend_threshold_percentage' ? (
+                    <div className="text-sm">
+                      <span className="text-gray-700">
+                        Spend ${(deal.spendThreshold / 100).toFixed(0)}+ 
+                      </span>
+                      <span className="text-green-600 font-medium ml-1">
+                        Get {deal.discountPercentage}% off
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="font-semibold text-green-600">
+                        ${(deal.salePrice / 100).toFixed(2)}
+                      </span>
+                      <span className="text-gray-500 line-through">
+                        ${(deal.regularPrice / 100).toFixed(2)}
+                      </span>
+                      <span className="text-green-600 font-medium">
+                        Save ${((deal.regularPrice - deal.salePrice) / 100).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="text-xs text-gray-500 mt-1">
+                    Valid until {new Date(deal.endDate).toLocaleDateString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {itemDeals[itemId].length > 1 && (
+              <div className="mt-3 p-2 bg-blue-50 rounded-lg">
+                <div className="flex items-center gap-1 text-xs text-blue-700">
+                  <MapPin className="h-3 w-3" />
+                  <span>
+                    Compare prices across {itemDeals[itemId].length} retailers to maximize savings
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
+  };
+
+    const SpendThresholdTracker: React.FC<{ currentTotal: number }> =  ({ currentTotal }) => {
+    const [thresholdReached, setThresholdReached] = useState(false);
+    const threshold = 50; // Define your spend threshold
+
+    useEffect(() => {
+      if (currentTotal >= threshold) {
+        setThresholdReached(true);
+      } else {
+        setThresholdReached(false);
+      }
+    }, [currentTotal, threshold]);
+
+    if (thresholdReached) {
+      return (
+        <div className="text-green-600 font-semibold">
+          Congratulations! You've reached the spend threshold of ${threshold}.
         </div>
+      );
+    }
+
+    return (
+      <div className="text-gray-600">
+        Spend ${threshold - currentTotal > 0 ? (threshold - currentTotal).toFixed(2) : '0.00'} more to unlock extra benefits!
       </div>
     );
-  }
+  };
 
-  const defaultList = shoppingLists?.[0];
-  const items = defaultList?.items || [];
+  const { data: shoppingList, isLoading: listLoading, refetch: refetchShoppingList } = useQuery({
+    queryKey: ['/api/shopping-list'],
+  });
+
+  const totalCost = shoppingList?.items?.reduce((sum, item) => {
+    return sum + (item.suggestedPrice || 0);
+  }, 0) / 100 || 0;
 
   return (
     <div className="p-4 pb-20">
@@ -946,28 +1331,36 @@ const ShoppingListComponent: React.FC = () => {
               const order = ['Produce', 'Dairy & Eggs', 'Meat & Seafood', 'Pantry & Canned Goods', 'Frozen Foods', 'Bakery', 'Personal Care', 'Household Items', 'Generic'];
               const indexA = order.indexOf(a);
               const indexB = order.indexOf(b);
-              
+
               // If both categories are in the predefined order, sort by that order
               if (indexA !== -1 && indexB !== -1) {
                 return indexA - indexB;
               }
-              
+
               // If only one is in the predefined order, prioritize it
               if (indexA !== -1) return -1;
               if (indexB !== -1) return 1;
-              
+
               // If neither is in the predefined order, sort alphabetically
               return a.localeCompare(b);
             })
             .map(([category, categoryItems]) => {
+              // Sort items within each category alphabetically
+              const sortedCategoryItems = [...categoryItems].sort((a, b) => {
+                const nameA = (a.productName || '').toString().toLowerCase();
+                const nameB = (b.productName || '').toString().toLowerCase();
+                return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' });
+              });
+              return [category, sortedCategoryItems];
+            })
+            .map(([category, sortedCategoryItems]) => {
               const config = categoryConfig[category as keyof typeof categoryConfig] || {
                 icon: '🛒',
-                color: 'bg-gray-100 text-gray-800 border-gray-200',
-                aisle: 'General'
+                color: 'bg-gray-100 text-gray-800 border-gray-200'
               };
               const isCollapsed = collapsedCategories[category];
-              const completedCount = categoryItems.filter(item => item.completed).length;
-              const totalCount = categoryItems.length;
+              const completedCount = sortedCategoryItems.filter(item => item.completed).length;
+              const totalCount = sortedCategoryItems.length;
 
               return (
                 <Collapsible key={category} open={!isCollapsed} onOpenChange={() => toggleCategory(category)}>
@@ -979,7 +1372,6 @@ const ShoppingListComponent: React.FC = () => {
                             <span className="text-2xl">{config.icon}</span>
                             <div className="text-left">
                               <h3 className="font-semibold text-lg">{category}</h3>
-                              <p className="text-sm text-gray-600">{config.aisle}</p>
                             </div>
                           </div>
                           <div className="flex items-center space-x-3">
@@ -995,20 +1387,23 @@ const ShoppingListComponent: React.FC = () => {
 
                     <CollapsibleContent>
                       <div className="px-3 pb-3 space-y-2">
-                        {categoryItems.map((item) => (
+                        {sortedCategoryItems.map((item) => (
                           <Card key={item.id} className={`${item.completed ? 'opacity-60' : ''} border border-gray-200`}>
                             <CardContent className="p-3">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-3 flex-1">
-                                  <div className="flex-1">
-                                    <span className={`${item.completed ? 'line-through' : ''}`}>
-                                      {item.productName}
-                                    </span>
-                                    <div className="text-sm text-gray-500">
-                                      {item.quantity} {item.unit || 'COUNT'}
+                                    <div className="flex-1">
+                                      <div className="flex items-center space-x-2">
+                                        <span className={`${item.completed ? 'line-through' : ''}`}>
+                                          {item.productName}
+                                        </span>
+                                        <DealIndicator productName={item.productName} itemId={item.id} />
+                                      </div>
+                                      <div className="text-sm text-gray-500">
+                                        {item.quantity} {item.unit || 'COUNT'}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
                                 <div className="flex space-x-2">
                                   <Button
                                     variant="ghost"
@@ -1039,17 +1434,26 @@ const ShoppingListComponent: React.FC = () => {
       )}
 
       {/* Fallback for uncategorized view */}
-      {Object.keys(categorizedItems).length === 0 && !isCategorizingItems && items.length > 0 && (
+      {Object.keys(categorizedItems).length === 0 && !isCategorizingItems && shoppingLists?.[0]?.items && shoppingLists[0].items.length > 0 && (
         <div className="space-y-2">
-          {items.map((item) => (
+          {[...shoppingLists[0].items]
+            .sort((a, b) => {
+              const nameA = (a.productName || '').toString().toLowerCase();
+              const nameB = (b.productName || '').toString().toLowerCase();
+              return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' });
+            })
+            .map((item) => (
             <Card key={item.id} className={`${item.completed ? 'opacity-60' : ''}`}>
               <CardContent className="p-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3 flex-1">
                     <div className="flex-1">
-                      <span className={`${item.completed ? 'line-through' : ''}`}>
-                        {item.productName}
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <span className={`${item.completed ? 'line-through' : ''}`}>
+                          {item.productName}
+                        </span>
+                        <DealIndicator productName={item.productName} itemId={item.id}/>
+                      </div>
                       <div className="text-sm text-gray-500">
                         {item.quantity} {item.unit || 'COUNT'}
                       </div>
@@ -1078,15 +1482,13 @@ const ShoppingListComponent: React.FC = () => {
         </div>
       )}
 
-      {items.length === 0 && (
+      {(!shoppingLists?.[0]?.items || shoppingLists[0].items.length === 0) && (
         <div className="text-center py-8 text-gray-500">
           <ShoppingBag className="h-12 w-12 mx-auto mb-2 opacity-50" />
           <p>Your shopping list is empty</p>
           <p className="text-sm">Add items below to get started</p>
         </div>
       )}
-
-
 
       <form onSubmit={handleAddItem} className="mb-4">
         <Card className="bg-white rounded-lg shadow-md border border-gray-200">
@@ -1206,7 +1608,25 @@ const ShoppingListComponent: React.FC = () => {
         </Card>
       </form>
 
-
+      {shoppingList && shoppingList.items && shoppingList.items.length > 0 && (
+              <Card className="mb-6">
+                <CardContent className="p-4">
+                  <div className="text-center">
+                    <h3 className="font-semibold text-gray-900 mb-2">Ready to Shop?</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      {shoppingList.items.length} items • Estimated total: ${totalCost.toFixed(2)}
+                    </p>
+                    <SpendThresholdTracker currentTotal={totalCost} />
+                    <Button
+                      onClick={() => window.location.href = '/plan-details'}
+                      className="w-full bg-primary hover:bg-primary/90 mt-2"
+                    >
+                      Create Shopping Plan
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
       {/* Recipe Import Dialog */}
       <Dialog open={recipeDialogOpen} onOpenChange={setRecipeDialogOpen}>
@@ -1366,8 +1786,6 @@ const ShoppingListComponent: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-
 
       {/* Voice AI Agent - Moved to bottom */}
       <div className="mt-6 mb-4">

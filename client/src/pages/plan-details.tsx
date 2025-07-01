@@ -92,10 +92,10 @@ const PlanDetails: React.FC = () => {
       return { totalCost: 0, estimatedTime: '0 min', stores: [] };
     }
 
-    // If user has overridden the retailer, force single-store plan with selected retailer
+    // Handle store override based on plan type
     if (overrideRetailerId && availableRetailers) {
       const selectedRetailer = availableRetailers.find((r: any) => r.id === overrideRetailerId);
-      if (selectedRetailer) {
+      if (selectedRetailer && planType === 'single-store') {
         return {
           totalCost: items.reduce((sum, item) => sum + (item.suggestedPrice || 0) * item.quantity, 0),
           estimatedTime: '25-35 min',
@@ -148,7 +148,7 @@ const PlanDetails: React.FC = () => {
 
       case 'multi-store':
         // Group by retailer for best prices
-        const storeGroups = items.reduce((acc, item) => {
+        let storeGroups = items.reduce((acc, item) => {
           if (item.suggestedRetailer?.id) {
             const retailerId = item.suggestedRetailer.id;
             if (!acc[retailerId]) {
@@ -163,6 +163,31 @@ const PlanDetails: React.FC = () => {
           }
           return acc;
         }, {} as Record<number, any>);
+
+        // If store override is selected, replace one of the stores with the override
+        if (overrideRetailerId && availableRetailers) {
+          const selectedRetailer = availableRetailers.find((r: any) => r.id === overrideRetailerId);
+          if (selectedRetailer) {
+            // Remove the override retailer if it already exists in the groups
+            delete storeGroups[overrideRetailerId];
+            
+            // Find the store with the most items and replace it with the override store
+            const storeGroupsArray = Object.values(storeGroups);
+            if (storeGroupsArray.length > 0) {
+              const largestStore = storeGroupsArray.reduce((max: any, store: any) => 
+                store.items.length > max.items.length ? store : max
+              );
+              delete storeGroups[largestStore.retailer.id];
+            }
+            
+            // Add the override store with all items
+            storeGroups[overrideRetailerId] = {
+              retailer: selectedRetailer,
+              items: items,
+              subtotal: items.reduce((sum, item) => sum + (item.suggestedPrice || 0) * item.quantity, 0)
+            };
+          }
+        }
 
         return {
           totalCost: Object.values(storeGroups).reduce((sum: number, store: any) => sum + store.subtotal, 0),
@@ -172,7 +197,7 @@ const PlanDetails: React.FC = () => {
 
       case 'balanced':
         // Balance between convenience and savings
-        const balancedStores = items.reduce((acc, item) => {
+        let balancedStores = items.reduce((acc, item) => {
           if (item.suggestedRetailer?.id) {
             const retailerId = item.suggestedRetailer.id;
             if (!acc[retailerId]) {
@@ -187,6 +212,24 @@ const PlanDetails: React.FC = () => {
           }
           return acc;
         }, {} as Record<number, any>);
+
+        // If store override is selected, ensure it's included in the balanced plan
+        if (overrideRetailerId && availableRetailers) {
+          const selectedRetailer = availableRetailers.find((r: any) => r.id === overrideRetailerId);
+          if (selectedRetailer) {
+            // Always include the override store as one of the two stores
+            const overrideStoreItems = items.filter(item => 
+              !balancedStores[overrideRetailerId] || 
+              Math.random() > 0.5 // Randomly distribute items between stores for balance
+            );
+            
+            balancedStores[overrideRetailerId] = {
+              retailer: selectedRetailer,
+              items: overrideStoreItems,
+              subtotal: overrideStoreItems.reduce((sum, item) => sum + (item.suggestedPrice || 0) * item.quantity, 0)
+            };
+          }
+        }
 
         // Limit to 2 stores maximum for balance
         const topStores = Object.values(balancedStores)
@@ -206,7 +249,7 @@ const PlanDetails: React.FC = () => {
 
   const planData = generatePlanData(
     Array.isArray(shoppingItems) ? shoppingItems : [], 
-    overrideRetailerId ? 'single-store' : selectedPlanType
+    selectedPlanType
   );
 
   const formatPrice = (price: number) => {

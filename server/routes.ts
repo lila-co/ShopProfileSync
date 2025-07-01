@@ -479,14 +479,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { EmailIntegrationService } = await import('./services/emailIntegration');
-      
+
       // Use HTTPS for redirect URI in production
       const protocol = req.get('x-forwarded-proto') || req.protocol;
       const host = req.get('host');
       const redirectUri = `${protocol}://${host}/api/auth/email/${provider}/callback`;
-      
+
       console.log(`Using redirect URI: ${redirectUri}`);
-      
+
       const authUrl = EmailIntegrationService.generateAuthUrl(
         provider,
         parseInt(userId as string),
@@ -533,7 +533,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Using redirect URI: ${redirectUri}`);
 
       const { EmailIntegrationService } = await import('./services/emailIntegration');
-      
+
       // Exchange code for tokens
       const tokens = await EmailIntegrationService.exchangeCodeForToken(
         provider,
@@ -602,7 +602,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.headers['x-current-user-id'] ? 
         parseInt(req.headers['x-current-user-id'] as string) : 1;
 
-      // Return sample suggestions for now
+      // Return sample suggestions for now - these are template suggestions, not tied to a specific list
       const suggestions = [
         { id: 1, name: 'Weekly Essentials', count: 12 },
         { id: 2, name: 'Quick Meals', count: 8 },
@@ -619,16 +619,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/shopping-list/items', sanitizeInput, async (req: Request, res: Response) => {
     try {
       const { shoppingListId, productName, quantity, unit } = req.body;
-      
+
       if (!shoppingListId || !productName) {
         return res.status(400).json({ message: 'Shopping list ID and product name are required' });
       }
-      
+
       const validQuantity = parseInt(quantity) || 1;
       const validUnit = unit || 'COUNT';
-      
+
       console.log(`Adding item to shopping list ${shoppingListId}:`, { productName, quantity: validQuantity, unit: validUnit });
-      
+
       const newItem = await storage.createShoppingListItem({
         shoppingListId,
         productName: productName.trim(),
@@ -636,7 +636,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         unit: validUnit,
         isCompleted: false
       });
-      
+
       console.log(`Successfully added item:`, newItem);
       res.json(newItem);
     } catch (error) {
