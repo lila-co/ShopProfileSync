@@ -2158,10 +2158,6 @@ async function detectBrandsWithAI(productName: string): Promise<{
 
   return { detectedBrands, genericTerms, category };
 }
-    cookies: {
-      brands: ['oreo', 'chips ahoy', 'nutter butter', 'keebler', 'pepperidge farm', 'famous amos', 'archway'],
-      patterns: [/\b(chocolate chip|sugar|oatmeal|sandwich|wafer)\s*cookies?\b/i, /\bcookies?\b/i]
-    },
     cereal: {
       brands: ['cheerios', 'frosted flakes', 'lucky charms', 'froot loops', 'special k', 'honey nut'],
       patterns: [/\bcereal\b/i, /\b(corn|rice|wheat)\s*flakes?\b/i]
