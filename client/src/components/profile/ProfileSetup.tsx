@@ -161,43 +161,43 @@ const ProfileSetup: React.FC = () => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Shopping Preferences</label>
-          <div className="space-y-2">
-            <div className="flex items-center">
+          <label className="block text-sm font-medium text-gray-700 mb-3">Shopping Preferences</label>
+          <div className="space-y-3">
+            <div className="flex items-start">
               <input 
                 type="checkbox" 
                 id="preferNameBrand" 
-                className="h-4 w-4 text-primary"
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2 transition-colors"
                 {...form.register("preferNameBrand")}
               />
-              <label htmlFor="preferNameBrand" className="ml-2 text-sm text-gray-700">I prefer name-brand products</label>
+              <label htmlFor="preferNameBrand" className="ml-3 text-sm text-gray-700 leading-5 cursor-pointer">I prefer name-brand products</label>
             </div>
-            <div className="flex items-center">
+            <div className="flex items-start">
               <input 
                 type="checkbox" 
                 id="preferOrganic" 
-                className="h-4 w-4 text-primary"
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2 transition-colors"
                 {...form.register("preferOrganic")}
               />
-              <label htmlFor="preferOrganic" className="ml-2 text-sm text-gray-700">I prefer organic products</label>
+              <label htmlFor="preferOrganic" className="ml-3 text-sm text-gray-700 leading-5 cursor-pointer">I prefer organic products</label>
             </div>
-            <div className="flex items-center">
+            <div className="flex items-start">
               <input 
                 type="checkbox" 
                 id="buyInBulk" 
-                className="h-4 w-4 text-primary"
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2 transition-colors"
                 {...form.register("buyInBulk")}
               />
-              <label htmlFor="buyInBulk" className="ml-2 text-sm text-gray-700">I buy in bulk when possible</label>
+              <label htmlFor="buyInBulk" className="ml-3 text-sm text-gray-700 leading-5 cursor-pointer">I buy in bulk when possible</label>
             </div>
-            <div className="flex items-center">
+            <div className="flex items-start">
               <input 
                 type="checkbox" 
                 id="prioritizeCostSavings" 
-                className="h-4 w-4 text-primary"
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2 transition-colors"
                 {...form.register("prioritizeCostSavings")}
               />
-              <label htmlFor="prioritizeCostSavings" className="ml-2 text-sm text-gray-700">I prioritize cost savings</label>
+              <label htmlFor="prioritizeCostSavings" className="ml-3 text-sm text-gray-700 leading-5 cursor-pointer">I prioritize cost savings</label>
             </div>
           </div>
         </div>
