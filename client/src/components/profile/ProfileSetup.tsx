@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { profileUpdateSchema } from '@/lib/validation';
 import { validateAndSubmit, handleFormError } from '@/lib/formValidation';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const profileFormSchema = profileUpdateSchema.extend({
   householdType: z.enum(['SINGLE', 'COUPLE', 'FAMILY_WITH_CHILDREN', 'SHARED_HOUSING', 'SENIOR_LIVING'], {
@@ -162,42 +163,38 @@ const ProfileSetup: React.FC = () => {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Shopping Preferences</label>
-          <div className="space-y-2">
-            <div className="flex items-center">
-              <input 
-                type="checkbox" 
+          <div className="space-y-3">
+            <div className="flex items-center space-x-3">
+              <Checkbox 
                 id="preferNameBrand" 
-                className="h-4 w-4 text-primary"
-                {...form.register("preferNameBrand")}
+                checked={form.watch("preferNameBrand")}
+                onCheckedChange={(checked) => form.setValue("preferNameBrand", checked as boolean)}
               />
-              <label htmlFor="preferNameBrand" className="ml-2 text-sm text-gray-700">I prefer name-brand products</label>
+              <label htmlFor="preferNameBrand" className="text-sm text-gray-700 cursor-pointer">I prefer name-brand products</label>
             </div>
-            <div className="flex items-center">
-              <input 
-                type="checkbox" 
+            <div className="flex items-center space-x-3">
+              <Checkbox 
                 id="preferOrganic" 
-                className="h-4 w-4 text-primary"
-                {...form.register("preferOrganic")}
+                checked={form.watch("preferOrganic")}
+                onCheckedChange={(checked) => form.setValue("preferOrganic", checked as boolean)}
               />
-              <label htmlFor="preferOrganic" className="ml-2 text-sm text-gray-700">I prefer organic products</label>
+              <label htmlFor="preferOrganic" className="text-sm text-gray-700 cursor-pointer">I prefer organic products</label>
             </div>
-            <div className="flex items-center">
-              <input 
-                type="checkbox" 
+            <div className="flex items-center space-x-3">
+              <Checkbox 
                 id="buyInBulk" 
-                className="h-4 w-4 text-primary"
-                {...form.register("buyInBulk")}
+                checked={form.watch("buyInBulk")}
+                onCheckedChange={(checked) => form.setValue("buyInBulk", checked as boolean)}
               />
-              <label htmlFor="buyInBulk" className="ml-2 text-sm text-gray-700">I buy in bulk when possible</label>
+              <label htmlFor="buyInBulk" className="text-sm text-gray-700 cursor-pointer">I buy in bulk when possible</label>
             </div>
-            <div className="flex items-center">
-              <input 
-                type="checkbox" 
+            <div className="flex items-center space-x-3">
+              <Checkbox 
                 id="prioritizeCostSavings" 
-                className="h-4 w-4 text-primary"
-                {...form.register("prioritizeCostSavings")}
+                checked={form.watch("prioritizeCostSavings")}
+                onCheckedChange={(checked) => form.setValue("prioritizeCostSavings", checked as boolean)}
               />
-              <label htmlFor="prioritizeCostSavings" className="ml-2 text-sm text-gray-700">I prioritize cost savings</label>
+              <label htmlFor="prioritizeCostSavings" className="text-sm text-gray-700 cursor-pointer">I prioritize cost savings</label>
             </div>
           </div>
         </div>
