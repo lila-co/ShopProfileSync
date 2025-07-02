@@ -35,6 +35,12 @@ export class QueryOptimizer {
       ttl?: number;
     }
   ): Promise<T> {
+    // Check connection pool health before executing
+    const poolStats = await this.getPoolStats();
+    if (poolStats.activeConnections > poolStats.maxConnections * 0.9) {
+      logger.warn('Connection pool near capacity', poolStats);
+      // Consider queuing or rejecting non-critical queries
+    }
     const startTime = Date.now();
     const startMemory = process.memoryUsage();
     
@@ -185,3 +191,31 @@ export class QueryOptimizer {
     return suggestions;
   }
 }
+static async getPoolStats(): Promise<{
+    totalConnections: number;
+    activeConnections: number;
+    idleConnections: number;
+    maxConnections: number;
+  }> {
+    // This would need to be implemented based on your pool implementation
+    return {
+      totalConnections: 0,
+      activeConnections: 0, 
+      idleConnections: 0,
+      maxConnections: 20
+    };
+  }
+
+  static async monitorConnectionHealth(): Promise<void> {
+    const stats = await this.getPoolStats();
+    
+    performanceMonitor.recordMetric?.({
+      name: 'database_pool_utilization',
+      value: (stats.activeConnections / stats.maxConnections) * 100,
+      unit: 'percentage',
+      metadata: { 
+        totalConnections: stats.totalConnections,
+        activeConnections: stats.activeConnections
+      }
+    });
+  }
