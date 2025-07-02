@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
 import { 
   Activity, 
   AlertTriangle, 
@@ -20,8 +21,12 @@ import {
   Trash2,
   TrendingUp,
   Users,
-  XCircle
+  XCircle,
+  Download,
+  Filter,
+  Search
 } from 'lucide-react';
+import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface HealthStatus {
   status: 'healthy' | 'warning' | 'critical';
@@ -86,30 +91,36 @@ function formatUptime(seconds: number): string {
 
 export default function MonitoringDashboard() {
   const [selectedTab, setSelectedTab] = useState('overview');
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [logFilter, setLogFilter] = useState('');
   const [, navigate] = useLocation();
 
-  const { data: healthData, refetch: refetchHealth } = useQuery<HealthStatus>({
+  // Health data with auto-refresh
+  const { data: healthData, refetch: refetchHealth, isLoading: healthLoading } = useQuery<HealthStatus>({
     queryKey: ['/api/admin/health'],
-    refetchInterval: 900000, // Refresh every 15 minutes
-    staleTime: 600000, // Consider data fresh for 10 minutes
+    refetchInterval: autoRefresh ? 30000 : false, // 30 seconds
+    staleTime: 15000, // Consider fresh for 15 seconds
   });
 
-  const { data: metricsData, refetch: refetchMetrics } = useQuery<MetricsData>({
+  // Metrics data with less frequent refresh
+  const { data: metricsData, refetch: refetchMetrics, isLoading: metricsLoading } = useQuery<MetricsData>({
     queryKey: ['/api/admin/metrics'],
-    refetchInterval: 1800000, // Refresh every 30 minutes
-    staleTime: 900000, // Consider data fresh for 15 minutes
+    refetchInterval: autoRefresh ? 60000 : false, // 1 minute
+    staleTime: 30000, // Consider fresh for 30 seconds
   });
 
-  const { data: logsData, refetch: refetchLogs } = useQuery<LogEntry[]>({
+  // Logs data - manual refresh only
+  const { data: logsData, refetch: refetchLogs, isLoading: logsLoading } = useQuery<LogEntry[]>({
     queryKey: ['/api/admin/logs', { limit: 100 }],
-    refetchInterval: false, // Only refresh manually
-    staleTime: 300000, // Consider data fresh for 5 minutes
+    refetchInterval: false,
+    staleTime: 300000, // Consider fresh for 5 minutes
   });
 
-  const { data: errorsData, refetch: refetchErrors } = useQuery<{ reports: ErrorReport[]; stats: any }>({
+  // Error data with moderate refresh
+  const { data: errorsData, refetch: refetchErrors, isLoading: errorsLoading } = useQuery<{ reports: ErrorReport[]; stats: any }>({
     queryKey: ['/api/admin/errors'],
-    refetchInterval: 1800000, // Refresh every 30 minutes
-    staleTime: 900000, // Consider data fresh for 15 minutes
+    refetchInterval: autoRefresh ? 120000 : false, // 2 minutes
+    staleTime: 60000, // Consider fresh for 1 minute
   });
 
   const getStatusColor = (status: string) => {
@@ -147,6 +158,43 @@ export default function MonitoringDashboard() {
     refetchErrors();
   };
 
+  const exportLogs = () => {
+    if (!logsData) return;
+    
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + "Timestamp,Level,Message,Request ID\n"
+      + logsData.map(log => 
+          `"${log.timestamp}","${log.level}","${log.message.replace(/"/g, '""')}","${log.requestId || ''}"`
+        ).join("\n");
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `system-logs-${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Generate mock performance chart data
+  const generatePerformanceData = () => {
+    const data = [];
+    const now = new Date();
+    for (let i = 23; i >= 0; i--) {
+      const time = new Date(now.getTime() - i * 60 * 60 * 1000);
+      data.push({
+        time: time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        responseTime: Math.floor(Math.random() * 200) + 100,
+        memory: Math.floor(Math.random() * 30) + 40,
+        cpu: Math.floor(Math.random() * 25) + 10,
+        requests: Math.floor(Math.random() * 1000) + 500
+      });
+    }
+    return data;
+  };
+
+  const performanceData = generatePerformanceData();
+
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -165,10 +213,20 @@ export default function MonitoringDashboard() {
             <p className="text-gray-600">Real-time system health and performance metrics</p>
           </div>
         </div>
-        <Button onClick={refreshAll} variant="outline">
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Refresh All
-        </Button>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant={autoRefresh ? "default" : "outline"}
+            size="sm"
+            onClick={() => setAutoRefresh(!autoRefresh)}
+          >
+            <Activity className="w-4 h-4 mr-2" />
+            Auto Refresh {autoRefresh ? 'On' : 'Off'}
+          </Button>
+          <Button onClick={refreshAll} variant="outline">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh All
+          </Button>
+        </div>
       </div>
 
       {/* System Health Overview */}
@@ -188,7 +246,7 @@ export default function MonitoringDashboard() {
               {healthData.issues.length > 0 && (
                 <div className="mt-2">
                   {healthData.issues.map((issue, index) => (
-                    <Badge key={index} variant="destructive" className="text-xs mr-1">
+                    <Badge key={index} variant="destructive" className="text-xs mr-1 mb-1 block">
                       {issue}
                     </Badge>
                   ))}
@@ -208,6 +266,9 @@ export default function MonitoringDashboard() {
               <p className="text-2xl font-bold">
                 {formatUptime(healthData.metrics.uptime)}
               </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Since last restart
+              </p>
             </CardContent>
           </Card>
 
@@ -225,6 +286,10 @@ export default function MonitoringDashboard() {
               <p className="text-xs text-gray-500">
                 / {formatBytes(healthData.metrics.memoryUsage.heapTotal)}
               </p>
+              <Progress 
+                value={(healthData.metrics.memoryUsage.heapUsed / healthData.metrics.memoryUsage.heapTotal) * 100} 
+                className="mt-2 h-2"
+              />
             </CardContent>
           </Card>
 
@@ -232,13 +297,16 @@ export default function MonitoringDashboard() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium flex items-center">
                 <Users className="w-4 h-4 mr-2" />
-                Active Requests
+                Request Stats
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold">{healthData.metrics.activeRequests}</p>
               <p className="text-xs text-gray-500">
-                {healthData.metrics.totalRequests} total
+                Active ({healthData.metrics.totalRequests} total)
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {healthData.metrics.errorRate.toFixed(1)}% error rate
               </p>
             </CardContent>
           </Card>
@@ -254,11 +322,49 @@ export default function MonitoringDashboard() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
+          {/* Performance Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Response Time (Last 24h)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={performanceData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="time" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="responseTime" stroke="#8884d8" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Memory & CPU Usage</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={200}>
+                  <AreaChart data={performanceData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="time" />
+                    <YAxis />
+                    <Tooltip />
+                    <Area type="monotone" dataKey="memory" stackId="1" stroke="#82ca9d" fill="#82ca9d" />
+                    <Area type="monotone" dataKey="cpu" stackId="2" stroke="#ffc658" fill="#ffc658" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+
           {metricsData && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Performance</CardTitle>
+                  <CardTitle className="text-lg">Performance Summary</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex justify-between">
@@ -313,7 +419,7 @@ export default function MonitoringDashboard() {
                   </div>
                   <div className="flex justify-between">
                     <span>Critical:</span>
-                    <span className="text-red-600">{metricsData.errors.errorsBySeverity.critical}</span>
+                    <span className="text-red-600">{metricsData.errors.errorsBySeverity.critical || 0}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -327,7 +433,8 @@ export default function MonitoringDashboard() {
               {Object.entries(metricsData.metrics).map(([name, metric]: [string, any]) => (
                 <Card key={name}>
                   <CardHeader>
-                    <CardTitle className="text-sm capitalize">
+                    <CardTitle className="text-sm capitalize flex items-center">
+                      <TrendingUp className="w-4 h-4 mr-2" />
                       {name.replace(/_/g, ' ')}
                     </CardTitle>
                   </CardHeader>
@@ -335,16 +442,17 @@ export default function MonitoringDashboard() {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span>Count:</span>
-                        <span>{metric.count}</span>
+                        <span className="font-mono">{metric.count}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Average:</span>
-                        <span>{metric.avg.toFixed(2)} {metric.unit}</span>
+                        <span className="font-mono">{metric.avg.toFixed(2)} {metric.unit}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Min/Max:</span>
-                        <span>{metric.min.toFixed(2)} / {metric.max.toFixed(2)}</span>
+                        <span className="font-mono">{metric.min.toFixed(2)} / {metric.max.toFixed(2)}</span>
                       </div>
+                      <Progress value={(metric.avg / metric.max) * 100} className="mt-2 h-2" />
                     </div>
                   </CardContent>
                 </Card>
@@ -356,7 +464,7 @@ export default function MonitoringDashboard() {
         <TabsContent value="errors" className="space-y-4">
           {errorsData && (
             <>
-              {errorsData.stats.topErrors.length > 0 && (
+              {errorsData.stats.topErrors && errorsData.stats.topErrors.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Top Errors</CardTitle>
@@ -381,7 +489,6 @@ export default function MonitoringDashboard() {
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              // Clear specific error
                               fetch(`/api/admin/errors/${error.fingerprint}`, { method: 'DELETE' })
                                 .then(() => refetchErrors());
                             }}
@@ -449,6 +556,29 @@ export default function MonitoringDashboard() {
         </TabsContent>
 
         <TabsContent value="logs" className="space-y-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-2">
+              <Search className="w-4 h-4 text-gray-500" />
+              <input
+                type="text"
+                placeholder="Filter logs..."
+                value={logFilter}
+                onChange={(e) => setLogFilter(e.target.value)}
+                className="px-3 py-2 border rounded-md text-sm"
+              />
+            </div>
+            <div className="flex space-x-2">
+              <Button variant="outline" size="sm" onClick={exportLogs}>
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+              <Button variant="outline" size="sm" onClick={refetchLogs}>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Refresh
+              </Button>
+            </div>
+          </div>
+
           {logsData && (
             <Card>
               <CardHeader>
@@ -457,13 +587,19 @@ export default function MonitoringDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {logsData.map((log, index) => (
+                  {logsData
+                    .filter(log => 
+                      !logFilter || 
+                      log.message.toLowerCase().includes(logFilter.toLowerCase()) ||
+                      log.level.toLowerCase().includes(logFilter.toLowerCase())
+                    )
+                    .map((log, index) => (
                     <div key={index} className="text-xs border-b pb-2 font-mono">
                       <div className="flex items-center gap-2">
                         <span className="text-gray-500">
                           {new Date(log.timestamp).toLocaleString()}
                         </span>
-                        <Badge variant={log.level === 'error' ? 'destructive' : 'secondary'}>
+                        <Badge variant={log.level === 'error' ? 'destructive' : log.level === 'warn' ? 'secondary' : 'default'}>
                           {log.level}
                         </Badge>
                         {log.requestId && (

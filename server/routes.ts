@@ -310,6 +310,8 @@ async function createSampleDealsFromURL(retailerId: number, circularId: number, 
 
 import { locationBasedCircularManager } from './services/locationBasedCircularManager';
 import { logger } from './services/logger';
+import { performanceMonitor } from './services/performanceMonitor';
+import { errorTracker } from './services/errorTracker';
 import { 
   users, 
   shoppingLists, 
