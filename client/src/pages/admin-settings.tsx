@@ -71,16 +71,9 @@ const AdminSettingsPage: React.FC = () => {
                 <Button 
                   variant="outline" 
                   className="w-full justify-start"
-                  onClick={() => handleAdminAction('Security Logs')}
+                  onClick={() => handleAdminAction('Rate Limit Configuration')}
                 >
-                  Security Logs
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => handleAdminAction('API Rate Limits')}
-                >
-                  API Rate Limits
+                  Rate Limit Configuration
                 </Button>
                 <Button 
                   variant="outline" 
@@ -88,6 +81,13 @@ const AdminSettingsPage: React.FC = () => {
                   onClick={() => handleAdminAction('Data Privacy Settings')}
                 >
                   Data Privacy Settings
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => navigate('/admin/monitoring')}
+                >
+                  View Security Monitoring →
                 </Button>
               </div>
             </CardContent>
@@ -105,25 +105,31 @@ const AdminSettingsPage: React.FC = () => {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg flex items-center">
                     <Database className="h-5 w-5 mr-2 text-blue-600" />
-                    Database Operations
+                    Database Configuration
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    
                     <Button 
                       variant="outline" 
                       className="w-full justify-start"
-                      onClick={() => handleAdminAction('Database Backup')}
+                      onClick={() => handleAdminAction('Connection Settings')}
                     >
-                      Backup Database
+                      Connection Settings
                     </Button>
                     <Button 
                       variant="outline" 
                       className="w-full justify-start"
-                      onClick={() => handleAdminAction('Clear Cache')}
+                      onClick={() => handleAdminAction('Backup Schedule')}
                     >
-                      Clear Cache
+                      Backup Schedule
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start"
+                      onClick={() => navigate('/admin/monitoring')}
+                    >
+                      View Database Monitoring →
                     </Button>
                   </div>
                 </CardContent>
