@@ -110,13 +110,7 @@ const AdminSettingsPage: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    <Button 
-                      variant="outline" 
-                      className="w-full justify-start"
-                      onClick={() => handleAdminAction('Database Status')}
-                    >
-                      View Database Status
-                    </Button>
+                    
                     <Button 
                       variant="outline" 
                       className="w-full justify-start"
@@ -162,13 +156,7 @@ const AdminSettingsPage: React.FC = () => {
                     >
                       API Integrations
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      className="w-full justify-start"
-                      onClick={() => handleAdminAction('System Health')}
-                    >
-                      System Health
-                    </Button>
+                    
                   </div>
                 </CardContent>
               </Card>
