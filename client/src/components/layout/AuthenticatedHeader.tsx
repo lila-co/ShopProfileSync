@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocation } from 'wouter';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, Menu } from 'lucide-react';
 
 const AuthenticatedHeader: React.FC = () => {
   const { user, logout } = useAuth();
@@ -23,13 +23,7 @@ const AuthenticatedHeader: React.FC = () => {
     <header className="glass-nav sticky top-0 z-50 w-full">
       <div className="container flex h-16 items-center justify-between px-4">
         <div className="flex items-center space-x-4">
-          <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="glass-button p-2 rounded-lg transition-colors"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-
+          <h1 className="text-xl font-semibold">SmartCart</h1>
         </div>
 
         <div className="flex items-center space-x-3">
