@@ -25,13 +25,43 @@ interface SystemMetrics {
 class PerformanceMonitor {
   private activeRequests = new Map<string, RequestMetrics>();
   private recentRequests: RequestMetrics[] = [];
-  private maxRecentRequests = 1000;
+  private maxRecentRequests = 500; // Reduced to prevent memory issues
+  private cleanupTimer?: NodeJS.Timeout;
   private totalRequests = 0;
   private totalErrors = 0;
   private systemMetricsInterval?: NodeJS.Timeout;
 
   constructor() {
     this.startSystemMetricsCollection();
+    this.startMemoryCleanup();
+  }
+
+  private startMemoryCleanup(): void {
+    // Aggressive cleanup every 5 minutes
+    this.cleanupTimer = setInterval(() => {
+      this.performMemoryCleanup();
+    }, 300000);
+  }
+
+  private performMemoryCleanup(): void {
+    const now = Date.now();
+    const cutoff = now - 600000; // Keep only last 10 minutes
+    
+    // Clean old requests
+    this.recentRequests = this.recentRequests.filter(req => req.startTime > cutoff);
+    
+    // Clean memory snapshots
+    this.memorySnapshots = this.memorySnapshots.filter(snap => snap.timestamp > cutoff);
+    
+    // Force garbage collection if available
+    if (global.gc && this.recentRequests.length > this.maxRecentRequests * 0.8) {
+      global.gc();
+    }
+    
+    logger.debug('Memory cleanup completed', {
+      requestsRemaining: this.recentRequests.length,
+      snapshotsRemaining: this.memorySnapshots.length
+    });
   }
 
   private startSystemMetricsCollection(): void {

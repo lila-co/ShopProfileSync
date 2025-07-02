@@ -642,6 +642,37 @@ function analyzeBehavioralPatterns(user: User, patterns: ProductPurchasePattern[
   const planningStyle = user.buyInBulk ? "strategic_planner" : 
                        avgDaysBetweenShopping <= 7 ? "just_in_time" : "routine_shopper";
 
+  // Use QueryOptimizer for all database operations to prevent N+1 queries
+  const getUserPurchasePatterns = async (userId: number) => {
+    return QueryOptimizer.executeWithMetrics(
+      () => db.select({
+        productName: purchaseItems.productName,
+        purchases: sql<any[]>`
+          json_agg(
+            json_build_object(
+              'date', ${purchases.purchaseDate},
+              'price', ${purchaseItems.price},
+              'quantity', ${purchaseItems.quantity},
+              'retailerId', ${purchases.retailerId}
+            ) ORDER BY ${purchases.purchaseDate} DESC
+          )
+        `
+      })
+      .from(purchaseItems)
+      .innerJoin(purchases, eq(purchaseItems.purchaseId, purchases.id))
+      .where(eq(purchases.userId, userId))
+      .groupBy(purchaseItems.productName)
+      .having(sql`COUNT(*) >= 2`),
+      {
+        name: 'getUserPurchasePatterns',
+        query: 'SELECT purchase patterns with aggregated data',
+        cacheable: true,
+        cacheKey: `user_patterns_${userId}`,
+        ttl: 900000 // 15 minutes
+      }
+    );
+  };
+
   // Generate personalized recommendations
   const behavioralRecommendations = [];
 

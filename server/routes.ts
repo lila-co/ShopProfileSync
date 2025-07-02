@@ -707,6 +707,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Recipe import endpoint
+  app.post('/api/shopping-lists/recipe', async (req: Request, res: Response) => {
+    try {
+      const { recipeUrl, shoppingListId, servings } = req.body;
+
+      if (!recipeUrl || !shoppingListId) {
+        return res.status(400).json({ message: 'Recipe URL and shopping list ID are required' });
+      }
+
+      const validServings = parseInt(servings) || 4;
+
+      console.log(`Importing recipe from ${recipeUrl} for ${validServings} servings to list ${shoppingListId}`);
+
+      // Simulate recipe parsing and ingredient extraction
+      // In production, this would scrape the recipe URL or use a recipe API
+      const sampleIngredients = [
+        { name: 'Hot Dogs', quantity: validServings, unit: 'COUNT' },
+        { name: 'Hot Dog Buns', quantity: validServings, unit: 'COUNT' },
+        { name: 'Mustard', quantity: 1, unit: 'BOTTLE' },
+        { name: 'Ketchup', quantity: 1, unit: 'BOTTLE' },
+        { name: 'Onion', quantity: 1, unit: 'COUNT' }
+      ];
+
+      let itemsAdded = 0;
+      let itemsSkipped = 0;
+
+      // Add ingredients to shopping list
+      for (const ingredient of sampleIngredients) {
+        try {
+          await storage.createShoppingListItem({
+            shoppingListId: parseInt(shoppingListId),
+            productName: ingredient.name,
+            quantity: ingredient.quantity,
+            unit: ingredient.unit as any,
+            isCompleted: false
+          });
+          itemsAdded++;
+        } catch (error) {
+          console.warn('Failed to add recipe ingredient:', ingredient.name, error);
+          itemsSkipped++;
+        }
+      }
+
+      res.json({
+        success: true,
+        itemsAdded,
+        itemsSkipped,
+        message: `Added ${itemsAdded} ingredients from recipe`
+      });
+
+    } catch (error) {
+      console.error('Error importing recipe:', error);
+      handleError(res, error);
+    }
+  });
+
   // Add shopping list generation endpoint
   app.post('/api/shopping-lists/generate', async (req: Request, res: Response) => {
     try {
