@@ -107,8 +107,19 @@ const ShoppingListComponent: React.FC = () => {
   });
 
   const { data: suggestions, isLoading: suggestionsLoading } = useQuery({
-    queryKey: ['/api/shopping-lists/suggestions'],
-    enabled: !!shoppingLists,
+    queryKey: ['/api/shopping-lists/suggestions', shoppingLists?.[0]?.id],
+    enabled: !!shoppingLists && !!shoppingLists[0]?.id,
+    queryFn: async () => {
+      const defaultList = shoppingLists?.[0];
+      if (!defaultList?.id) {
+        throw new Error('No valid shopping list found');
+      }
+      const response = await apiRequest('GET', `/api/shopping-lists/${defaultList.id}/suggestions`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch suggestions');
+      }
+      return response.json();
+    }
   });
 
   // Category definitions with icons and colors
@@ -620,15 +631,22 @@ const ShoppingListComponent: React.FC = () => {
   const regenerateListMutation = useMutation({
     mutationFn: async () => {
       const defaultList = shoppingLists?.[0];
-      if (!defaultList) throw new Error('No shopping list found');
+      if (!defaultList || !defaultList.id) {
+        throw new Error('No valid shopping list found. Please refresh the page and try again.');
+      }
 
       const currentItems = defaultList.items || [];
       const isEmptyList = currentItems.length === 0;
 
-      console.log(`Regenerating list - Current items: ${currentItems.length}, Empty: ${isEmptyList}`);
+      console.log(`Regenerating list - Current items: ${currentItems.length}, Empty: ${isEmptyList}, List ID: ${defaultList.id}`);
       console.log('Making API call to /api/shopping-lists/generate');
 
       try {
+        // Validate list ID before making API call
+        if (!Number.isInteger(defaultList.id) || defaultList.id <= 0) {
+          throw new Error('Invalid shopping list ID. Please refresh the page and try again.');
+        }
+
         // Use the unified API endpoint for all scenarios
         const response = await apiRequest('POST', '/api/shopping-lists/generate', {
           shoppingListId: defaultList.id
@@ -640,7 +658,7 @@ const ShoppingListComponent: React.FC = () => {
           let errorMessage = `HTTP ${response.status}`;
           try {
             const errorData = await response.json();
-            errorMessage = errorData.message || errorMessage;
+            errorMessage = errorData.message || errorData.error || errorMessage;
           } catch (parseError) {
             console.warn('Failed to parse error response:', parseError);
             try {
@@ -685,8 +703,10 @@ const ShoppingListComponent: React.FC = () => {
 
         // Check if error has a message property and is a proper Error object
         if (error instanceof Error && error.message) {
-          if (error.message.includes('Failed to generate shopping list')) {
-            throw error; // Re-throw API errors as-is
+          if (error.message.includes('Failed to generate shopping list') || 
+              error.message.includes('Invalid shopping list ID') ||
+              error.message.includes('No valid shopping list found')) {
+            throw error; // Re-throw validation and API errors as-is
           }
           throw new Error(`Generation failed: ${error.message}`);
         }
