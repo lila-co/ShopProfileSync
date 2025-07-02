@@ -71,16 +71,23 @@ const AdminSettingsPage: React.FC = () => {
                 <Button 
                   variant="outline" 
                   className="w-full justify-start"
-                  onClick={() => handleAdminAction('Rate Limit Configuration')}
+                  onClick={() => handleAdminAction('GDPR/CCPA Compliance')}
                 >
-                  Rate Limit Configuration
+                  GDPR/CCPA Compliance Settings
                 </Button>
                 <Button 
                   variant="outline" 
                   className="w-full justify-start"
                   onClick={() => handleAdminAction('Data Privacy Settings')}
                 >
-                  Data Privacy Settings
+                  Data Privacy & Retention
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => handleAdminAction('Audit Logs')}
+                >
+                  Security Audit Logs
                 </Button>
                 <Button 
                   variant="outline" 
@@ -151,6 +158,13 @@ const AdminSettingsPage: React.FC = () => {
                     <Button 
                       variant="outline" 
                       className="w-full justify-start"
+                      onClick={() => handleAdminAction('Rate Limit Configuration')}
+                    >
+                      Rate Limit & Throttling
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start"
                       onClick={() => handleAdminAction('Feature Flags')}
                     >
                       Feature Flags
@@ -162,7 +176,13 @@ const AdminSettingsPage: React.FC = () => {
                     >
                       API Integrations
                     </Button>
-                    
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start"
+                      onClick={() => handleAdminAction('Security Configuration')}
+                    >
+                      Security Configuration
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
