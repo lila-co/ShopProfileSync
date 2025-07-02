@@ -79,7 +79,7 @@ function getRecipeSpecificMockData(recipeUrl: string, servings: number = 4): Rec
   const multiplier = servings / baseServings;
   const urlLower = recipeUrl.toLowerCase();
 
-  // Analyze URL for recipe type
+  // Enhanced pattern matching for better recipe recognition
   if (urlLower.includes('cheesecake')) {
     return [
       { name: "Cream cheese", quantity: Math.round(24 * multiplier), unit: "ounces" },
@@ -91,7 +91,20 @@ function getRecipeSpecificMockData(recipeUrl: string, servings: number = 4): Rec
       { name: "Fresh blueberries", quantity: Math.round(1 * multiplier), unit: "cup" },
       { name: "Lemon juice", quantity: Math.round(1 * multiplier), unit: "tablespoon" }
     ];
-  } else if (urlLower.includes('cake') || urlLower.includes('dessert')) {
+  } else if (urlLower.includes('shortcake') || urlLower.includes('peach') || urlLower.includes('cornmeal')) {
+    return [
+      { name: "All-purpose flour", quantity: Math.round(2 * multiplier), unit: "cups" },
+      { name: "Cornmeal", quantity: Math.round(0.5 * multiplier), unit: "cup" },
+      { name: "Sugar", quantity: Math.round(0.5 * multiplier), unit: "cup" },
+      { name: "Baking powder", quantity: Math.round(2 * multiplier), unit: "teaspoons" },
+      { name: "Salt", quantity: Math.round(0.5 * multiplier), unit: "teaspoon" },
+      { name: "Butter", quantity: Math.round(6 * multiplier), unit: "tablespoons" },
+      { name: "Heavy cream", quantity: Math.round(1 * multiplier), unit: "cup" },
+      { name: "Fresh peaches", quantity: Math.round(4 * multiplier), unit: "large" },
+      { name: "Vanilla extract", quantity: Math.round(1 * multiplier), unit: "teaspoon" },
+      { name: "Cinnamon", quantity: Math.round(1 * multiplier), unit: "teaspoon" }
+    ];
+  } else if (urlLower.includes('cake') || urlLower.includes('dessert') || urlLower.includes('sweet')) {
     return [
       { name: "All-purpose flour", quantity: Math.round(2 * multiplier), unit: "cups" },
       { name: "Sugar", quantity: Math.round(1.5 * multiplier), unit: "cups" },
@@ -100,6 +113,17 @@ function getRecipeSpecificMockData(recipeUrl: string, servings: number = 4): Rec
       { name: "Baking powder", quantity: Math.round(2 * multiplier), unit: "teaspoons" },
       { name: "Vanilla extract", quantity: Math.round(1 * multiplier), unit: "teaspoon" },
       { name: "Milk", quantity: Math.round(1 * multiplier), unit: "cup" }
+    ];
+  } else if (urlLower.includes('grilled') || urlLower.includes('bbq') || urlLower.includes('barbecue')) {
+    return [
+      { name: "Chicken breast", quantity: Math.round(2 * multiplier), unit: "pounds" },
+      { name: "Bell peppers", quantity: Math.round(2 * multiplier), unit: "large" },
+      { name: "Zucchini", quantity: Math.round(2 * multiplier), unit: "medium" },
+      { name: "Red onion", quantity: Math.round(1 * multiplier), unit: "large" },
+      { name: "Olive oil", quantity: Math.round(0.25 * multiplier), unit: "cup" },
+      { name: "Garlic powder", quantity: Math.round(1 * multiplier), unit: "teaspoon" },
+      { name: "Salt", quantity: Math.round(1 * multiplier), unit: "teaspoon" },
+      { name: "Black pepper", quantity: Math.round(0.5 * multiplier), unit: "teaspoon" }
     ];
   } else if (urlLower.includes('soup') || urlLower.includes('stew')) {
     return [
@@ -112,30 +136,109 @@ function getRecipeSpecificMockData(recipeUrl: string, servings: number = 4): Rec
       { name: "Salt", quantity: Math.round(1 * multiplier), unit: "teaspoon" },
       { name: "Black pepper", quantity: Math.round(0.5 * multiplier), unit: "teaspoon" }
     ];
-  } else if (urlLower.includes('pasta')) {
+  } else if (urlLower.includes('pasta') || urlLower.includes('spaghetti') || urlLower.includes('linguine')) {
     return [
       { name: "Pasta", quantity: Math.round(16 * multiplier), unit: "ounces" },
       { name: "Olive oil", quantity: Math.round(3 * multiplier), unit: "tablespoons" },
       { name: "Garlic", quantity: Math.round(4 * multiplier), unit: "cloves" },
       { name: "Onion", quantity: Math.round(1 * multiplier), unit: "medium" },
-      { name: "Tomatoes", quantity: Math.round(2 * multiplier), unit: "cans" },
+      { name: "Crushed tomatoes", quantity: Math.round(2 * multiplier), unit: "cans" },
       { name: "Parmesan cheese", quantity: Math.round(0.5 * multiplier), unit: "cup" },
       { name: "Fresh basil", quantity: Math.round(0.25 * multiplier), unit: "cup" }
     ];
-  } else if (urlLower.includes('salad')) {
+  } else if (urlLower.includes('salad') || urlLower.includes('lettuce') || urlLower.includes('greens')) {
     return [
       { name: "Mixed greens", quantity: Math.round(6 * multiplier), unit: "cups" },
       { name: "Cherry tomatoes", quantity: Math.round(1 * multiplier), unit: "cup" },
       { name: "Cucumber", quantity: Math.round(1 * multiplier), unit: "medium" },
       { name: "Red onion", quantity: Math.round(0.25 * multiplier), unit: "cup" },
       { name: "Olive oil", quantity: Math.round(3 * multiplier), unit: "tablespoons" },
-      { name: "Lemon juice", quantity: Math.round(2 * multiplier), unit: "tablespoons" },
+      { name: "Balsamic vinegar", quantity: Math.round(2 * multiplier), unit: "tablespoons" },
       { name: "Salt", quantity: Math.round(0.5 * multiplier), unit: "teaspoon" }
+    ];
+  } else if (urlLower.includes('chicken') || urlLower.includes('poultry')) {
+    return [
+      { name: "Chicken breast", quantity: Math.round(2 * multiplier), unit: "pounds" },
+      { name: "Olive oil", quantity: Math.round(2 * multiplier), unit: "tablespoons" },
+      { name: "Garlic", quantity: Math.round(3 * multiplier), unit: "cloves" },
+      { name: "Onion", quantity: Math.round(1 * multiplier), unit: "medium" },
+      { name: "Bell peppers", quantity: Math.round(1 * multiplier), unit: "large" },
+      { name: "Salt", quantity: Math.round(1 * multiplier), unit: "teaspoon" },
+      { name: "Black pepper", quantity: Math.round(0.5 * multiplier), unit: "teaspoon" },
+      { name: "Paprika", quantity: Math.round(1 * multiplier), unit: "teaspoon" }
+    ];
+  } else if (urlLower.includes('seafood') || urlLower.includes('fish') || urlLower.includes('salmon') || urlLower.includes('shrimp')) {
+    return [
+      { name: "Salmon fillets", quantity: Math.round(1.5 * multiplier), unit: "pounds" },
+      { name: "Lemon", quantity: Math.round(2 * multiplier), unit: "large" },
+      { name: "Olive oil", quantity: Math.round(3 * multiplier), unit: "tablespoons" },
+      { name: "Garlic", quantity: Math.round(3 * multiplier), unit: "cloves" },
+      { name: "Fresh dill", quantity: Math.round(2 * multiplier), unit: "tablespoons" },
+      { name: "Salt", quantity: Math.round(1 * multiplier), unit: "teaspoon" },
+      { name: "Black pepper", quantity: Math.round(0.5 * multiplier), unit: "teaspoon" }
+    ];
+  } else if (urlLower.includes('bread') || urlLower.includes('baking') || urlLower.includes('muffin')) {
+    return [
+      { name: "All-purpose flour", quantity: Math.round(3 * multiplier), unit: "cups" },
+      { name: "Active dry yeast", quantity: Math.round(1 * multiplier), unit: "packet" },
+      { name: "Sugar", quantity: Math.round(2 * multiplier), unit: "tablespoons" },
+      { name: "Salt", quantity: Math.round(1 * multiplier), unit: "teaspoon" },
+      { name: "Warm water", quantity: Math.round(1 * multiplier), unit: "cup" },
+      { name: "Olive oil", quantity: Math.round(2 * multiplier), unit: "tablespoons" }
+    ];
+  } else if (urlLower.includes('smoothie') || urlLower.includes('juice') || urlLower.includes('drink')) {
+    return [
+      { name: "Frozen berries", quantity: Math.round(2 * multiplier), unit: "cups" },
+      { name: "Banana", quantity: Math.round(2 * multiplier), unit: "large" },
+      { name: "Greek yogurt", quantity: Math.round(1 * multiplier), unit: "cup" },
+      { name: "Honey", quantity: Math.round(2 * multiplier), unit: "tablespoons" },
+      { name: "Almond milk", quantity: Math.round(1 * multiplier), unit: "cup" }
     ];
   }
 
-  // Default fallback for general recipes
-  return getMockRecipeIngredients(servings);
+  // Better default fallback - analyze domain and URL structure for clues
+  const urlParts = recipeUrl.split('/').filter(part => part.length > 2);
+  const recipeName = urlParts[urlParts.length - 1] || '';
+
+  // Try to extract ingredients from URL structure
+  if (recipeName.includes('-')) {
+    const words = recipeName.split('-').filter(word => word.length > 2);
+    const possibleIngredients = [];
+
+    // Common cooking keywords that suggest ingredients
+    const ingredientKeywords = ['chicken', 'beef', 'pork', 'fish', 'salmon', 'rice', 'pasta', 'cheese', 'tomato', 'onion', 'garlic', 'herbs', 'spices'];
+
+    for (const word of words) {
+      if (ingredientKeywords.some(keyword => word.includes(keyword) || keyword.includes(word))) {
+        possibleIngredients.push({
+          name: word.charAt(0).toUpperCase() + word.slice(1),
+          quantity: Math.round(1 * multiplier),
+          unit: "item"
+        });
+      }
+    }
+
+    if (possibleIngredients.length > 0) {
+      // Add some common cooking staples
+      possibleIngredients.push(
+        { name: "Olive oil", quantity: Math.round(2 * multiplier), unit: "tablespoons" },
+        { name: "Salt", quantity: Math.round(1 * multiplier), unit: "teaspoon" },
+        { name: "Black pepper", quantity: Math.round(0.5 * multiplier), unit: "teaspoon" }
+      );
+      return possibleIngredients;
+    }
+  }
+
+  // Final fallback - generic cooking ingredients
+  return [
+    { name: "Main protein", quantity: Math.round(1 * multiplier), unit: "pound" },
+    { name: "Vegetables", quantity: Math.round(2 * multiplier), unit: "cups" },
+    { name: "Olive oil", quantity: Math.round(2 * multiplier), unit: "tablespoons" },
+    { name: "Onion", quantity: Math.round(1 * multiplier), unit: "medium" },
+    { name: "Garlic", quantity: Math.round(2 * multiplier), unit: "cloves" },
+    { name: "Salt", quantity: Math.round(1 * multiplier), unit: "teaspoon" },
+    { name: "Black pepper", quantity: Math.round(0.5 * multiplier), unit: "teaspoon" }
+  ];
 }
 
 // Function to generate generic mock recipe ingredients
@@ -423,7 +526,7 @@ export async function generateRecommendations(
   // Check cache first for performance optimization
   const cacheKey = `recommendations:${user.id}:${purchases.length}`;
   const cached = cacheManager.get<InsertRecommendation[]>(cacheKey);
-  
+
   if (cached !== null) {
     console.log("Returning cached recommendations for user:", user.id);
     return cached;
@@ -440,7 +543,7 @@ export async function generateRecommendations(
 
   // Cache recommendations for 30 minutes
   cacheManager.set(cacheKey, recommendations, 1800000);
-  
+
   console.log(`Generated ${recommendations.length} recommendations for user ${user.id}`);
   return recommendations;
 }
