@@ -141,7 +141,7 @@ const Dashboard: React.FC = () => {
                   <div className="text-sm text-gray-600">Area Avg Spend</div>
                 </div>
               </div>
-              
+
               {/* Contextual Tips */}
               {contextualInsights && (
                 <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">

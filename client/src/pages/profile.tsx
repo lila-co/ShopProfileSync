@@ -768,7 +768,8 @@ const ProfilePage: React.FC = () => {
                   </div>
                   <Switch 
                     id="recommendationUpdates" 
-                    checked={notificationPreferences?.recommendationUpdates ?? true}
+                    checked={notificationPreferences<replit_final_file>
+?.recommendationUpdates ?? true}
                     onCheckedChange={(checked) => handleNotificationToggle('recommendationUpdates', checked)}
                     disabled={updateNotificationMutation.isPending || notificationLoading}
                     className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 

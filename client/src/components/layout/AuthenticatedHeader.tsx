@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,12 +20,18 @@ const AuthenticatedHeader: React.FC = () => {
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 px-4 py-3">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-2">
-          <h1 className="text-xl font-bold">SmartCart</h1>
+    <header className="glass-nav sticky top-0 z-50 w-full">
+      <div className="container flex h-16 items-center justify-between px-4">
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="glass-button p-2 rounded-lg transition-colors"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+
         </div>
-        
+
         <div className="flex items-center space-x-3">
           <div className="flex items-center space-x-2">
             <User className="h-4 w-4" />
@@ -34,7 +39,7 @@ const AuthenticatedHeader: React.FC = () => {
               {user?.firstName} {user?.lastName}
             </span>
           </div>
-          
+
           <Button
             variant="ghost"
             size="sm"

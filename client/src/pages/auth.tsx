@@ -135,18 +135,18 @@ const AuthPage: React.FC = () => {
         // Auto-login the user after successful registration
         const username = data.formData.name.toLowerCase().replace(/\s+/g, '');
         const password = data.formData.password;
-        
+
         // Call the login function to authenticate the user
         await login(username, password);
-        
+
         // Set the onboarding flag
         localStorage.setItem('needsOnboarding', 'true');
-        
+
         toast({
           title: "Welcome to SmartCart!",
           description: "Let's get your account set up",
         });
-        
+
         // Navigation will be handled by ProtectedRoute after login
       } catch (loginError) {
         console.error('Auto-login failed:', loginError);

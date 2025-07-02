@@ -2,34 +2,36 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 
 export interface ActionCardProps {
-  icon: React.ReactNode;
   title: string;
-  subtitle?: string;
-  onClick: () => void;
-  bgColor?: string;
-  iconBgColor?: string;
+  description: string;
+  icon: React.ReactNode;
+  action: () => void;
+  variant?: 'default' | 'primary';
 }
 
-const ActionCard: React.FC<ActionCardProps> = ({
-  icon,
-  title,
-  subtitle,
-  onClick,
-  bgColor = 'bg-gray-50',
-  iconBgColor = 'bg-primary/10'
-}) => {
+export default function ActionCard({ 
+  title, 
+  description, 
+  icon, 
+  action, 
+  variant = 'default' 
+}: ActionCardProps) {
   return (
-    <div 
-      className={cn("rounded-xl p-3 text-center shadow-sm cursor-pointer", bgColor)} 
-      onClick={onClick}
-    >
-      <div className={cn("h-12 w-12 rounded-full flex items-center justify-center mx-auto mb-2", iconBgColor)}>
-        {icon}
-      </div>
-      <span className="text-sm font-medium">{title}</span>
-      {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
-    </div>
+    <Card className="card-modern cursor-pointer glass-shimmer" onClick={action}>
+      <CardHeader className="pb-4">
+        <div className="flex items-center space-x-3">
+          <div className={cn(
+            "glass-button p-2 rounded-lg",
+            variant === 'primary' ? "bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300" : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+          )}>
+            {icon}
+          </div>
+          <div>
+            <CardTitle className="text-heading-md">{title}</CardTitle>
+            <CardDescription className="text-body-sm">{description}</CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+    </Card>
   );
-};
-
-export default ActionCard;
+}

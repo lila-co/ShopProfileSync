@@ -468,7 +468,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
             </CardContent>
           </Card>
         );
-      
+
 
       case 5:
         if (selectedRetailers.length === 0) {
@@ -647,54 +647,21 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
   }
 
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col p-4">
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <h1 className="text-xl font-bold">Account Setup</h1>
-          <span className="text-sm text-gray-500">Step {currentStep} of {totalSteps}</span>
-        </div>
-        <Progress value={progress} className="h-2" />
-      </div>
+    <div className="min-h-screen frosted-bg flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <Card className="glass-modal shadow-glass-strong">
+          <CardHeader className="text-center">
+            <CardTitle className="text-display-md">Welcome to ShopSmart</CardTitle>
+            <CardDescription className="text-body">
+              Let's get you set up with a personalized shopping experience
+            </CardDescription>
+          </CardHeader>
 
-      <div className="flex-1">
-        {renderStep()}
-      </div>
-
-      <div className="flex justify-between pt-6">
-        <Button
-          variant="outline"
-          onClick={handleBack}
-          disabled={currentStep === 1}
-          className="flex items-center space-x-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span>Back</span>
-        </Button>
-
-        {currentStep < totalSteps ? (
-          <Button
-            variant="outline"
-            onClick={handleNext}
-            className="flex items-center space-x-2"
-          >
-            <span>Next</span>
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        ) : (
-          <Button
-            onClick={handleComplete}
-            disabled={connectRetailersMutation.isPending || updateProfileMutation.isPending}
-            className="flex items-center space-x-2"
-          >
-            <span>
-              {connectRetailersMutation.isPending || updateProfileMutation.isPending 
-                ? 'Setting up...' 
-                : 'Complete Setup'
-              }
-            </span>
-            <CheckCircle className="h-4 w-4" />
-          </Button>
-        )}
+      {/* Rest of the component */}
+        <CardContent>
+           OnboardingFlow
+        </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -98,7 +98,7 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommendation 
           </span>
         </div>
       )}
-      
+
       <div className="flex justify-between items-start">
         <div>
           <h4 className="font-medium text-gray-800">{recommendation.productName}</h4>
