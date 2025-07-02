@@ -38,7 +38,7 @@ export const getQueryFn: <T>(options: {
         return null;
       }
 
-      await throwIfRes NotOk(res);
+      await throwIfResNotOk(res);
       return await res.json();
     } catch (error) {
       // Handle network errors more gracefully
