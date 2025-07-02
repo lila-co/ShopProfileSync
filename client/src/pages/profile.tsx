@@ -49,13 +49,22 @@ const ProfilePage: React.FC = () => {
   });
 
   const updatePrivacyMutation = useMutation({
-    mutationFn: async (preferences: any) => {
+    mutationFn: async (preferences: Record<string, boolean>) => {
       const response = await fetch('/api/user/privacy-preferences', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(preferences),
       });
-      if (!response.ok) throw new Error('Failed to update privacy preferences');
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { message: errorText };
+        }
+        throw new Error(errorData.message || `HTTP ${response.status}: Failed to update privacy preferences`);
+      }
       return response.json();
     },
     onSuccess: () => {
@@ -65,44 +74,77 @@ const ProfilePage: React.FC = () => {
         description: "Your privacy preferences have been saved.",
       });
     },
-    onError: () => {
+    onError: (error: Error, variables, context) => {
+      // Revert optimistic update on error
+      queryClient.invalidateQueries({ queryKey: ['/api/user/privacy-preferences'] });
+      console.error('Privacy update error:', error);
       toast({
-        title: "Error",
-        description: "Failed to update privacy settings. Please try again.",
+        title: "Privacy Update Failed",
+        description: error.message || "Failed to update privacy settings. Please try again.",
         variant: "destructive",
       });
     }
   });
 
   const updateNotificationMutation = useMutation({
-    mutationFn: async (preferences: any) => {
+    mutationFn: async (preferences: Record<string, boolean>) => {
       const response = await fetch('/api/user/notification-preferences', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(preferences),
       });
-      if (!response.ok) throw new Error('Failed to update notification preferences');
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { message: errorText };
+        }
+        throw new Error(errorData.message || `HTTP ${response.status}: Failed to update notification preferences`);
+      }
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/user/notification-preferences'] });
       // Settings saved silently - no toast needed for every toggle
     },
-    onError: () => {
+    onError: (error: Error, variables, context) => {
+      // Revert optimistic update on error
+      queryClient.invalidateQueries({ queryKey: ['/api/user/notification-preferences'] });
+      console.error('Notification update error:', error);
       toast({
-        title: "Settings Error",
-        description: "Failed to save notification preferences. Please try again.",
+        title: "Notification Update Failed", 
+        description: error.message || "Failed to save notification preferences. Please try again.",
         variant: "destructive",
       });
     }
   });
 
   const handlePrivacyToggle = (setting: string, value: boolean) => {
-    updatePrivacyMutation.mutate({ [setting]: value });
+    if (updatePrivacyMutation.isPending) return;
+    
+    // Optimistically update the UI
+    queryClient.setQueryData(['/api/user/privacy-preferences'], (old: any) => ({
+      ...old,
+      [setting]: value
+    }));
+    
+    const preferences = { [setting]: value };
+    updatePrivacyMutation.mutate(preferences);
   };
 
   const handleNotificationToggle = (setting: string, value: boolean) => {
-    updateNotificationMutation.mutate({ [setting]: value });
+    if (updateNotificationMutation.isPending) return;
+    
+    // Optimistically update the UI
+    queryClient.setQueryData(['/api/user/notification-preferences'], (old: any) => ({
+      ...old,
+      [setting]: value
+    }));
+    
+    const preferences = { [setting]: value };
+    updateNotificationMutation.mutate(preferences);
   };
 
   const form = useForm<z.infer<typeof profileSchema>>({
@@ -502,7 +544,7 @@ const ProfilePage: React.FC = () => {
                     id="shareData" 
                     checked={privacyPreferences?.allowAnalytics ?? true}
                     onCheckedChange={(checked) => handlePrivacyToggle('allowAnalytics', checked)}
-                    disabled={updatePrivacyMutation.isPending}
+                    disabled={updatePrivacyMutation.isPending || privacyLoading}
                     className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
                   />
                 </div>
@@ -516,7 +558,7 @@ const ProfilePage: React.FC = () => {
                     id="locationTracking" 
                     checked={privacyPreferences?.allowLocationTracking ?? true}
                     onCheckedChange={(checked) => handlePrivacyToggle('allowLocationTracking', checked)}
-                    disabled={updatePrivacyMutation.isPending}
+                    disabled={updatePrivacyMutation.isPending || privacyLoading}
                     className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
                   />
                 </div>
@@ -530,7 +572,7 @@ const ProfilePage: React.FC = () => {
                     id="profileVisibility" 
                     checked={privacyPreferences?.allowDataSharing ?? false}
                     onCheckedChange={(checked) => handlePrivacyToggle('allowDataSharing', checked)}
-                    disabled={updatePrivacyMutation.isPending}
+                    disabled={updatePrivacyMutation.isPending || privacyLoading}
                     className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300"
                     aria-describedby="profileVisibility-description"
                   />
@@ -545,7 +587,7 @@ const ProfilePage: React.FC = () => {
                     id="dataRetention" 
                     checked={privacyPreferences?.allowPersonalization ?? true}
                     onCheckedChange={(checked) => handlePrivacyToggle('allowPersonalization', checked)}
-                    disabled={updatePrivacyMutation.isPending}
+                    disabled={updatePrivacyMutation.isPending || privacyLoading}
                     className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300"
                     aria-describedby="dataRetention-description"
                   />
@@ -672,7 +714,7 @@ const ProfilePage: React.FC = () => {
                     id="dealAlerts" 
                     checked={notificationPreferences?.dealAlerts ?? true}
                     onCheckedChange={(checked) => handleNotificationToggle('dealAlerts', checked)}
-                    disabled={updateNotificationMutation.isPending}
+                    disabled={updateNotificationMutation.isPending || notificationLoading}
                     className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
                   />
                 </div>
@@ -686,7 +728,7 @@ const ProfilePage: React.FC = () => {
                     id="priceDrops" 
                     checked={notificationPreferences?.priceDropAlerts ?? true}
                     onCheckedChange={(checked) => handleNotificationToggle('priceDropAlerts', checked)}
-                    disabled={updateNotificationMutation.isPending}
+                    disabled={updateNotificationMutation.isPending || notificationLoading}
                     className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
                   />
                 </div>
@@ -700,7 +742,7 @@ const ProfilePage: React.FC = () => {
                     id="weeklyDigest" 
                     checked={notificationPreferences?.weeklyDigest ?? false}
                     onCheckedChange={(checked) => handleNotificationToggle('weeklyDigest', checked)}
-                    disabled={updateNotificationMutation.isPending}
+                    disabled={updateNotificationMutation.isPending || notificationLoading}
                     className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
                   />
                 </div>
@@ -714,7 +756,7 @@ const ProfilePage: React.FC = () => {
                     id="expirationAlerts" 
                     checked={notificationPreferences?.expirationAlerts ?? true}
                     onCheckedChange={(checked) => handleNotificationToggle('expirationAlerts', checked)}
-                    disabled={updateNotificationMutation.isPending}
+                    disabled={updateNotificationMutation.isPending || notificationLoading}
                     className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
                   />
                 </div>
@@ -728,7 +770,7 @@ const ProfilePage: React.FC = () => {
                     id="recommendationUpdates" 
                     checked={notificationPreferences?.recommendationUpdates ?? true}
                     onCheckedChange={(checked) => handleNotificationToggle('recommendationUpdates', checked)}
-                    disabled={updateNotificationMutation.isPending}
+                    disabled={updateNotificationMutation.isPending || notificationLoading}
                     className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 
                   />
                 </div>

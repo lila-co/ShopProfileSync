@@ -195,12 +195,15 @@ export class ProductNormalizationService {
   }
 
   /**
-   * Clean and standardize product names
+   * Clean and standardize product names with Spanglish support
    */
   private cleanProductName(name: string): string {
-    return name
-      .toLowerCase()
-      .trim()
+    let cleanedName = name.toLowerCase().trim();
+    
+    // Handle Spanglish patterns first
+    cleanedName = this.normalizeSpanglishPatterns(cleanedName);
+    
+    return cleanedName
       // Remove common prefixes/suffixes
       .replace(/\b(great value|market pantry|good & gather|kroger brand|simple truth)\b/gi, '')
       .replace(/\b(organic|premium|fresh|select|choice)\b/gi, '')
@@ -218,22 +221,169 @@ export class ProductNormalizationService {
   }
 
   /**
-   * Calculate string similarity using Levenshtein distance
+   * Normalize Spanglish patterns to standard English
+   */
+  private normalizeSpanglishPatterns(name: string): string {
+    // Redundant translations (Spanish + English for same item)
+    const redundantTranslations: Record<string, string> = {
+      'leche milk': 'milk',
+      'milk leche': 'milk',
+      'pollo chicken': 'chicken',
+      'chicken pollo': 'chicken',
+      'pan bread': 'bread',
+      'bread pan': 'bread',
+      'queso cheese': 'cheese',
+      'cheese queso': 'cheese',
+      'arroz rice': 'rice',
+      'rice arroz': 'rice',
+      'agua water': 'water',
+      'water agua': 'water',
+      'carne meat': 'meat',
+      'meat carne': 'meat',
+      'huevos eggs': 'eggs',
+      'eggs huevos': 'eggs'
+    };
+
+    // Common phonetic misspellings
+    const phoneticCorrections: Record<string, string> = {
+      'chiken': 'chicken',
+      'chikken': 'chicken',
+      'bery': 'berry',
+      'berries': 'berries',
+      'tomatos': 'tomatoes',
+      'begetables': 'vegetables',
+      'vejetables': 'vegetables',
+      'selery': 'celery',
+      'apel': 'apple',
+      'aple': 'apple',
+      'banan': 'banana',
+      'bananna': 'banana',
+      'lemmon': 'lemon',
+      'oneon': 'onion',
+      'onyon': 'onion',
+      'carrots': 'carrots',
+      'carot': 'carrot',
+      // Cereal phonetic spellings
+      'confleis': 'cornflakes',
+      'cornfleis': 'cornflakes',
+      'frosfleiks': 'frosted flakes',
+      'cheerios': 'cheerios',
+      'cherrios': 'cheerios',
+      'cheeios': 'cheerios',
+      // Other breakfast items
+      'otemil': 'oatmeal',
+      'oatmil': 'oatmeal',
+      'avena': 'oatmeal',
+      'pankeiks': 'pancakes',
+      'wafleis': 'waffles',
+      'tost': 'toast'
+    };
+
+    // Spanish terms commonly preserved in Spanglish context
+    const spanishToEnglish: Record<string, string> = {
+      'frijoles negros': 'black beans',
+      'frijoles rojos': 'red beans',
+      'frijoles pintos': 'pinto beans',
+      'carne molida': 'ground beef',
+      'carne asada': 'beef steak',
+      'pollo asado': 'roasted chicken',
+      'agua sparkling': 'sparkling water',
+      'agua mineral': 'mineral water',
+      'cereal para niños': 'kids cereal',
+      'leche descremada': 'skim milk',
+      'leche entera': 'whole milk',
+      'mantequilla': 'butter',
+      'aceite oliva': 'olive oil',
+      'aceite vegetal': 'vegetable oil',
+      'papas': 'potatoes',
+      'papitas': 'chips',
+      'dulces': 'candy',
+      'galletas': 'cookies',
+      'tortillas': 'tortillas',
+      'salsa verde': 'green salsa',
+      'salsa roja': 'red salsa'
+    };
+
+    // Brand names with Spanish descriptors
+    const brandSpanglishPatterns: Record<string, string> = {
+      'coca cola grande': 'coca cola large',
+      'pepsi grande': 'pepsi large',
+      'cheerios cereal': 'cheerios',
+      'campbell sopa': 'campbell soup',
+      'kraft queso': 'kraft cheese',
+      'tide detergente': 'tide detergent',
+      'bounty toallas': 'bounty paper towels'
+    };
+
+    let normalized = name;
+
+    // Apply redundant translation fixes
+    for (const [spanglish, english] of Object.entries(redundantTranslations)) {
+      const regex = new RegExp(`\\b${spanglish}\\b`, 'gi');
+      normalized = normalized.replace(regex, english);
+    }
+
+    // Apply phonetic corrections
+    for (const [misspelled, correct] of Object.entries(phoneticCorrections)) {
+      const regex = new RegExp(`\\b${misspelled}\\b`, 'gi');
+      normalized = normalized.replace(regex, correct);
+    }
+
+    // Apply Spanish to English translations
+    for (const [spanish, english] of Object.entries(spanishToEnglish)) {
+      const regex = new RegExp(`\\b${spanish}\\b`, 'gi');
+      normalized = normalized.replace(regex, english);
+    }
+
+    // Apply brand Spanglish patterns
+    for (const [spanglish, english] of Object.entries(brandSpanglishPatterns)) {
+      const regex = new RegExp(`\\b${spanglish}\\b`, 'gi');
+      normalized = normalized.replace(regex, english);
+    }
+
+    // Handle mixed language size descriptors
+    normalized = normalized
+      .replace(/\bgrande\b/gi, 'large')
+      .replace(/\bmediano\b/gi, 'medium')
+      .replace(/\bpequeño\b/gi, 'small')
+      .replace(/\bchico\b/gi, 'small');
+
+    return normalized.replace(/\s+/g, ' ').trim();
+  }
+
+  /**
+   * Calculate string similarity using Levenshtein distance with Spanglish awareness
    */
   private calculateSimilarity(str1: string, str2: string): number {
-    const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
+    // First normalize both strings through Spanglish patterns
+    const normalized1 = this.normalizeSpanglishPatterns(str1.toLowerCase());
+    const normalized2 = this.normalizeSpanglishPatterns(str2.toLowerCase());
     
-    for (let i = 0; i <= str1.length; i += 1) {
+    // If normalized versions are identical, return perfect match
+    if (normalized1 === normalized2) {
+      return 1.0;
+    }
+    
+    // Check for semantic equivalence (chicken vs pollo, milk vs leche)
+    const semanticSimilarity = this.checkSemanticEquivalence(normalized1, normalized2);
+    if (semanticSimilarity > 0) {
+      return semanticSimilarity;
+    }
+    
+    // Calculate Levenshtein distance on normalized strings
+    const matrix = Array(normalized2.length + 1).fill(null).map(() => Array(normalized1.length + 1).fill(null));
+    
+    for (let i = 0; i <= normalized1.length; i += 1) {
       matrix[0][i] = i;
     }
     
-    for (let j = 0; j <= str2.length; j += 1) {
+    for (let j = 0; j <= normalized2.length; j += 1) {
       matrix[j][0] = j;
     }
     
-    for (let j = 1; j <= str2.length; j += 1) {
-      for (let i = 1; i <= str1.length; i += 1) {
-        const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
+    for (let j = 1; j <= normalized2.length; j += 1) {
+      for (let i = 1; i <= normalized1.length; i += 1) {
+        const indicator = normalized1[i - 1] === normalized2[j - 1] ? 0 : 1;
         matrix[j][i] = Math.min(
           matrix[j][i - 1] + 1,
           matrix[j - 1][i] + 1,
@@ -242,8 +392,44 @@ export class ProductNormalizationService {
       }
     }
     
-    const maxLength = Math.max(str1.length, str2.length);
-    return maxLength === 0 ? 1 : (maxLength - matrix[str2.length][str1.length]) / maxLength;
+    const maxLength = Math.max(normalized1.length, normalized2.length);
+    return maxLength === 0 ? 1 : (maxLength - matrix[normalized2.length][normalized1.length]) / maxLength;
+  }
+
+  /**
+   * Check for semantic equivalence between Spanish and English terms
+   */
+  private checkSemanticEquivalence(str1: string, str2: string): number {
+    const semanticPairs = [
+      ['chicken', 'pollo'],
+      ['milk', 'leche'],
+      ['bread', 'pan'],
+      ['cheese', 'queso'],
+      ['rice', 'arroz'],
+      ['water', 'agua'],
+      ['meat', 'carne'],
+      ['eggs', 'huevos'],
+      ['beans', 'frijoles'],
+      ['potatoes', 'papas'],
+      ['tomatoes', 'tomates'],
+      ['onions', 'cebollas'],
+      ['carrots', 'zanahorias'],
+      ['butter', 'mantequilla'],
+      ['oil', 'aceite'],
+      ['salt', 'sal'],
+      ['sugar', 'azucar'],
+      ['cookies', 'galletas'],
+      ['candy', 'dulces']
+    ];
+
+    for (const [english, spanish] of semanticPairs) {
+      if ((str1.includes(english) && str2.includes(spanish)) || 
+          (str1.includes(spanish) && str2.includes(english))) {
+        return 0.95; // High similarity for semantic matches
+      }
+    }
+
+    return 0;
   }
 
   private estimateRestockFrequency(category: string): string {

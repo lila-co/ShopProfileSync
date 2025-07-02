@@ -333,54 +333,41 @@ const ShoppingListComponent: React.FC = () => {
   }, [shoppingLists, userHasClearedList, isGeneratingList]); // React to changes in shoppingLists and userHasClearedList
 
   const addItemMutation = useMutation({
-    mutationFn: async ({ itemName, quantity, unit }: { itemName: string; quantity: number; unit: string }) => {
+    mutationFn: async ({ itemName, quantity, unit, forceDuplicate = false }: { itemName: string; quantity: number; unit: string; forceDuplicate?: boolean }) => {
       const defaultList = shoppingLists?.[0];
       if (!defaultList) throw new Error('No shopping list found');
 
-      // Normalize product name to prevent duplicates
       const normalizedName = itemName.trim();
 
-      // Check if item already exists using simple duplicate detection
-      const existingItem = defaultList.items?.find(item => {
-        const existingName = item.productName.toLowerCase().trim();
-        const newName = normalizedName.toLowerCase().trim();
-        
-        // Exact match or very similar match
-        return existingName === newName || 
-               existingName.replace(/s$/, '') === newName.replace(/s$/, '');
-      });
-
-      if (existingItem) {
-        throw new Error(`"${normalizedName}" is similar to "${existingItem.productName}" already in your shopping list`);
-      }
-
-      console.log('Adding item:', { normalizedName, quantity, unit, shoppingListId: defaultList.id });
+      console.log('Adding item:', { normalizedName, quantity, unit, forceDuplicate, shoppingListId: defaultList.id });
 
       try {
         const response = await apiRequest('POST', '/api/shopping-list/items', {
           shoppingListId: defaultList.id,
           productName: normalizedName,
           quantity: quantity,
-          unit: unit
+          unit: unit,
+          forceDuplicate: forceDuplicate
         });
 
         console.log('Add item response status:', response.status);
 
         if (!response.ok) {
-          let errorMessage = `Failed to add item: ${response.status}`;
+          let errorData;
           try {
-            const errorData = await response.json();
-            errorMessage = errorData.message || errorData.error || errorMessage;
+            errorData = await response.json();
           } catch (parseError) {
-            try {
-              const errorText = await response.text();
-              errorMessage = errorText || errorMessage;
-            } catch (textError) {
-              console.warn('Could not parse error response');
-            }
+            throw new Error(`Failed to add item: ${response.status}`);
           }
-          console.error('Add item error:', errorMessage);
-          throw new Error(errorMessage);
+
+          // Handle duplicate detection responses
+          if (response.status === 409) {
+            const duplicateError = new Error(errorData.error || errorData.warning || 'Duplicate item detected');
+            (duplicateError as any).duplicateDetails = errorData;
+            throw duplicateError;
+          }
+
+          throw new Error(errorData.message || errorData.error || `Failed to add item: ${response.status}`);
         }
 
         const result = await response.json();
@@ -388,10 +375,7 @@ const ShoppingListComponent: React.FC = () => {
         return result;
       } catch (error) {
         console.error('Add item mutation error:', error);
-        if (error instanceof Error) {
-          throw error;
-        }
-        throw new Error('Failed to add item to shopping list');
+        throw error;
       }
     },
     onMutate: async ({ itemName, quantity, unit }: { itemName: string; quantity: number; unit: string }) => {
@@ -425,16 +409,52 @@ const ShoppingListComponent: React.FC = () => {
     onError: (err, variables, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
       queryClient.setQueryData(['/api/shopping-lists'], context?.previousLists);
-      
+
       console.error('Add item mutation error for item:', variables.itemName, err);
-      
+
+      // Handle duplicate detection specifically
+      if (err instanceof Error && (err as any).duplicateDetails) {
+        const duplicateInfo = (err as any).duplicateDetails;
+
+        if (duplicateInfo.allowForce) {
+          // Show option to force add the item
+          toast({
+            title: "Similar Item Found",
+            description: `${duplicateInfo.reason}. You already have "${duplicateInfo.existingItem?.productName}" in your list.`,
+            action: (
+              <Button 
+                size="sm" 
+                onClick={() => {
+                  addItemMutation.mutate({
+                    itemName: variables.itemName,
+                    quantity: variables.quantity,
+                    unit: variables.unit,
+                    forceDuplicate: true
+                  });
+                }}
+              >
+                Add Anyway
+              </Button>
+            )
+          });
+        } else {
+          // Show duplicate rejection message
+          toast({
+            title: "Duplicate Item",
+            description: `${duplicateInfo.reason}. You already have "${duplicateInfo.existingItem?.productName}" in your list.`,
+            variant: "destructive",
+          });
+        }
+        return;
+      }
+
       let errorMessage = "Failed to add item";
       if (err instanceof Error) {
         errorMessage = err.message;
       } else if (typeof err === 'string') {
         errorMessage = err;
       }
-      
+
       toast({
         title: "Error Adding Item",
         description: `Could not add "${variables.itemName}": ${errorMessage}`,
@@ -812,7 +832,8 @@ const ShoppingListComponent: React.FC = () => {
       addItemMutation.mutate({ 
         itemName: newItemName.trim(), 
         quantity: quantity,
-        unit: newItemUnit 
+        unit: newItemUnit,
+        forceDuplicate: false
       }, {
         onSuccess: () => {
           // Clear the form after successful addition
@@ -873,7 +894,7 @@ const ShoppingListComponent: React.FC = () => {
   const handleVoiceAddItem = async (itemName: string, quantity: number, unit: string) => {
     return new Promise<void>((resolve, reject) => {
       addItemMutation.mutate(
-        { itemName, quantity, unit },
+        { itemName, quantity, unit, forceDuplicate: false },
         {
           onSuccess: () => resolve(),
           onError: (error) => reject(error)
@@ -959,11 +980,11 @@ const ShoppingListComponent: React.FC = () => {
     for (const [category, variations] of Object.entries(productVariations)) {
       const name1HasCategory = variations.some(variation => norm1.includes(variation));
       const name2HasCategory = variations.some(variation => norm2.includes(variation));
-      
+
       if (name1HasCategory && name2HasCategory) {
         // Both belong to same category, but check if they're different forms
         // e.g., "onions" vs "onion powder" should not match
-        
+
         // Define exclusions - forms that shouldn't match despite same base ingredient
         const exclusionPairs = [
           ['powder', 'whole'], ['powder', 'fresh'], ['powder', 'raw'],
@@ -1073,7 +1094,7 @@ const ShoppingListComponent: React.FC = () => {
               // Enhanced matching logic for better deal detection
               const matchingDeals = deals.filter((deal: any) => {
                 if (!deal || !deal.productName) return false;
-                
+
                 const productName = newItem.productName.toLowerCase().trim();
                 const dealName = deal.productName.toLowerCase().trim();
 
@@ -1657,6 +1678,7 @@ const ShoppingListComponent: React.FC = () => {
             </div>
           </div>
           <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
+            ```
             <Button 
               variant="outline" 
               onClick={() => setRecipeDialogOpen(false)}

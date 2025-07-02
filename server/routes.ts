@@ -310,6 +310,20 @@ async function createSampleDealsFromURL(retailerId: number, circularId: number, 
 
 import { locationBasedCircularManager } from './services/locationBasedCircularManager';
 import { logger } from './services/logger';
+import { 
+  users, 
+  shoppingLists, 
+  shoppingListItems, 
+  retailers, 
+  deals, 
+  products, 
+  userRetailerAccounts,
+  dataPrivacyPreferences,
+  notificationPreferences,
+  InsertShoppingList,
+  InsertShoppingListItem,
+  InsertUserRetailerAccount
+} from "@/shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create HTTP server
@@ -618,7 +632,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add shopping list item
   app.post('/api/shopping-list/items', sanitizeInput, async (req: Request, res: Response) => {
     try {
-      const { shoppingListId, productName, quantity, unit } = req.body;
+      const { shoppingListId, productName, quantity, unit, forceDuplicate } = req.body;
 
       if (!shoppingListId || !productName) {
         return res.status(400).json({ message: 'Shopping list ID and product name are required' });
@@ -626,12 +640,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const validQuantity = parseInt(quantity) || 1;
       const validUnit = unit || 'COUNT';
+      const trimmedProductName = productName.trim();
 
-      console.log(`Adding item to shopping list ${shoppingListId}:`, { productName, quantity: validQuantity, unit: validUnit });
+      console.log(`Adding item to shopping list ${shoppingListId}:`, { productName: trimmedProductName, quantity: validQuantity, unit: validUnit });
+
+      // Check for duplicates unless forced to allow
+      if (!forceDuplicate) {
+        const existingList = await storage.getShoppingListById(shoppingListId);
+        if (existingList && existingList.items) {
+          const { duplicateDetector } = await import('./services/duplicateDetector');
+          const duplicateCheck = await duplicateDetector.checkForDuplicate(
+            trimmedProductName,
+            existingList.items
+          );
+
+          if (duplicateCheck.isDuplicate) {
+            console.log(`Duplicate detected for "${trimmedProductName}":`, duplicateCheck);
+            return res.status(409).json({
+              isDuplicate: true,
+              duplicateInfo: duplicateCheck,
+              suggestions: duplicateDetector.getSuggestions(duplicateCheck)
+            });
+          }
+        }
+      }
 
       const newItem = await storage.createShoppingListItem({
         shoppingListId,
-        productName: productName.trim(),
+        productName: trimmedProductName,
         quantity: validQuantity,
         unit: validUnit,
         isCompleted: false
@@ -824,6 +860,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json(user);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Privacy preferences routes
+  app.get('/api/user/privacy-preferences', async (req: Request, res: Response) => {
+    try {
+      const userId = getCurrentUserId(req);
+      const preferences = await storage.getPrivacyPreferences(userId);
+      res.json(preferences);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  app.patch('/api/user/privacy-preferences', async (req: Request, res: Response) => {
+    try {
+      const userId = getCurrentUserId(req);
+      const updates = req.body;
+      const updatedPreferences = await storage.updatePrivacyPreferences(userId, updates);
+      res.json(updatedPreferences);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  // Notification preferences routes
+  app.get('/api/user/notification-preferences', async (req: Request, res: Response) => {
+    try {
+      const userId = getCurrentUserId(req);
+      const preferences = await storage.getNotificationPreferences(userId);
+      res.json(preferences);
+    } catch (error) {
+      handleError(res, error);
+    }
+  });
+
+  app.patch('/api/user/notification-preferences', async (req: Request, res: Response) => {
+    try {
+      const userId = getCurrentUserId(req);
+      const updates = req.body;
+      const updatedPreferences = await storage.updateNotificationPreferences(userId, updates);
+      res.json(updatedPreferences);
     } catch (error) {
       handleError(res, error);
     }
@@ -1719,7 +1799,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         recommendations: [
           analytics.summary.averageCompletionRate < 80 ? 
             'Consider expanding inventory - completion rate below 80%' : null,
-          sortedUnfoundItems.length > 10 ? 
+          sortedUnfoundItems.length > 10? 
             'High number of unfound items suggests inventory gaps' : null,
           sortedMovedItems.length > 5 ? 
             'Customers frequently shopping elsewhere for specific items' : null
@@ -2015,6 +2095,188 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to delete item' });
     }
   });
+
+  app.post('/api/products/categorization-feedback', async (req, res) => {
+    try {
+      const { productName, originalCategory, correctedCategory, confidence } = req.body;
+
+    if (!productName || !correctedCategory) {
+      return res.status(400).json({ 
+        error: 'Product name and corrected category are required' 
+      });
+    }
+
+    // Store the feedback for machine learning improvements
+    const { mlCategorizer } = await import('./services/mlCategorizer');
+    await mlCategorizer.learnFromCorrection(
+      productName,
+      originalCategory || 'Unknown',
+      correctedCategory,
+      getCurrentUserId(req), // Default user ID
+      confidence || 1.0
+    );
+
+    res.json({ 
+      success: true, 
+      message: 'Feedback received and learning updated' 
+    });
+  } catch (error) {
+    console.error('Error processing categorization feedback:', error);
+    res.status(500).json({ error: 'Failed to process feedback' });
+  }
+});
+
+// AI Brand Detection API
+app.post('/api/ai/brand-detection', async (req, res) => {
+  try {
+    const { productName } = req.body;
+
+    if (!productName) {
+      return res.status(400).json({ error: 'Product name is required' });
+    }
+
+    // Simulate AI brand detection (you can replace this with actual AI service)
+    const result = await detectBrandsWithAI(productName);
+
+    res.json(result);
+  } catch (error) {
+    console.error('AI brand detection error:', error);
+    res.status(500).json({ error: 'Failed to detect brands' });
+  }
+});
+
+// AI Brand Detection Service Function
+async function detectBrandsWithAI(productName: string): Promise<{
+  detectedBrands: string[];
+  genericTerms: string[];
+  category: string;
+}> {
+  const name = productName.toLowerCase().trim();
+
+  // Comprehensive brand detection patterns with variations
+  const brandPatterns = [
+    // Cookie/Snack brands - enhanced patterns
+    { pattern: /\b(oreo|oreos)\b/i, brand: 'Oreo', category: 'cookies' },
+    { pattern: /\b(chips\s*ahoy|chipsahoy)\b/i, brand: 'Chips Ahoy', category: 'cookies' },
+    { pattern: /\b(nutter\s*butter|nutterbutter)\b/i, brand: 'Nutter Butter', category: 'cookies' },
+    { pattern: /\b(keebler)\b/i, brand: 'Keebler', category: 'cookies' },
+    { pattern: /\b(pepperidge\s*farm|pepperidgefarm)\b/i, brand: 'Pepperidge Farm', category: 'cookies' },
+    { pattern: /\b(nabisco)\b/i, brand: 'Nabisco', category: 'cookies' },
+    { pattern: /\b(famous\s*amos|famousamos)\b/i, brand: 'Famous Amos', category: 'cookies' },
+    { pattern: /\b(archway)\b/i, brand: 'Archway', category: 'cookies' },
+
+    // Cereal brands
+    { pattern: /\b(cheerios|cheerio)\b/i, brand: 'Cheerios', category: 'cereal' },
+    { pattern: /\b(frosted\s*flakes|frostedflakes)\b/i, brand: 'Frosted Flakes', category: 'cereal' },
+    { pattern: /\b(lucky\s*charms|luckycharms)\b/i, brand: 'Lucky Charms', category: 'cereal' },
+    { pattern: /\b(froot\s*loops|frootloops|fruit\s*loops)\b/i, brand: 'Froot Loops', category: 'cereal' },
+    { pattern: /\b(special\s*k|specialk)\b/i, brand: 'Special K', category: 'cereal' },
+
+    // Beverage brands
+    { pattern: /\b(coca\s*cola|cocacola|coke)\b/i, brand: 'Coca Cola', category: 'soda' },
+    { pattern: /\b(pepsi)\b/i, brand: 'Pepsi', category: 'soda' },
+    { pattern: /\b(sprite)\b/i, brand: 'Sprite', category: 'soda' },
+    { pattern: /\b(dr\s*pepper|drpepper)\b/i, brand: 'Dr Pepper', category: 'soda' },
+    { pattern: /\b(mountain\s*dew|mountaindew)\b/i, brand: 'Mountain Dew', category: 'soda' },
+    { pattern: /\b(lacroix|la\s*croix)\b/i, brand: 'LaCroix', category: 'sparkling_water' },
+
+    // Chip brands
+    { pattern: /\b(lay\'?s|lays)\b/i, brand: 'Lays', category: 'chips' },
+    { pattern: /\b(doritos)\b/i, brand: 'Doritos', category: 'chips' },
+    { pattern: /\b(cheetos)\b/i, brand: 'Cheetos', category: 'chips' },
+    { pattern: /\b(pringles)\b/i, brand: 'Pringles', category: 'chips' },
+    { pattern: /\b(ruffles)\b/i, brand: 'Ruffles', category: 'chips' },
+
+    // Dairy brands
+    { pattern: /\b(horizon\s*organic|horizonorganic)\b/i, brand: 'Horizon Organic', category: 'dairy' },
+    { pattern: /\b(lactaid)\b/i, brand: 'Lactaid', category: 'dairy' },
+    { pattern: /\b(fairlife)\b/i, brand: 'Fairlife', category: 'dairy' },
+    { pattern: /\b(kraft)\b/i, brand: 'Kraft', category: 'cheese' },
+    { pattern: /\b(sargento)\b/i, brand: 'Sargento', category: 'cheese' },
+
+    // Meat brands
+    { pattern: /\b(tyson)\b/i, brand: 'Tyson', category: 'meat' },
+    { pattern: /\b(perdue)\b/i, brand: 'Perdue', category: 'meat' },
+    { pattern: /\b(oscar\s*mayer|oscarmayer)\b/i, brand: 'Oscar Mayer', category: 'meat' }
+  ];
+
+  // Enhanced generic term patterns with better categorization
+  const genericPatterns = [
+    // Snack categories
+    { pattern: /\b(cookies?|cookie)\b/i, term: 'cookies', category: 'cookies' },
+    { pattern: /\b(crackers?|cracker)\b/i, term: 'crackers', category: 'crackers' },
+    { pattern: /\b(chips?|chip)\b/i, term: 'chips', category: 'chips' },
+
+    // Beverage categories
+    { pattern: /\b(soda|soft\s*drink|pop)\b/i, term: 'soda', category: 'soda' },
+    { pattern: /\b(sparkling\s*water|carbonated\s*water|seltzer)\b/i, term: 'sparkling water', category: 'sparkling_water' },
+
+    // Food categories
+    { pattern: /\b(cereal|breakfast\s*cereal)\b/i, term: 'cereal', category: 'cereal' },
+    { pattern: /\b(milk)\b/i, term: 'milk', category: 'dairy' },
+    { pattern: /\b(cheese)\b/i, term: 'cheese', category: 'cheese' },
+    { pattern: /\b(yogurt|yoghurt)\b/i, term: 'yogurt', category: 'dairy' },
+    { pattern: /\b(chicken)\b/i, term: 'chicken', category: 'meat' },
+    { pattern: /\b(beef)\b/i, term: 'beef', category: 'meat' }
+  ];
+
+  // Category relationship mappings for enhanced AI-like reasoning
+  const categoryRelationships = {
+    'cookies': ['snacks', 'bakery', 'dessert'],
+    'crackers': ['snacks', 'pantry'],
+    'chips': ['snacks', 'pantry'],
+    'cereal': ['breakfast', 'pantry'],
+    'soda': ['beverages', 'drinks'],
+    'sparkling_water': ['beverages', 'drinks', 'water'],
+    'dairy': ['refrigerated', 'milk_products'],
+    'cheese': ['dairy', 'refrigerated'],
+    'meat': ['protein', 'refrigerated']
+  };
+
+  const detectedBrands: string[] = [];
+  const genericTerms: string[] = [];
+  let category = 'generic';
+  let confidence = 0.5;
+
+  // Enhanced brand detection with confidence scoring
+  for (const { pattern, brand, category: brandCategory } of brandPatterns) {
+    if (pattern.test(name)) {
+      detectedBrands.push(brand);
+      if (category === 'generic') {
+        category = brandCategory;
+        confidence = 0.9; // High confidence for brand matches
+      }
+    }
+  }
+
+  // Enhanced generic term detection
+  for (const { pattern, term, category: termCategory } of genericPatterns) {
+    if (pattern.test(name)) {
+      genericTerms.push(term);
+      if (category === 'generic') {
+        category = termCategory;
+        confidence = 0.7; // Medium confidence for generic terms
+      }
+    }
+  }
+
+  // AI-like reasoning: if we have both brands and generic terms, enhance category understanding
+  if (detectedBrands.length > 0 && genericTerms.length > 0) {
+    // This simulates AI understanding that "Oreo" and "cookies" are related
+    confidence = 0.95; // Very high confidence when we have both brand and generic matches
+  }
+
+  // Enhanced category normalization for better duplicate detection
+  const normalizedCategory = category === 'cookies' || category === 'crackers' || category === 'chips' ? 'snacks' : category;
+
+  console.log(`🤖 Enhanced AI Brand Detection: "${productName}" -> brands: [${detectedBrands.join(', ')}], generic: [${genericTerms.join(', ')}], category: ${category} (normalized: ${normalizedCategory}), confidence: ${confidence}`);
+
+  return { 
+    detectedBrands, 
+    genericTerms, 
+    category: normalizedCategory
+  };
+}
 
   return server;
 }
