@@ -722,6 +722,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Importing recipe from ${recipeUrl} for ${validServings} servings to list ${shoppingListId}`);
 
+      // Get existing shopping list to check for duplicates
+      const existingList = await storage.getShoppingListById(shoppingListId);
+      if (!existingList) {
+        return res.status(404).json({ message: 'Shopping list not found' });
+      }
+
       // Simulate recipe parsing and ingredient extraction
       // In production, this would scrape the recipe URL or use a recipe API
       const sampleIngredients = [
@@ -734,29 +740,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let itemsAdded = 0;
       let itemsSkipped = 0;
+      let itemsUpdated = 0;
+      const duplicatesFound = [];
 
-      // Add ingredients to shopping list
+      // Add ingredients to shopping list with duplicate detection
       for (const ingredient of sampleIngredients) {
         try {
-          await storage.createShoppingListItem({
-            shoppingListId: parseInt(shoppingListId),
-            productName: ingredient.name,
-            quantity: ingredient.quantity,
-            unit: ingredient.unit as any,
-            isCompleted: false
-          });
-          itemsAdded++;
+          const trimmedProductName = ingredient.name.trim();
+
+          // Check for duplicates using the existing duplicate detection system
+          const { duplicateDetector } = await import('./services/duplicateDetector');
+          const duplicateCheck = await duplicateDetector.checkForDuplicate(
+            trimmedProductName,
+            existingList.items || []
+          );
+
+          if (duplicateCheck.isDuplicate && duplicateCheck.existingItem) {
+            // Handle duplicate based on suggestion
+            if (duplicateCheck.suggestedAction === 'merge') {
+              // Update quantity of existing item
+              const newQuantity = duplicateCheck.existingItem.quantity + ingredient.quantity;
+              await storage.updateShoppingListItem(duplicateCheck.existingItem.id, {
+                quantity: newQuantity,
+                notes: `Updated from recipe import (+${ingredient.quantity})`
+              });
+              itemsUpdated++;
+              duplicatesFound.push({
+                ingredient: trimmedProductName,
+                action: 'merged',
+                existingItem: duplicateCheck.existingItem.productName,
+                newQuantity
+              });
+              console.log(`Merged duplicate: ${trimmedProductName} -> ${duplicateCheck.existingItem.productName} (quantity: ${newQuantity})`);
+            } else {
+              // Skip duplicate
+              itemsSkipped++;
+              duplicatesFound.push({
+                ingredient: trimmedProductName,
+                action: 'skipped',
+                existingItem: duplicateCheck.existingItem.productName,
+                reason: duplicateCheck.reason
+              });
+              console.log(`Skipped duplicate: ${trimmedProductName} (${duplicateCheck.reason})`);
+            }
+          } else {
+            // No duplicate, add new item
+            await storage.createShoppingListItem({
+              shoppingListId: parseInt(shoppingListId),
+              productName: trimmedProductName,
+              quantity: ingredient.quantity,
+              unit: ingredient.unit as any,
+              isCompleted: false
+            });
+            itemsAdded++;
+            console.log(`Added new ingredient: ${trimmedProductName}`);
+          }
         } catch (error) {
-          console.warn('Failed to add recipe ingredient:', ingredient.name, error);
+          console.warn('Failed to process recipe ingredient:', ingredient.name, error);
           itemsSkipped++;
         }
       }
+
+      const message = itemsAdded > 0 || itemsUpdated > 0
+        ? `Recipe imported: ${itemsAdded} new items added, ${itemsUpdated} items updated, ${itemsSkipped} duplicates skipped`
+        : `No new items added - all ingredients were duplicates`;
 
       res.json({
         success: true,
         itemsAdded,
         itemsSkipped,
-        message: `Added ${itemsAdded} ingredients from recipe`
+        itemsUpdated,
+        duplicatesFound,
+        message
       });
 
     } catch (error) {

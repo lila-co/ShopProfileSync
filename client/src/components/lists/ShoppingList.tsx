@@ -58,13 +58,31 @@ const ShoppingListComponent: React.FC = () => {
       });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
       setRecipeDialogOpen(false);
       setRecipeUrl('');
+      
+      // Show detailed feedback about what happened
+      const { itemsAdded, itemsUpdated, itemsSkipped, duplicatesFound } = data;
+      let description = data.message;
+      
+      if (duplicatesFound && duplicatesFound.length > 0) {
+        const mergedItems = duplicatesFound.filter((d: any) => d.action === 'merged');
+        const skippedItems = duplicatesFound.filter((d: any) => d.action === 'skipped');
+        
+        if (mergedItems.length > 0) {
+          description += `\n\nMerged duplicates: ${mergedItems.map((d: any) => d.ingredient).join(', ')}`;
+        }
+        if (skippedItems.length > 0) {
+          description += `\n\nSkipped duplicates: ${skippedItems.map((d: any) => d.ingredient).join(', ')}`;
+        }
+      }
+
       toast({
         title: "Recipe Imported",
-        description: "Ingredients have been added to your shopping list"
+        description,
+        duration: 5000 // Show longer for detailed info
       });
     },
     onError: (error: any) => {
