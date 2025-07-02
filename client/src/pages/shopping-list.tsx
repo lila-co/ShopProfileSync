@@ -46,7 +46,7 @@ const ShoppingListPage: React.FC = () => {
   const listName = defaultList?.name || 'Shopping List';
 
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
+    <div className="max-w-md mx-auto frosted-bg min-h-screen flex flex-col">
       <AuthenticatedHeader />
       <main className="flex-1 overflow-y-auto">
         {/* Welcome Section */}

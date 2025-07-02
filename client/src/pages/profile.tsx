@@ -123,26 +123,26 @@ const ProfilePage: React.FC = () => {
 
   const handlePrivacyToggle = (setting: string, value: boolean) => {
     if (updatePrivacyMutation.isPending) return;
-    
+
     // Optimistically update the UI
     queryClient.setQueryData(['/api/user/privacy-preferences'], (old: any) => ({
       ...old,
       [setting]: value
     }));
-    
+
     const preferences = { [setting]: value };
     updatePrivacyMutation.mutate(preferences);
   };
 
   const handleNotificationToggle = (setting: string, value: boolean) => {
     if (updateNotificationMutation.isPending) return;
-    
+
     // Optimistically update the UI
     queryClient.setQueryData(['/api/user/notification-preferences'], (old: any) => ({
       ...old,
       [setting]: value
     }));
-    
+
     const preferences = { [setting]: value };
     updateNotificationMutation.mutate(preferences);
   };
@@ -226,7 +226,7 @@ const ProfilePage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
+    <div className="max-w-md mx-auto frosted-bg min-h-screen flex flex-col">
       <Header user={user} />
 
       <main className="flex-1 overflow-y-auto p-4 pb-20">
@@ -535,7 +535,7 @@ const ProfilePage: React.FC = () => {
                 <CardDescription>Control your data and privacy preferences</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="flex items-center justify-between py-4 px-4 bg-gray-50 rounded-lg border">
+                <div className="flex items-center justify-between py-4 px-4 glass-card rounded-lg border">
                   <div className="flex-1">
                     <Label htmlFor="shareData" className="text-base font-medium text-gray-900">Share anonymous usage data</Label>
                     <p className="text-sm text-gray-600 mt-1">Help improve our service</p>
@@ -549,7 +549,7 @@ const ProfilePage: React.FC = () => {
                   />
                 </div>
 
-                <div className="flex items-center justify-between py-4 px-4 bg-gray-50 rounded-lg border">
+                <div className="flex items-center justify-between py-4 px-4 glass-card rounded-lg border">
                   <div className="flex-1">
                     <Label htmlFor="locationTracking" className="text-base font-medium text-gray-900">Location-based recommendations</Label>
                     <p className="text-sm text-gray-600 mt-1">Get deals from nearby stores</p>
@@ -563,7 +563,7 @@ const ProfilePage: React.FC = () => {
                   />
                 </div>
 
-                <div className="flex items-center justify-between py-4 px-4 bg-gray-50 rounded-lg border">
+                <div className="flex items-center justify-between py-4 px-4 glass-card rounded-lg border">
                   <div className="flex-1">
                     <Label htmlFor="profileVisibility" className="text-base font-medium text-gray-900 cursor-pointer">Public profile</Label>
                     <p className="text-sm text-gray-600 mt-1">Allow others to see your reviews</p>
@@ -578,7 +578,7 @@ const ProfilePage: React.FC = () => {
                   />
                 </div>
 
-                <div className="flex items-center justify-between py-4 px-4 bg-gray-50 rounded-lg border">
+                <div className="flex items-center justify-between py-4 px-4 glass-card rounded-lg border">
                   <div className="flex-1">
                     <Label htmlFor="dataRetention" className="text-base font-medium text-gray-900 cursor-pointer">Data retention</Label>
                     <p className="text-sm text-gray-600 mt-1">Keep purchase history for recommendations</p>
@@ -612,7 +612,7 @@ const ProfilePage: React.FC = () => {
                         method: 'GET',
                         headers: { 'Content-Type': 'application/json' },
                       });
-                      
+
                       if (response.ok) {
                         const blob = await response.blob();
                         const url = window.URL.createObjectURL(blob);
@@ -623,7 +623,7 @@ const ProfilePage: React.FC = () => {
                         a.click();
                         document.body.removeChild(a);
                         window.URL.revokeObjectURL(url);
-                        
+
                         toast({
                           title: "Data Export Complete",
                           description: "Your data has been downloaded successfully.",
@@ -656,21 +656,21 @@ const ProfilePage: React.FC = () => {
                       "• All recommendations and preferences\n\n" +
                       "This action cannot be undone."
                     );
-                    
+
                     if (confirmed) {
                       try {
                         const response = await fetch('/api/user/delete-account', {
                           method: 'DELETE',
                           headers: { 'Content-Type': 'application/json' },
                         });
-                        
+
                         if (response.ok) {
                           toast({
                             title: "Account Deletion Initiated",
                             description: "Your account deletion request has been submitted. You will receive a confirmation email.",
                             variant: "destructive",
                           });
-                          
+
                           // Redirect to auth page after a delay
                           setTimeout(() => {
                             navigate('/auth');
@@ -705,7 +705,7 @@ const ProfilePage: React.FC = () => {
                 <CardDescription>Choose what alerts you'd like to receive</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="flex items-center justify-between py-4 px-4 bg-gray-50 rounded-lg border">
+                <div className="flex items-center justify-between py-4 px-4 glass-card rounded-lg border">
                   <div className="flex-1">
                     <Label htmlFor="dealAlerts" className="text-base font-medium text-gray-900">Deal alerts</Label>
                     <p className="text-sm text-gray-600 mt-1">Get notified about new deals</p>
@@ -719,7 +719,7 @@ const ProfilePage: React.FC = () => {
                   />
                 </div>
 
-                <div className="flex items-center justify-between py-4 px-4 bg-gray-50 rounded-lg border">
+                <div className="flex items-center justify-between py-4 px-4 glass-card rounded-lg border">
                   <div className="flex-1">
                     <Label htmlFor="priceDrops" className="text-base font-medium text-gray-900">Price drop notifications</Label>
                     <p className="text-sm text-gray-600 mt-1">Items on your list go on sale</p>
@@ -733,7 +733,7 @@ const ProfilePage: React.FC = () => {
                   />
                 </div>
 
-                <div className="flex items-center justify-between py-4 px-4 bg-gray-50 rounded-lg border">
+                <div className="flex items-center justify-between py-4 px-4 glass-card rounded-lg border">
                   <div className="flex-1">
                     <Label htmlFor="weeklyDigest" className="text-base font-medium text-gray-900">Weekly digest</Label>
                     <p className="text-sm text-gray-600 mt-1">Summary of savings and trends</p>
@@ -747,7 +747,7 @@ const ProfilePage: React.FC = () => {
                   />
                 </div>
 
-                <div className="flex items-center justify-between py-4 px-4 bg-gray-50 rounded-lg border">
+                <div className="flex items-center justify-between py-4 px-4 glass-card rounded-lg border">
                   <div className="flex-1">
                     <Label htmlFor="expirationAlerts" className="text-base font-medium text-gray-900">Expiration alerts</Label>
                     <p className="text-sm text-gray-600 mt-1">When deals are about to expire</p>
@@ -761,14 +761,15 @@ const ProfilePage: React.FC = () => {
                   />
                 </div>
 
-                <div className="flex items-center justify-between py-4 px-4 bg-gray-50 rounded-lg border">
+                <div className="flex items-center justify-between py-4 px-4 glass-card rounded-lg border">
                   <div className="flex-1">
                     <Label htmlFor="recommendationUpdates" className="text-base font-medium text-gray-900">New recommendations</Label>
                     <p className="text-sm text-gray-600 mt-1">Personalized product suggestions</p>
                   </div>
                   <Switch 
                     id="recommendationUpdates" 
-                    checked={notificationPreferences?.recommendationUpdates ?? true}
+                    ```text
+checked={notificationPreferences?.recommendationUpdates ?? true}
                     onCheckedChange={(checked) => handleNotificationToggle('recommendationUpdates', checked)}
                     disabled={updateNotificationMutation.isPending || notificationLoading}
                     className="ml-6 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-300" 

@@ -43,7 +43,7 @@ const DealsPage: React.FC = () => {
   });
 
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
+    <div className="max-w-md mx-auto frosted-bg min-h-screen flex flex-col">
       <AuthenticatedHeader user={user} />
 
       <main className="flex-1 overflow-y-auto">
@@ -61,7 +61,7 @@ const DealsPage: React.FC = () => {
               placeholder="Search for products or brands..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-12 bg-gray-50 border-0 text-base"
+              className="pl-10 h-12 glass-input border-0 text-base"
             />
           </div>
         </div>
@@ -121,7 +121,7 @@ const DealsPage: React.FC = () => {
                 }
                 }}
             >
-                <SelectTrigger className="h-10 bg-gray-50 border-0">
+                <SelectTrigger className="h-10 glass-input border-0">
                 <SelectValue placeholder="All Stores" />
                 </SelectTrigger>
                 <SelectContent>

@@ -170,7 +170,7 @@ const PlanDetails: React.FC = () => {
           if (selectedRetailer) {
             // Remove the override retailer if it already exists in the groups
             delete storeGroups[overrideRetailerId];
-            
+
             // Find the store with the most items and replace it with the override store
             const storeGroupsArray = Object.values(storeGroups);
             if (storeGroupsArray.length > 0) {
@@ -179,7 +179,7 @@ const PlanDetails: React.FC = () => {
               );
               delete storeGroups[largestStore.retailer.id];
             }
-            
+
             // Add the override store with all items
             storeGroups[overrideRetailerId] = {
               retailer: selectedRetailer,
@@ -222,7 +222,7 @@ const PlanDetails: React.FC = () => {
               !balancedStores[overrideRetailerId] || 
               Math.random() > 0.5 // Randomly distribute items between stores for balance
             );
-            
+
             balancedStores[overrideRetailerId] = {
               retailer: selectedRetailer,
               items: overrideStoreItems,
@@ -415,7 +415,7 @@ const PlanDetails: React.FC = () => {
 
   if (error) {
     return (
-      <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
+      <div className="max-w-md mx-auto frosted-bg min-h-screen flex flex-col">
         <div className="flex items-center gap-4 mb-6 p-4">
           <Button
             variant="ghost"
@@ -840,7 +840,7 @@ const PlanDetails: React.FC = () => {
 
 
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
+    <div className="max-w-md mx-auto frosted-bg min-h-screen flex flex-col">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6 p-4">
         <Button
@@ -875,8 +875,7 @@ const PlanDetails: React.FC = () => {
               </CardTitle>
               <CardDescription>
                 Shop everything at one store for maximum convenience
-              </CardDescription>
-            </CardHeader>
+              </CardDescription>            </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="text-center">
@@ -1218,7 +1217,7 @@ const PlanDetails: React.FC = () => {
                       <SelectItem 
                         key={retailer.id} 
                         value={retailer.id.toString()}
-                        className="hover:bg-gray-50 focus:bg-purple-50 cursor-pointer"
+                        className="hover:glass-card focus:bg-purple-50 cursor-pointer"
                       >
                         <div className="flex items-center gap-3 py-1">
                           <div 
