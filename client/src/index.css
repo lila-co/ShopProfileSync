@@ -169,17 +169,18 @@
   }
 
   .glass-input {
-    background: var(--glass-bg);
+    background: var(--glass-bg-strong);
     backdrop-filter: var(--blur-sm);
     -webkit-backdrop-filter: var(--blur-sm);
-    border: 1px solid var(--glass-border);
+    border: 2px solid var(--glass-border);
     @apply transition-all duration-200;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   }
 
   .glass-input:focus {
     background: var(--glass-bg-strong);
     border-color: hsl(var(--primary));
-    box-shadow: 0 0 0 3px hsla(var(--primary), 0.2);
+    box-shadow: 0 0 0 3px hsla(var(--primary), 0.2), 0 4px 16px rgba(0, 0, 0, 0.12);
   }
 
   /* Modern, accessible button system with glass effects */
