@@ -162,43 +162,43 @@ const ProfileSetup: React.FC = () => {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">Shopping Preferences</label>
-          <div className="space-y-3">
-            <div className="flex items-start">
+          <div className="space-y-2">
+            <label className="flex items-center cursor-pointer group">
               <input 
                 type="checkbox" 
                 id="preferNameBrand" 
-                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2 transition-colors"
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-1 focus:ring-offset-0 transition-all duration-200"
                 {...form.register("preferNameBrand")}
               />
-              <label htmlFor="preferNameBrand" className="ml-3 text-sm text-gray-700 leading-5 cursor-pointer">I prefer name-brand products</label>
-            </div>
-            <div className="flex items-start">
+              <span className="ml-3 text-sm text-gray-700 group-hover:text-gray-900 transition-colors">I prefer name-brand products</span>
+            </label>
+            <label className="flex items-center cursor-pointer group">
               <input 
                 type="checkbox" 
                 id="preferOrganic" 
-                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2 transition-colors"
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-1 focus:ring-offset-0 transition-all duration-200"
                 {...form.register("preferOrganic")}
               />
-              <label htmlFor="preferOrganic" className="ml-3 text-sm text-gray-700 leading-5 cursor-pointer">I prefer organic products</label>
-            </div>
-            <div className="flex items-start">
+              <span className="ml-3 text-sm text-gray-700 group-hover:text-gray-900 transition-colors">I prefer organic products</span>
+            </label>
+            <label className="flex items-center cursor-pointer group">
               <input 
                 type="checkbox" 
                 id="buyInBulk" 
-                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2 transition-colors"
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-1 focus:ring-offset-0 transition-all duration-200"
                 {...form.register("buyInBulk")}
               />
-              <label htmlFor="buyInBulk" className="ml-3 text-sm text-gray-700 leading-5 cursor-pointer">I buy in bulk when possible</label>
-            </div>
-            <div className="flex items-start">
+              <span className="ml-3 text-sm text-gray-700 group-hover:text-gray-900 transition-colors">I buy in bulk when possible</span>
+            </label>
+            <label className="flex items-center cursor-pointer group">
               <input 
                 type="checkbox" 
                 id="prioritizeCostSavings" 
-                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2 transition-colors"
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-1 focus:ring-offset-0 transition-all duration-200"
                 {...form.register("prioritizeCostSavings")}
               />
-              <label htmlFor="prioritizeCostSavings" className="ml-3 text-sm text-gray-700 leading-5 cursor-pointer">I prioritize cost savings</label>
-            </div>
+              <span className="ml-3 text-sm text-gray-700 group-hover:text-gray-900 transition-colors">I prioritize cost savings</span>
+            </label>
           </div>
         </div>
 
