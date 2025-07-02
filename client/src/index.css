@@ -35,11 +35,23 @@
     --info: 199 89% 48%;
     --info-foreground: 210 40% 98%;
     
-    /* Improved shadow system */
+    /* Liquid Glass System - Apple-inspired translucency */
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-bg-strong: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    --glass-shadow-strong: 0 16px 40px rgba(0, 0, 0, 0.15);
+    --blur-sm: blur(8px);
+    --blur-md: blur(12px);
+    --blur-lg: blur(16px);
+    
+    /* Improved shadow system with glass effects */
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --shadow-glass: var(--glass-shadow);
+    --shadow-glass-strong: var(--glass-shadow-strong);
   }
 
   .dark {
@@ -62,6 +74,13 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 224.3 76.3% 94.1%;
+    
+    /* Dark mode liquid glass */
+    --glass-bg: rgba(30, 30, 35, 0.7);
+    --glass-bg-strong: rgba(30, 30, 35, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    --glass-shadow-strong: 0 16px 40px rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -103,16 +122,82 @@
 }
 
 @layer components {
-  /* Modern, accessible button system */
+  /* Liquid Glass Components */
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: var(--blur-md);
+    -webkit-backdrop-filter: var(--blur-md);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-glass);
+    @apply rounded-2xl transition-all duration-300 ease-out;
+  }
+
+  .glass-card:hover {
+    background: var(--glass-bg-strong);
+    box-shadow: var(--shadow-glass-strong);
+    transform: translateY(-2px);
+  }
+
+  .glass-modal {
+    background: var(--glass-bg-strong);
+    backdrop-filter: var(--blur-lg);
+    -webkit-backdrop-filter: var(--blur-lg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-glass-strong);
+  }
+
+  .glass-nav {
+    background: var(--glass-bg);
+    backdrop-filter: var(--blur-sm);
+    -webkit-backdrop-filter: var(--blur-sm);
+    border-bottom: 1px solid var(--glass-border);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  }
+
+  .glass-button {
+    background: var(--glass-bg);
+    backdrop-filter: var(--blur-sm);
+    -webkit-backdrop-filter: var(--blur-sm);
+    border: 1px solid var(--glass-border);
+    @apply transition-all duration-200 ease-out;
+  }
+
+  .glass-button:hover {
+    background: var(--glass-bg-strong);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .glass-input {
+    background: var(--glass-bg);
+    backdrop-filter: var(--blur-sm);
+    -webkit-backdrop-filter: var(--blur-sm);
+    border: 1px solid var(--glass-border);
+    @apply transition-all duration-200;
+  }
+
+  .glass-input:focus {
+    background: var(--glass-bg-strong);
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 3px hsla(var(--primary), 0.2);
+  }
+
+  /* Modern, accessible button system with glass effects */
   .btn-primary {
     @apply inline-flex items-center justify-center rounded-2xl px-8 py-4;
-    @apply bg-blue-600 text-white font-semibold;
-    @apply hover:bg-blue-700 active:bg-blue-800;
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 100%);
+    @apply text-white font-semibold;
+    @apply hover:shadow-lg active:scale-95;
     @apply focus:ring-4 focus:ring-blue-500/50;
     @apply disabled:opacity-50 disabled:cursor-not-allowed;
     @apply transition-all duration-200 ease-out;
-    @apply shadow-md hover:shadow-lg;
+    box-shadow: 0 4px 16px hsla(var(--primary), 0.3);
     min-height: 56px; /* Larger for better mobile UX */
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px hsla(var(--primary), 0.4);
   }
 
   .btn-secondary {
@@ -137,11 +222,16 @@
     min-height: 56px;
   }
 
-  /* Card component with improved accessibility */
+  /* Card component with liquid glass effects */
   .card-modern {
-    @apply bg-white rounded-2xl border border-gray-100;
-    @apply shadow-sm hover:shadow-md;
-    @apply transition-all duration-200 ease-out;
+    @apply glass-card;
+    @apply focus-within:ring-2 focus-within:ring-blue-500/30;
+  }
+
+  .card-elevated {
+    @apply glass-card;
+    background: var(--glass-bg-strong);
+    box-shadow: var(--shadow-glass-strong);
     @apply focus-within:ring-2 focus-within:ring-blue-500/30;
   }
 
@@ -336,14 +426,82 @@
   }
 }
 
-/* Dark mode optimizations - only apply when .dark class is present */
+/* Frosted glass backgrounds for main content areas */
+.frosted-bg {
+  position: relative;
+  overflow: hidden;
+}
+
+.frosted-bg::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, 
+    hsla(var(--primary), 0.1) 0%, 
+    hsla(var(--accent), 0.05) 50%, 
+    hsla(var(--secondary), 0.1) 100%);
+  backdrop-filter: var(--blur-lg);
+  -webkit-backdrop-filter: var(--blur-lg);
+  z-index: -1;
+}
+
+/* Animated glass elements */
+@keyframes glass-shimmer {
+  0%, 100% { 
+    background-position: -100% 0; 
+    opacity: 0;
+  }
+  50% { 
+    background-position: 100% 0; 
+    opacity: 0.1;
+  }
+}
+
+.glass-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: glass-shimmer 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Dark mode optimizations with enhanced glass effects */
 .dark {
   .card-modern {
-    @apply bg-gray-800 border-gray-700;
+    border-color: var(--glass-border);
   }
 
   .input-modern {
-    @apply bg-gray-800 border-gray-600 text-white;
+    background: var(--glass-bg);
+    border-color: var(--glass-border);
+    @apply text-white;
+  }
+
+  .glass-shimmer::after {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.1) 50%,
+      transparent 100%
+    );
   }
 }
 

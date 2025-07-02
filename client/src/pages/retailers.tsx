@@ -64,7 +64,7 @@ const RetailersPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
+    <div className="max-w-md mx-auto frosted-bg min-h-screen flex flex-col">
       <AuthenticatedHeader />
 
       <main className="flex-1 overflow-y-auto p-4 pb-20">
@@ -105,7 +105,7 @@ const RetailersPage: React.FC = () => {
           ))}
         </div>
 
-        
+
 
         {(!retailers || retailers.length === 0) && (
           <Card>

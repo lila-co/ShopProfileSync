@@ -91,9 +91,9 @@ const Dashboard: React.FC = () => {
   );
 
   return (
-    <div className="pb-20 bg-gray-50 min-h-screen">
+    <div className="pb-20 frosted-bg min-h-screen">
       {/* Header with AI Status */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
+      <div className="glass-nav bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between">
             <div>
