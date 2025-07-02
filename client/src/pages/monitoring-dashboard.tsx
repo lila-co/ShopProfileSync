@@ -197,35 +197,67 @@ export default function MonitoringDashboard() {
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+      <div className="space-y-4">
+        {/* Mobile-first header */}
+        <div className="flex items-center justify-between">
           <Button 
             variant="ghost" 
             size="sm"
             onClick={() => navigate('/admin-profile')}
-            className="flex items-center"
+            className="flex items-center shrink-0"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            <span className="hidden sm:inline">Back</span>
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold">System Monitoring</h1>
-            <p className="text-gray-600">Real-time system health and performance metrics</p>
+          
+          {/* Mobile controls - icons only */}
+          <div className="flex items-center space-x-1 sm:hidden">
+            <Button
+              variant={autoRefresh ? "default" : "outline"}
+              size="sm"
+              onClick={() => setAutoRefresh(!autoRefresh)}
+              className="px-2"
+            >
+              <Activity className="w-4 h-4" />
+            </Button>
+            <Button onClick={refreshAll} variant="outline" size="sm" className="px-2">
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+          </div>
+
+          {/* Desktop controls - full labels */}
+          <div className="hidden sm:flex items-center space-x-2">
+            <Button
+              variant={autoRefresh ? "default" : "outline"}
+              size="sm"
+              onClick={() => setAutoRefresh(!autoRefresh)}
+            >
+              <Activity className="w-4 h-4 mr-2" />
+              Auto Refresh {autoRefresh ? 'On' : 'Off'}
+            </Button>
+            <Button onClick={refreshAll} variant="outline">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh All
+            </Button>
           </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <Button
-            variant={autoRefresh ? "default" : "outline"}
-            size="sm"
-            onClick={() => setAutoRefresh(!autoRefresh)}
-          >
-            <Activity className="w-4 h-4 mr-2" />
-            Auto Refresh {autoRefresh ? 'On' : 'Off'}
-          </Button>
-          <Button onClick={refreshAll} variant="outline">
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Refresh All
-          </Button>
+
+        {/* Title section */}
+        <div className="text-center sm:text-left">
+          <h1 className="text-2xl sm:text-3xl font-bold">System Monitoring</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">
+            Real-time system health and performance metrics
+          </p>
+        </div>
+
+        {/* Mobile status indicators */}
+        <div className="sm:hidden flex items-center justify-center space-x-4 text-xs">
+          <div className="flex items-center space-x-1">
+            <div className={`w-2 h-2 rounded-full ${autoRefresh ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+            <span className="text-gray-600">
+              Auto Refresh {autoRefresh ? 'On' : 'Off'}
+            </span>
+          </div>
         </div>
       </div>
 
