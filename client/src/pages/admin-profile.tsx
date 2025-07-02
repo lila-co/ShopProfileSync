@@ -122,11 +122,11 @@ const AdminProfilePage: React.FC = () => {
             </CardFooter>
           </Card>
 
-          
+
         </div>
       </main>
 
-      <BottomNavigation activeTab="profile" />
+      <BottomNavigation activeTab="admin" />
     </div>
   );
 };
