@@ -162,42 +162,94 @@ const ProfileSetup: React.FC = () => {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">Shopping Preferences</label>
-          <div className="space-y-3">
-            <label className="flex items-start cursor-pointer group">
-              <input 
-                type="checkbox" 
-                id="preferNameBrand" 
-                className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 rounded border border-gray-300 text-blue-600 focus:ring-1 focus:ring-blue-500 focus:ring-offset-0"
-                {...form.register("preferNameBrand")}
-              />
-              <span className="ml-2.5 text-sm text-gray-700 group-hover:text-gray-900 leading-relaxed">I prefer name-brand products</span>
+          <div className="space-y-2.5">
+            <label className="flex items-center cursor-pointer group">
+              <div className="relative">
+                <input 
+                  type="checkbox" 
+                  id="preferNameBrand" 
+                  className="sr-only"
+                  {...form.register("preferNameBrand")}
+                />
+                <div className={`h-4 w-4 rounded border-2 transition-all duration-200 ${
+                  form.watch("preferNameBrand") 
+                    ? 'bg-blue-500 border-blue-500 shadow-sm' 
+                    : 'bg-white/60 border-gray-300 backdrop-blur-sm'
+                } group-hover:border-blue-400`}>
+                  {form.watch("preferNameBrand") && (
+                    <svg className="h-3 w-3 text-white absolute top-0.5 left-0.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </div>
+              </div>
+              <span className="ml-3 text-sm text-gray-700 group-hover:text-gray-900">I prefer name-brand products</span>
             </label>
-            <label className="flex items-start cursor-pointer group">
-              <input 
-                type="checkbox" 
-                id="preferOrganic" 
-                className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 rounded border border-gray-300 text-blue-600 focus:ring-1 focus:ring-blue-500 focus:ring-offset-0"
-                {...form.register("preferOrganic")}
-              />
-              <span className="ml-2.5 text-sm text-gray-700 group-hover:text-gray-900 leading-relaxed">I prefer organic products</span>
+            <label className="flex items-center cursor-pointer group">
+              <div className="relative">
+                <input 
+                  type="checkbox" 
+                  id="preferOrganic" 
+                  className="sr-only"
+                  {...form.register("preferOrganic")}
+                />
+                <div className={`h-4 w-4 rounded border-2 transition-all duration-200 ${
+                  form.watch("preferOrganic") 
+                    ? 'bg-blue-500 border-blue-500 shadow-sm' 
+                    : 'bg-white/60 border-gray-300 backdrop-blur-sm'
+                } group-hover:border-blue-400`}>
+                  {form.watch("preferOrganic") && (
+                    <svg className="h-3 w-3 text-white absolute top-0.5 left-0.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </div>
+              </div>
+              <span className="ml-3 text-sm text-gray-700 group-hover:text-gray-900">I prefer organic products</span>
             </label>
-            <label className="flex items-start cursor-pointer group">
-              <input 
-                type="checkbox" 
-                id="buyInBulk" 
-                className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 rounded border border-gray-300 text-blue-600 focus:ring-1 focus:ring-blue-500 focus:ring-offset-0"
-                {...form.register("buyInBulk")}
-              />
-              <span className="ml-2.5 text-sm text-gray-700 group-hover:text-gray-900 leading-relaxed">I buy in bulk when possible</span>
+            <label className="flex items-center cursor-pointer group">
+              <div className="relative">
+                <input 
+                  type="checkbox" 
+                  id="buyInBulk" 
+                  className="sr-only"
+                  {...form.register("buyInBulk")}
+                />
+                <div className={`h-4 w-4 rounded border-2 transition-all duration-200 ${
+                  form.watch("buyInBulk") 
+                    ? 'bg-blue-500 border-blue-500 shadow-sm' 
+                    : 'bg-white/60 border-gray-300 backdrop-blur-sm'
+                } group-hover:border-blue-400`}>
+                  {form.watch("buyInBulk") && (
+                    <svg className="h-3 w-3 text-white absolute top-0.5 left-0.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </div>
+              </div>
+              <span className="ml-3 text-sm text-gray-700 group-hover:text-gray-900">I buy in bulk when possible</span>
             </label>
-            <label className="flex items-start cursor-pointer group">
-              <input 
-                type="checkbox" 
-                id="prioritizeCostSavings" 
-                className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 rounded border border-gray-300 text-blue-600 focus:ring-1 focus:ring-blue-500 focus:ring-offset-0"
-                {...form.register("prioritizeCostSavings")}
-              />
-              <span className="ml-2.5 text-sm text-gray-700 group-hover:text-gray-900 leading-relaxed">I prioritize cost savings</span>
+            <label className="flex items-center cursor-pointer group">
+              <div className="relative">
+                <input 
+                  type="checkbox" 
+                  id="prioritizeCostSavings" 
+                  className="sr-only"
+                  {...form.register("prioritizeCostSavings")}
+                />
+                <div className={`h-4 w-4 rounded border-2 transition-all duration-200 ${
+                  form.watch("prioritizeCostSavings") 
+                    ? 'bg-blue-500 border-blue-500 shadow-sm' 
+                    : 'bg-white/60 border-gray-300 backdrop-blur-sm'
+                } group-hover:border-blue-400`}>
+                  {form.watch("prioritizeCostSavings") && (
+                    <svg className="h-3 w-3 text-white absolute top-0.5 left-0.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </div>
+              </div>
+              <span className="ml-3 text-sm text-gray-700 group-hover:text-gray-900">I prioritize cost savings</span>
             </label>
           </div>
         </div>
