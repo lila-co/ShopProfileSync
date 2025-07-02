@@ -29,16 +29,25 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
-      credentials: "include",
-    });
+    try {
+      const res = await fetch(queryKey[0] as string, {
+        credentials: "include",
+      });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+        return null;
+      }
+
+      await throwIfRes NotOk(res);
+      return await res.json();
+    } catch (error) {
+      // Handle network errors more gracefully
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        console.warn('Network error detected, server may be restarting:', queryKey[0]);
+        throw new Error('Server connection lost. Please try again in a moment.');
+      }
+      throw error;
     }
-
-    await throwIfResNotOk(res);
-    return await res.json();
   };
 
 export const queryClient = new QueryClient({
@@ -50,8 +59,19 @@ export const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       refetchOnMount: true, // Always refetch on mount
       refetchInterval: false,
-      retry: 1,
-      retryDelay: 1000,
+      retry: (failureCount, error) => {
+        // Don't retry auth errors
+        if (error instanceof Error && error.message.includes('401')) {
+          return false;
+        }
+        // Retry network errors up to 3 times with exponential backoff
+        if (error instanceof Error && error.message.includes('Server connection lost')) {
+          return failureCount < 3;
+        }
+        // Default retry behavior for other errors
+        return failureCount < 1;
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     },
   },
 });
