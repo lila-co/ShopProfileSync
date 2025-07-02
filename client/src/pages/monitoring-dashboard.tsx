@@ -27,6 +27,7 @@ import {
   Search
 } from 'lucide-react';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import BottomNavigation from '@/components/layout/BottomNavigation';
 
 interface HealthStatus {
   status: 'healthy' | 'warning' | 'critical';
@@ -659,6 +660,7 @@ export default function MonitoringDashboard() {
           )}
         </TabsContent>
       </Tabs>
+      <BottomNavigation activeTab="admin" />
     </div>
   );
 }
