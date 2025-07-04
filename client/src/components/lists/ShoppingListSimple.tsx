@@ -1,45 +1,47 @@
-
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent } from './components/ui/card';
-import { Input } from '../ui/input';
-import { Button } from './components/ui/button';
-import { ShoppingList as ShoppingListType, ShoppingListItem } from './lib/types';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from './lib/queryClient';
-import { useToast } from './hooks/use-toast';
-import { Plus, Check, X, ShoppingBag, Wand2, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Card, CardContent } from "./components/ui/card";
+import { Input } from "../ui/input";
+import { Button } from "../ui/button";
+import {
+  ShoppingList as ShoppingListType,
+  ShoppingListItem,
+} from "./lib/types";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "./lib/queryClient";
+import { useToast } from "./hooks/use-toast";
+import { Plus, Check, X, ShoppingBag, Wand2, CheckCircle2 } from "lucide-react";
 
 const ShoppingListSimple: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [newItemName, setNewItemName] = useState('');
+  const [newItemName, setNewItemName] = useState("");
   const [isAddingItem, setIsAddingItem] = useState(false);
 
   const { data: shoppingLists, isLoading } = useQuery<ShoppingListType[]>({
-    queryKey: ['/api/shopping-lists'],
+    queryKey: ["/api/shopping-lists"],
   });
 
   const addItemMutation = useMutation({
     mutationFn: async (itemName: string) => {
       const defaultList = shoppingLists?.[0];
-      if (!defaultList) throw new Error('No shopping list found');
+      if (!defaultList) throw new Error("No shopping list found");
 
-      const response = await apiRequest('POST', '/api/shopping-list/items', {
+      const response = await apiRequest("POST", "/api/shopping-list/items", {
         shoppingListId: defaultList.id,
         productName: itemName,
         quantity: 1,
-        unit: 'COUNT'
+        unit: "COUNT",
       });
 
       if (!response.ok) {
-        throw new Error('Failed to add item');
+        throw new Error("Failed to add item");
       }
 
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-      setNewItemName('');
+      queryClient.invalidateQueries({ queryKey: ["/api/shopping-lists"] });
+      setNewItemName("");
       setIsAddingItem(false);
     },
     onError: () => {
@@ -48,29 +50,42 @@ const ShoppingListSimple: React.FC = () => {
         description: "Please try again",
         variant: "destructive",
       });
-    }
+    },
   });
 
   const toggleItemMutation = useMutation({
-    mutationFn: async ({ itemId, completed }: { itemId: number; completed: boolean }) => {
-      const response = await apiRequest('PATCH', `/api/shopping-list/items/${itemId}`, {
-        isCompleted: completed
-      });
+    mutationFn: async ({
+      itemId,
+      completed,
+    }: {
+      itemId: number;
+      completed: boolean;
+    }) => {
+      const response = await apiRequest(
+        "PATCH",
+        `/api/shopping-list/items/${itemId}`,
+        {
+          isCompleted: completed,
+        },
+      );
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-    }
+      queryClient.invalidateQueries({ queryKey: ["/api/shopping-lists"] });
+    },
   });
 
   const deleteItemMutation = useMutation({
     mutationFn: async (itemId: number) => {
-      const response = await apiRequest('DELETE', `/api/shopping-list/items/${itemId}`);
+      const response = await apiRequest(
+        "DELETE",
+        `/api/shopping-list/items/${itemId}`,
+      );
       return response;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-    }
+      queryClient.invalidateQueries({ queryKey: ["/api/shopping-lists"] });
+    },
   });
 
   const handleAddItem = (e: React.FormEvent) => {
@@ -94,9 +109,14 @@ const ShoppingListSimple: React.FC = () => {
         <div className="space-y-4">
           <div className="h-6 bg-gray-200 rounded-lg animate-pulse"></div>
           <div className="space-y-3">
-            {Array(5).fill(0).map((_, index) => (
-              <div key={index} className="h-16 bg-gray-200 rounded-2xl animate-pulse"></div>
-            ))}
+            {Array(5)
+              .fill(0)
+              .map((_, index) => (
+                <div
+                  key={index}
+                  className="h-16 bg-gray-200 rounded-2xl animate-pulse"
+                ></div>
+              ))}
           </div>
         </div>
       </div>
@@ -105,8 +125,8 @@ const ShoppingListSimple: React.FC = () => {
 
   const defaultList = shoppingLists?.[0];
   const items = defaultList?.items || [];
-  const completedItems = items.filter(item => item.completed);
-  const pendingItems = items.filter(item => !item.completed);
+  const completedItems = items.filter((item) => item.completed);
+  const pendingItems = items.filter((item) => !item.completed);
 
   return (
     <div className="max-w-md mx-auto bg-gray-50 min-h-screen">
@@ -116,12 +136,16 @@ const ShoppingListSimple: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">Shopping List</h1>
           <div className="flex items-center justify-center mt-2 space-x-6">
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{pendingItems.length}</div>
+              <div className="text-2xl font-bold text-blue-600">
+                {pendingItems.length}
+              </div>
               <div className="text-sm text-gray-500">to get</div>
             </div>
             <div className="w-px h-8 bg-gray-200"></div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{completedItems.length}</div>
+              <div className="text-2xl font-bold text-green-600">
+                {completedItems.length}
+              </div>
               <div className="text-sm text-gray-500">done</div>
             </div>
           </div>
@@ -163,8 +187,12 @@ const ShoppingListSimple: React.FC = () => {
             <div className="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
               <ShoppingBag className="h-12 w-12 text-gray-400" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Your list is empty</h3>
-            <p className="text-gray-500 mb-8 max-w-sm mx-auto">Start adding items to create your shopping list</p>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              Your list is empty
+            </h3>
+            <p className="text-gray-500 mb-8 max-w-sm mx-auto">
+              Start adding items to create your shopping list
+            </p>
             <Button
               variant="outline"
               size="lg"
@@ -197,7 +225,7 @@ const ShoppingListSimple: React.FC = () => {
                       {item.productName}
                     </h3>
                     <p className="text-sm text-gray-500 mt-1">
-                      {item.quantity} {item.unit?.toLowerCase() || 'item'}
+                      {item.quantity} {item.unit?.toLowerCase() || "item"}
                     </p>
                   </div>
                   <div className="flex-shrink-0">
@@ -229,7 +257,7 @@ const ShoppingListSimple: React.FC = () => {
                   </div>
                   <div className="h-px bg-gray-200 flex-1"></div>
                 </div>
-                
+
                 <div className="space-y-3">
                   {completedItems.map((item) => (
                     <div
@@ -248,7 +276,7 @@ const ShoppingListSimple: React.FC = () => {
                             {item.productName}
                           </h3>
                           <p className="text-sm text-green-600 mt-1">
-                            {item.quantity} {item.unit?.toLowerCase() || 'item'}
+                            {item.quantity} {item.unit?.toLowerCase() || "item"}
                           </p>
                         </div>
                         <div className="flex-shrink-0">
