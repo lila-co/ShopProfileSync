@@ -1,15 +1,14 @@
-import React, { Suspense, lazy } from "react";
+import React, { Suspense, lazy, useEffect } from "react";
 import { Router, Route, Switch, Redirect } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "./components/ui/toaster";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { queryClient } from "@/lib/queryClient";
-import ProtectedRoute from "@/components/auth/ProtectedRoute";
-import ErrorBoundary from "@/components/ErrorBoundary";
-import AsyncErrorBoundary from "@/components/AsyncErrorBoundary";
-import SimpleDashboard from "@/pages/simple-dashboard";
-import ShoppingListSimple from "@/components/lists/ShoppingListSimple";
-import { useEffect } from "react";
+import { queryClient } from "./lib/queryClient";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+import ErrorBoundary from "./components/ErrorBoundary";
+import AsyncErrorBoundary from "./components/AsyncErrorBoundary";
+import SimpleDashboard from "./pages/simple-dashboard";
+import ShoppingListSimple from "./components/lists/ShoppingListSimple";
 
 // Import lazy-loaded components organized by feature groups
 import {
