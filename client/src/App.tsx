@@ -18,7 +18,7 @@ import {
   AdminPages,
   OnboardingPages,
   preloadCriticalComponents,
-} from "@/utils/lazyImports";
+} from "./utils/lazyImports";
 
 // Loading fallback component
 const PageLoadingFallback = () => (
