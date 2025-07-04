@@ -1,4 +1,4 @@
-import { useToast } from "../../../hooks/use-toast";
+import { useToast } from "../../../hooks/use-toast"; // ✔️ if `toaster.tsx` is in `src/components/ui`
 import {
   Toast,
   ToastClose,
