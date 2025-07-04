@@ -1,46 +1,100 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent } from './components/ui/card';
-import { Input } from './components/ui/input';
-import { Button } from './components/ui/button';
-import { ShoppingList as ShoppingListType, ShoppingListItem } from './lib/types';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from './lib/queryClient';
-import { useToast } from './hooks/use-toast';
-import { aiCategorizationService } from './lib/aiCategorization';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './components/ui/alert-dialog';
-import { Label } from './components/ui/label';
-import { Plus, ShoppingBag, FileText, Clock, Check, Trash2, AlertTriangle, DollarSign, MapPin, Car, BarChart2, Wand2, Pencil, Image, Star, TrendingDown, Percent, Circle, CheckCircle2, ChevronDown, ChevronRight, Tag } from 'lucide-react';
-import { getItemImage, getBestProductImage, getCompanyLogo } from './lib/imageUtils';
-import { Badge } from './components/ui/badge';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './components/ui/collapsible';
-import VoiceAgent from './components/voice/VoiceAgent';
+import React, { useState, useEffect } from "react";
+import { Card, CardContent } from "./components/ui/card";
+import { Input } from "./components/ui/input";
+import { Button } from "../ui/button";
+import {
+  ShoppingList as ShoppingListType,
+  ShoppingListItem,
+} from "./lib/types";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "./lib/queryClient";
+import { useToast } from "./hooks/use-toast";
+import { aiCategorizationService } from "./lib/aiCategorization";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "./components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "./components/ui/alert-dialog";
+import { Label } from "./components/ui/label";
+import {
+  Plus,
+  ShoppingBag,
+  FileText,
+  Clock,
+  Check,
+  Trash2,
+  AlertTriangle,
+  DollarSign,
+  MapPin,
+  Car,
+  BarChart2,
+  Wand2,
+  Pencil,
+  Image,
+  Star,
+  TrendingDown,
+  Percent,
+  Circle,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Tag,
+} from "lucide-react";
+import {
+  getItemImage,
+  getBestProductImage,
+  getCompanyLogo,
+} from "./lib/imageUtils";
+import { Badge } from "./components/ui/badge";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "./components/ui/collapsible";
+import VoiceAgent from "./components/voice/VoiceAgent";
 // Removed next-auth import as it's not being used properly in this context
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "./components/ui/popover"
+} from "./components/ui/popover";
 
 const ShoppingListComponent: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [newItemName, setNewItemName] = useState('');
-  const [newItemQuantity, setNewItemQuantity] = useState('1');
-  const [newItemUnit, setNewItemUnit] = useState('COUNT');
-  const [recipeUrl, setRecipeUrl] = useState('');
-  const [servings, setServings] = useState('4');
+  const [newItemName, setNewItemName] = useState("");
+  const [newItemQuantity, setNewItemQuantity] = useState("1");
+  const [newItemUnit, setNewItemUnit] = useState("COUNT");
+  const [recipeUrl, setRecipeUrl] = useState("");
+  const [servings, setServings] = useState("4");
   const [recipeDialogOpen, setRecipeDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ShoppingListItem | null>(null);
-  const [editingName, setEditingName] = useState('');
-  const [editingQuantity, setEditingQuantity] = useState('');
-  const [editingUnit, setEditingUnit] = useState('');
-  const [editingCategory, setEditingCategory] = useState('');
+  const [editingName, setEditingName] = useState("");
+  const [editingQuantity, setEditingQuantity] = useState("");
+  const [editingUnit, setEditingUnit] = useState("");
+  const [editingCategory, setEditingCategory] = useState("");
   const [isGeneratingList, setIsGeneratingList] = useState(false);
   const [generationSteps, setGenerationSteps] = useState<string[]>([]);
   const [currentStep, setCurrentStep] = useState(-1);
-  const [categorizedItems, setCategorizedItems] = useState<Record<string, ShoppingListItem[]>>({});
-  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
+  const [categorizedItems, setCategorizedItems] = useState<
+    Record<string, ShoppingListItem[]>
+  >({});
+  const [collapsedCategories, setCollapsedCategories] = useState<
+    Record<string, boolean>
+  >({});
   const [isCategorizingItems, setIsCategorizingItems] = useState(false);
   const [userHasClearedList, setUserHasClearedList] = useState(false);
   // Session handling removed - using AuthContext instead
@@ -49,90 +103,128 @@ const ShoppingListComponent: React.FC = () => {
   const importRecipeMutation = useMutation({
     mutationFn: async () => {
       const defaultList = shoppingLists?.[0];
-      if (!defaultList) throw new Error('No shopping list found');
+      if (!defaultList) throw new Error("No shopping list found");
 
-      const response = await apiRequest('POST', '/api/shopping-lists/recipe', {
+      const response = await apiRequest("POST", "/api/shopping-lists/recipe", {
         recipeUrl,
         shoppingListId: defaultList.id,
-        servings: parseInt(servings)
+        servings: parseInt(servings),
       });
       return response.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/shopping-lists"] });
       setRecipeDialogOpen(false);
-      setRecipeUrl('');
-      
+      setRecipeUrl("");
+
       // Show detailed feedback about what happened
       const { itemsAdded, itemsUpdated, itemsSkipped, duplicatesFound } = data;
       let description = data.message;
-      
+
       if (duplicatesFound && duplicatesFound.length > 0) {
-        const mergedItems = duplicatesFound.filter((d: any) => d.action === 'merged');
-        const skippedItems = duplicatesFound.filter((d: any) => d.action === 'skipped');
-        
+        const mergedItems = duplicatesFound.filter(
+          (d: any) => d.action === "merged",
+        );
+        const skippedItems = duplicatesFound.filter(
+          (d: any) => d.action === "skipped",
+        );
+
         if (mergedItems.length > 0) {
-          description += `\n\nMerged duplicates: ${mergedItems.map((d: any) => d.ingredient).join(', ')}`;
+          description += `\n\nMerged duplicates: ${mergedItems.map((d: any) => d.ingredient).join(", ")}`;
         }
         if (skippedItems.length > 0) {
-          description += `\n\nSkipped duplicates: ${skippedItems.map((d: any) => d.ingredient).join(', ')}`;
+          description += `\n\nSkipped duplicates: ${skippedItems.map((d: any) => d.ingredient).join(", ")}`;
         }
       }
 
       toast({
         title: "Recipe Imported",
         description,
-        duration: 5000 // Show longer for detailed info
+        duration: 5000, // Show longer for detailed info
       });
     },
     onError: (error: any) => {
       toast({
         title: "Error",
         description: error.message || "Failed to import recipe ingredients",
-        variant: "destructive"
+        variant: "destructive",
       });
-    }
+    },
   });
 
-  const { data: shoppingLists, isLoading, refetch: refetchLists } = useQuery<ShoppingListType[]>({
-    queryKey: ['/api/shopping-lists'],
+  const {
+    data: shoppingLists,
+    isLoading,
+    refetch: refetchLists,
+  } = useQuery<ShoppingListType[]>({
+    queryKey: ["/api/shopping-lists"],
   });
 
   // Debug logging to understand the loading state
-  console.log('ShoppingList component state:', {
+  console.log("ShoppingList component state:", {
     isLoading,
     hasData: !!shoppingLists,
     dataLength: shoppingLists?.length,
-    firstListItems: shoppingLists?.[0]?.items?.length
+    firstListItems: shoppingLists?.[0]?.items?.length,
   });
 
   const { data: suggestions, isLoading: suggestionsLoading } = useQuery({
-    queryKey: ['/api/shopping-lists/suggestions', shoppingLists?.[0]?.id],
+    queryKey: ["/api/shopping-lists/suggestions", shoppingLists?.[0]?.id],
     enabled: !!shoppingLists && !!shoppingLists[0]?.id,
     queryFn: async () => {
       const defaultList = shoppingLists?.[0];
       if (!defaultList?.id) {
-        throw new Error('No valid shopping list found');
+        throw new Error("No valid shopping list found");
       }
-      const response = await apiRequest('GET', `/api/shopping-lists/${defaultList.id}/suggestions`);
+      const response = await apiRequest(
+        "GET",
+        `/api/shopping-lists/${defaultList.id}/suggestions`,
+      );
       if (!response.ok) {
-        throw new Error('Failed to fetch suggestions');
+        throw new Error("Failed to fetch suggestions");
       }
       return response.json();
-    }
+    },
   });
 
   // Category definitions with icons and colors
   const categoryConfig = {
-    'Produce': { icon: '🍎', color: 'bg-green-100 text-green-800 border-green-200' },
-    'Dairy & Eggs': { icon: '🥛', color: 'bg-blue-100 text-blue-800 border-blue-200' },
-    'Meat & Seafood': { icon: '🥩', color: 'bg-red-100 text-red-800 border-red-200' },
-    'Pantry & Canned Goods': { icon: '🥫', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-    'Frozen Foods': { icon: '❄️', color: 'bg-cyan-100 text-cyan-800 border-cyan-200' },
-    'Bakery': { icon: '🍞', color: 'bg-orange-100 text-orange-800 border-orange-200' },
-    'Personal Care': { icon: '🧼', color: 'bg-purple-100 text-purple-800 border-purple-200' },
-    'Household Items': { icon: '🏠', color: 'bg-gray-100 text-gray-800 border-gray-200' },
-    'Generic': { icon: '🛒', color: 'bg-slate-100 text-slate-800 border-slate-200' },
+    Produce: {
+      icon: "🍎",
+      color: "bg-green-100 text-green-800 border-green-200",
+    },
+    "Dairy & Eggs": {
+      icon: "🥛",
+      color: "bg-blue-100 text-blue-800 border-blue-200",
+    },
+    "Meat & Seafood": {
+      icon: "🥩",
+      color: "bg-red-100 text-red-800 border-red-200",
+    },
+    "Pantry & Canned Goods": {
+      icon: "🥫",
+      color: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    },
+    "Frozen Foods": {
+      icon: "❄️",
+      color: "bg-cyan-100 text-cyan-800 border-cyan-200",
+    },
+    Bakery: {
+      icon: "🍞",
+      color: "bg-orange-100 text-orange-800 border-orange-200",
+    },
+    "Personal Care": {
+      icon: "🧼",
+      color: "bg-purple-100 text-purple-800 border-purple-200",
+    },
+    "Household Items": {
+      icon: "🏠",
+      color: "bg-gray-100 text-gray-800 border-gray-200",
+    },
+    Generic: {
+      icon: "🛒",
+      color: "bg-slate-100 text-slate-800 border-slate-200",
+    },
   };
 
   // Auto-categorize items using AI categorization service
@@ -148,7 +240,7 @@ const ShoppingListComponent: React.FC = () => {
 
       // Process items in parallel for better performance
       const categorizedPromises = items.map(async (item) => {
-        let category = 'Pantry & Canned Goods'; // Default category
+        let category = "Pantry & Canned Goods"; // Default category
         let confidence = 0.3;
 
         // First check if item already has a manually set category from backend
@@ -159,26 +251,34 @@ const ShoppingListComponent: React.FC = () => {
           try {
             // Use AI categorization service
             const result = await aiCategorizationService.categorizeProduct(
-              item.productName, 
-              item.quantity, 
-              item.unit
+              item.productName,
+              item.quantity,
+              item.unit,
             );
 
             if (result && result.confidence > 0.5) {
               category = result.category;
               confidence = result.confidence;
-              console.log(`✅ AI categorized "${item.productName}" as "${category}" with confidence ${result.confidence}`);
+              console.log(
+                `✅ AI categorized "${item.productName}" as "${category}" with confidence ${result.confidence}`,
+              );
             } else {
               // Fallback to quick categorization
-              const quickResult = aiCategorizationService.getQuickCategory(item.productName);
+              const quickResult = aiCategorizationService.getQuickCategory(
+                item.productName,
+              );
               category = quickResult.category;
               confidence = quickResult.confidence;
-              console.log(`⚡ Quick categorized "${item.productName}" as "${category}" with confidence ${quickResult.confidence}`);
+              console.log(
+                `⚡ Quick categorized "${item.productName}" as "${category}" with confidence ${quickResult.confidence}`,
+              );
             }
           } catch (error) {
             console.warn(`❌ Failed to categorize ${item.productName}:`, error);
             // Use quick categorization as fallback
-            const quickResult = aiCategorizationService.getQuickCategory(item.productName);
+            const quickResult = aiCategorizationService.getQuickCategory(
+              item.productName,
+            );
             category = quickResult.category;
             confidence = quickResult.confidence;
           }
@@ -190,22 +290,25 @@ const ShoppingListComponent: React.FC = () => {
       const categorizedItemsList = await Promise.all(categorizedPromises);
 
       // Group by category
-      const grouped = categorizedItemsList.reduce((acc: Record<string, ShoppingListItem[]>, item) => {
-        const categoryKey = item.category || 'Pantry & Canned Goods';
-        if (!acc[categoryKey]) {
-          acc[categoryKey] = [];
-        }
-        acc[categoryKey].push(item);
-        return acc;
-      }, {});
+      const grouped = categorizedItemsList.reduce(
+        (acc: Record<string, ShoppingListItem[]>, item) => {
+          const categoryKey = item.category || "Pantry & Canned Goods";
+          if (!acc[categoryKey]) {
+            acc[categoryKey] = [];
+          }
+          acc[categoryKey].push(item);
+          return acc;
+        },
+        {},
+      );
 
-      console.log('🏷️ Final categorization results:', grouped);
+      console.log("🏷️ Final categorization results:", grouped);
       setCategorizedItems(grouped);
     } catch (error) {
-      console.error('Error categorizing items:', error);
+      console.error("Error categorizing items:", error);
       // Fallback: group all items under default category
       setCategorizedItems({
-        'Pantry & Canned Goods': items
+        "Pantry & Canned Goods": items,
       });
     } finally {
       setIsCategorizingItems(false);
@@ -214,9 +317,9 @@ const ShoppingListComponent: React.FC = () => {
 
   // Toggle category collapse state
   const toggleCategory = (category: string) => {
-    setCollapsedCategories(prev => ({
+    setCollapsedCategories((prev) => ({
       ...prev,
-      [category]: !prev[category]
+      [category]: !prev[category],
     }));
   };
 
@@ -240,61 +343,81 @@ const ShoppingListComponent: React.FC = () => {
         const hasItems = defaultList?.items && defaultList.items.length > 0;
 
         // Check if this is a truly new session (browser restart/new tab/logout-login)
-        const lastSessionTimestamp = sessionStorage.getItem('shoppingListSessionStart');
-        const lastBrowserSessionId = localStorage.getItem('browserSessionId');
+        const lastSessionTimestamp = sessionStorage.getItem(
+          "shoppingListSessionStart",
+        );
+        const lastBrowserSessionId = localStorage.getItem("browserSessionId");
         const currentBrowserSession = Date.now().toString();
 
         // Check if this is a new session by looking at both sessionStorage and a potential logout
         const sessionStorageCleared = !lastSessionTimestamp;
-        const browserSessionChanged = !lastBrowserSessionId || (lastBrowserSessionId !== sessionStorage.getItem('currentBrowserSession'));
+        const browserSessionChanged =
+          !lastBrowserSessionId ||
+          lastBrowserSessionId !==
+            sessionStorage.getItem("currentBrowserSession");
 
         const isNewSession = sessionStorageCleared || browserSessionChanged;
 
         // Check if user is currently in an active shopping session
-        const activeShoppingSession = localStorage.getItem(`shopping_session_${defaultList?.id}`) || 
-                                     localStorage.getItem(`interruptedSession-${defaultList?.id}`);
+        const activeShoppingSession =
+          localStorage.getItem(`shopping_session_${defaultList?.id}`) ||
+          localStorage.getItem(`interruptedSession-${defaultList?.id}`);
         const isActivelyShoppingSession = !!activeShoppingSession;
 
         // Store session data
         if (isNewSession) {
-          sessionStorage.setItem('shoppingListSessionStart', currentBrowserSession);
-          sessionStorage.setItem('currentBrowserSession', currentBrowserSession);
-          localStorage.setItem('browserSessionId', currentBrowserSession);
+          sessionStorage.setItem(
+            "shoppingListSessionStart",
+            currentBrowserSession,
+          );
+          sessionStorage.setItem(
+            "currentBrowserSession",
+            currentBrowserSession,
+          );
+          localStorage.setItem("browserSessionId", currentBrowserSession);
         }
 
         // Auto-generate for empty lists OR auto-regenerate for truly new sessions with existing items
         // BUT do NOT auto-regenerate if user is actively shopping (to prevent interrupting shopping flow)
-        const shouldAutoGenerate = (!hasItems && !userHasClearedList) || (hasItems && isNewSession && !isActivelyShoppingSession);
+        const shouldAutoGenerate =
+          (!hasItems && !userHasClearedList) ||
+          (hasItems && isNewSession && !isActivelyShoppingSession);
 
-        console.log('Animation trigger check:', {
+        console.log("Animation trigger check:", {
           hasItems,
           isNewSession,
           shouldAutoGenerate,
           userHasClearedList,
           isGeneratingList,
-          isActivelyShoppingSession
+          isActivelyShoppingSession,
         });
 
         if (shouldAutoGenerate && !isGeneratingList) {
           const isEmptyList = !hasItems;
 
-          console.log(isEmptyList ? 'Empty shopping list detected, generating new list...' : 'New session detected with existing items, regenerating list...');
+          console.log(
+            isEmptyList
+              ? "Empty shopping list detected, generating new list..."
+              : "New session detected with existing items, regenerating list...",
+          );
 
           // Show animation for all scenarios
           setIsGeneratingList(true);
-          const steps = isEmptyList ? [
-            "Analyzing your dietary preferences...",
-            "Checking your pantry inventory...",
-            "Finding the best deals and promotions...",
-            "Optimizing your shopping route...",
-            "Generating personalized recommendations..."
-          ] : [
-            "Scanning for new deals and promotions...",
-            "Analyzing recent purchase patterns...",
-            "Checking for items that need restocking...",
-            "Finding seasonal recommendations...",
-            "Updating your shopping list..."
-          ];
+          const steps = isEmptyList
+            ? [
+                "Analyzing your dietary preferences...",
+                "Checking your pantry inventory...",
+                "Finding the best deals and promotions...",
+                "Optimizing your shopping route...",
+                "Generating personalized recommendations...",
+              ]
+            : [
+                "Scanning for new deals and promotions...",
+                "Analyzing recent purchase patterns...",
+                "Checking for items that need restocking...",
+                "Finding seasonal recommendations...",
+                "Updating your shopping list...",
+              ];
 
           setGenerationSteps(steps);
           setCurrentStep(0);
@@ -319,39 +442,48 @@ const ShoppingListComponent: React.FC = () => {
             }, 1500); // Slower animation for better visibility
 
             // Trigger regeneration after animation completes
-            autoAnimationTimeout = setTimeout(() => {
-              if (autoAnimationInterval) {
-                clearInterval(autoAnimationInterval);
-              }
+            autoAnimationTimeout = setTimeout(
+              () => {
+                if (autoAnimationInterval) {
+                  clearInterval(autoAnimationInterval);
+                }
 
-              console.log('Starting regeneration mutation after animation...');
+                console.log(
+                  "Starting regeneration mutation after animation...",
+                );
 
-              // Use the unified regenerate mutation
-              regenerateListMutation.mutate(undefined, {
-                onSettled: () => {
-                  console.log('Regeneration completed, hiding animation...');
-                  setTimeout(() => {
+                // Use the unified regenerate mutation
+                regenerateListMutation.mutate(undefined, {
+                  onSettled: () => {
+                    console.log("Regeneration completed, hiding animation...");
+                    setTimeout(() => {
+                      setIsGeneratingList(false);
+                      setCurrentStep(-1);
+                    }, 1000);
+                  },
+                  onError: (error) => {
+                    console.error("Auto-regeneration failed:", error);
                     setIsGeneratingList(false);
                     setCurrentStep(-1);
-                  }, 1000);
-                },
-                onError: (error) => {
-                  console.error('Auto-regeneration failed:', error);
-                  setIsGeneratingList(false);
-                  setCurrentStep(-1);
-                }
-              });
-            }, steps.length * 1500 + 2000); // Longer delay to ensure animation is visible
+                  },
+                });
+              },
+              steps.length * 1500 + 2000,
+            ); // Longer delay to ensure animation is visible
           }, 100); // Small delay to ensure animation state is properly set
         } else if (hasItems && !isNewSession) {
-          console.log('Existing session with items, no auto-regeneration needed');
+          console.log(
+            "Existing session with items, no auto-regeneration needed",
+          );
           // Reset the flag when list has items again
           setUserHasClearedList(false);
         } else {
-          console.log('User has manually cleared list or animation already running');
+          console.log(
+            "User has manually cleared list or animation already running",
+          );
         }
       } else {
-        console.log('No shopping lists found yet');
+        console.log("No shopping lists found yet");
       }
     };
 
@@ -362,24 +494,40 @@ const ShoppingListComponent: React.FC = () => {
   }, [shoppingLists, userHasClearedList, isGeneratingList]); // React to changes in shoppingLists and userHasClearedList
 
   const addItemMutation = useMutation({
-    mutationFn: async ({ itemName, quantity, unit, forceDuplicate = false }: { itemName: string; quantity: number; unit: string; forceDuplicate?: boolean }) => {
+    mutationFn: async ({
+      itemName,
+      quantity,
+      unit,
+      forceDuplicate = false,
+    }: {
+      itemName: string;
+      quantity: number;
+      unit: string;
+      forceDuplicate?: boolean;
+    }) => {
       const defaultList = shoppingLists?.[0];
-      if (!defaultList) throw new Error('No shopping list found');
+      if (!defaultList) throw new Error("No shopping list found");
 
       const normalizedName = itemName.trim();
 
-      console.log('Adding item:', { normalizedName, quantity, unit, forceDuplicate, shoppingListId: defaultList.id });
+      console.log("Adding item:", {
+        normalizedName,
+        quantity,
+        unit,
+        forceDuplicate,
+        shoppingListId: defaultList.id,
+      });
 
       try {
-        const response = await apiRequest('POST', '/api/shopping-list/items', {
+        const response = await apiRequest("POST", "/api/shopping-list/items", {
           shoppingListId: defaultList.id,
           productName: normalizedName,
           quantity: quantity,
           unit: unit,
-          forceDuplicate: forceDuplicate
+          forceDuplicate: forceDuplicate,
         });
 
-        console.log('Add item response status:', response.status);
+        console.log("Add item response status:", response.status);
 
         if (!response.ok) {
           let errorData;
@@ -391,28 +539,42 @@ const ShoppingListComponent: React.FC = () => {
 
           // Handle duplicate detection responses
           if (response.status === 409) {
-            const duplicateError = new Error(errorData.error || errorData.warning || 'Duplicate item detected');
+            const duplicateError = new Error(
+              errorData.error || errorData.warning || "Duplicate item detected",
+            );
             (duplicateError as any).duplicateDetails = errorData;
             throw duplicateError;
           }
 
-          throw new Error(errorData.message || errorData.error || `Failed to add item: ${response.status}`);
+          throw new Error(
+            errorData.message ||
+              errorData.error ||
+              `Failed to add item: ${response.status}`,
+          );
         }
 
         const result = await response.json();
-        console.log('Add item success:', result);
+        console.log("Add item success:", result);
         return result;
       } catch (error) {
-        console.error('Add item mutation error:', error);
+        console.error("Add item mutation error:", error);
         throw error;
       }
     },
-    onMutate: async ({ itemName, quantity, unit }: { itemName: string; quantity: number; unit: string }) => {
+    onMutate: async ({
+      itemName,
+      quantity,
+      unit,
+    }: {
+      itemName: string;
+      quantity: number;
+      unit: string;
+    }) => {
       // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['/api/shopping-lists'] });
+      await queryClient.cancelQueries({ queryKey: ["/api/shopping-lists"] });
 
       // Snapshot the previous value
-      const previousLists = queryClient.getQueryData(['/api/shopping-lists']);
+      const previousLists = queryClient.getQueryData(["/api/shopping-lists"]);
 
       // Optimistically update to the new value
       const tempId = Date.now(); // Temporary ID for optimistic update
@@ -422,14 +584,14 @@ const ShoppingListComponent: React.FC = () => {
         quantity: quantity,
         unit: unit,
         completed: false,
-        shoppingListId: shoppingLists?.[0]?.id
+        shoppingListId: shoppingLists?.[0]?.id,
       };
 
-      queryClient.setQueryData(['/api/shopping-lists'], (old: any) => {
+      queryClient.setQueryData(["/api/shopping-lists"], (old: any) => {
         if (!old) return old;
         return old.map((list: any) => ({
           ...list,
-          items: [...(list.items || []), newItem]
+          items: [...(list.items || []), newItem],
         }));
       });
 
@@ -437,9 +599,13 @@ const ShoppingListComponent: React.FC = () => {
     },
     onError: (err, variables, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
-      queryClient.setQueryData(['/api/shopping-lists'], context?.previousLists);
+      queryClient.setQueryData(["/api/shopping-lists"], context?.previousLists);
 
-      console.error('Add item mutation error for item:', variables.itemName, err);
+      console.error(
+        "Add item mutation error for item:",
+        variables.itemName,
+        err,
+      );
 
       // Handle duplicate detection specifically
       if (err instanceof Error && (err as any).duplicateDetails) {
@@ -451,20 +617,20 @@ const ShoppingListComponent: React.FC = () => {
             title: "Similar Item Found",
             description: `${duplicateInfo.reason}. You already have "${duplicateInfo.existingItem?.productName}" in your list.`,
             action: (
-              <Button 
-                size="sm" 
+              <Button
+                size="sm"
                 onClick={() => {
                   addItemMutation.mutate({
                     itemName: variables.itemName,
                     quantity: variables.quantity,
                     unit: variables.unit,
-                    forceDuplicate: true
+                    forceDuplicate: true,
                   });
                 }}
               >
                 Add Anyway
               </Button>
-            )
+            ),
           });
         } else {
           // Show duplicate rejection message
@@ -480,7 +646,7 @@ const ShoppingListComponent: React.FC = () => {
       let errorMessage = "Failed to add item";
       if (err instanceof Error) {
         errorMessage = err.message;
-      } else if (typeof err === 'string') {
+      } else if (typeof err === "string") {
         errorMessage = err;
       }
 
@@ -492,12 +658,12 @@ const ShoppingListComponent: React.FC = () => {
     },
     onSettled: () => {
       // Always refetch after error or success
-      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/shopping-lists"] });
     },
     onSuccess: async (newItem) => {
       // Invalidate and refetch shopping lists
-      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-      queryClient.refetchQueries({ queryKey: ['/api/shopping-lists'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/shopping-lists"] });
+      queryClient.refetchQueries({ queryKey: ["/api/shopping-lists"] });
 
       // Check for deals on the newly added item after a short delay
       setTimeout(() => {
@@ -506,20 +672,30 @@ const ShoppingListComponent: React.FC = () => {
 
       toast({
         title: "Item Added",
-        description: `${newItem.productName} has been added to your list.`
+        description: `${newItem.productName} has been added to your list.`,
       });
-    }
+    },
   });
 
   const toggleItemMutation = useMutation({
-    mutationFn: async ({ itemId, completed }: { itemId: number; completed: boolean }) => {
-      const response = await apiRequest('PATCH', `/api/shopping-list/items/${itemId}`, {
-        isCompleted: completed
-      });
+    mutationFn: async ({
+      itemId,
+      completed,
+    }: {
+      itemId: number;
+      completed: boolean;
+    }) => {
+      const response = await apiRequest(
+        "PATCH",
+        `/api/shopping-list/items/${itemId}`,
+        {
+          isCompleted: completed,
+        },
+      );
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/shopping-lists"] });
     },
     onError: (error: any) => {
       toast({
@@ -527,35 +703,41 @@ const ShoppingListComponent: React.FC = () => {
         description: error.message || "Failed to update item",
         variant: "destructive",
       });
-    }
+    },
   });
 
   const deleteItemMutation = useMutation({
     mutationFn: async (itemId: number) => {
-      const response = await apiRequest('DELETE', `/api/shopping-list/items/${itemId}`);
+      const response = await apiRequest(
+        "DELETE",
+        `/api/shopping-list/items/${itemId}`,
+      );
       if (!response.ok) {
-        throw new Error('Failed to delete item');
+        throw new Error("Failed to delete item");
       }
       return response;
     },
     onMutate: async (itemId: number) => {
       // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['/api/shopping-lists'] });
+      await queryClient.cancelQueries({ queryKey: ["/api/shopping-lists"] });
 
       // Snapshot the previous value
-      const previousLists = queryClient.getQueryData(['/api/shopping-lists']);
+      const previousLists = queryClient.getQueryData(["/api/shopping-lists"]);
 
       // Optimistically update to the new value
-      queryClient.setQueryData(['/api/shopping-lists'], (old: any) => {
+      queryClient.setQueryData(["/api/shopping-lists"], (old: any) => {
         if (!old) return old;
         const updatedLists = old.map((list: any) => ({
           ...list,
-          items: list.items?.filter((item: any) => item.id !== itemId) || []
+          items: list.items?.filter((item: any) => item.id !== itemId) || [],
         }));
 
         // Check if this deletion will result in an empty list
         const defaultList = updatedLists[0];
-        if (defaultList && (!defaultList.items || defaultList.items.length === 0)) {
+        if (
+          defaultList &&
+          (!defaultList.items || defaultList.items.length === 0)
+        ) {
           // User is manually clearing the list
           setUserHasClearedList(true);
         }
@@ -567,36 +749,50 @@ const ShoppingListComponent: React.FC = () => {
     },
     onError: (err, itemId, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
-      queryClient.setQueryData(['/api/shopping-lists'], context?.previousLists);
+      queryClient.setQueryData(["/api/shopping-lists"], context?.previousLists);
       toast({
         title: "Error",
         description: "Failed to delete item",
-        variant: "destructive"
+        variant: "destructive",
       });
     },
     onSettled: () => {
       // Always refetch after error or success
-      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/shopping-lists"] });
     },
     onSuccess: () => {
       toast({
         title: "Item deleted",
-        description: "The item has been removed from your list"
+        description: "The item has been removed from your list",
       });
-    }
+    },
   });
 
   const updateItemMutation = useMutation({
-    mutationFn: async ({ itemId, updates }: { itemId: number; updates: Partial<ShoppingListItem> }) => {
-      const response = await apiRequest('PATCH', `/api/shopping-list/items/${itemId}`, updates);
+    mutationFn: async ({
+      itemId,
+      updates,
+    }: {
+      itemId: number;
+      updates: Partial<ShoppingListItem>;
+    }) => {
+      const response = await apiRequest(
+        "PATCH",
+        `/api/shopping-list/items/${itemId}`,
+        updates,
+      );
       return response.json();
     },
     onSuccess: async (data, variables) => {
       // Invalidate queries to get fresh data
-      await queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      await queryClient.invalidateQueries({
+        queryKey: ["/api/shopping-lists"],
+      });
 
       // Re-categorize items immediately after update
-      const updatedLists = queryClient.getQueryData(['/api/shopping-lists']) as ShoppingListType[];
+      const updatedLists = queryClient.getQueryData([
+        "/api/shopping-lists",
+      ]) as ShoppingListType[];
       const defaultList = updatedLists?.[0];
       const items = defaultList?.items || [];
 
@@ -625,34 +821,44 @@ const ShoppingListComponent: React.FC = () => {
         description: error.message || "Failed to update item",
         variant: "destructive",
       });
-    }
+    },
   });
 
   const regenerateListMutation = useMutation({
     mutationFn: async () => {
       const defaultList = shoppingLists?.[0];
       if (!defaultList || !defaultList.id) {
-        throw new Error('No valid shopping list found. Please refresh the page and try again.');
+        throw new Error(
+          "No valid shopping list found. Please refresh the page and try again.",
+        );
       }
 
       const currentItems = defaultList.items || [];
       const isEmptyList = currentItems.length === 0;
 
-      console.log(`Regenerating list - Current items: ${currentItems.length}, Empty: ${isEmptyList}, List ID: ${defaultList.id}`);
-      console.log('Making API call to /api/shopping-lists/generate');
+      console.log(
+        `Regenerating list - Current items: ${currentItems.length}, Empty: ${isEmptyList}, List ID: ${defaultList.id}`,
+      );
+      console.log("Making API call to /api/shopping-lists/generate");
 
       try {
         // Validate list ID before making API call
         if (!Number.isInteger(defaultList.id) || defaultList.id <= 0) {
-          throw new Error('Invalid shopping list ID. Please refresh the page and try again.');
+          throw new Error(
+            "Invalid shopping list ID. Please refresh the page and try again.",
+          );
         }
 
         // Use the unified API endpoint for all scenarios
-        const response = await apiRequest('POST', '/api/shopping-lists/generate', {
-          shoppingListId: defaultList.id
-        });
+        const response = await apiRequest(
+          "POST",
+          "/api/shopping-lists/generate",
+          {
+            shoppingListId: defaultList.id,
+          },
+        );
 
-        console.log('API response status:', response.status);
+        console.log("API response status:", response.status);
 
         if (!response.ok) {
           let errorMessage = `HTTP ${response.status}`;
@@ -660,98 +866,107 @@ const ShoppingListComponent: React.FC = () => {
             const errorData = await response.json();
             errorMessage = errorData.message || errorData.error || errorMessage;
           } catch (parseError) {
-            console.warn('Failed to parse error response:', parseError);
+            console.warn("Failed to parse error response:", parseError);
             try {
               const errorText = await response.text();
               errorMessage = errorText || errorMessage;
             } catch (textError) {
-              console.warn('Failed to get error text:', textError);
+              console.warn("Failed to get error text:", textError);
               errorMessage = `HTTP ${response.status}`;
             }
           }
-          console.error('API error response:', errorMessage);
+          console.error("API error response:", errorMessage);
           throw new Error(`Failed to generate shopping list: ${errorMessage}`);
         }
 
         let result;
         try {
           result = await response.json();
-          console.log('API response data:', result);
+          console.log("API response data:", result);
         } catch (parseError) {
-          console.error('Failed to parse JSON response:', parseError);
-          throw new Error('Server response was invalid. Please try again.');
+          console.error("Failed to parse JSON response:", parseError);
+          throw new Error("Server response was invalid. Please try again.");
         }
 
         // Validate the response structure
-        if (!result || typeof result !== 'object') {
-          throw new Error('Invalid response from server. Please try again.');
+        if (!result || typeof result !== "object") {
+          throw new Error("Invalid response from server. Please try again.");
         }
 
         return {
           ...result,
           isEmptyList,
-          message: isEmptyList ? 'New shopping list created' : 'List enhanced with additional items'
+          message: isEmptyList
+            ? "New shopping list created"
+            : "List enhanced with additional items",
         };
       } catch (error) {
-        console.error('Network or API error:', error);
+        console.error("Network or API error:", error);
 
         // Handle empty error objects or non-Error objects
-        if (!error || (typeof error === 'object' && Object.keys(error).length === 0)) {
-          console.warn('Received empty error object, likely a parsing issue');
-          throw new Error('Response parsing failed. Please try again.');
+        if (
+          !error ||
+          (typeof error === "object" && Object.keys(error).length === 0)
+        ) {
+          console.warn("Received empty error object, likely a parsing issue");
+          throw new Error("Response parsing failed. Please try again.");
         }
 
         // Check if error has a message property and is a proper Error object
         if (error instanceof Error && error.message) {
-          if (error.message.includes('Failed to generate shopping list') || 
-              error.message.includes('Invalid shopping list ID') ||
-              error.message.includes('No valid shopping list found')) {
+          if (
+            error.message.includes("Failed to generate shopping list") ||
+            error.message.includes("Invalid shopping list ID") ||
+            error.message.includes("No valid shopping list found")
+          ) {
             throw error; // Re-throw validation and API errors as-is
           }
           throw new Error(`Generation failed: ${error.message}`);
         }
 
         // Handle string errors
-        if (typeof error === 'string') {
+        if (typeof error === "string") {
           throw new Error(`Generation failed: ${error}`);
         }
 
         // Handle cases where error is not a proper Error object
-        throw new Error('Failed to generate shopping list. Please try again.');
+        throw new Error("Failed to generate shopping list. Please try again.");
       }
     },
     onSuccess: (data) => {
-      console.log('API response data:', data);
+      console.log("API response data:", data);
 
       // Invalidate and refetch the shopping lists to get the latest data
-      queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/shopping-lists"] });
 
       let title, description;
 
       if (data.isEmptyList) {
         title = "Shopping List Created";
-        description = `Created a new list with ${data.itemsAdded || data.totalItems || 'essential'} items`;
+        description = `Created a new list with ${data.itemsAdded || data.totalItems || "essential"} items`;
       } else if (data.itemsAdded > 0) {
         title = "List Enhanced";
         description = `Added ${data.itemsAdded} new items to your shopping list`;
       } else {
         title = "List Reviewed";
-        description = data.message || "Your list is already optimized - no new items needed";
+        description =
+          data.message ||
+          "Your list is already optimized - no new items needed";
       }
 
       toast({
         title,
-        description
+        description,
       });
     },
     onError: (error: any) => {
-      console.error('Regeneration failed:', error);
+      console.error("Regeneration failed:", error);
 
       // Extract meaningful error message
       let errorMessage = "Failed to enhance list. Please try again.";
       if (error instanceof Error && error.message) {
         errorMessage = error.message;
-      } else if (typeof error === 'string') {
+      } else if (typeof error === "string") {
         errorMessage = error;
       } else if (error?.message) {
         errorMessage = error.message;
@@ -760,15 +975,15 @@ const ShoppingListComponent: React.FC = () => {
       toast({
         title: "Error",
         description: errorMessage,
-        variant: "destructive"
+        variant: "destructive",
       });
-    }
+    },
   });
 
   const handleRegenerateList = () => {
     // Prevent multiple calls if already generating
     if (regenerateListMutation.isPending || isGeneratingList) {
-      console.log('Regeneration already in progress, ignoring duplicate call');
+      console.log("Regeneration already in progress, ignoring duplicate call");
       return;
     }
 
@@ -778,28 +993,30 @@ const ShoppingListComponent: React.FC = () => {
     const defaultList = shoppingLists?.[0];
     const hasItems = defaultList?.items && defaultList.items.length > 0;
 
-    console.log('Manual regeneration triggered - hasItems:', hasItems);
+    console.log("Manual regeneration triggered - hasItems:", hasItems);
 
     // Show animation during regeneration
     setIsGeneratingList(true);
-    const steps = hasItems ? [
-      "Analyzing current list...",
-      "Finding complementary items...", 
-      "Checking for the best deals...",
-      "Optimizing quantities and units...",
-      "Adding new recommendations..."
-    ] : [
-      "Creating your shopping list...",
-      "Analyzing your preferences...",
-      "Finding the best deals...",
-      "Optimizing your shopping route...",
-      "Finalizing recommendations..."
-    ];
+    const steps = hasItems
+      ? [
+          "Analyzing current list...",
+          "Finding complementary items...",
+          "Checking for the best deals...",
+          "Optimizing quantities and units...",
+          "Adding new recommendations...",
+        ]
+      : [
+          "Creating your shopping list...",
+          "Analyzing your preferences...",
+          "Finding the best deals...",
+          "Optimizing your shopping route...",
+          "Finalizing recommendations...",
+        ];
 
     setGenerationSteps(steps);
     setCurrentStep(0);
 
-    console.log('Starting animation with steps:', steps);
+    console.log("Starting animation with steps:", steps);
 
     let animationInterval: NodeJS.Timeout | null = null;
 
@@ -807,7 +1024,7 @@ const ShoppingListComponent: React.FC = () => {
     animationInterval = setInterval(() => {
       setCurrentStep((prevStep) => {
         const nextStep = prevStep + 1;
-        console.log('Animation step:', nextStep, 'of', steps.length);
+        console.log("Animation step:", nextStep, "of", steps.length);
         if (nextStep >= steps.length) {
           if (animationInterval) {
             clearInterval(animationInterval);
@@ -821,11 +1038,11 @@ const ShoppingListComponent: React.FC = () => {
 
     // Start the actual mutation after animation has time to show
     const mutationTimeout = setTimeout(() => {
-      console.log('Starting regeneration mutation...');
+      console.log("Starting regeneration mutation...");
 
       regenerateListMutation.mutate(undefined, {
         onSettled: () => {
-          console.log('Mutation settled, cleaning up animation');
+          console.log("Mutation settled, cleaning up animation");
           // Clean up animation when mutation is done
           if (animationInterval) {
             clearInterval(animationInterval);
@@ -839,7 +1056,7 @@ const ShoppingListComponent: React.FC = () => {
           }, 800);
         },
         onError: (error) => {
-          console.error('Regeneration failed in handler:', error);
+          console.error("Regeneration failed in handler:", error);
           // Ensure animation stops on error
           if (animationInterval) {
             clearInterval(animationInterval);
@@ -849,8 +1066,8 @@ const ShoppingListComponent: React.FC = () => {
           setCurrentStep(-1);
         },
         onSuccess: (data) => {
-          console.log('Regeneration completed successfully in handler:', data);
-        }
+          console.log("Regeneration completed successfully in handler:", data);
+        },
       });
     }, 500);
 
@@ -867,19 +1084,22 @@ const ShoppingListComponent: React.FC = () => {
     e.preventDefault();
     if (newItemName.trim()) {
       const quantity = parseInt(newItemQuantity) || 1;
-      addItemMutation.mutate({ 
-        itemName: newItemName.trim(), 
-        quantity: quantity,
-        unit: newItemUnit,
-        forceDuplicate: false
-      }, {
-        onSuccess: () => {
-          // Clear the form after successful addition
-          setNewItemName('');
-          setNewItemQuantity('1');
-          setNewItemUnit('COUNT');
-        }
-      });
+      addItemMutation.mutate(
+        {
+          itemName: newItemName.trim(),
+          quantity: quantity,
+          unit: newItemUnit,
+          forceDuplicate: false,
+        },
+        {
+          onSuccess: () => {
+            // Clear the form after successful addition
+            setNewItemName("");
+            setNewItemQuantity("1");
+            setNewItemUnit("COUNT");
+          },
+        },
+      );
     }
   };
 
@@ -895,12 +1115,12 @@ const ShoppingListComponent: React.FC = () => {
     setEditingItem(item);
     setEditingName(item.productName);
     setEditingQuantity(item.quantity.toString());
-    setEditingUnit(item.unit || 'COUNT');
+    setEditingUnit(item.unit || "COUNT");
 
     // Determine current category from categorized items
-    let currentCategory = 'Generic';
+    let currentCategory = "Generic";
     for (const [category, categoryItems] of Object.entries(categorizedItems)) {
-      if (categoryItems.find(catItem => catItem.id === item.id)) {
+      if (categoryItems.find((catItem) => catItem.id === item.id)) {
         currentCategory = category;
         break;
       }
@@ -916,8 +1136,8 @@ const ShoppingListComponent: React.FC = () => {
           productName: editingName.trim(),
           quantity: parseInt(editingQuantity) || 1,
           unit: editingUnit,
-          category: editingCategory
-        }
+          category: editingCategory,
+        },
       });
     }
   };
@@ -929,14 +1149,18 @@ const ShoppingListComponent: React.FC = () => {
   };
 
   // Voice command handlers
-  const handleVoiceAddItem = async (itemName: string, quantity: number, unit: string) => {
+  const handleVoiceAddItem = async (
+    itemName: string,
+    quantity: number,
+    unit: string,
+  ) => {
     return new Promise<void>((resolve, reject) => {
       addItemMutation.mutate(
         { itemName, quantity, unit, forceDuplicate: false },
         {
           onSuccess: () => resolve(),
-          onError: (error) => reject(error)
-        }
+          onError: (error) => reject(error),
+        },
       );
     });
   };
@@ -946,12 +1170,15 @@ const ShoppingListComponent: React.FC = () => {
     if (!defaultList?.items) return;
 
     // Find item by name (case-insensitive)
-    const item = defaultList.items.find(
-      item => item.productName.toLowerCase().includes(itemName.toLowerCase())
+    const item = defaultList.items.find((item) =>
+      item.productName.toLowerCase().includes(itemName.toLowerCase()),
     );
 
     if (item) {
-      toggleItemMutation.mutate({ itemId: item.id, completed: !item.completed });
+      toggleItemMutation.mutate({
+        itemId: item.id,
+        completed: !item.completed,
+      });
     }
   };
 
@@ -960,8 +1187,8 @@ const ShoppingListComponent: React.FC = () => {
     if (!defaultList?.items) return;
 
     // Find item by name (case-insensitive)
-    const item = defaultList.items.find(
-      item => item.productName.toLowerCase().includes(itemName.toLowerCase())
+    const item = defaultList.items.find((item) =>
+      item.productName.toLowerCase().includes(itemName.toLowerCase()),
     );
 
     if (item) {
@@ -971,43 +1198,48 @@ const ShoppingListComponent: React.FC = () => {
 
   // Normalize product names for comparison
   const normalizeForComparison = (name: string): string => {
-    return name
-      .toLowerCase()
-      .trim()
-      // Handle common plurals
-      .replace(/ies$/, 'y')
-      .replace(/s$/, '')
-      // Remove common modifiers that don't change the core product
-      .replace(/\b(fresh|organic|natural|free[\-\s]range|cage[\-\s]free|grass[\-\s]fed)\b/g, '')
-      // Remove size/quantity indicators
-      .replace(/\b(large|medium|small|extra|xl|lg|md|sm)\b/g, '')
-      .replace(/\([^)]*\)/g, '') // Remove parenthetical content like "(1 gallon)"
-      .replace(/\s+/g, ' ')
-      .trim();
+    return (
+      name
+        .toLowerCase()
+        .trim()
+        // Handle common plurals
+        .replace(/ies$/, "y")
+        .replace(/s$/, "")
+        // Remove common modifiers that don't change the core product
+        .replace(
+          /\b(fresh|organic|natural|free[\-\s]range|cage[\-\s]free|grass[\-\s]fed)\b/g,
+          "",
+        )
+        // Remove size/quantity indicators
+        .replace(/\b(large|medium|small|extra|xl|lg|md|sm)\b/g, "")
+        .replace(/\([^)]*\)/g, "") // Remove parenthetical content like "(1 gallon)"
+        .replace(/\s+/g, " ")
+        .trim()
+    );
   };
 
   // Check if two product names are semantically similar (same core product)
   const areSemanticallySimilar = (name1: string, name2: string): boolean => {
     // Define product categories and their variations
     const productVariations = {
-      'bread': ['bread', 'loaf'],
-      'milk': ['milk'],
-      'cheese': ['cheese'],
-      'chicken': ['chicken'],
-      'beef': ['beef', 'ground beef'],
-      'turkey': ['turkey', 'ground turkey'],
-      'eggs': ['eggs', 'egg'],
-      'yogurt': ['yogurt'],
-      'butter': ['butter'],
-      'oil': ['oil'],
-      'rice': ['rice'],
-      'pasta': ['pasta'],
-      'tomato': ['tomato', 'tomatoes'],
-      'onion': ['onion', 'onions'],
-      'pepper': ['pepper', 'peppers'],
-      'apple': ['apple', 'apples'],
-      'banana': ['banana', 'bananas'],
-      'orange': ['orange', 'oranges']
+      bread: ["bread", "loaf"],
+      milk: ["milk"],
+      cheese: ["cheese"],
+      chicken: ["chicken"],
+      beef: ["beef", "ground beef"],
+      turkey: ["turkey", "ground turkey"],
+      eggs: ["eggs", "egg"],
+      yogurt: ["yogurt"],
+      butter: ["butter"],
+      oil: ["oil"],
+      rice: ["rice"],
+      pasta: ["pasta"],
+      tomato: ["tomato", "tomatoes"],
+      onion: ["onion", "onions"],
+      pepper: ["pepper", "peppers"],
+      apple: ["apple", "apples"],
+      banana: ["banana", "bananas"],
+      orange: ["orange", "oranges"],
     };
 
     // Normalize both names
@@ -1016,8 +1248,12 @@ const ShoppingListComponent: React.FC = () => {
 
     // Check if they belong to the same product category
     for (const [category, variations] of Object.entries(productVariations)) {
-      const name1HasCategory = variations.some(variation => norm1.includes(variation));
-      const name2HasCategory = variations.some(variation => norm2.includes(variation));
+      const name1HasCategory = variations.some((variation) =>
+        norm1.includes(variation),
+      );
+      const name2HasCategory = variations.some((variation) =>
+        norm2.includes(variation),
+      );
 
       if (name1HasCategory && name2HasCategory) {
         // Both belong to same category, but check if they're different forms
@@ -1025,13 +1261,26 @@ const ShoppingListComponent: React.FC = () => {
 
         // Define exclusions - forms that shouldn't match despite same base ingredient
         const exclusionPairs = [
-          ['powder', 'whole'], ['powder', 'fresh'], ['powder', 'raw'],
-          ['sauce', 'whole'], ['sauce', 'fresh'], ['sauce', 'raw'],
-          ['juice', 'whole'], ['juice', 'fresh'], ['juice', 'raw'],
-          ['dried', 'fresh'], ['dried', 'whole'], ['dried', 'raw'],
-          ['frozen', 'fresh'], ['canned', 'fresh'],
-          ['paste', 'whole'], ['paste', 'fresh'], ['paste', 'raw'],
-          ['extract', 'whole'], ['extract', 'fresh'], ['extract', 'raw']
+          ["powder", "whole"],
+          ["powder", "fresh"],
+          ["powder", "raw"],
+          ["sauce", "whole"],
+          ["sauce", "fresh"],
+          ["sauce", "raw"],
+          ["juice", "whole"],
+          ["juice", "fresh"],
+          ["juice", "raw"],
+          ["dried", "fresh"],
+          ["dried", "whole"],
+          ["dried", "raw"],
+          ["frozen", "fresh"],
+          ["canned", "fresh"],
+          ["paste", "whole"],
+          ["paste", "fresh"],
+          ["paste", "raw"],
+          ["extract", "whole"],
+          ["extract", "fresh"],
+          ["extract", "raw"],
         ];
 
         // Check if names contain conflicting forms
@@ -1041,7 +1290,10 @@ const ShoppingListComponent: React.FC = () => {
           const name2HasForm1 = norm2.includes(form1);
           const name2HasForm2 = norm2.includes(form2);
 
-          if ((name1HasForm1 && name2HasForm2) || (name1HasForm2 && name2HasForm1)) {
+          if (
+            (name1HasForm1 && name2HasForm2) ||
+            (name1HasForm2 && name2HasForm1)
+          ) {
             return false; // Different forms of same ingredient
           }
         }
@@ -1052,23 +1304,25 @@ const ShoppingListComponent: React.FC = () => {
     }
 
     // Check for whole word matches with high confidence
-    const words1 = norm1.split(/\s+/).filter(word => word.length > 2);
-    const words2 = norm2.split(/\s+/).filter(word => word.length > 2);
+    const words1 = norm1.split(/\s+/).filter((word) => word.length > 2);
+    const words2 = norm2.split(/\s+/).filter((word) => word.length > 2);
 
     if (words1.length === 0 || words2.length === 0) return false;
 
     // Check if one is a subset of the other with high overlap
-    const commonWords = words1.filter(word => words2.includes(word));
+    const commonWords = words1.filter((word) => words2.includes(word));
     const overlapRatio1 = commonWords.length / words1.length;
     const overlapRatio2 = commonWords.length / words2.length;
 
     // Require high overlap (80%+) and meaningful common words
-    return (overlapRatio1 >= 0.8 || overlapRatio2 >= 0.8) && 
-           commonWords.length >= 1 && 
-           commonWords.some(word => word.length > 3);
+    return (
+      (overlapRatio1 >= 0.8 || overlapRatio2 >= 0.8) &&
+      commonWords.length >= 1 &&
+      commonWords.some((word) => word.length > 3)
+    );
   };
 
-    // Deal criteria detection using real deal data
+  // Deal criteria detection using real deal data
   const checkForDealsOnItem = async (newItem: any) => {
     // Use setTimeout to run deal checking asynchronously without blocking item addition
     setTimeout(async () => {
@@ -1076,36 +1330,40 @@ const ShoppingListComponent: React.FC = () => {
         console.log(`Checking deals for "${newItem.productName}"`);
 
         // Create sample deals for Ice Cream to demonstrate functionality
-        if (newItem.productName.toLowerCase().includes('ice cream')) {
+        if (newItem.productName.toLowerCase().includes("ice cream")) {
           const sampleDeals = [
             {
               id: `sample-${newItem.id}-1`,
-              productName: 'Premium Ice Cream',
+              productName: "Premium Ice Cream",
               retailerId: 1,
-              dealType: 'sale',
+              dealType: "sale",
               regularPrice: 699, // $6.99
-              salePrice: 399,    // $3.99
+              salePrice: 399, // $3.99
               discountPercentage: 43,
-              endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
-              startDate: new Date().toISOString()
+              endDate: new Date(
+                Date.now() + 7 * 24 * 60 * 60 * 1000,
+              ).toISOString(), // 7 days from now
+              startDate: new Date().toISOString(),
             },
             {
               id: `sample-${newItem.id}-2`,
-              productName: 'Ice Cream Variety Pack',
+              productName: "Ice Cream Variety Pack",
               retailerId: 2,
-              dealType: 'sale',
+              dealType: "sale",
               regularPrice: 1299, // $12.99
-              salePrice: 899,     // $8.99
+              salePrice: 899, // $8.99
               discountPercentage: 31,
-              endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days from now
-              startDate: new Date().toISOString()
-            }
+              endDate: new Date(
+                Date.now() + 5 * 24 * 60 * 60 * 1000,
+              ).toISOString(), // 5 days from now
+              startDate: new Date().toISOString(),
+            },
           ];
 
           console.log(`Added sample deals for Ice Cream:`, sampleDeals);
-          setItemDeals(prev => ({
+          setItemDeals((prev) => ({
             ...prev,
-            [newItem.id]: sampleDeals
+            [newItem.id]: sampleDeals,
           }));
           return;
         }
@@ -1115,18 +1373,24 @@ const ShoppingListComponent: React.FC = () => {
         const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
         try {
-          const response = await fetch(`/api/deals?productName=${encodeURIComponent(newItem.productName)}`, {
-            signal: controller.signal,
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          });
+          const response = await fetch(
+            `/api/deals?productName=${encodeURIComponent(newItem.productName)}`,
+            {
+              signal: controller.signal,
+              headers: {
+                "Content-Type": "application/json",
+              },
+            },
+          );
 
           clearTimeout(timeoutId);
 
           if (response.ok) {
             const deals = await response.json();
-            console.log(`Found ${deals.length} deals for "${newItem.productName}":`, deals);
+            console.log(
+              `Found ${deals.length} deals for "${newItem.productName}":`,
+              deals,
+            );
 
             if (deals && Array.isArray(deals) && deals.length > 0) {
               // Enhanced matching logic for better deal detection
@@ -1140,18 +1404,28 @@ const ShoppingListComponent: React.FC = () => {
                 if (productName === dealName) return true;
 
                 // Contains match (either direction)
-                if (dealName.includes(productName) || productName.includes(dealName)) return true;
+                if (
+                  dealName.includes(productName) ||
+                  productName.includes(dealName)
+                )
+                  return true;
 
                 // Word-based matching for better results
-                const productWords = productName.split(/\s+/).filter(word => word.length > 2);
-                const dealWords = dealName.split(/\s+/).filter(word => word.length > 2);
+                const productWords = productName
+                  .split(/\s+/)
+                  .filter((word) => word.length > 2);
+                const dealWords = dealName
+                  .split(/\s+/)
+                  .filter((word) => word.length > 2);
 
                 // Check if any significant words match
                 for (const productWord of productWords) {
                   for (const dealWord of dealWords) {
-                    if (productWord === dealWord || 
-                        productWord.includes(dealWord) || 
-                        dealWord.includes(productWord)) {
+                    if (
+                      productWord === dealWord ||
+                      productWord.includes(dealWord) ||
+                      dealWord.includes(productWord)
+                    ) {
                       return true;
                     }
                   }
@@ -1161,39 +1435,50 @@ const ShoppingListComponent: React.FC = () => {
               });
 
               if (matchingDeals.length > 0) {
-                console.log(`Found ${matchingDeals.length} matching deals:`, matchingDeals);
+                console.log(
+                  `Found ${matchingDeals.length} matching deals:`,
+                  matchingDeals,
+                );
 
                 // Sort deals by best savings first
                 const sortedDeals = matchingDeals.sort((a, b) => {
-                  const savingsA = a.dealType === 'spend_threshold_percentage' 
-                    ? a.discountPercentage 
-                    : ((a.regularPrice - a.salePrice) / a.regularPrice) * 100;
-                  const savingsB = b.dealType === 'spend_threshold_percentage' 
-                    ? b.discountPercentage 
-                    : ((b.regularPrice - b.salePrice) / b.regularPrice) * 100;
+                  const savingsA =
+                    a.dealType === "spend_threshold_percentage"
+                      ? a.discountPercentage
+                      : ((a.regularPrice - a.salePrice) / a.regularPrice) * 100;
+                  const savingsB =
+                    b.dealType === "spend_threshold_percentage"
+                      ? b.discountPercentage
+                      : ((b.regularPrice - b.salePrice) / b.regularPrice) * 100;
                   return savingsB - savingsA;
                 });
 
-                setItemDeals(prev => ({
+                setItemDeals((prev) => ({
                   ...prev,
-                  [newItem.id]: sortedDeals
+                  [newItem.id]: sortedDeals,
                 }));
               }
             }
           } else {
-            console.warn(`Deal API returned status ${response.status} for "${newItem.productName}"`);
+            console.warn(
+              `Deal API returned status ${response.status} for "${newItem.productName}"`,
+            );
           }
         } catch (apiError) {
           clearTimeout(timeoutId);
-          if (apiError.name === 'AbortError') {
-            console.warn(`Deal checking timed out for "${newItem.productName}"`);
+          if (apiError.name === "AbortError") {
+            console.warn(
+              `Deal checking timed out for "${newItem.productName}"`,
+            );
           } else {
             throw apiError;
           }
         }
       } catch (error) {
         // Silently handle deal checking errors to prevent blocking item addition
-        console.warn(`Deal checking failed for "${newItem.productName}" but item was added successfully`);
+        console.warn(
+          `Deal checking failed for "${newItem.productName}" but item was added successfully`,
+        );
       }
     }, 100); // Small delay to ensure item addition completes first
   };
@@ -1201,29 +1486,32 @@ const ShoppingListComponent: React.FC = () => {
   // Helper function to get retailer color (using proper CSS color values)
   const getRetailerColor = (retailerId: number) => {
     const retailerColors: Record<number, string> = {
-      1: '#3b82f6',   // Walmart (Blue)
-      2: '#ef4444',    // Target (Red)
-      3: '#22c55e',  // Whole Foods (Green)
-      4: '#6366f1', // Costco (Indigo)
-      5: '#a855f7'  // Kroger (Purple)
+      1: "#3b82f6", // Walmart (Blue)
+      2: "#ef4444", // Target (Red)
+      3: "#22c55e", // Whole Foods (Green)
+      4: "#6366f1", // Costco (Indigo)
+      5: "#a855f7", // Kroger (Purple)
     };
-    return retailerColors[retailerId] || '#6b7280'; // Default to gray
+    return retailerColors[retailerId] || "#6b7280"; // Default to gray
   };
 
   // Helper function to get retailer name
   const getRetailerName = (retailerId: number) => {
     const retailerMap: Record<number, string> = {
-      1: 'Walmart',
-      2: 'Target', 
-      3: 'Whole Foods',
-      4: 'Costco',
-      5: 'Kroger'
+      1: "Walmart",
+      2: "Target",
+      3: "Whole Foods",
+      4: "Costco",
+      5: "Kroger",
     };
-    return retailerMap[retailerId] || 'Store';
+    return retailerMap[retailerId] || "Store";
   };
 
   // DealIndicator Component with real deal detection and popover
-  const DealIndicator: React.FC<{ productName: string; itemId: number }> = ({ productName, itemId }) => {
+  const DealIndicator: React.FC<{ productName: string; itemId: number }> = ({
+    productName,
+    itemId,
+  }) => {
     const [isLoading, setIsLoading] = useState(false);
 
     // Check if there are deals for this item
@@ -1261,27 +1549,43 @@ const ShoppingListComponent: React.FC = () => {
 
             <div className="space-y-3">
               {itemDeals[itemId].map((deal: any, index: number) => (
-                <div key={index} className={`border rounded-lg p-3 ${index === 0 ? 'bg-green-50 border-green-200' : 'bg-gray-50'}`}>
+                <div
+                  key={index}
+                  className={`border rounded-lg p-3 ${index === 0 ? "bg-green-50 border-green-200" : "bg-gray-50"}`}
+                >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <div 
+                      <div
                         className={`w-3 h-3 rounded-full`}
-                        style={{ backgroundColor: getRetailerColor(deal.retailerId).replace('bg-', '#') }}
+                        style={{
+                          backgroundColor: getRetailerColor(
+                            deal.retailerId,
+                          ).replace("bg-", "#"),
+                        }}
                       />
                       <span className="font-medium text-sm">
                         {getRetailerName(deal.retailerId)}
                       </span>
                       {index === 0 && itemDeals[itemId].length > 1 && (
-                        <Badge variant="default" className="text-xs bg-green-600">
+                        <Badge
+                          variant="default"
+                          className="text-xs bg-green-600"
+                        >
                           Best Deal
                         </Badge>
                       )}
                     </div>
-                    <Badge variant="secondary" className={index === 0 ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
-                      {deal.dealType === 'spend_threshold_percentage' 
-                        ? `${deal.discountPercentage}% off`
-                        : `${Math.round((1 - deal.salePrice / deal.regularPrice) * 100)}% off`
+                    <Badge
+                      variant="secondary"
+                      className={
+                        index === 0
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-100 text-gray-800"
                       }
+                    >
+                      {deal.dealType === "spend_threshold_percentage"
+                        ? `${deal.discountPercentage}% off`
+                        : `${Math.round((1 - deal.salePrice / deal.regularPrice) * 100)}% off`}
                     </Badge>
                   </div>
 
@@ -1289,10 +1593,10 @@ const ShoppingListComponent: React.FC = () => {
                     <strong>{deal.productName}</strong>
                   </div>
 
-                  {deal.dealType === 'spend_threshold_percentage' ? (
+                  {deal.dealType === "spend_threshold_percentage" ? (
                     <div className="text-sm">
                       <span className="text-gray-700">
-                        Spend ${(deal.spendThreshold / 100).toFixed(0)}+ 
+                        Spend ${(deal.spendThreshold / 100).toFixed(0)}+
                       </span>
                       <span className="text-green-600 font-medium ml-1">
                         Get {deal.discountPercentage}% off
@@ -1307,7 +1611,10 @@ const ShoppingListComponent: React.FC = () => {
                         ${(deal.regularPrice / 100).toFixed(2)}
                       </span>
                       <span className="text-green-600 font-medium">
-                        Save ${((deal.regularPrice - deal.salePrice) / 100).toFixed(2)}
+                        Save $
+                        {((deal.regularPrice - deal.salePrice) / 100).toFixed(
+                          2,
+                        )}
                       </span>
                     </div>
                   )}
@@ -1324,7 +1631,8 @@ const ShoppingListComponent: React.FC = () => {
                 <div className="flex items-center gap-1 text-xs text-blue-700">
                   <MapPin className="h-3 w-3" />
                   <span>
-                    Compare prices across {itemDeals[itemId].length} retailers to maximize savings
+                    Compare prices across {itemDeals[itemId].length} retailers
+                    to maximize savings
                   </span>
                 </div>
               </div>
@@ -1335,7 +1643,9 @@ const ShoppingListComponent: React.FC = () => {
     );
   };
 
-    const SpendThresholdTracker: React.FC<{ currentTotal: number }> =  ({ currentTotal }) => {
+  const SpendThresholdTracker: React.FC<{ currentTotal: number }> = ({
+    currentTotal,
+  }) => {
     const [thresholdReached, setThresholdReached] = useState(false);
     const threshold = 50; // Define your spend threshold
 
@@ -1357,18 +1667,27 @@ const ShoppingListComponent: React.FC = () => {
 
     return (
       <div className="text-gray-600">
-        Spend ${threshold - currentTotal > 0 ? (threshold - currentTotal).toFixed(2) : '0.00'} more to unlock extra benefits!
+        Spend $
+        {threshold - currentTotal > 0
+          ? (threshold - currentTotal).toFixed(2)
+          : "0.00"}{" "}
+        more to unlock extra benefits!
       </div>
     );
   };
 
-  const { data: shoppingList, isLoading: listLoading, refetch: refetchShoppingList } = useQuery({
-    queryKey: ['/api/shopping-list'],
+  const {
+    data: shoppingList,
+    isLoading: listLoading,
+    refetch: refetchShoppingList,
+  } = useQuery({
+    queryKey: ["/api/shopping-list"],
   });
 
-  const totalCost = shoppingList?.items?.reduce((sum, item) => {
-    return sum + (item.suggestedPrice || 0);
-  }, 0) / 100 || 0;
+  const totalCost =
+    shoppingList?.items?.reduce((sum, item) => {
+      return sum + (item.suggestedPrice || 0);
+    }, 0) / 100 || 0;
 
   return (
     <div className="p-4 pb-20">
@@ -1387,7 +1706,17 @@ const ShoppingListComponent: React.FC = () => {
           {Object.entries(categorizedItems)
             .sort(([a], [b]) => {
               // Sort categories by typical shopping order
-              const order = ['Produce', 'Dairy & Eggs', 'Meat & Seafood', 'Pantry & Canned Goods', 'Frozen Foods', 'Bakery', 'Personal Care', 'Household Items', 'Generic'];
+              const order = [
+                "Produce",
+                "Dairy & Eggs",
+                "Meat & Seafood",
+                "Pantry & Canned Goods",
+                "Frozen Foods",
+                "Bakery",
+                "Personal Care",
+                "Household Items",
+                "Generic",
+              ];
               const indexA = order.indexOf(a);
               const indexB = order.indexOf(b);
 
@@ -1406,31 +1735,46 @@ const ShoppingListComponent: React.FC = () => {
             .map(([category, categoryItems]) => {
               // Sort items within each category alphabetically
               const sortedCategoryItems = [...categoryItems].sort((a, b) => {
-                const nameA = (a.productName || '').toString().toLowerCase();
-                const nameB = (b.productName || '').toString().toLowerCase();
-                return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' });
+                const nameA = (a.productName || "").toString().toLowerCase();
+                const nameB = (b.productName || "").toString().toLowerCase();
+                return nameA.localeCompare(nameB, undefined, {
+                  numeric: true,
+                  sensitivity: "base",
+                });
               });
               return [category, sortedCategoryItems];
             })
             .map(([category, sortedCategoryItems]) => {
-              const config = categoryConfig[category as keyof typeof categoryConfig] || {
-                icon: '🛒',
-                color: 'bg-gray-100 text-gray-800 border-gray-200'
+              const config = categoryConfig[
+                category as keyof typeof categoryConfig
+              ] || {
+                icon: "🛒",
+                color: "bg-gray-100 text-gray-800 border-gray-200",
               };
               const isCollapsed = collapsedCategories[category];
-              const completedCount = sortedCategoryItems.filter(item => item.completed).length;
+              const completedCount = sortedCategoryItems.filter(
+                (item) => item.completed,
+              ).length;
               const totalCount = sortedCategoryItems.length;
 
               return (
-                <Collapsible key={category} open={!isCollapsed} onOpenChange={() => toggleCategory(category)}>
-                  <Card className={`border-2 ${config.color.split(' ')[0]} border-opacity-30`}>
+                <Collapsible
+                  key={category}
+                  open={!isCollapsed}
+                  onOpenChange={() => toggleCategory(category)}
+                >
+                  <Card
+                    className={`border-2 ${config.color.split(" ")[0]} border-opacity-30`}
+                  >
                     <CollapsibleTrigger className="w-full">
                       <CardContent className="p-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
                             <span className="text-2xl">{config.icon}</span>
                             <div className="text-left">
-                              <h3 className="font-semibold text-lg">{category}</h3>
+                              <h3 className="font-semibold text-lg">
+                                {category}
+                              </h3>
                             </div>
                           </div>
                           <div className="flex items-center space-x-3">
@@ -1447,22 +1791,30 @@ const ShoppingListComponent: React.FC = () => {
                     <CollapsibleContent>
                       <div className="px-3 pb-3 space-y-2">
                         {sortedCategoryItems.map((item) => (
-                          <Card key={item.id} className={`${item.completed ? 'opacity-60' : ''} border border-gray-200`}>
+                          <Card
+                            key={item.id}
+                            className={`${item.completed ? "opacity-60" : ""} border border-gray-200`}
+                          >
                             <CardContent className="p-3">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-3 flex-1">
-                                    <div className="flex-1">
-                                      <div className="flex items-center space-x-2">
-                                        <span className={`${item.completed ? 'line-through' : ''}`}>
-                                          {item.productName}
-                                        </span>
-                                        <DealIndicator productName={item.productName} itemId={item.id} />
-                                      </div>
-                                      <div className="text-sm text-gray-500">
-                                        {item.quantity} {item.unit || 'COUNT'}
-                                      </div>
+                                  <div className="flex-1">
+                                    <div className="flex items-center space-x-2">
+                                      <span
+                                        className={`${item.completed ? "line-through" : ""}`}
+                                      >
+                                        {item.productName}
+                                      </span>
+                                      <DealIndicator
+                                        productName={item.productName}
+                                        itemId={item.id}
+                                      />
+                                    </div>
+                                    <div className="text-sm text-gray-500">
+                                      {item.quantity} {item.unit || "COUNT"}
                                     </div>
                                   </div>
+                                </div>
                                 <div className="flex space-x-2">
                                   <Button
                                     variant="ghost"
@@ -1493,53 +1845,67 @@ const ShoppingListComponent: React.FC = () => {
       )}
 
       {/* Fallback for uncategorized view */}
-      {Object.keys(categorizedItems).length === 0 && !isCategorizingItems && shoppingLists?.[0]?.items && shoppingLists[0].items.length > 0 && (
-        <div className="space-y-2">
-          {[...shoppingLists[0].items]
-            .sort((a, b) => {
-              const nameA = (a.productName || '').toString().toLowerCase();
-              const nameB = (b.productName || '').toString().toLowerCase();
-              return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' });
-            })
-            .map((item) => (
-            <Card key={item.id} className={`${item.completed ? 'opacity-60' : ''}`}>
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3 flex-1">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2">
-                        <span className={`${item.completed ? 'line-through' : ''}`}>
-                          {item.productName}
-                        </span>
-                        <DealIndicator productName={item.productName} itemId={item.id}/>
+      {Object.keys(categorizedItems).length === 0 &&
+        !isCategorizingItems &&
+        shoppingLists?.[0]?.items &&
+        shoppingLists[0].items.length > 0 && (
+          <div className="space-y-2">
+            {[...shoppingLists[0].items]
+              .sort((a, b) => {
+                const nameA = (a.productName || "").toString().toLowerCase();
+                const nameB = (b.productName || "").toString().toLowerCase();
+                return nameA.localeCompare(nameB, undefined, {
+                  numeric: true,
+                  sensitivity: "base",
+                });
+              })
+              .map((item) => (
+                <Card
+                  key={item.id}
+                  className={`${item.completed ? "opacity-60" : ""}`}
+                >
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3 flex-1">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2">
+                            <span
+                              className={`${item.completed ? "line-through" : ""}`}
+                            >
+                              {item.productName}
+                            </span>
+                            <DealIndicator
+                              productName={item.productName}
+                              itemId={item.id}
+                            />
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {item.quantity} {item.unit || "COUNT"}
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-sm text-gray-500">
-                        {item.quantity} {item.unit || 'COUNT'}
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditItem(item)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteItem(item.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEditItem(item)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteItem(item.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+                  </CardContent>
+                </Card>
+              ))}
+          </div>
+        )}
 
       {(!shoppingLists?.[0]?.items || shoppingLists[0].items.length === 0) && (
         <div className="text-center py-8 text-gray-500">
@@ -1579,7 +1945,9 @@ const ShoppingListComponent: React.FC = () => {
               <div className="flex-1">
                 <select
                   value={newItemUnit}
-                  onChange={(e) => setNewItemUnit(e.target.value as ShoppingListItem['unit'])}
+                  onChange={(e) =>
+                    setNewItemUnit(e.target.value as ShoppingListItem["unit"])
+                  }
                   className="w-full h-11 text-base border-2 border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 bg-white rounded-lg transition-all duration-200 cursor-pointer px-3"
                 >
                   <option value="BAG">Bag</option>
@@ -1633,25 +2001,25 @@ const ShoppingListComponent: React.FC = () => {
             <div className="flex flex-col space-y-3">
               <div className="flex space-x-2">
                 <Button
-                type="button"
-                variant="outline"
-                onClick={() => setRecipeDialogOpen(true)}
-                className="flex-1 h-11 flex items-center justify-center space-x-2"
-              >
-                <FileText className="h-4 w-4" />
-                <span className="text-sm font-medium">Import Recipe</span>
-              </Button>
+                  type="button"
+                  variant="outline"
+                  onClick={() => setRecipeDialogOpen(true)}
+                  className="flex-1 h-11 flex items-center justify-center space-x-2"
+                >
+                  <FileText className="h-4 w-4" />
+                  <span className="text-sm font-medium">Import Recipe</span>
+                </Button>
 
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleRegenerateList}
-                disabled={regenerateListMutation.isPending}
-                className="flex-1 h-11 flex items-center justify-center space-x-2"
-              >
-                <Wand2 className="h-4 w-4" />
-                <span className="text-sm font-medium">Regenerate List</span>
-              </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleRegenerateList}
+                  disabled={regenerateListMutation.isPending}
+                  className="flex-1 h-11 flex items-center justify-center space-x-2"
+                >
+                  <Wand2 className="h-4 w-4" />
+                  <span className="text-sm font-medium">Regenerate List</span>
+                </Button>
               </div>
 
               <Button
@@ -1668,24 +2036,27 @@ const ShoppingListComponent: React.FC = () => {
       </form>
 
       {shoppingList && shoppingList.items && shoppingList.items.length > 0 && (
-              <Card className="mb-6">
-                <CardContent className="p-4">
-                  <div className="text-center">
-                    <h3 className="font-semibold text-gray-900 mb-2">Ready to Shop?</h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      {shoppingList.items.length} items • Estimated total: ${totalCost.toFixed(2)}
-                    </p>
-                    <SpendThresholdTracker currentTotal={totalCost} />
-                    <Button
-                      onClick={() => window.location.href = '/plan-details'}
-                      className="w-full bg-primary hover:bg-primary/90 mt-2"
-                    >
-                      Create Shopping Plan
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <div className="text-center">
+              <h3 className="font-semibold text-gray-900 mb-2">
+                Ready to Shop?
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                {shoppingList.items.length} items • Estimated total: $
+                {totalCost.toFixed(2)}
+              </p>
+              <SpendThresholdTracker currentTotal={totalCost} />
+              <Button
+                onClick={() => (window.location.href = "/plan-details")}
+                className="w-full bg-primary hover:bg-primary/90 mt-2"
+              >
+                Create Shopping Plan
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Recipe Import Dialog */}
       <Dialog open={recipeDialogOpen} onOpenChange={setRecipeDialogOpen}>
@@ -1717,19 +2088,21 @@ const ShoppingListComponent: React.FC = () => {
           </div>
           <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
             ```
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setRecipeDialogOpen(false)}
               className="mt-3 sm:mt-0"
             >
               Cancel
             </Button>
-            <Button 
-              onClick={handleImportRecipe} 
+            <Button
+              onClick={handleImportRecipe}
               disabled={importRecipeMutation.isPending || !recipeUrl.trim()}
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
-              {importRecipeMutation.isPending ? "Importing..." : "Import Recipe"}
+              {importRecipeMutation.isPending
+                ? "Importing..."
+                : "Import Recipe"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1764,7 +2137,9 @@ const ShoppingListComponent: React.FC = () => {
               <select
                 id="edit-unit"
                 value={editingUnit}
-                onChange={(e) => setEditingUnit(e.target.value as ShoppingListItem['unit'])}
+                onChange={(e) =>
+                  setEditingUnit(e.target.value as ShoppingListItem["unit"])
+                }
                 className="w-full h-10 text-base border-2 border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 bg-white rounded-lg transition-all duration-200 cursor-pointer px-3"
               >
                 <option value="BAG">Bag</option>
@@ -1823,7 +2198,9 @@ const ShoppingListComponent: React.FC = () => {
                 <option value="Produce">🍎 Produce</option>
                 <option value="Dairy & Eggs">🥛 Dairy & Eggs</option>
                 <option value="Meat & Seafood">🥩 Meat & Seafood</option>
-                <option value="Pantry & Canned Goods">🥫 Pantry & Canned Goods</option>
+                <option value="Pantry & Canned Goods">
+                  🥫 Pantry & Canned Goods
+                </option>
                 <option value="Frozen Foods">❄️ Frozen Foods</option>
                 <option value="Bakery">🍞 Bakery</option>
                 <option value="Personal Care">🧼 Personal Care</option>
@@ -1836,8 +2213,8 @@ const ShoppingListComponent: React.FC = () => {
             <Button variant="outline" onClick={() => setEditingItem(null)}>
               Cancel
             </Button>
-            <Button 
-              onClick={handleUpdateItem} 
+            <Button
+              onClick={handleUpdateItem}
               disabled={updateItemMutation.isPending}
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
@@ -1853,7 +2230,11 @@ const ShoppingListComponent: React.FC = () => {
           onAddItem={handleVoiceAddItem}
           onToggleItem={handleVoiceToggleItem}
           onDeleteItem={handleVoiceDeleteItem}
-          isProcessing={addItemMutation.isPending || toggleItemMutation.isPending || deleteItemMutation.isPending}
+          isProcessing={
+            addItemMutation.isPending ||
+            toggleItemMutation.isPending ||
+            deleteItemMutation.isPending
+          }
         />
       </div>
     </div>
