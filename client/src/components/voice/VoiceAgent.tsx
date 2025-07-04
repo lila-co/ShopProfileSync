@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Button } from './components/ui/button';
+import { Card, CardContent } from './components/ui/card';
 import { Mic, MicOff, Volume2, VolumeX, Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from './hooks/use-toast';
 import VoiceHelp from './VoiceHelp';
 
 interface VoiceAgentProps {

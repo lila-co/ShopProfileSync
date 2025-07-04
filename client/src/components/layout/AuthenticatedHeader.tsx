@@ -1,6 +1,6 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext';
+import { Button } from './components/ui/button';
+import { useAuth } from './contexts/AuthContext';
 import { useLocation } from 'wouter';
 import { LogOut, User, Menu } from 'lucide-react';
 

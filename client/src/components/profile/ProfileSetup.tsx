@@ -4,13 +4,13 @@ import { useLocation } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { User } from '@/lib/types';
+import { User } from './lib/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
-import { useToast } from '@/hooks/use-toast';
-import { profileUpdateSchema } from '@/lib/validation';
-import { validateAndSubmit, handleFormError } from '@/lib/formValidation';
-import { Button } from '@/components/ui/button';
+import { apiRequest } from './lib/queryClient';
+import { useToast } from './hooks/use-toast';
+import { profileUpdateSchema } from './lib/validation';
+import { validateAndSubmit, handleFormError } from './lib/formValidation';
+import { Button } from './components/ui/button';
 
 const profileFormSchema = profileUpdateSchema.extend({
   householdType: z.enum(['SINGLE', 'COUPLE', 'FAMILY_WITH_CHILDREN', 'SHARED_HOUSING', 'SENIOR_LIVING'], {

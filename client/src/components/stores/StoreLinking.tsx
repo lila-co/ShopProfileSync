@@ -1,10 +1,10 @@
 import React from 'react';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { Retailer, RetailerAccount } from '@/lib/types';
-import { apiRequest } from '@/lib/queryClient';
-import { useToast } from '@/hooks/use-toast';
+import { Button } from './components/ui/button';
+import { Retailer, RetailerAccount } from './lib/types';
+import { apiRequest } from './lib/queryClient';
+import { useToast } from './hooks/use-toast';
 
 const StoreLinking: React.FC = () => {
   const [, navigate] = useLocation();

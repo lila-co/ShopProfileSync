@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import AuthenticatedHeader from '@/components/layout/AuthenticatedHeader';
-import BottomNavigation from '@/components/layout/BottomNavigation';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DealsView } from '@/components/deals/DealsView';
+import AuthenticatedHeader from './components/layout/AuthenticatedHeader';
+import BottomNavigation from './components/layout/BottomNavigation';
+import { Card, CardContent } from './components/ui/card';
+import { Badge } from './components/ui/badge';
+import { Input } from './components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
+import { DealsView } from './components/deals/DealsView';
 import { useQuery } from '@tanstack/react-query';
 import { Search, TrendingDown, Tag } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './components/ui/select';
 
-import type { User } from '@/lib/types';
+import type { User } from './lib/types';
 
 const DealsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');

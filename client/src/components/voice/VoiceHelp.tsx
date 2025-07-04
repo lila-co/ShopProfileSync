@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent } from './components/ui/card';
+import { Button } from './components/ui/button';
 import { HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './components/ui/collapsible';
 
 const VoiceHelp: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);

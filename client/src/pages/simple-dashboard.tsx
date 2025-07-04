@@ -1,11 +1,11 @@
 
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent } from './components/ui/card';
+import { Button } from './components/ui/button';
 import { ShoppingBag, Camera, DollarSign, MapPin, Plus, ArrowRight } from 'lucide-react';
-import BottomNavigation from '@/components/layout/BottomNavigation';
-import type { ShoppingList as ShoppingListType, User } from '@/lib/types';
+import BottomNavigation from './components/layout/BottomNavigation';
+import type { ShoppingList as ShoppingListType, User } from './lib/types';
 
 const SimpleDashboard: React.FC = () => {
   const { data: user } = useQuery<User>({

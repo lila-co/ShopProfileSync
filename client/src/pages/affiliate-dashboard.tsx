@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
-import Header from '@/components/layout/Header';
-import BottomNavigation from '@/components/layout/BottomNavigation';
+import Header from './components/layout/Header';
+import BottomNavigation from './components/layout/BottomNavigation';
 import {
   Card,
   CardContent,
@@ -10,13 +10,13 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+} from './components/ui/card';
+import { Button } from './components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
+import { Badge } from './components/ui/badge';
+import { Input } from './components/ui/input';
+import { Label } from './components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './components/ui/select';
 import { 
   BarChart, 
   Bar, 
@@ -32,7 +32,7 @@ import {
   ResponsiveContainer, 
   Cell 
 } from 'recharts';
-import { Separator } from '@/components/ui/separator';
+import { Separator } from './components/ui/separator';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -48,7 +48,7 @@ import {
   FileText,
   ChevronLeft
 } from 'lucide-react';
-import { getCompanyLogo } from '@/lib/imageUtils';
+import { getCompanyLogo } from './lib/imageUtils';
 
 // Demo data for the dashboard
 const revenueData = [

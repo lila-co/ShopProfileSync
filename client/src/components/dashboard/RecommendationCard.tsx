@@ -1,9 +1,9 @@
 import React from 'react';
-import { Recommendation } from '@/lib/types';
-import { Button } from '@/components/ui/button';
+import { Recommendation } from './lib/types';
+import { Button } from './components/ui/button';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
-import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from './lib/queryClient';
+import { useToast } from './hooks/use-toast';
 
 interface RecommendationCardProps {
   recommendation: Recommendation;

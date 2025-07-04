@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
+import { Card, CardContent } from "./components/ui/card";
+import { Button } from "./components/ui/button";
+import { Badge } from "./components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/ui/select";
+import { Avatar, AvatarFallback } from "./components/ui/avatar";
+import { useToast } from './hooks/use-toast';
+import { apiRequest } from './lib/queryClient';
 import { ShoppingCart, Store, Clock, Plus, MapPin } from 'lucide-react';
 import { getBestProductImage } from "../../lib/imageUtils";
 import { aiCategorizationService } from "../../lib/aiCategorization";
 
-import type { StoreDeal, Retailer } from '@/lib/types';
+import type { StoreDeal, Retailer } from './lib/types';
 
 interface DealsViewProps {
   searchQuery?: string;

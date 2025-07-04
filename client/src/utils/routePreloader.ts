@@ -12,25 +12,25 @@ export class RoutePreloader {
 
     switch (routeName) {
       case 'deals':
-        import('@/pages/deals');
+        import('./pages/deals');
         break;
       case 'retailers':
-        import('@/pages/retailers');
+        import('./pages/retailers');
         break;
       case 'scan':
-        import('@/pages/scan');
+        import('./pages/scan');
         break;
       case 'profile':
-        import('@/pages/profile');
+        import('./pages/profile');
         break;
       case 'shopping-route':
-        import('@/pages/shopping-route');
+        import('./pages/shopping-route');
         break;
       case 'auto-order':
-        import('@/pages/auto-order');
+        import('./pages/auto-order');
         break;
       case 'order-online':
-        import('@/pages/order-online');
+        import('./pages/order-online');
         break;
       default:
         break;

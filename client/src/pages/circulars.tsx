@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { Calendar } from '@/components/ui/calendar';
-import { Retailers } from '@/components/retailers/RetailerList';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./components/ui/card";
+import { Button } from "./components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
+import { Separator } from "./components/ui/separator";
+import { Badge } from "./components/ui/badge";
+import { Calendar } from './components/ui/calendar';
+import { Retailers } from './components/retailers/RetailerList';
 import { CalendarIcon, MapPin, AlertCircle } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
-import Header from '@/components/layout/Header';
-import BottomNavigation from '@/components/layout/BottomNavigation';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import Header from './components/layout/Header';
+import BottomNavigation from './components/layout/BottomNavigation';
+import { Alert, AlertDescription, AlertTitle } from "./components/ui/alert";
 
 // Types
-import type { User, WeeklyCircular, StoreDeal, Retailer } from '@/lib/types';
+import type { User, WeeklyCircular, StoreDeal, Retailer } from './lib/types';
 
 const CircularsPage: React.FC = () => {
   const [selectedRetailerId, setSelectedRetailerId] = useState<number | null>(null);

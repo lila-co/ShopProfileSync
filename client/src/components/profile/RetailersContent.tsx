@@ -2,11 +2,11 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent } from './components/ui/card';
+import { Button } from './components/ui/button';
 import { Store, ExternalLink, CheckCircle } from 'lucide-react';
-import { getQueryFn } from '@/lib/queryClient';
-import { getCompanyLogo } from '@/lib/imageUtils';
+import { getQueryFn } from './lib/queryClient';
+import { getCompanyLogo } from './lib/imageUtils';
 
 interface Retailer {
   id: number;

@@ -1,16 +1,16 @@
 typescript
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import Header from '@/components/layout/Header';
-import BottomNavigation from '@/components/layout/BottomNavigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Checkbox } from '@/components/ui/checkbox';
+import Header from './components/layout/Header';
+import BottomNavigation from './components/layout/BottomNavigation';
+import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
+import { Badge } from './components/ui/badge';
+import { Button } from './components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
+import { Checkbox } from './components/ui/checkbox';
 import { AlertTriangle, Clock, Trash2, RefreshCw, Calendar, Snowflake, Package } from 'lucide-react';
-import { User } from '@/lib/types';
-import { useToast } from '@/hooks/use-toast';
+import { User } from './lib/types';
+import { useToast } from './hooks/use-toast';
 
 interface ExpirationItem {
   id: number;

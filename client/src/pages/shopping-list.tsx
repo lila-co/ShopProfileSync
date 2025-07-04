@@ -1,10 +1,10 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
-import ShoppingListComponent from '@/components/lists/ShoppingList';
-import BottomNavigation from '@/components/layout/BottomNavigation';
-import AuthenticatedHeader from '@/components/layout/AuthenticatedHeader';
-import type { ShoppingList as ShoppingListType, User } from '@/lib/types';
+import { apiRequest } from './lib/queryClient';
+import ShoppingListComponent from './components/lists/ShoppingList';
+import BottomNavigation from './components/layout/BottomNavigation';
+import AuthenticatedHeader from './components/layout/AuthenticatedHeader';
+import type { ShoppingList as ShoppingListType, User } from './lib/types';
 
 const ShoppingListPage: React.FC = () => {
   const { data: user } = useQuery<User>({

@@ -1,11 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { useLocation } from 'wouter';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { extractTextFromReceiptImage } from '@/lib/openai';
+import { Button } from './components/ui/button';
+import { Card } from './components/ui/card';
+import { extractTextFromReceiptImage } from './lib/openai';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
-import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from './lib/queryClient';
+import { useToast } from './hooks/use-toast';
 
 const ReceiptScanner: React.FC = () => {
   const [, navigate] = useLocation();

@@ -1,13 +1,13 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
-import Header from '@/components/layout/Header';
-import BottomNavigation from '@/components/layout/BottomNavigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import Header from './components/layout/Header';
+import BottomNavigation from './components/layout/BottomNavigation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from './components/ui/card';
+import { Button } from './components/ui/button';
 import { Shield, TrendingUp, ShieldAlert, Activity } from 'lucide-react';
-import { User } from '@/lib/types';
-import { useToast } from '@/hooks/use-toast';
+import { User } from './lib/types';
+import { useToast } from './hooks/use-toast';
 
 const AdminProfilePage: React.FC = () => {
   const [, navigate] = useLocation();

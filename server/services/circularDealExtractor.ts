@@ -1,4 +1,4 @@
-import { StoreDeal, WeeklyCircular } from '@/lib/types';
+import { StoreDeal, WeeklyCircular } from './lib/types';
 import { storage } from '../storage';
 
 /**

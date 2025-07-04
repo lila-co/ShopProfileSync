@@ -1,8 +1,8 @@
 import React from 'react';
 import { List, User, Store, Tag, ShoppingCart, Shield } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
-import { useAuth } from '@/contexts/AuthContext';
-import { cn } from '@/lib/utils';
+import { useAuth } from './contexts/AuthContext';
+import { cn } from './lib/utils';
 
 interface BottomNavigationProps {
   activeTab: string;

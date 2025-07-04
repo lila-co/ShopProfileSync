@@ -1,14 +1,14 @@
 import React, { useState, startTransition } from 'react';
-import BottomNavigation from '@/components/layout/BottomNavigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import BottomNavigation from './components/layout/BottomNavigation';
+import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
+import { Button } from './components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { Store, ExternalLink, CheckCircle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { getQueryFn } from '@/lib/queryClient';
-import AuthenticatedHeader from '@/components/layout/AuthenticatedHeader';
-import { getCompanyLogo } from '@/lib/imageUtils';
+import { useToast } from './hooks/use-toast';
+import { getQueryFn } from './lib/queryClient';
+import AuthenticatedHeader from './components/layout/AuthenticatedHeader';
+import { getCompanyLogo } from './lib/imageUtils';
 
 interface Retailer {
   id: number;

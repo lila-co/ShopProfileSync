@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import ActionCard from '@/components/dashboard/ActionCard';
-import StoreCard from '@/components/dashboard/StoreCard';
-import WeeklyDeals from '@/components/dashboard/WeeklyDeals';
-import ShoppingInsights from '@/components/dashboard/ShoppingInsights';
-import RecommendationCard from '@/components/dashboard/RecommendationCard';
-import { useDashboardData } from '@/hooks/useBatchApi';
+import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
+import { Button } from './components/ui/button';
+import { Badge } from './components/ui/badge';
+import ActionCard from './components/dashboard/ActionCard';
+import StoreCard from './components/dashboard/StoreCard';
+import WeeklyDeals from './components/dashboard/WeeklyDeals';
+import ShoppingInsights from './components/dashboard/ShoppingInsights';
+import RecommendationCard from './components/dashboard/RecommendationCard';
+import { useDashboardData } from './hooks/useBatchApi';
 import { Sparkles, Brain, Target, TrendingUp, Clock, MapPin } from 'lucide-react';
 
 interface AIRecommendation {

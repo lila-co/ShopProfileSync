@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import Header from '@/components/layout/Header';
-import BottomNavigation from '@/components/layout/BottomNavigation';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
+import Header from './components/layout/Header';
+import BottomNavigation from './components/layout/BottomNavigation';
+import { Card, CardContent } from './components/ui/card';
+import { Button } from './components/ui/button';
+import { Progress } from './components/ui/progress';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
-import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from './lib/queryClient';
+import { useToast } from './hooks/use-toast';
 import { useLocation } from 'wouter';
 import { 
   ShoppingCart, 

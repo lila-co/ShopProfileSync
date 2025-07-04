@@ -1,26 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { ShoppingList as ShoppingListType, ShoppingListItem } from '@/lib/types';
+import { Card, CardContent } from './components/ui/card';
+import { Input } from './components/ui/input';
+import { Button } from './components/ui/button';
+import { ShoppingList as ShoppingListType, ShoppingListItem } from './lib/types';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
-import { useToast } from '@/hooks/use-toast';
-import { aiCategorizationService } from '@/lib/aiCategorization';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Label } from '@/components/ui/label';
+import { apiRequest } from './lib/queryClient';
+import { useToast } from './hooks/use-toast';
+import { aiCategorizationService } from './lib/aiCategorization';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './components/ui/alert-dialog';
+import { Label } from './components/ui/label';
 import { Plus, ShoppingBag, FileText, Clock, Check, Trash2, AlertTriangle, DollarSign, MapPin, Car, BarChart2, Wand2, Pencil, Image, Star, TrendingDown, Percent, Circle, CheckCircle2, ChevronDown, ChevronRight, Tag } from 'lucide-react';
-import { getItemImage, getBestProductImage, getCompanyLogo } from '@/lib/imageUtils';
-import { Badge } from '@/components/ui/badge';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import VoiceAgent from '@/components/voice/VoiceAgent';
+import { getItemImage, getBestProductImage, getCompanyLogo } from './lib/imageUtils';
+import { Badge } from './components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './components/ui/collapsible';
+import VoiceAgent from './components/voice/VoiceAgent';
 // Removed next-auth import as it's not being used properly in this context
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
+} from "./components/ui/popover"
 
 const ShoppingListComponent: React.FC = () => {
   const { toast } = useToast();

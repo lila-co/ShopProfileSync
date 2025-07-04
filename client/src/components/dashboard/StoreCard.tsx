@@ -1,5 +1,5 @@
 import React from 'react';
-import { DealsSummary } from '@/lib/types';
+import { DealsSummary } from './lib/types';
 
 interface StoreCardProps {
   storeDeal: DealsSummary;

@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from './hooks/use-toast';
 import { useLocation, useRoute } from 'wouter';
-import { apiRequest } from '@/lib/queryClient';
-import { aiCategorizationService } from '@/lib/aiCategorization';
+import { apiRequest } from './lib/queryClient';
+import { aiCategorizationService } from './lib/aiCategorization';
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { Button } from './components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
+import { Progress } from './components/ui/progress';
+import { Badge } from './components/ui/badge';
+import { Separator } from './components/ui/separator';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,20 +19,20 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from './components/ui/alert-dialog';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from './components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from './components/ui/dropdown-menu';
 
 import { 
   Check, 
@@ -52,8 +52,8 @@ import {
   Plus,
   Minus
 } from 'lucide-react';
-import Header from '@/components/layout/Header';
-import BottomNavigation from '@/components/layout/BottomNavigation';
+import Header from './components/layout/Header';
+import BottomNavigation from './components/layout/BottomNavigation';
 
 // Shopping route component focuses on navigation and organization
 

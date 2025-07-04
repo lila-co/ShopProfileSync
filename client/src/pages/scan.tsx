@@ -1,7 +1,7 @@
 import React from 'react';
-import Header from '@/components/layout/Header';
-import BottomNavigation from '@/components/layout/BottomNavigation';
-import ReceiptScanner from '@/components/receipt/ReceiptScanner';
+import Header from './components/layout/Header';
+import BottomNavigation from './components/layout/BottomNavigation';
+import ReceiptScanner from './components/receipt/ReceiptScanner';
 
 const ScanPage: React.FC = () => {
   return (

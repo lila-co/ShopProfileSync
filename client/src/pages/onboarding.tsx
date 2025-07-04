@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useLocation } from 'wouter';
-import OnboardingFlow from '@/components/onboarding/OnboardingFlow';
+import OnboardingFlow from './components/onboarding/OnboardingFlow';
 
 const OnboardingPage: React.FC = () => {
   const [, navigate] = useLocation();

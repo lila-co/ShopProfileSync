@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { DealsSummary } from '@/lib/types';
+import { DealsSummary } from './lib/types';
 import StoreCard from './StoreCard';
 
 const WeeklyDeals: React.FC = () => {

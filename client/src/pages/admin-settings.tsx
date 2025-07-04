@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
-import Header from '@/components/layout/Header';
-import BottomNavigation from '@/components/layout/BottomNavigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import Header from './components/layout/Header';
+import BottomNavigation from './components/layout/BottomNavigation';
+import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
+import { Button } from './components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Settings, Database, Users, Shield, TrendingUp, ArrowLeft } from 'lucide-react';
-import { User } from '@/lib/types';
-import { useToast } from '@/hooks/use-toast';
-import UserManagement from '@/components/admin/UserManagement';
+import { User } from './lib/types';
+import { useToast } from './hooks/use-toast';
+import UserManagement from './components/admin/UserManagement';
 
 const AdminSettingsPage: React.FC = () => {
   const [, navigate] = useLocation();

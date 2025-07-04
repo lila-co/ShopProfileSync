@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
+import { apiRequest } from './lib/queryClient';
+import { useToast } from './hooks/use-toast';
+import { useAuth } from './contexts/AuthContext';
 
 import {
   Card,
@@ -10,26 +10,26 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Progress } from '@/components/ui/progress';
+} from './components/ui/card';
+import { Button } from './components/ui/button';
+import { Input } from './components/ui/input';
+import { Label } from './components/ui/label';
+import { Switch } from './components/ui/switch';
+import { Progress } from './components/ui/progress';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from './components/ui/select';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from './components/ui/dialog';
 
 import { 
   User, 
@@ -45,7 +45,7 @@ import {
   ShoppingCart,
   Mail
 } from 'lucide-react';
-import { getCompanyLogo } from '@/lib/imageUtils';
+import { getCompanyLogo } from './lib/imageUtils';
 
 interface OnboardingFlowProps {
   onComplete: () => void;
