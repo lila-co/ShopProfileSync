@@ -1,25 +1,25 @@
-import React, { Suspense, lazy } from 'react';
-import { Router, Route, Switch, Redirect } from 'wouter';
-import { QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from '@/components/ui/toaster';
-import { AuthProvider, useAuth } from '@/contexts/AuthContext';
-import { queryClient } from '@/lib/queryClient';
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import ErrorBoundary from '@/components/ErrorBoundary';
-import AsyncErrorBoundary from '@/components/AsyncErrorBoundary';
-import SimpleDashboard from '@/pages/simple-dashboard';
-import ShoppingListSimple from '@/components/lists/ShoppingListSimple';
-import { useEffect } from 'react';
+import React, { Suspense, lazy } from "react";
+import { Router, Route, Switch, Redirect } from "wouter";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "./components/ui/toaster";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { queryClient } from "@/lib/queryClient";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import AsyncErrorBoundary from "@/components/AsyncErrorBoundary";
+import SimpleDashboard from "@/pages/simple-dashboard";
+import ShoppingListSimple from "@/components/lists/ShoppingListSimple";
+import { useEffect } from "react";
 
 // Import lazy-loaded components organized by feature groups
-import { 
-  CorePages, 
-  ShoppingPages, 
-  AdvancedPages, 
-  AdminPages, 
+import {
+  CorePages,
+  ShoppingPages,
+  AdvancedPages,
+  AdminPages,
   OnboardingPages,
-  preloadCriticalComponents 
-} from '@/utils/lazyImports';
+  preloadCriticalComponents,
+} from "@/utils/lazyImports";
 
 // Loading fallback component
 const PageLoadingFallback = () => (
@@ -255,11 +255,14 @@ function AppContent() {
 function App() {
   // Keep-alive functionality to prevent timeout during reviews
   useEffect(() => {
-    const keepAlive = setInterval(() => {
-      fetch('/api/shopping-list')
-        .then(() => console.log('Session keep-alive'))
-        .catch(() => console.log('Keep-alive failed'));
-    }, 4 * 60 * 1000); // Every 4 minutes
+    const keepAlive = setInterval(
+      () => {
+        fetch("/api/shopping-list")
+          .then(() => console.log("Session keep-alive"))
+          .catch(() => console.log("Keep-alive failed"));
+      },
+      4 * 60 * 1000,
+    ); // Every 4 minutes
 
     return () => clearInterval(keepAlive);
   }, []);
