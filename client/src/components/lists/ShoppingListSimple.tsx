@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from './components/ui/card';
-import { Input } from './components/ui/input';
+import { Input } from '../ui/input';
 import { Button } from './components/ui/button';
 import { ShoppingList as ShoppingListType, ShoppingListItem } from './lib/types';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
